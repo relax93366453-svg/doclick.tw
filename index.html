@@ -498,7 +498,8 @@
         <div><label>商品簡介</label><input id="c_goods"></div>
         <div><label>帳號</label><input id="c_account"></div>
         <div><label>密碼</label><input id="c_pwd" type="password"></div>
-        <div><label>雲端資料夾連結</label><input id="c_url" placeholder="請貼上Google雲端連結"></div>
+        <div><label>專區連結</label><input id="c_url" placeholder="客戶前台專屬網址"></div>
+        <div><label>雲端資料夾</label><input id="c_drive" placeholder="內部Google雲端連結"></div>
         <div><label>備註</label><input id="c_remark"></div>
         <div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div>
       </div>
@@ -506,7 +507,7 @@
       <button class="btn btn-warning" onclick="updateCust()" id="btnUpdateCust" style="display:none"><i class="fas fa-edit"></i> 修改客戶</button>
       <button class="btn btn-excel" onclick="exportExcel('custTableBox','客戶資料')"><i class="fas fa-file-excel"></i> 匯出</button>
       <table id="custTableBox">
-        <thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th><th>電話</th><th>地址</th><th>統編</th><th>商品</th><th>帳號</th><th>密碼</th><th>雲端資料夾</th><th>備註</th><th>操作</th></tr></thead>
+        <thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th><th>電話</th><th>地址</th><th>統編</th><th>商品</th><th>帳號</th><th>密碼</th><th>專區連結</th><th>雲端資料夾</th><th>備註</th><th>操作</th></tr></thead>
         <tbody id="custTable"></tbody>
       </table>
     </div>
@@ -960,30 +961,30 @@ function renderCustTable(){
   pagedList.forEach((item,i)=>{
     const idx = custData.findIndex(x=>x.name===item.name);
     // 若有雲端連結，生成開啟按鈕
-    const folderBtn = item.url ? `<button class="btn-sm btn-excel" onclick="window.open('${item.url}', '_blank')"><i class="fas fa-folder-open"></i> 打開資料夾</button>` : '-';
+    const folderBtn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}', '_blank')"><i class="fas fa-folder-open"></i> 打開資料夾</button>` : '-';
     
-    html+=`<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.industry||'-'}</td><td>${item.user||'-'}</td><td>${item.tel||'-'}</td><td>${item.addr||'-'}</td><td>${item.tax||'-'}</td><td>${item.goods||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd?'******':'-'}</td><td>${folderBtn}</td><td>${item.remark||'-'}</td><td><button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+    html+=`<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.industry||'-'}</td><td>${item.user||'-'}</td><td>${item.tel||'-'}</td><td>${item.addr||'-'}</td><td>${item.tax||'-'}</td><td>${item.goods||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd?'******':'-'}</td><td>${item.url||'-'}</td><td>${folderBtn}</td><td>${item.remark||'-'}</td><td><button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
   });
-  document.getElementById('custTable').innerHTML = html || '<tr><td colspan="13">無資料</td></tr>';
+  document.getElementById('custTable').innerHTML = html || '<tr><td colspan="14">無資料</td></tr>';
   renderPagination('customer', total, totalPages); fillFilters(); if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
 function addCust(){
-  const o = { name: document.getElementById('c_name').value.trim(), industry: document.getElementById('c_industry').value.trim(), user: document.getElementById('c_user').value.trim(), tel: document.getElementById('c_tel').value.trim(), addr: document.getElementById('c_addr').value.trim(), tax: document.getElementById('c_tax').value.trim(), goods: document.getElementById('c_goods').value.trim(), account: document.getElementById('c_account').value.trim(), pwd: document.getElementById('c_pwd').value.trim(), url: document.getElementById('c_url').value.trim(), remark: document.getElementById('c_remark').value.trim(), coop: document.getElementById('c_coop').value };
+  const o = { name: document.getElementById('c_name').value.trim(), industry: document.getElementById('c_industry').value.trim(), user: document.getElementById('c_user').value.trim(), tel: document.getElementById('c_tel').value.trim(), addr: document.getElementById('c_addr').value.trim(), tax: document.getElementById('c_tax').value.trim(), goods: document.getElementById('c_goods').value.trim(), account: document.getElementById('c_account').value.trim(), pwd: document.getElementById('c_pwd').value.trim(), url: document.getElementById('c_url').value.trim(), drive: document.getElementById('c_drive').value.trim(), remark: document.getElementById('c_remark').value.trim(), coop: document.getElementById('c_coop').value };
   if(!o.name){alert('請輸入客戶名稱');return;} if(custData.some(x => x.name === o.name)) {alert('此客戶名稱已存在');return;}
   custData.push(o); saveAll(); resetPage('customer'); renderCustTable(); clearCustForm(); alert('新增成功');
 }
 function editCust(i){
-  const d = custData[i]; document.getElementById('c_name').value = d.name; document.getElementById('c_industry').value = d.industry||''; document.getElementById('c_user').value = d.user||''; document.getElementById('c_tel').value = d.tel||''; document.getElementById('c_addr').value = d.addr||''; document.getElementById('c_tax').value = d.tax||''; document.getElementById('c_goods').value = d.goods||''; document.getElementById('c_account').value = d.account||''; document.getElementById('c_pwd').value = d.pwd||''; document.getElementById('c_url').value = d.url||''; document.getElementById('c_remark').value = d.remark||''; document.getElementById('c_coop').value = d.coop;
+  const d = custData[i]; document.getElementById('c_name').value = d.name; document.getElementById('c_industry').value = d.industry||''; document.getElementById('c_user').value = d.user||''; document.getElementById('c_tel').value = d.tel||''; document.getElementById('c_addr').value = d.addr||''; document.getElementById('c_tax').value = d.tax||''; document.getElementById('c_goods').value = d.goods||''; document.getElementById('c_account').value = d.account||''; document.getElementById('c_pwd').value = d.pwd||''; document.getElementById('c_url').value = d.url||''; document.getElementById('c_drive').value = d.drive||''; document.getElementById('c_remark').value = d.remark||''; document.getElementById('c_coop').value = d.coop;
   editCustIndex = i; document.getElementById('btnUpdateCust').style.display='inline-block';
 }
 function updateCust(){
   if(editCustIndex<0)return;
-  const o = { name: document.getElementById('c_name').value.trim(), industry: document.getElementById('c_industry').value.trim(), user: document.getElementById('c_user').value.trim(), tel: document.getElementById('c_tel').value.trim(), addr: document.getElementById('c_addr').value.trim(), tax: document.getElementById('c_tax').value.trim(), goods: document.getElementById('c_goods').value.trim(), account: document.getElementById('c_account').value.trim(), pwd: document.getElementById('c_pwd').value.trim(), url: document.getElementById('c_url').value.trim(), remark: document.getElementById('c_remark').value.trim(), coop: document.getElementById('c_coop').value };
+  const o = { name: document.getElementById('c_name').value.trim(), industry: document.getElementById('c_industry').value.trim(), user: document.getElementById('c_user').value.trim(), tel: document.getElementById('c_tel').value.trim(), addr: document.getElementById('c_addr').value.trim(), tax: document.getElementById('c_tax').value.trim(), goods: document.getElementById('c_goods').value.trim(), account: document.getElementById('c_account').value.trim(), pwd: document.getElementById('c_pwd').value.trim(), url: document.getElementById('c_url').value.trim(), drive: document.getElementById('c_drive').value.trim(), remark: document.getElementById('c_remark').value.trim(), coop: document.getElementById('c_coop').value };
   if(!o.name){alert('請輸入客戶名稱');return;} if(custData.some((x, idx) => x.name === o.name && idx !== editCustIndex)) {alert('此客戶名稱已存在');return;}
   custData[editCustIndex] = o; saveAll(); resetPage('customer'); renderCustTable(); clearCustForm(); alert('修改成功');
 }
 function delCust(i){ if(!confirm('確定刪除？'))return; custData.splice(i,1); saveAll(); resetPage('customer'); renderCustTable(); }
-function clearCustForm(){ document.getElementById('c_name').value=''; document.getElementById('c_industry').value=''; document.getElementById('c_user').value=''; document.getElementById('c_tel').value=''; document.getElementById('c_addr').value=''; document.getElementById('c_tax').value=''; document.getElementById('c_goods').value=''; document.getElementById('c_account').value=''; document.getElementById('c_pwd').value=''; document.getElementById('c_url').value=''; document.getElementById('c_remark').value=''; document.getElementById('c_coop').value='正合作'; editCustIndex=-1; document.getElementById('btnUpdateCust').style.display='none'; }
+function clearCustForm(){ document.getElementById('c_name').value=''; document.getElementById('c_industry').value=''; document.getElementById('c_user').value=''; document.getElementById('c_tel').value=''; document.getElementById('c_addr').value=''; document.getElementById('c_tax').value=''; document.getElementById('c_goods').value=''; document.getElementById('c_account').value=''; document.getElementById('c_pwd').value=''; document.getElementById('c_url').value=''; document.getElementById('c_drive').value=''; document.getElementById('c_remark').value=''; document.getElementById('c_coop').value='正合作'; editCustIndex=-1; document.getElementById('btnUpdateCust').style.display='none'; }
 
 // ===================== 合約相關函數 =====================
 function renderContractTable(){
