@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>愜易居客戶及派遣管理系統 (雲端同步版)</title>
+<title>點籽響客戶及派遣管理系統 (雲端同步版)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -399,7 +399,7 @@
 <div class="app-container">
   <div class="sidebar">
     <div class="sidebar-header">
-      <h1><i class="fas fa-users"></i> 愜易居系統 (雲端)</h1>
+      <h1><i class="fas fa-users"></i> 點籽響系統 (雲端)</h1>
     </div>
     <ul class="sidebar-nav">
       <li><a href="#" data-page="dashboard" class="active"><i class="fas fa-chart-line"></i> 總覽儀表板</a></li>
@@ -467,14 +467,14 @@
         </div>
 
         <div class="panel">
-          <h3 class="panel-title"><i class="fas fa-cog" style="color:#607d8b;"></i> 系統設定 (對帳單 Logo)</h3>
+          <h3 class="panel-title"><i class="fas fa-cog" style="color:#607d8b;"></i> 系統設定 (文件專屬 Logo)</h3>
           <div style="display:flex; align-items:center; gap:15px; margin-top: 15px;">
             <img id="logoPreview" src="" style="height:50px; border-radius:8px; display:none; border:1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
             <button class="btn btn-warning" onclick="document.getElementById('logoUpload').click()"><i class="fas fa-upload"></i> 上傳專屬 Logo</button>
             <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
             <button class="btn btn-pdf" onclick="clearLogo()" id="btnClearLogo" style="display:none;"><i class="fas fa-trash"></i> 移除</button>
           </div>
-          <p style="font-size:13px; color:#888; margin-top:15px; line-height: 1.5;">💡 <b>提示：</b>在這裡上傳一次圖片後，系統會自動記憶。未來點擊「一鍵生成對帳單」就會完美印出 Logo！</p>
+          <p style="font-size:13px; color:#888; margin-top:15px; line-height: 1.5;">💡 <b>提示：</b>在這裡上傳一次圖片後，系統會自動記憶。未來點擊「一鍵生成對帳單/薪資單」就會完美印出 Logo！</p>
         </div>
       </div>
     </div>
@@ -498,7 +498,7 @@
         <div><label>商品簡介</label><input id="c_goods"></div>
         <div><label>帳號</label><input id="c_account"></div>
         <div><label>密碼</label><input id="c_pwd" type="password"></div>
-        <div><label>專區連結</label><input id="c_url"></div>
+        <div><label>雲端資料夾連結</label><input id="c_url" placeholder="請貼上Google雲端連結"></div>
         <div><label>備註</label><input id="c_remark"></div>
         <div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div>
       </div>
@@ -506,7 +506,7 @@
       <button class="btn btn-warning" onclick="updateCust()" id="btnUpdateCust" style="display:none"><i class="fas fa-edit"></i> 修改客戶</button>
       <button class="btn btn-excel" onclick="exportExcel('custTableBox','客戶資料')"><i class="fas fa-file-excel"></i> 匯出</button>
       <table id="custTableBox">
-        <thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th><th>電話</th><th>地址</th><th>統編</th><th>商品</th><th>帳號</th><th>密碼</th><th>連結</th><th>備註</th><th>操作</th></tr></thead>
+        <thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th><th>電話</th><th>地址</th><th>統編</th><th>商品</th><th>帳號</th><th>密碼</th><th>雲端資料夾</th><th>備註</th><th>操作</th></tr></thead>
         <tbody id="custTable"></tbody>
       </table>
     </div>
@@ -524,8 +524,8 @@
         <div><label>會員類型</label>
           <select id="co_member_type" onchange="updatePriceByPlan()">
             <option value="">請選擇</option>
-            <option value="標準會員">愜易居標準會員</option>
-            <option value="PRO企業會員">愜易居PRO企業會員</option>
+            <option value="點籽響標準會員">點籽響標準會員</option>
+            <option value="點籽響PRO企業會員">點籽響PRO企業會員</option>
             <option value="半年會員費">半年會員費</option>
             <option value="每年會員費">每年會員費</option>
           </select>
@@ -732,6 +732,10 @@ const priceTable = {
 const memberPrices = {
   "半年會員費": { standard: 25000, pro: 38000 },
   "每年會員費": { standard: 45000, pro: 70000 },
+  "標準會員": { "時數方案1": 320, "時數方案2": 320, "時數方案3": 320, "時數方案4": 320, "時數方案5": 320, "時數方案6": 320, "時數方案7": 320, "時數方案8": 320 },
+  "PRO企業會員": { "時數方案1": 310, "時數方案2": 310, "時數方案3": 310, "時數方案4": 310, "時數方案5": 310, "時數方案6": 310, "時數方案7": 310, "時數方案8": 310 },
+  "點籽響標準會員": { "時數方案1": 320, "時數方案2": 320, "時數方案3": 320, "時數方案4": 320, "時數方案5": 320, "時數方案6": 320, "時數方案7": 320, "時數方案8": 320 },
+  "點籽響PRO企業會員": { "時數方案1": 310, "時數方案2": 310, "時數方案3": 310, "時數方案4": 310, "時數方案5": 310, "時數方案6": 310, "時數方案7": 310, "時數方案8": 310 },
   "愜易居標準會員": { "時數方案1": 320, "時數方案2": 320, "時數方案3": 320, "時數方案4": 320, "時數方案5": 320, "時數方案6": 320, "時數方案7": 320, "時數方案8": 320 },
   "愜易居PRO企業會員": { "時數方案1": 310, "時數方案2": 310, "時數方案3": 310, "時數方案4": 310, "時數方案5": 310, "時數方案6": 310, "時數方案7": 310, "時數方案8": 310 }
 };
@@ -955,9 +959,12 @@ function renderCustTable(){
   const {pagedList, total, totalPages} = getPagedData(list, 'customer'); let html = '';
   pagedList.forEach((item,i)=>{
     const idx = custData.findIndex(x=>x.name===item.name);
-    html+=`<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.industry||'-'}</td><td>${item.user||'-'}</td><td>${item.tel||'-'}</td><td>${item.addr||'-'}</td><td>${item.tax||'-'}</td><td>${item.goods||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd?'******':'-'}</td><td>${item.url||'-'}</td><td>${item.remark||'-'}</td><td><button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+    // 若有雲端連結，生成開啟按鈕
+    const folderBtn = item.url ? `<button class="btn-sm btn-excel" onclick="window.open('${item.url}', '_blank')"><i class="fas fa-folder-open"></i> 打開資料夾</button>` : '-';
+    
+    html+=`<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.industry||'-'}</td><td>${item.user||'-'}</td><td>${item.tel||'-'}</td><td>${item.addr||'-'}</td><td>${item.tax||'-'}</td><td>${item.goods||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd?'******':'-'}</td><td>${folderBtn}</td><td>${item.remark||'-'}</td><td><button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
   });
-  document.getElementById('custTable').innerHTML = html || '<tr><td colspan=13>無資料</td></tr>';
+  document.getElementById('custTable').innerHTML = html || '<tr><td colspan="13">無資料</td></tr>';
   renderPagination('customer', total, totalPages); fillFilters(); if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
 function addCust(){
@@ -1150,10 +1157,11 @@ function generateStatementPDF() {
   const periodText = (yb==='all' && mb==='all') ? '全部歷史期間' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
   const logoHtml = companyLogoBase64 ? `<img src="${companyLogoBase64}" style="height: 60px; border-radius: 12px; margin-right: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">` : ``;
 
+  // 對帳單移除簽章區塊
   printArea.innerHTML = `
     <div style="display: flex; align-items: center; justify-content: center; margin-bottom:30px; border-bottom: 2px solid #2d9d5c; padding-bottom: 15px;">
         ${logoHtml}
-        <h2 style="font-size:28px; margin:0; color:#2d9d5c; letter-spacing: 2px;">愜易居 - 客戶服務對帳單</h2>
+        <h2 style="font-size:28px; margin:0; color:#2d9d5c; letter-spacing: 2px;">點籽響有限公司 - 客戶服務對帳單</h2>
     </div>
     <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size:15px; line-height:1.8;">
         <div><p style="margin:5px 0;"><strong>客戶名稱：</strong>${cb}</p><p style="margin:5px 0;"><strong>對帳期間：</strong>${periodText}</p><p style="margin:5px 0;"><strong>購買方案：</strong>${planNameText}</p></div>
@@ -1172,16 +1180,15 @@ function generateStatementPDF() {
         <thead><tr style="background-color:#f9f9f9; color:#555;"><th style="border:1px solid #ddd; padding:12px; width:25%;">派遣日期</th><th style="border:1px solid #ddd; padding:12px; width:25%;">派遣人員</th><th style="border:1px solid #ddd; padding:12px; width:25%;">工時 (小時)</th><th style="border:1px solid #ddd; padding:12px; width:25%;">扣除點數</th></tr></thead>
         <tbody>${attendHtml}</tbody>
     </table>
-    <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 15px; color: #333;">
-        <div style="width: 40%;"><p style="margin-bottom: 45px; font-weight: bold;">客戶確認簽章：</p><div style="border-bottom: 1px solid #666; width: 100%;"></div><p style="margin-top: 8px; font-size: 13px; color: #666;">確認日期：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;年&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;月&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日</p></div>
-        <div style="width: 40%; text-align: left;"><p style="margin-bottom: 45px; font-weight: bold;">愜易居 經辦人簽章：</p><div style="border-bottom: 1px solid #666; width: 100%;"></div><p style="margin-top: 8px; font-size: 13px; color: #888; text-align: right;">產製日期：${new Date().toLocaleDateString('zh-TW')}</p></div>
+    <div style="margin-top: 30px; text-align: right; font-size: 13px; color: #888;">
+        <p>列印日期：${new Date().toLocaleDateString('zh-TW')}</p>
     </div>
   `;
 
   html2pdf().set({ margin: 15, filename: `${cb}_服務對帳單_${new Date().getTime()}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(printArea).save();
 }
 
-// ===================== 薪資計算與員工薪資單生成 (已升級週期算法) =====================
+// ===================== 薪資計算相關函數 =====================
 function renderSalary(){
   const s=document.getElementById('sal_filter_staff').value; const ys=document.getElementById('sal_filter_year').value; const ms=document.getElementById('sal_filter_month').value;
   let list=[]; let totalSummary = { totalHour: 0, totalSalary: 0, totalLabor: 0, totalHealth: 0, totalNet: 0 };
@@ -1192,6 +1199,8 @@ function renderSalary(){
   const {pagedList, total, totalPages}=getPagedData(list,'salary'); let html='';
   pagedList.forEach(item=>{
     const staff=staffData.find(x=>x.name===item.staff); if(!staff) return;
+    
+    // 動態取得時薪 (如果是 0，就採用自動等級計算)
     let hourly = +staff.hourly || 0; if (hourly === 0) hourly = getStaffTieredHourly(staff.name);
     const labor=+staff.labor||0; const health=+staff.health||0; const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
     
@@ -1249,9 +1258,13 @@ function generatePayslipPDF() {
   const printArea = document.createElement('div');
   printArea.style.padding = '40px'; printArea.style.fontFamily = "'Microsoft JhengHei', sans-serif"; printArea.style.color = '#333'; printArea.style.backgroundColor = '#fff';
 
+  const logoHtml = companyLogoBase64 ? `<img src="${companyLogoBase64}" style="height: 50px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"><br>` : ``;
+
+  // 薪資單移除簽收區塊
   printArea.innerHTML = `
     <div style="text-align:center; margin-bottom:30px; border-bottom: 2px solid #2d9d5c; padding-bottom: 15px;">
-        <h2 style="font-size:28px; margin:0; color:#2d9d5c; letter-spacing: 2px;">點梓響有限公司</h2>
+        ${logoHtml}
+        <h2 style="font-size:28px; margin:0; color:#2d9d5c; letter-spacing: 2px;">點籽響有限公司</h2>
         <h3 style="font-size:20px; margin:10px 0 0 0; color:#555;">員工薪資單</h3>
     </div>
     <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size:15px; line-height:1.8;">
@@ -1296,17 +1309,6 @@ function generatePayslipPDF() {
         <div style="width:48%; display:flex; flex-direction:column; justify-content:center; align-items:center; background-color:#f0fdf4; border-radius:8px; border:2px solid #2d9d5c;">
             <span style="font-size:16px; color:#2d9d5c; margin-bottom:5px;">本月實付金額</span>
             <strong style="font-size:28px; color:#2d9d5c;">$ ${netPayable}</strong>
-        </div>
-    </div>
-    <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 15px; color: #333;">
-        <div style="width: 40%;">
-            <p style="margin-bottom: 45px; font-weight: bold;">員工簽收：</p>
-            <div style="border-bottom: 1px solid #666; width: 100%;"></div>
-            <p style="margin-top: 8px; font-size: 13px; color: #666;">簽收日期：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;年&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;月&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日</p>
-        </div>
-        <div style="width: 40%; text-align: left;">
-            <p style="margin-bottom: 45px; font-weight: bold;">點梓響有限公司 蓋章：</p>
-            <div style="border-bottom: 1px solid #666; width: 100%;"></div>
         </div>
     </div>
   `;
@@ -1451,7 +1453,7 @@ function exportPDF(tableId, fileName) {
 function backupAllData() {
   const backupData = { version: "1.0", backupTime: new Date().toISOString(), data: { custData, contractData, staffData, attendData } };
   const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `愜易居系統備份_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `點籽響系統備份_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`; a.click();
 }
 
 function restoreData(fileInput) {
