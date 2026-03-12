@@ -142,6 +142,7 @@
   /* 🚀 雙工作區切換專用隱藏魔法 🚀 */
   .workspace-hr .ws-business { display: none !important; }
   .workspace-business .ws-hr { display: none !important; }
+  #admin-screen.mode-hr .admin-only { display: none !important; }
 </style>
 </head>
 <body>
@@ -152,13 +153,11 @@
     <p>請選擇您的身分並登入</p>
     <div class="login-field">
       <label>登入身分</label>
-      <select id="login_role" onchange="toggleLoginFields()">
+      <select id="login_role">
         <option value="admin" style="color:#dc2626; font-weight:bold;">👑 系統管理員 (老闆)</option>
-        <option value="hr" style="color:#2563eb; font-weight:bold;">👩‍💼 人資 / 派遣管理員</option>
         <option value="staff">💼 員工專區</option>
       </select>
     </div>
-    
     <div class="login-field auth-input">
       <label>登入帳號</label>
       <input type="text" id="login_acc" placeholder="請輸入帳號">
@@ -167,7 +166,6 @@
       <label>登入密碼</label>
       <input type="password" id="login_pwd" placeholder="請輸入密碼">
     </div>
-    
     <button class="btn-login" onclick="handleLogin()">登 入 系 統</button>
   </div>
 </div>
@@ -175,18 +173,18 @@
 <div class="app-container workspace-business" id="admin-screen">
   <div class="sidebar">
     <div class="sidebar-header">
-      <h1 class="ws-business"><i class="fas fa-users-cog"></i> 營業管理區</h1>
-      <h1 class="ws-hr"><i class="fas fa-user-tie"></i> 人事派遣區</h1>
+      <h1 class="ws-business" id="admin-sidebar-title-business"><i class="fas fa-users-cog"></i> 營業管理區</h1>
+      <h1 class="ws-hr" id="admin-sidebar-title-hr"><i class="fas fa-user-tie"></i> 人事派遣區</h1>
     </div>
     <ul class="sidebar-nav">
       <li class="ws-business"><a class="ws-business-dashboard-link active" onclick="showAdminPage('dashboard', this)"><i class="fas fa-chart-line"></i> 總覽儀表板</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('customer', this)"><i class="fas fa-building"></i> 客戶資料</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('contract', this)"><i class="fas fa-file-contract"></i> 合約方案</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('customer', this)"><i class="fas fa-building"></i> 客戶資料</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('contract', this)"><i class="fas fa-file-contract"></i> 合約方案</a></li>
       <li class="ws-business"><a onclick="showAdminPage('attend', this)"><i class="fas fa-clock"></i> 派遣記錄</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('point', this)"><i class="fas fa-calculator"></i> 點數統計</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('bill', this)"><i class="fas fa-file-invoice"></i> 對帳單生成</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('point', this)"><i class="fas fa-calculator"></i> 點數統計</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('bill', this)"><i class="fas fa-file-invoice"></i> 對帳單生成</a></li>
       <li class="ws-business"><a onclick="showAdminPage('salary', this)"><i class="fas fa-wallet"></i> 薪資計算與派發</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('boss', this)"><i class="fas fa-chart-pie"></i> 老闆專區報表</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('boss', this)"><i class="fas fa-chart-pie"></i> 老闆專區報表</a></li>
       
       <li class="ws-hr"><a class="ws-hr-dashboard-link" onclick="showAdminPage('dashboard', this)"><i class="fas fa-user-clock"></i> 人事儀表板</a></li>
       <li class="ws-hr"><a onclick="showAdminPage('staff', this)"><i class="fas fa-id-badge"></i> 派遣人員管理</a></li>
@@ -203,7 +201,7 @@
         </button>
         <span id="sync-status"><i class="fas fa-cloud"></i> 系統就緒</span>
         <span id="current-time"></span>
-        <button onclick="logout()" class="switch-role-btn" style="border-color:#dc2626; color:#dc2626;"><i class="fas fa-sign-out-alt"></i> 登出</button>
+        <button onclick="logout()" class="switch-role-btn" style="border-color:#dc2626; color:#dc2626;"><i class="fas fa-sign-out-alt"></i> 登出系統</button>
       </div>
     </div>
 
@@ -213,12 +211,12 @@
       
       <div class="quick-actions">
         <button class="btn btn-success ws-business" onclick="document.querySelector('.ws-business:nth-child(4) a').click();"><i class="fas fa-plus"></i> 新增派遣記錄</button>
-        <button class="btn btn-warning ws-business" onclick="document.querySelector('.ws-business:nth-child(2) a').click();"><i class="fas fa-building"></i> 新增客戶</button>
+        <button class="btn btn-warning ws-business admin-only" onclick="document.querySelector('.ws-business:nth-child(2) a').click();"><i class="fas fa-building"></i> 新增客戶</button>
         <button class="btn btn-excel ws-hr" onclick="document.querySelector('.ws-hr:nth-child(2) a').click();"><i class="fas fa-user-plus"></i> 新增員工建檔</button>
       </div>
       
-      <h3 class="ws-business" style="font-size:15px; color:#666; margin-bottom:10px;"><i class="fas fa-chart-pie"></i> 客戶與合約數據</h3>
-      <div class="dashboard-grid ws-business">
+      <h3 class="ws-business admin-only" style="font-size:15px; color:#666; margin-bottom:10px;"><i class="fas fa-chart-pie"></i> 客戶與合約數據</h3>
+      <div class="dashboard-grid ws-business admin-only">
         <div class="dash-card"><div class="label">客戶總數</div><div class="num" id="dash_total_cust">0</div></div>
         <div class="dash-card"><div class="label">正合作客戶</div><div class="num green" id="dash_active_cust">0</div></div>
         <div class="dash-card"><div class="label">點數充足 (≥50)</div><div class="num green" id="dash_point_ge50">0</div></div>
@@ -247,7 +245,7 @@
           <table class="panel-table"><thead><tr><th>派遣人員</th><th>客戶公司</th><th>時段</th></tr></thead><tbody id="dash_today_table"></tbody></table>
         </div>
         
-        <div class="panel ws-business">
+        <div class="panel ws-business admin-only">
           <h3 class="panel-title"><i class="fas fa-exclamation-triangle red"></i> 點數不足警示 (低於 50 點)</h3>
           <table class="panel-table"><thead><tr><th>客戶名稱</th><th>剩餘點數</th><th>操作</th></tr></thead><tbody id="dash_alert_table"></tbody></table>
         </div>
@@ -257,7 +255,7 @@
           <table class="panel-table"><thead><tr><th>派遣人員</th><th>生日日期</th><th>狀態</th></tr></thead><tbody id="dash_birthday_table"></tbody></table>
         </div>
         
-        <div class="panel ws-business">
+        <div class="panel ws-business admin-only">
           <h3 class="panel-title"><i class="fas fa-cog" style="color:#607d8b;"></i> 系統設定 (文件專屬 Logo)</h3>
           <div style="display:flex; align-items:center; gap:15px; margin-top: 15px;">
             <img id="logoPreview" src="" style="height:50px; border-radius:8px; display:none; border:1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -270,7 +268,7 @@
       </div>
     </div>
 
-    <div class="page" id="page-customer">
+    <div class="page admin-only" id="page-customer">
       <div class="page-title">客戶資料管理</div>
       <div class="filter-bar">
         <label>公司：</label><select id="cust_filter_company" onchange="resetPage('customer'); renderCustTable()"></select>
@@ -305,7 +303,7 @@
       </table>
     </div>
 
-    <div class="page" id="page-contract">
+    <div class="page admin-only" id="page-contract">
       <div class="page-title">合約方案管理</div>
       <div class="filter-bar">
         <label>公司：</label><select id="contract_filter_company" onchange="resetPage('contract'); renderContractTable()"></select>
@@ -431,7 +429,7 @@
       </table>
     </div>
 
-    <div class="page" id="page-point">
+    <div class="page admin-only" id="page-point">
       <div class="page-title">客戶點數總表</div>
       <div class="filter-bar">
         <label>公司</label><select id="point_filter_company" onchange="resetPage('point'); renderPoint()"></select>
@@ -448,7 +446,7 @@
       </table>
     </div>
 
-    <div class="page" id="page-bill">
+    <div class="page admin-only" id="page-bill">
       <div class="page-title">客戶對帳單生成中心</div>
       <div class="filter-bar">
         <label>公司 <span class="required">*</span></label><select id="bill_filter_company" onchange="resetPage('bill'); renderBill()"></select>
@@ -489,7 +487,7 @@
       </table>
     </div>
 
-    <div class="page" id="page-boss">
+    <div class="page admin-only" id="page-boss">
       <div class="page-title">老闆專區報表</div>
       <div class="filter-bar">
         <label>年 (計算工時用)</label><select id="boss_year" onchange="resetPage('boss'); showBoss()"></select>
@@ -671,12 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }, 1000);
 });
 
-function toggleLoginFields() {
-  const role = document.getElementById('login_role').value;
-  const authInputs = document.querySelectorAll('.auth-input');
-  if (role === 'hr') { authInputs.forEach(el => el.style.display = 'none'); } 
-  else { authInputs.forEach(el => el.style.display = 'block'); }
-}
+// 移除 toggleLoginFields 函數，因為現在登入畫面固定只有兩個選項，都需要輸入帳密
 
 function handleLogin() {
   const role = document.getElementById('login_role').value;
@@ -691,25 +684,20 @@ function handleLogin() {
       currentWorkspace = 'business';
       adminScreen.classList.remove('workspace-hr');
       adminScreen.classList.add('workspace-business');
+      adminScreen.classList.remove('mode-hr'); // 確保老闆登入時沒有被隱藏
+      
       document.getElementById('workspace-toggle-btn').innerHTML = '<i class="fas fa-user-tie"></i> 切換至人事派遣區';
       document.getElementById('workspace-toggle-btn').style.borderColor = '#f59e0b';
       document.getElementById('workspace-toggle-btn').style.color = '#f59e0b';
+      document.getElementById('workspace-toggle-btn').style.display = 'inline-flex'; // 確保切換按鈕顯示
+      document.getElementById('admin-sidebar-title-business').style.display = 'block';
+      document.getElementById('admin-sidebar-title-hr').style.display = 'none';
+      
       renderAll(); fillFilters();
       document.querySelector('.ws-business-dashboard-link').click();
     } else { alert('管理員帳號或密碼錯誤！(預設: admin / 1234)'); }
-  } else if (role === 'hr') {
-    document.getElementById('login-screen').style.display = 'none';
-    const adminScreen = document.getElementById('admin-screen');
-    adminScreen.style.display = 'flex';
-    adminScreen.classList.add('mode-hr'); 
-    currentWorkspace = 'hr';
-    adminScreen.classList.remove('workspace-business');
-    adminScreen.classList.add('workspace-hr');
-    document.getElementById('admin-sidebar-title').innerHTML = '<i class="fas fa-user-tie"></i> 人資後台';
-    document.getElementById('workspace-toggle-btn').style.display = 'none'; // 人資不能切換工作區
-    renderAll(); fillFilters();
-    document.querySelector('.ws-hr-dashboard-link').click();
   } else {
+    // 員工登入
     const staff = staffData.find(x => x.account === acc && x.pwd === pwd && x.account !== '');
     if (staff) {
       currentLoginStaff = staff;
@@ -723,17 +711,32 @@ function handleLogin() {
 function toggleWorkspace() {
   const screen = document.getElementById('admin-screen');
   const btn = document.getElementById('workspace-toggle-btn');
+  
   if (currentWorkspace === 'business') {
     currentWorkspace = 'hr';
-    screen.classList.remove('workspace-business'); screen.classList.add('workspace-hr');
+    screen.classList.remove('workspace-business'); 
+    screen.classList.add('workspace-hr');
+    screen.classList.add('mode-hr'); // 啟動隱藏魔法！讓營業資料完全消失
+    
     btn.innerHTML = '<i class="fas fa-chart-line"></i> 切換至營業管理區';
-    btn.style.borderColor = '#3b82f6'; btn.style.color = '#3b82f6';
+    btn.style.borderColor = '#3b82f6'; 
+    btn.style.color = '#3b82f6';
+    document.getElementById('admin-sidebar-title-business').style.display = 'none';
+    document.getElementById('admin-sidebar-title-hr').style.display = 'block';
+    
     document.querySelector('.ws-hr-dashboard-link').click();
   } else {
     currentWorkspace = 'business';
-    screen.classList.remove('workspace-hr'); screen.classList.add('workspace-business');
+    screen.classList.remove('workspace-hr'); 
+    screen.classList.add('workspace-business');
+    screen.classList.remove('mode-hr'); // 解除隱藏魔法！營業資料回歸
+    
     btn.innerHTML = '<i class="fas fa-user-tie"></i> 切換至人事派遣區';
-    btn.style.borderColor = '#f59e0b'; btn.style.color = '#f59e0b';
+    btn.style.borderColor = '#f59e0b'; 
+    btn.style.color = '#f59e0b';
+    document.getElementById('admin-sidebar-title-business').style.display = 'block';
+    document.getElementById('admin-sidebar-title-hr').style.display = 'none';
+    
     document.querySelector('.ws-business-dashboard-link').click();
   }
 }
@@ -743,10 +746,11 @@ function logout() {
   document.getElementById('admin-screen').style.display = 'none';
   document.getElementById('staff-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('login_role').value = 'admin'; toggleLoginFields();
-  document.getElementById('login_acc').value = ''; document.getElementById('login_pwd').value = '';
+  
+  document.getElementById('login_role').value = 'admin';
+  document.getElementById('login_acc').value = ''; 
+  document.getElementById('login_pwd').value = '';
   document.getElementById('admin-screen').classList.remove('mode-hr');
-  document.getElementById('workspace-toggle-btn').style.display = 'inline-flex';
 }
 
 // ===================== 員工專屬前台邏輯 =====================
@@ -779,18 +783,22 @@ function showStaffPage(page, link) {
   }
 }
 
-function openStaffDrive() { if (currentLoginStaff && currentLoginStaff.drive) window.open(currentLoginStaff.drive, '_blank'); }
+function openStaffDrive() {
+  if (currentLoginStaff && currentLoginStaff.drive) window.open(currentLoginStaff.drive, '_blank');
+}
 
 function renderStaffMyPay() {
   const ys = document.getElementById('staff_my_year').value; const ms = document.getElementById('staff_my_month').value;
-  let list = attendData.filter(x => x.staff === currentLoginStaff.name && isInPayrollPeriod(x.date, ys, ms)).sort((a,b) => new Date(a.date) - new Date(b.date));
+  let list = attendData.filter(x => x.staff === currentLoginStaff.name && isInPayrollPeriod(x.date, ys, ms));
+  list.sort((a,b) => new Date(a.date) - new Date(b.date));
   let html = ''; let tHour = 0;
   list.forEach(item => {
     const payHour = getItemSalaryHours(item); tHour += payHour;
     html += `<tr><td style="border-bottom:1px solid #eee;">${item.date}</td><td style="border-bottom:1px solid #eee;">${item.company}</td><td style="border-bottom:1px solid #eee;">${item.service||'-'}</td><td style="border-bottom:1px solid #eee; font-weight:bold;">${payHour.toFixed(1)} h</td></tr>`;
   });
   document.getElementById('staffMyPayTable').innerHTML = html || '<tr><td colspan="4" style="text-align:center; padding:15px; color:#999;">本期無出勤紀錄</td></tr>';
-  document.getElementById('staffMyPaySummary').textContent = `${(ys==='all'||ms==='all') ? '全部歷史期間' : '計薪週期：上月26日至本月25日'} ｜ 累計發薪工時：${tHour.toFixed(1)} 小時`;
+  let periodText = (ys === 'all' || ms === 'all') ? '全部歷史期間' : `計薪週期：上月26日至本月25日`;
+  document.getElementById('staffMyPaySummary').textContent = `${periodText} ｜ 累計發薪工時：${tHour.toFixed(1)} 小時`;
 }
 
 function staffDownloadPayslip() {
@@ -829,8 +837,10 @@ function autoCreateFolder() {
   const cName = document.getElementById('c_name').value.trim();
   if (!cName) { alert('請輸入「客戶名稱」！'); return; }
   const btn = document.getElementById('btnCreateFolder'); btn.innerHTML = '建檔中...'; btn.disabled = true;
-  fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(res => res.json()).then(res => {
-      if (res.status === 'success') { document.getElementById('c_drive').value = res.folderUrl; alert('資料夾建立成功！請儲存資料。'); } else { alert('建立失敗：' + res.message); }
+  fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+  }).then(res => res.json()).then(res => {
+      if (res.status === 'success') { document.getElementById('c_drive').value = res.folderUrl; alert('資料夾建立成功！請儲存資料。'); } 
+      else { alert('建立失敗：' + res.message); }
   }).catch(err => alert('連線錯誤')).finally(() => { btn.innerHTML = '<i class="fas fa-folder-plus"></i> 建檔'; btn.disabled = false; });
 }
 
@@ -838,8 +848,10 @@ function autoCreateStaffFolder() {
   const sName = document.getElementById('staff_name').value.trim();
   if (!sName) { alert('請輸入「員工姓名」！'); return; }
   const btn = document.getElementById('btnCreateStaffFolder'); btn.innerHTML = '建檔中...'; btn.disabled = true;
-  fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: '[員工] ' + sName }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(res => res.json()).then(res => {
-      if (res.status === 'success') { document.getElementById('staff_drive').value = res.folderUrl; alert('員工資料夾建立成功！請儲存資料。'); } else { alert('建立失敗：' + res.message); }
+  fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: '[員工] ' + sName }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+  }).then(res => res.json()).then(res => {
+      if (res.status === 'success') { document.getElementById('staff_drive').value = res.folderUrl; alert('員工資料夾建立成功！請儲存資料。'); } 
+      else { alert('建立失敗：' + res.message); }
   }).catch(err => alert('連線錯誤')).finally(() => { btn.innerHTML = '<i class="fas fa-folder-plus"></i> 一鍵建檔'; btn.disabled = false; });
 }
 
@@ -903,7 +915,7 @@ function changePage(module, targetPage) {
   let filtered = [];
   switch(module) {
     case 'customer': const fc = document.getElementById('cust_filter_company').value; const fco = document.getElementById('cust_filter_coop').value; filtered = custData.filter(x => (!fc || x.name===fc) && (fco==='all' || x.coop===fco)); break;
-    case 'contract': const fcc = document.getElementById('contract_filter_company').value; filtered = contractData.filter(x => (!fcc || x.customer===fcc)); break;
+    case 'contract': const fcc = document.getElementById('contract_filter_company').value; const fcco = document.getElementById('contract_filter_coop').value; const okCust = fcco!=='all' ? custData.filter(x=>x.coop===fcco).map(x=>x.name) : custData.map(x=>x.name); filtered = contractData.filter(x => (!fcc || x.customer===fcc) && okCust.includes(x.customer)); break;
     case 'staff': const fs = document.getElementById('staff_filter_status').value; const fn = document.getElementById('staff_filter_name').value.toLowerCase(); filtered = staffData.filter(x => (fs==='all' || x.status===fs) && (!fn || x.name.toLowerCase().includes(fn))); break;
     case 'attend': const y = document.getElementById('filter_year').value; const m = document.getElementById('filter_month').value; const c = document.getElementById('filter_company').value; const ss = document.getElementById('filter_staff_status').value; const sList = ss!=='all' ? staffData.filter(x=>x.status===ss).map(x=>x.name) : staffData.map(x=>x.name); filtered = attendData.filter(x => (y==='all' || x.date.startsWith(y)) && (m==='all' || x.date.slice(5,7)===String(m).padStart(2,'0')) && (!c || x.company===c) && sList.includes(x.staff)); break;
     case 'point': const cp = document.getElementById('point_filter_company').value; filtered = custData.filter(x => !cp || x.name===cp); break;
@@ -1116,7 +1128,7 @@ function uploadTablePDF(tableId, title, compFilterId, isCloud) {
   if(isCloud) {
      updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳雲端中...');
      html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) {
-         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: folderUrl, fileName: fileName, base64Data: pdfBase64 }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(res => res.json()).then(res => { if (res.status === 'success') { alert('🚀 上傳成功！已歸檔至雲端。'); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { alert('上傳失敗：' + res.message); updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);} }).catch(err => {alert('網路錯誤'); updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);});
+         fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: folderUrl, fileName: fileName, base64Data: pdfBase64 }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(res => res.json()).then(res => { if (res.status === 'success') { alert('🚀 上傳成功！已歸檔至雲端資料夾。'); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { alert('上傳失敗：' + res.message); updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);} }).catch(err => {alert('網路錯誤'); updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);});
      });
   } else { html2pdf().set(opt).from(printArea).save(); }
 }
