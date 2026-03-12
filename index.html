@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>客戶及派遣人員管理系統 V1.0</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  /* 全域重置與基礎樣式 */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Microsoft JhengHei', 'Arial', sans-serif;
+  }
+  
+  body {
+    background-color: #f7f8fa;
+    color: #333;
+    line-height: 1.6;
+  }
+
+  /* 布局容器 - 側邊欄+主內容區 */
+  .app-container {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* 側邊導航欄 */
+  .sidebar {
+    width: 220px;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    padding: 20px 0;
+    position: fixed;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 10;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 10px;
+  }
+
+  .sidebar-header h1 {
+    font-size: 18px;
+    color: #2d9d5c; /* 主色調-綠色 */
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sidebar-nav {
+    list-style: none;
+  }
+
+  .sidebar-nav li {
+    margin: 5px 0;
+  }
+
+  .sidebar-nav a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    color: #555;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .sidebar-nav a:hover, .sidebar-nav a.active {
+    background-color: #f0f8f4;
+    color: #2d9d5c;
+    border-left-color: #2d9d5c;
+  }
+
+  .sidebar-nav a i {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+  }
+
+  /* 主內容區域 */
+  .main-content {
+    flex: 1;
+    margin-left: 220px;
+    padding: 20px;
+  }
+
+  .page-header {
+    background-color: #ffffff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .page-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  /* 頁面容器 */
+  .page {
+    display: none;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    padding: 25px;
+    margin-bottom: 20px;
+  }
+
+  .page.active {
+    display: block;
+  }
+
+  .page-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #444;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  /* 篩選欄 */
+  .filter-bar {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+  }
+
+  .filter-bar label {
+    color: #666;
+    font-size: 14px;
+    margin-right: 5px;
+  }
+
+  .filter-bar select, .filter-bar input {
+    padding: 6px 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 120px;
+  }
+
+  /* 表單網格 */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 1200px) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .sidebar {
+      width: 180px;
+    }
+    .main-content {
+      margin-left: 180px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+    }
+    .main-content {
+      margin-left: 0;
+    }
+    .app-container {
+      flex-direction: column;
+    }
+  }
+
+  .grid div {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .grid label {
+    margin-bottom: 6px;
+    font-weight: 500;
+    font-size: 14px;
+    color: #555;
+  }
+
+  .grid input, .grid select {
+    padding: 8px 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border 0.2s;
+  }
+
+  .grid input:focus, .grid select:focus {
+    outline: none;
+    border-color: #2d9d5c;
+  }
+
+  /* 按鈕樣式 */
+  button.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+  }
+
+  .btn-success {
+    background: #2d9d5c;
+    color: white;
+  }
+
+  .btn-success:hover {
+    background: #268a50;
+  }
+
+  .btn-warning {
+    background: #f59e0b;
+    color: white;
+  }
+
+  .btn-warning:hover {
+    background: #d97706;
+  }
+
+  .btn-excel {
+    background: #2563eb;
+    color: white;
+  }
+
+  .btn-excel:hover {
+    background: #1d4ed8;
+  }
+
+  .btn-pdf {
+    background: #dc2626;
+    color: white;
+  }
+
+  .btn-pdf:hover {
+    background: #b91c1c;
+  }
+  
+  .btn-backup {
+    background: #8b5cf6;
+    color: white;
+  }
+  
+  .btn-backup:hover {
+    background: #7c3aed;
+  }
+  
+  .btn-restore {
+    background: #06b6d4;
+    color: white;
+  }
+  
+  .btn-restore:hover {
+    background: #0891b2;
+  }
+
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  /* 表格樣式 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+
+  table th {
+    padding: 12px 10px;
+    background: #f8f9fa;
+    color: #444;
+    font-weight: 600;
+    text-align: left;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  table td {
+    padding: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    color: #555;
+  }
+
+  table tr:hover {
+    background-color: #f9f9f9;
+  }
+
+  /* 分頁樣式 */
+  .pagination {
+    margin-top: 20px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .pagination button {
+    padding: 6px 12px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .pagination button:hover:not(:disabled) {
+    background-color: #f0f8f4;
+    border-color: #2d9d5c;
+    color: #2d9d5c;
+  }
+
+  .pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .pagination span {
+    font-size: 14px;
+    color: #666;
+  }
+
+  /* 新增：儀表板進階版樣式 */
+  .quick-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 900px) {
+    .dashboard-panels {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .panel {
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+  }
+
+  .panel-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .panel-table th, .panel-table td {
+    padding: 10px 8px;
+    text-align: left;
+    border-bottom: 1px solid #f9f9f9;
+    font-size: 14px;
+  }
+
+  .panel-table th {
+    background: #fdfdfd;
+    color: #666;
+    font-weight: 500;
+  }
+
+  /* 儀表板數據卡片樣式 */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+
+  @media (max-width: 800px) {
+    .dashboard-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 500px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .dash-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #f0f0f0;
+    transition: transform 0.2s ease;
+  }
+  
+  .dash-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .dash-card .label {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+  }
+
+  .dash-card .num {
+    font-size: 28px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .green { color: #2d9d5c; }
+  .red { color: #dc2626; font-weight: bold; }
+
+  /* 統計摘要樣式 */
+  #billSummary, #salResult {
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    margin-bottom: 15px;
+  }
+
+  #salDetailResult {
+    padding: 10px 15px;
+    background-color: #f0f8f4;
+    border-radius: 6px;
+    margin: 10px 0;
+  }
+  
+  /* 隱藏的檔案輸入框 */
+  #restoreFile {
+    display: none;
+  }
+  
+  /* 必填標示 */
+  .required {
+    color: #dc2626;
+    margin-left: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <h1><i class="fas fa-users"></i> 愜易居管理系統</h1>
+    </div>
+    <ul class="sidebar-nav">
+      <li><a href="#" data-page="dashboard" class="active"><i class="fas fa-chart-line"></i> 總覽儀表板</a></li>
+      <li><a href="#" data-page="customer"><i class="fas fa-building"></i> 客戶資料</a></li>
+      <li><a href="#" data-page="contract"><i class="fas fa-file-contract"></i> 合約方案</a></li>
+      <li><a href="#" data-page="staff"><i class="fas fa-user"></i> 派遣人員</a></li>
+      <li><a href="#" data-page="attend"><i class="fas fa-clock"></i> 派遣記錄</a></li>
+      <li><a href="#" data-page="point"><i class="fas fa-calculator"></i> 點數統計</a></li>
+      <li><a href="#" data-page="bill"><i class="fas fa-file-invoice"></i> 對帳單</a></li>
+      <li><a href="#" data-page="salary"><i class="fas fa-wallet"></i> 薪資計算</a></li>
+      <li><a href="#" data-page="boss"><i class="fas fa-user-tie"></i> 老闆專區</a></li>
+    </ul>
+  </div>
+
+  <div class="main-content">
+    <div class="page-header">
+      <h2 id="main-title">總覽儀表板</h2>
+      <div class="header-actions">
+        <span id="current-time"></span>
+      </div>
+    </div>
+
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">歡迎回來，這是目前的營運總覽</div>
+      
+      <div class="quick-actions">
+        <button class="btn btn-success" onclick="document.querySelector('[data-page=attend]').click();"><i class="fas fa-plus"></i> 新增派遣記錄</button>
+        <button class="btn btn-warning" onclick="document.querySelector('[data-page=customer]').click();"><i class="fas fa-building"></i> 新增客戶</button>
+        <button class="btn btn-excel" onclick="document.querySelector('[data-page=contract]').click();"><i class="fas fa-file-contract"></i> 建立合約</button>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="dash-card"><div class="label">客戶總數</div><div class="num" id="dash_total_cust">0</div></div>
+        <div class="dash-card"><div class="label">正合作</div><div class="num green" id="dash_active_cust">0</div></div>
+        <div class="dash-card"><div class="label">無合作</div><div class="num red" id="dash_inactive_cust">0</div></div>
+        <div class="dash-card"><div class="label">點數≥50</div><div class="num green" id="dash_point_ge50">0</div></div>
+        <div class="dash-card"><div class="label">點數&lt;50</div><div class="num red" id="dash_point_lt50">0</div></div>
+        <div class="dash-card"><div class="label">人員數</div><div class="num" id="dash_staff_count">0</div></div>
+      </div>
+
+      <div class="dashboard-panels">
+        <div class="panel">
+          <h3 class="panel-title"><i class="fas fa-exclamation-triangle red"></i> 點數不足警示 (低於 50 點)</h3>
+          <table class="panel-table">
+            <thead><tr><th>客戶名稱</th><th>剩餘點數</th><th>快速操作</th></tr></thead>
+            <tbody id="dash_alert_table">
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="panel">
+          <h3 class="panel-title"><i class="fas fa-calendar-day green"></i> 今日派遣動態</h3>
+          <table class="panel-table">
+            <thead><tr><th>派遣人員</th><th>客戶公司</th><th>時段</th></tr></thead>
+            <tbody id="dash_today_table">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title"><i class="fas fa-birthday-cake" style="color:#e91e63;"></i> 本月壽星提醒 (生日禮)</h3>
+          <table class="panel-table">
+            <thead><tr><th>派遣人員</th><th>生日日期</th><th>狀態</th></tr></thead>
+            <tbody id="dash_birthday_table">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title"><i class="fas fa-cog" style="color:#607d8b;"></i> 系統設定 (對帳單 Logo)</h3>
+          <div style="display:flex; align-items:center; gap:15px; margin-top: 15px;">
+            <img id="logoPreview" src="" style="height:50px; border-radius:8px; display:none; border:1px solid #ddd; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <button class="btn btn-warning" onclick="document.getElementById('logoUpload').click()"><i class="fas fa-upload"></i> 上傳專屬 Logo</button>
+            <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+            <button class="btn btn-pdf" onclick="clearLogo()" id="btnClearLogo" style="display:none;"><i class="fas fa-trash"></i> 移除</button>
+          </div>
+          <p style="font-size:13px; color:#888; margin-top:15px; line-height: 1.5;">💡 <b>提示：</b>在這裡上傳一次圖片後，系統會自動記憶。未來點擊「一鍵生成對帳單」就會完美印出 Logo，徹底解決破圖問題！</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-customer">
+      <div class="page-title">客戶資料管理</div>
+      <div class="filter-bar">
+        <label>公司：</label>
+        <select id="cust_filter_company" onchange="resetPage('customer'); renderCustTable()"></select>
+        <label>狀態：</label>
+        <select id="cust_filter_coop" onchange="resetPage('customer'); renderCustTable()">
+          <option value="all">全部</option>
+          <option value="正合作">正合作</option>
+          <option value="無合作">無合作</option>
+        </select>
+      </div>
+      <div class="grid">
+        <div><label>客戶名稱 <span class="required">*</span></label><input id="c_name" required></div>
+        <div><label>行業別</label><input id="c_industry"></div>
+        <div><label>聯絡人</label><input id="c_user"></div>
+        <div><label>電話</label><input id="c_tel"></div>
+        <div><label>地址</label><input id="c_addr"></div>
+        <div><label>統編</label><input id="c_tax"></div>
+        <div><label>商品簡介</label><input id="c_goods"></div>
+        <div><label>帳號</label><input id="c_account"></div>
+        <div><label>密碼</label><input id="c_pwd" type="password"></div>
+        <div><label>專區連結</label><input id="c_url"></div>
+        <div><label>備註</label><input id="c_remark"></div>
+        <div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div>
+      </div>
+      <button class="btn btn-success" onclick="addCust()"><i class="fas fa-plus"></i> 新增客戶</button>
+      <button class="btn btn-warning" onclick="updateCust()" id="btnUpdateCust" style="display:none"><i class="fas fa-edit"></i> 修改客戶</button>
+      <button class="btn btn-excel" onclick="exportExcel('custTableBox','客戶資料')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+      <button class="btn btn-pdf" onclick="exportPDF('custTableBox','客戶資料')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <table id="custTableBox">
+        <thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th><th>電話</th><th>地址</th><th>統編</th><th>商品</th><th>帳號</th><th>密碼</th><th>連結</th><th>備註</th><th>操作</th></tr></thead>
+        <tbody id="custTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-contract">
+      <div class="page-title">合約方案</div>
+      <div class="filter-bar">
+        <label>公司：</label><select id="contract_filter_company" onchange="resetPage('contract'); renderContractTable()"></select>
+        <label>狀態：</label><select id="contract_filter_coop" onchange="resetPage('contract'); renderContractTable()"><option value="all">全部</option><option>正合作</option><option>無合作</option></select>
+      </div>
+      <div class="grid">
+        <div><label>公司 <span class="required">*</span></label><select id="con_customer" required></select></div>
+        <div><label>服務類型</label><input id="co_service"></div>
+        <div><label>簽約日期</label><input type="date" id="co_date"></div>
+        <div><label>會員類型</label>
+          <select id="co_member_type" onchange="updatePriceByPlan()">
+            <option value="">請選擇</option>
+            <option value="標準會員">愜易居標準會員</option>
+            <option value="PRO企業會員">愜易居PRO企業會員</option>
+            <option value="半年會員費">半年會員費</option>
+            <option value="每年會員費">每年會員費</option>
+          </select>
+        </div>
+        <div><label>價目方案 <span class="required">*</span></label>
+          <select id="co_price_plan" onchange="updatePriceByPlan()">
+            <option value="">請選擇</option>
+            <option value="無購買時數(零工派遣)">無購買時數(零工派遣)</option>
+            <option value="時數方案1">時數方案1 (50點)</option>
+            <option value="時數方案2">時數方案2 (90點)</option>
+            <option value="時數方案3">時數方案3 (120點)</option>
+            <option value="時數方案4">時數方案4 (250點)</option>
+            <option value="時數方案5">時數方案5 (370點)</option>
+            <option value="時數方案6">時數方案6 (550點)</option>
+            <option value="時數方案7">時數方案7 (750點)</option>
+            <option value="時數方案8">時數方案8 (1000點)</option>
+            <option value="客製化方案">客製化方案</option>
+          </select>
+        </div>
+        <div><label>點數包價格(含稅)</label><input id="co_package_price" type="number" min="0" readonly placeholder="自動填入"></div>
+        <div><label>每點均價</label><input id="co_point_price" type="number" min="0" readonly placeholder="自動填入"></div>
+        <div><label>金額</label><input id="co_price" type="number" min="0"></div>
+        <div><label>點數</label><input id="co_point" type="number" value="0" min="0"></div>
+        <div><label>發票日期</label><input type="date" id="co_invoice_date"></div>
+        <div><label>收款日</label><input type="date" id="co_payment_date"></div>
+        <div><label>備註</label><input id="co_remark"></div>
+        <div><label>狀態</label><select id="co_status"><option>正常</option><option>應收</option><option>續約</option><option>停用</option><option>到期</option></select></div>
+      </div>
+      <button class="btn btn-success" onclick="addContract()"><i class="fas fa-save"></i> 儲存</button>
+      <button class="btn btn-warning" onclick="updateContract()" id="btnUpdateContract" style="display:none"><i class="fas fa-edit"></i> 修改</button>
+      <button class="btn btn-warning" onclick="clearContractForm()"><i class="fas fa-eraser"></i> 清空</button>
+      <button class="btn btn-excel" onclick="exportExcel('contractTableBox','合約資料')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+      <button class="btn btn-pdf" onclick="exportPDF('contractTableBox','合約資料')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <table id="contractTableBox">
+        <thead><tr><th>公司</th><th>合作</th><th>服務</th><th>會員類型</th><th>價目方案</th><th>點數包價</th><th>每點均價</th><th>金額</th><th>點數</th><th>發票</th><th>收款</th><th>簽約</th><th>狀態</th><th>備註</th><th>操作</th></tr></thead>
+        <tbody id="contractTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-staff">
+      <div class="page-title">派遣人員管理</div>
+      <div class="filter-bar">
+        <label>姓名：</label><input type="text" id="staff_filter_name" oninput="resetPage('staff'); renderStaffTable()" placeholder="輸入姓名搜尋">
+        <label>選擇人員：</label><select id="staff_filter_name_select" onchange="resetPage('staff'); renderStaffTable()">
+          <option value="">全部人員</option>
+        </select>
+        <label>狀態：</label>
+        <select id="staff_filter_status" onchange="resetPage('staff'); renderStaffTable()">
+          <option value="all">全部</option>
+          <option value="在職">在職</option>
+          <option value="離職">離職</option>
+        </select>
+      </div>
+      <div class="grid">
+        <div><label>姓名 <span class="required">*</span></label><input id="staff_name" required></div>
+        <div><label>電話</label><input id="staff_tel"></div>
+        <div><label>地址</label><input id="staff_addr"></div>
+        <div><label>身份證</label><input id="staff_id"></div>
+        <div><label>生日</label><input type="date" id="staff_birthday"></div>
+        <div><label>時薪 (填0為自動)</label><input id="staff_hourly" type="number" value="0" min="0" step="10" placeholder="0為自動計算"></div>
+        <div><label>勞保</label><input id="staff_labor" type="number" value="0" min="0"></div>
+        <div><label>健保</label><input id="staff_health" type="number" value="0" min="0"></div>
+        <div><label>備註</label><input id="staff_remark"></div>
+        <div><label>狀態</label><select id="staff_status"><option>在職</option><option>離職</option></select></div>
+      </div>
+      <button class="btn btn-success" onclick="addStaff()"><i class="fas fa-plus"></i> 新增</button>
+      <button class="btn btn-warning" onclick="updateStaff()" id="btnUpdateStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button>
+      <button class="btn btn-excel" onclick="exportExcel('staffTableBox','人員資料')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+      <button class="btn btn-pdf" onclick="exportPDF('staffTableBox','人員資料')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <table id="staffTableBox">
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>電話</th>
+            <th>地址</th>
+            <th>身份證</th>
+            <th>生日</th>
+            <th>時薪</th>
+            <th>勞保</th>
+            <th>健保</th>
+            <th>備註</th>
+            <th>狀態</th>
+            <th>累積時數</th>
+            <th>累積點數</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="staffTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-attend">
+      <div class="page-title">派遣記錄</div>
+      <div class="filter-bar">
+        <label>年</label><select id="filter_year" onchange="resetPage('attend'); renderAttend()"></select>
+        <label>月</label><select id="filter_month" onchange="resetPage('attend'); renderAttend()"></select>
+        <label>公司</label><select id="filter_company" onchange="resetPage('attend'); renderAttend()"></select>
+        <label>人員狀態</label><select id="filter_staff_status" onchange="resetPage('attend'); renderAttend()">
+          <option value="all">全部人員</option>
+          <option value="在職">僅在職</option>
+          <option value="離職">僅離職</option>
+        </select>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div><label>公司 <span class="required">*</span></label><select id="attend_company" required></select></div>
+        <div><label>人員 <span class="required">*</span></label><select id="attend_staff" required></select></div>
+        <div><label>日期 <span class="required">*</span></label><input type="date" id="attend_date" required></div>
+      </div>
+      <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div><label>上午上班</label><input type="time" id="am_s"></div>
+        <div><label>上午下班</label><input type="time" id="am_e"></div>
+        <div><label>下午上班</label><input type="time" id="pm_s"></div>
+        <div><label>下午下班</label><input type="time" id="pm_e"></div>
+      </div>
+      <button class="btn btn-success" onclick="addAttend()"><i class="fas fa-save"></i> 儲存</button>
+      <button class="btn btn-warning" onclick="clearAttendForm()"><i class="fas fa-eraser"></i> 清空</button>
+      <button class="btn btn-excel" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+      <button class="btn btn-pdf" onclick="exportPDF('attendTableBox','派遣記錄')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <table id="attendTableBox">
+        <thead><tr><th>公司</th><th>人員</th><th>日期</th><th>上午</th><th>下午</th><th>工時</th><th>點數</th><th>操作</th></tr></thead>
+        <tbody id="attendTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-point">
+      <div class="page-title">點數統計</div>
+      <div class="filter-bar">
+        <label>公司</label><select id="point_filter_company" onchange="resetPage('point'); renderPoint()"></select>
+        <button class="btn btn-success" onclick="resetPage('point'); renderPoint()"><i class="fas fa-chart-bar"></i> 統計</button>
+      </div>
+      <button class="btn btn-excel" onclick="exportExcel('pointTableBox','點數統計')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+      <button class="btn btn-pdf" onclick="exportPDF('pointTableBox','點數統計')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <table id="pointTableBox">
+        <thead><tr><th>公司</th><th>合約點數</th><th>已用</th><th>剩餘</th><th>狀態</th></tr></thead>
+        <tbody id="pointTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-bill">
+      <div class="page-title">對帳單</div>
+      <div class="filter-bar">
+        <label>公司</label><select id="bill_filter_company" onchange="resetPage('bill'); renderBill()"></select>
+        <label>年</label><select id="bill_filter_year" onchange="resetPage('bill'); renderBill()"></select>
+        <label>月</label><select id="bill_filter_month" onchange="resetPage('bill'); renderBill()"></select>
+      </div>
+      <div id="billSummary" style="margin-bottom:20px; font-size:16px; font-weight:bold;"></div>
+      <button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+      <button class="btn btn-pdf" onclick="exportPDF('billTableBox','對帳單')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-file-invoice"></i> 一鍵生成客戶對帳單</button>
+      <table id="billTableBox">
+        <thead><tr><th>日期</th><th>人員</th><th>工時</th><th>使用點數</th><th>剩餘時數</th><th>原儲值點數</th></tr></thead>
+        <tbody id="billTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-salary">
+      <div class="page-title">薪資計算</div>
+      <div class="filter-bar">
+        <label>人員</label><select id="sal_filter_staff" onchange="resetPage('salary'); renderSalary()"></select>
+        <label>年</label><select id="sal_filter_year" onchange="resetPage('salary'); renderSalary()"></select>
+        <label>月</label><select id="sal_filter_month" onchange="resetPage('salary'); renderSalary()"></select>
+      </div>
+      <div id="salResult" style="margin-top:20px; font-size:18px; font-weight:bold;"></div>
+      <div id="salDetailResult" style="margin:10px 0; font-size:16px;">
+        勞保扣除：<span id="salLabor">0</span> 元 | 健保扣除：<span id="salHealth">0</span> 元 | 實付金額：<span id="salNet" class="green">0</span> 元
+      </div>
+      <button class="btn btn-excel" onclick="exportExcel('salaryTableBox','薪資明細')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+      <button class="btn btn-pdf" onclick="exportPDF('salaryTableBox','薪資明細')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <table id="salaryTableBox">
+        <thead><tr><th>人員</th><th>日期</th><th>公司</th><th>工時</th><th>應計薪資</th><th>勞保</th><th>健保</th><th>實付金額</th></tr></thead>
+        <tbody id="salaryTable"></tbody>
+      </table>
+    </div>
+
+    <div class="page" id="page-boss">
+      <div class="page-title">老闆專區</div>
+      <div class="filter-bar">
+        <label>年</label><select id="boss_year" onchange="resetPage('boss'); showBoss()"></select>
+        <label>月</label><select id="boss_month" onchange="resetPage('boss'); showBoss()"></select>
+        <label>客戶</label><select id="boss_cust_filter" onchange="resetPage('boss'); showBoss()"></select>
+      </div>
+      <button class="btn btn-backup" onclick="backupAllData()"><i class="fas fa-download"></i> 備份所有數據</button>
+      <button class="btn btn-restore" onclick="document.getElementById('restoreFile').click()"><i class="fas fa-upload"></i> 還原數據</button>
+      <input type="file" id="restoreFile" accept=".json" onchange="restoreData(this)">
+      
+      <button class="btn btn-excel" onclick="exportExcel('bossTableBox','老闆專區報表')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+      <button class="btn btn-pdf" onclick="exportPDF('bossTableBox','老闆專區報表')"><i class="fas fa-file-pdf"></i> 匯出 PDF</button>
+      <table id="bossTableBox">
+        <thead><tr><th>合作狀態</th><th>客戶</th><th>方案</th><th>合約狀態</th><th>剩餘點數</th><th>已派遣時數</th></tr></thead>
+        <tbody id="bossTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== 全域變數 =====================
+let custData = JSON.parse(localStorage.getItem('custData') || '[]');
+let contractData = JSON.parse(localStorage.getItem('contractData') || '[]');
+let staffData = JSON.parse(localStorage.getItem('staffData') || '[]');
+let attendData = JSON.parse(localStorage.getItem('attendData') || '[]');
+// 新增：儲存 Logo 的全域變數
+let companyLogoBase64 = localStorage.getItem('companyLogo') || '';
+
+let editCustIndex = -1;
+let editContractIndex = -1;
+let editStaffIndex = -1;
+let editAttendIndex = -1;
+const pageConfig = {
+  pageSize: 10,
+  currentPage: {
+    customer: 1,
+    contract: 1,
+    staff: 1,
+    attend: 1,
+    point: 1,
+    bill: 1,
+    salary: 1,
+    boss: 1
+  }
+};
+// 價目表數據 - 對應提供的價目表
+const priceTable = {
+  "無購買時數(零工派遣)": { points: 0, packagePrice: 0, pointPrice: 400 },
+  "時數方案1": { points: 50, packagePrice: 17000, pointPrice: 340 },
+  "時數方案2": { points: 90, packagePrice: 30600, pointPrice: 340 },
+  "時數方案3": { points: 120, packagePrice: 40800, pointPrice: 340 },
+  "時數方案4": { points: 250, packagePrice: 85000, pointPrice: 340 },
+  "時數方案5": { points: 370, packagePrice: 122100, pointPrice: 330 },
+  "時數方案6": { points: 550, packagePrice: 181500, pointPrice: 330 },
+  "時數方案7": { points: 750, packagePrice: 247500, pointPrice: 330 },
+  "時數方案8": { points: 1000, packagePrice: 330000, pointPrice: 330 },
+  "客製化方案": { points: 0, packagePrice: 0, pointPrice: 0 },
+  "半年會員費": { points: 0, packagePrice: 0, pointPrice: 0 },
+  "每年會員費": { points: 0, packagePrice: 0, pointPrice: 0 }
+};
+// 會員類型價格
+const memberPrices = {
+  "半年會員費": { standard: 25000, pro: 38000 },
+  "每年會員費": { standard: 45000, pro: 70000 },
+  "愜易居標準會員": {
+    "時數方案1": 320, "時數方案2": 320, "時數方案3": 320, "時數方案4": 320,
+    "時數方案5": 320, "時數方案6": 320, "時數方案7": 320, "時數方案8": 320
+  },
+  "愜易居PRO企業會員": {
+    "時數方案1": 310, "時數方案2": 310, "時數方案3": 310, "時數方案4": 310,
+    "時數方案5": 310, "時數方案6": 310, "時數方案7": 310, "時數方案8": 310
+  }
+};
+// ===================== 分頁核心 =====================
+function resetPage(module) {
+  pageConfig.currentPage[module] = 1;
+}
+
+function getPagedData(list, module) {
+  const page = pageConfig.currentPage[module];
+  const start = (page - 1) * pageConfig.pageSize;
+  const end = start + pageConfig.pageSize;
+  return {
+    pagedList: list.slice(start, end),
+    total: list.length,
+    totalPages: Math.max(1, Math.ceil(list.length / pageConfig.pageSize))
+  };
+}
+
+function renderPagination(module, total, totalPages) {
+  const page = pageConfig.currentPage[module];
+  const tableBox = document.getElementById(`${module}TableBox`);
+  if(!tableBox) return;
+  // Dashboard 無分頁表單防錯處理
+  
+  const oldPager = tableBox.parentNode.querySelector('.pagination');
+  if (oldPager) oldPager.remove();
+  let html = `
+  <div class="pagination">
+    <button onclick="changePage('${module}', 1)" ${page===1 ? 'disabled' : ''}>首頁</button>
+    <button onclick="changePage('${module}', ${page-1})" ${page===1 ? 'disabled' : ''}>上一頁</button>
+    <span>第 ${page}/${totalPages} 頁 共 ${total} 筆</span>
+    <button onclick="changePage('${module}', ${page+1})" ${page>=totalPages ? 'disabled' : ''}>下一頁</button>
+    <button onclick="changePage('${module}', ${totalPages})" ${page>=totalPages ? 'disabled' : ''}>末頁</button>
+  </div>`;
+  tableBox.insertAdjacentHTML('afterend', html);
+}
+
+function changePage(module, targetPage) {
+  if(module === 'dashboard') {
+    renderDashboard();
+    return;
+  }
+
+  let filtered = [];
+  switch(module) {
+    case 'customer':
+      const fc = document.getElementById('cust_filter_company').value;
+      const fco = document.getElementById('cust_filter_coop').value;
+      filtered = custData.filter(x => (!fc || x.name===fc) && (fco==='all' || x.coop===fco));
+      break;
+    case 'contract':
+      const fcc = document.getElementById('contract_filter_company').value;
+      const fcco = document.getElementById('contract_filter_coop').value;
+      const okCust = fcco!=='all' ? custData.filter(x=>x.coop===fcco).map(x=>x.name) : custData.map(x=>x.name);
+      filtered = contractData.filter(x => (!fcc || x.customer===fcc) && okCust.includes(x.customer));
+      break;
+    case 'staff':
+      const fs = document.getElementById('staff_filter_status').value;
+      filtered = staffData.filter(x => fs==='all' || x.status===fs);
+      break;
+    case 'attend':
+      const y = document.getElementById('filter_year').value;
+      const m = document.getElementById('filter_month').value;
+      const c = document.getElementById('filter_company').value;
+      const ss = document.getElementById('filter_staff_status').value;
+      const sList = ss!=='all' ? staffData.filter(x=>x.status===ss).map(x=>x.name) : staffData.map(x=>x.name);
+      filtered = attendData.filter(x => 
+        (y==='all' || x.date.startsWith(y)) &&
+        (m==='all' || x.date.slice(5,7)===String(m).padStart(2,'0')) &&
+        (!c || x.company===c) && sList.includes(x.staff)
+      );
+      break;
+    case 'point':
+      const cp = document.getElementById('point_filter_company').value;
+      filtered = custData.filter(x => !cp || x.name===cp);
+      break;
+    case 'bill':
+      const cb = document.getElementById('bill_filter_company').value;
+      const yb = document.getElementById('bill_filter_year').value;
+      const mb = document.getElementById('bill_filter_month').value;
+      filtered = attendData.filter(x => 
+        (!cb || x.company===cb) &&
+        (yb==='all' || x.date.startsWith(yb)) &&
+        (mb==='all' || x.date.slice(5,7)===String(mb).padStart(2,'0'))
+      );
+      break;
+    case 'salary':
+      const s = document.getElementById('sal_filter_staff').value;
+      const ys = document.getElementById('sal_filter_year').value;
+      const ms = document.getElementById('sal_filter_month').value;
+      filtered = attendData.filter(x => 
+        (s==='all' || x.staff===s) &&
+        (ys==='all' || x.date.startsWith(ys)) &&
+        (ms==='all' || x.date.slice(5,7)===String(ms).padStart(2,'0'))
+      );
+      break;
+    case 'boss':
+      const cy = document.getElementById('boss_year').value;
+      const cm = document.getElementById('boss_month').value;
+      const ccust = document.getElementById('boss_cust_filter').value;
+      let arr = [];
+      let cs = ccust ? custData.filter(x=>x.name===ccust) : custData;
+      cs.forEach(cc => {
+        contractData.filter(co=>co.customer===cc.name).forEach(co => {
+          const dispatchHours = attendData.filter(x=>
+            x.company===cc.name &&
+            (cy==='all'||x.date.startsWith(cy)) &&
+            (cm==='all'||x.date.slice(5,7)===String(cm).padStart(2,'0'))
+          ).reduce((sum, item) => {
+            const hour = (+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e));
+            return sum + hour;
+          }, 0);
+          
+          const usedPoints=attendData
+            .filter(x=>x.company===cc.name)
+            .reduce((sum,item)=>{
+              const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+              return sum + Math.ceil(hour);
+            },0);
+          
+          const remainPoints=(+co.point||0) - usedPoints;
+          
+          arr.push({
+            cust:cc,
+            contract:co,
+            dispatchHours: dispatchHours.toFixed(1), 
+            remainPoints
+          });
+        });
+      });
+      filtered = arr;
+      break;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageConfig.pageSize));
+  if (targetPage < 1) targetPage = 1;
+  if (targetPage > totalPages) targetPage = totalPages;
+  pageConfig.currentPage[module] = targetPage;
+
+  switch(module) {
+    case 'customer': renderCustTable(); break;
+    case 'contract': renderContractTable(); break;
+    case 'staff': renderStaffTable(); break;
+    case 'attend': renderAttend(); break;
+    case 'point': renderPoint(); break;
+    case 'bill': renderBill(); break;
+    case 'salary': renderSalary(); break;
+    case 'boss': showBoss(); break;
+  }
+}
+
+// ===================== 初始化 =====================
+document.addEventListener('DOMContentLoaded', function () {
+  initNav();
+  renderAll();
+  fillFilters();
+  
+  // 核心更動：預設顯示為儀表板 (Dashboard)
+  showPage('dashboard', document.querySelector('[data-page="dashboard"]'));
+  
+  updateCurrentTime();
+  setInterval(updateCurrentTime, 1000);
+  
+  // 表單提交防重複
+  document.querySelectorAll('form, .grid').forEach(el => {
+    el.addEventListener('submit', (e) => {
+      e.preventDefault();
+    });
+  });
+});
+
+function updateCurrentTime() {
+  const now = new Date();
+  const timeStr = now.toLocaleString('zh-TW', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  document.getElementById('current-time').textContent = timeStr;
+}
+
+function initNav() {
+  document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const page = link.dataset.page;
+      showPage(page, link);
+    });
+  });
+}
+
+function showPage(page, link) {
+  // 切換頁面顯示
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  // 切換導航激活狀態
+  document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+  if (link) link.classList.add('active');
+  // 更新頁面標題
+  const titleMap = {
+    customer: '客戶資料管理',
+    contract: '合約方案',
+    staff: '派遣人員',
+    attend: '派遣記錄',
+    point: '點數統計',
+    bill: '對帳單',
+    salary: '薪資計算',
+    boss: '老闆專區',
+    dashboard: '總覽儀表板'
+  };
+  document.getElementById('main-title').textContent = titleMap[page] || page;
+  
+  // 頁面切換時重置表單與更新數據
+  if (page === 'customer') clearCustForm();
+  if (page === 'contract') clearContractForm();
+  if (page === 'staff') clearStaffForm();
+  if (page === 'attend') clearAttendForm();
+  if (page === 'dashboard') renderDashboard();
+}
+
+function renderAll() {
+  renderCustTable();
+  renderContractTable();
+  renderStaffTable();
+  renderAttend();
+  renderPoint();
+  renderDashboard();
+  updateLogoPreview(); // 初始化時更新 Logo 預覽
+}
+
+function fillFilters() {
+  const y = new Date().getFullYear();
+  const m = new Date().getMonth() + 1;
+  document.querySelectorAll('#filter_year,#bill_filter_year,#sal_filter_year,#boss_year').forEach(el => {
+    el.innerHTML = '<option value="all">全部</option>';
+    for (let i = y-2; i<=y; i++) el.innerHTML += `<option value="${i}" ${i==y ? 'selected' : ''}>${i}</option>`;
+  });
+  document.querySelectorAll('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month').forEach(el => {
+    el.innerHTML = '<option value="all">全部</option>';
+    for (let i=1; i<=12; i++) el.innerHTML += `<option value="${i}" ${i==m ? 'selected' : ''}>${i}月</option>`;
+  });
+  document.querySelectorAll('#cust_filter_company,#contract_filter_company,#filter_company,#point_filter_company,#bill_filter_company,#con_customer,#attend_company').forEach(el => {
+    el.innerHTML = '<option value="">全部</option>';
+    custData.forEach(c => el.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+  });
+  document.getElementById('boss_cust_filter').innerHTML = '<option value="" selected>全部客戶</option>';
+  custData.forEach(c => document.getElementById('boss_cust_filter').innerHTML += `<option value="${c.name}">${c.name}</option>`);
+  document.querySelectorAll('#sal_filter_staff,#attend_staff').forEach(el => {
+    el.innerHTML = '<option value="all" selected>全部人員</option><optgroup label="在職">';
+    staffData.filter(s=>s.status==='在職').forEach(s => el.innerHTML += `<option value="${s.name}">${s.name}</option>`);
+    el.innerHTML += '</optgroup><optgroup label="離職">';
+    staffData.filter(s=>s.status==='離職').forEach(s => el.innerHTML += `<option value="${s.name}">${s.name}</option>`);
+    el.innerHTML += '</optgroup>';
+  });
+}
+
+function saveAll() {
+  try {
+    localStorage.setItem('custData', JSON.stringify(custData));
+    localStorage.setItem('contractData', JSON.stringify(contractData));
+    localStorage.setItem('staffData', JSON.stringify(staffData));
+    localStorage.setItem('attendData', JSON.stringify(attendData));
+    console.log('數據儲存成功 - ' + new Date().toLocaleString());
+  } catch (e) {
+    alert('儲存失敗：本機儲存空間不足，請清理瀏覽器快取');
+    console.error('儲存錯誤:', e);
+  }
+}
+
+function updatePriceByPlan() {
+  const memberType = document.getElementById('co_member_type').value;
+  const pricePlan = document.getElementById('co_price_plan').value;
+  document.getElementById('co_package_price').value = '';
+  document.getElementById('co_point_price').value = '';
+  document.getElementById('co_point').value = '0';
+  document.getElementById('co_price').value = '0';
+  
+  if (!pricePlan) return;
+  const planData = priceTable[pricePlan];
+  if (!planData) return;
+  
+  document.getElementById('co_package_price').value = planData.packagePrice;
+  document.getElementById('co_point').value = planData.points;
+  let pointPrice = planData.pointPrice;
+  if (memberType && memberPrices[memberType] && memberPrices[memberType][pricePlan]) {
+    pointPrice = memberPrices[memberType][pricePlan];
+  }
+  
+  if (memberType === '半年會員費' || memberType === '每年會員費') {
+    const memberPrice = memberPrices[memberType].standard;
+    document.getElementById('co_price').value = memberPrice;
+    document.getElementById('co_point_price').value = 0;
+  } else {
+    document.getElementById('co_point_price').value = pointPrice;
+    if (planData.points > 0 && pointPrice > 0) {
+      document.getElementById('co_price').value = planData.points * pointPrice;
+    }
+  }
+}
+
+function backupAllData() {
+  const backupData = {
+    version: "1.0",
+    backupTime: new Date().toISOString(),
+    data: {
+      custData: custData,
+      contractData: contractData,
+      staffData: staffData,
+      attendData: attendData
+    }
+  };
+  try {
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const dateStr = new Date().toLocaleDateString().replace(/\//g, '-');
+    a.download = `派遣人員管理系統備份_${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    alert('數據備份成功！文件已下載到您的電腦中。');
+  } catch (e) {
+    alert('備份失敗：' + e.message);
+    console.error('備份錯誤:', e);
+  }
+}
+
+function restoreData(fileInput) {
+  if (!fileInput.files || !fileInput.files[0]) {
+    alert('請選擇備份文件！');
+    return;
+  }
+  
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backupData = JSON.parse(e.target.result);
+      if (!backupData.version || !backupData.data) {
+        throw new Error('備份文件格式不正確');
+      }
+      if (!confirm(`確認要還原備份數據嗎？\n備份時間：${new Date(backupData.backupTime).toLocaleString()}\n⚠️ 當前數據將被覆蓋！`)) {
+        return;
+      }
+      custData = backupData.data.custData || [];
+      contractData = backupData.data.contractData || [];
+      staffData = backupData.data.staffData || [];
+      attendData = backupData.data.attendData || [];
+      saveAll();
+      renderAll();
+      fillFilters();
+      alert('數據還原成功！所有頁面已更新。');
+    } catch (error) {
+      alert(`還原失敗：${error.message}\n請確認選擇的是正確的備份文件。`);
+      console.error('還原錯誤:', error);
+    } finally {
+      fileInput.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function getHours(s,e){
+  if(!s||!e) return 0;
+  try {
+    let [sh,sm] = s.split(':').map(Number);
+    let [eh,em] = e.split(':').map(Number);
+    let min = (eh*60+em) - (sh*60+sm);
+    if(min < 0) min += 1440;
+    return (min/60).toFixed(1);
+  } catch (e) {
+    return 0;
+  }
+}
+
+// ==== 計算派遣人員歷史總工時 (新功能) ====
+function getStaffTotalHours(name) {
+  return attendData.filter(x=>x.staff===name).reduce((sum,item)=>{
+    return sum + (+getHours(item.am_s,item.am_e) + +getHours(item.pm_s,item.pm_e));
+  },0);
+}
+
+// ==== 計算自動加薪級距 (新功能) ====
+function getStaffTieredHourly(name) {
+  const h = getStaffTotalHours(name);
+  if (h <= 175) return 210;
+  if (h <= 350) return 220;
+  if (h <= 525) return 230;
+  if (h <= 700) return 240;
+  return 250;
+}
+
+function getStaffTotalPoint(name) {
+  return attendData.filter(x=>x.staff===name).reduce((sum,item)=>{
+    return sum + Math.ceil(+getHours(item.am_s,item.am_e) + +getHours(item.pm_s,item.pm_e));
+  },0);
+}
+
+function getPointAlertClass(p){
+  return [120,175,350,525,700,875].some(lv=>p>=lv) ? 'red' : '';
+}
+
+function checkStaffPointAlert(name){
+  const p = getStaffTotalPoint(name);
+  const hit = [120,175,350,525,700,875].filter(lv=>p>=lv).pop();
+  if(hit) alert(`⚠️人員「${name}」累積點數 ${p} 點，已達 ${hit} 點門檻`);
+}
+
+// ===================== 客戶相關函數 =====================
+function renderCustTable(){
+  const fc = document.getElementById('cust_filter_company').value;
+  const fco = document.getElementById('cust_filter_coop').value;
+  let list = custData.filter(x => (!fc || x.name===fc) && (fco==='all' || x.coop===fco));
+  const {pagedList, total, totalPages} = getPagedData(list, 'customer');
+  let html = '';
+  pagedList.forEach((item,i)=>{
+    const idx = custData.findIndex(x=>x.name===item.name);
+    html+=`<tr>
+      <td>${item.coop}</td>
+      <td>${item.name}</td>
+      <td>${item.industry||'-'}</td>
+      <td>${item.user||'-'}</td>
+      <td>${item.tel||'-'}</td>
+      <td>${item.addr||'-'}</td>
+      <td>${item.tax||'-'}</td>
+      <td>${item.goods||'-'}</td>
+      <td>${item.account||'-'}</td>
+      <td>${item.pwd?'******':'-'}</td>
+      <td>${item.url||'-'}</td>
+      <td>${item.remark||'-'}</td>
+      <td>
+        <button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i> 修改</button>
+        <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i> 刪除</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('custTable').innerHTML = html || '<tr><td colspan=13>無資料</td></tr>';
+  renderPagination('customer', total, totalPages);
+  fillFilters(); 
+  if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+}
+
+function addCust(){
+  const o = {
+    name: document.getElementById('c_name').value.trim(),
+    industry: document.getElementById('c_industry').value.trim(),
+    user: document.getElementById('c_user').value.trim(),
+    tel: document.getElementById('c_tel').value.trim(),
+    addr: document.getElementById('c_addr').value.trim(),
+    tax: document.getElementById('c_tax').value.trim(),
+    goods: document.getElementById('c_goods').value.trim(),
+    account: document.getElementById('c_account').value.trim(),
+    pwd: document.getElementById('c_pwd').value.trim(),
+    url: document.getElementById('c_url').value.trim(),
+    remark: document.getElementById('c_remark').value.trim(),
+    coop: document.getElementById('c_coop').value
+  };
+  if(!o.name){alert('請輸入客戶名稱');return;}
+  if(custData.some(x => x.name === o.name)) {
+    alert('此客戶名稱已存在，請使用其他名稱');
+    return;
+  }
+  custData.push(o); 
+  saveAll(); 
+  resetPage('customer'); 
+  renderCustTable(); 
+  clearCustForm();
+  alert('新增成功');
+}
+
+function editCust(i){
+  const d = custData[i];
+  document.getElementById('c_name').value = d.name;
+  document.getElementById('c_industry').value = d.industry||'';
+  document.getElementById('c_user').value = d.user||'';
+  document.getElementById('c_tel').value = d.tel||'';
+  document.getElementById('c_addr').value = d.addr||'';
+  document.getElementById('c_tax').value = d.tax||'';
+  document.getElementById('c_goods').value = d.goods||'';
+  document.getElementById('c_account').value = d.account||'';
+  document.getElementById('c_pwd').value = d.pwd||'';
+  document.getElementById('c_url').value = d.url||'';
+  document.getElementById('c_remark').value = d.remark||'';
+  document.getElementById('c_coop').value = d.coop;
+  editCustIndex = i;
+  document.getElementById('btnUpdateCust').style.display='inline-block';
+}
+
+function updateCust(){
+  if(editCustIndex<0)return;
+  const o = {
+    name: document.getElementById('c_name').value.trim(),
+    industry: document.getElementById('c_industry').value.trim(),
+    user: document.getElementById('c_user').value.trim(),
+    tel: document.getElementById('c_tel').value.trim(),
+    addr: document.getElementById('c_addr').value.trim(),
+    tax: document.getElementById('c_tax').value.trim(),
+    goods: document.getElementById('c_goods').value.trim(),
+    account: document.getElementById('c_account').value.trim(),
+    pwd: document.getElementById('c_pwd').value.trim(),
+    url: document.getElementById('c_url').value.trim(),
+    remark: document.getElementById('c_remark').value.trim(),
+    coop: document.getElementById('c_coop').value
+  };
+  if(!o.name){alert('請輸入客戶名稱');return;}
+  const duplicate = custData.some((x, idx) => x.name === o.name && idx !== editCustIndex);
+  if(duplicate) {
+    alert('此客戶名稱已存在，請使用其他名稱');
+    return;
+  }
+  custData[editCustIndex] = o; 
+  saveAll(); 
+  resetPage('customer'); 
+  renderCustTable(); 
+  clearCustForm(); 
+  alert('修改成功');
+}
+
+function delCust(i){
+  if(!confirm('確定刪除？刪除後相關合約和記錄也將失效'))return;
+  custData.splice(i,1);
+  saveAll();
+  resetPage('customer');
+  renderCustTable();
+}
+
+function clearCustForm(){
+  document.getElementById('c_name').value='';
+  document.getElementById('c_industry').value='';
+  document.getElementById('c_user').value='';
+  document.getElementById('c_tel').value='';
+  document.getElementById('c_addr').value='';
+  document.getElementById('c_tax').value='';
+  document.getElementById('c_goods').value='';
+  document.getElementById('c_account').value='';
+  document.getElementById('c_pwd').value='';
+  document.getElementById('c_url').value='';
+  document.getElementById('c_remark').value='';
+  document.getElementById('c_coop').value='正合作';
+  editCustIndex=-1;
+  document.getElementById('btnUpdateCust').style.display='none';
+}
+
+// ===================== 合約相關函數 =====================
+function renderContractTable(){
+  const fc = document.getElementById('contract_filter_company').value;
+  const fco = document.getElementById('contract_filter_coop').value;
+  const okCust = fco!=='all' ? custData.filter(x=>x.coop===fco).map(x=>x.name) : custData.map(x=>x.name);
+  let list = contractData.filter(x => (!fc || x.customer===fc) && okCust.includes(x.customer));
+  const {pagedList, total, totalPages} = getPagedData(list, 'contract');
+  let html='';
+  pagedList.forEach(item=>{
+    const idx = contractData.findIndex(x=>x.customer===item.customer&&x.price_plan===item.price_plan&&x.date===item.date);
+    html+=`<tr>
+      <td>${item.customer}</td>
+      <td>${custData.find(x=>x.name===item.customer)?.coop||'-'}</td>
+      <td>${item.service||'-'}</td>
+      <td>${item.member_type||'-'}</td>
+      <td>${item.price_plan||'-'}</td>
+      <td>${item.package_price||0}</td>
+      <td>${item.point_price||0}</td>
+      <td>${item.price||0}</td>
+      <td>${item.point||0}</td>
+      <td>${item.invoice_date||'-'}</td>
+      <td>${item.payment_date||'-'}</td>
+      <td>${item.date||'-'}</td>
+      <td>${item.status}</td>
+      <td>${item.remark||'-'}</td>
+      <td>
+        <button class="btn-sm btn-warning" onclick="editContract(${idx})"><i class="fas fa-edit"></i> 修改</button>
+        <button class="btn-sm btn-pdf" onclick="delContract(${idx})"><i class="fas fa-trash"></i> 刪除</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('contractTable').innerHTML = html || '<tr><td colspan=15>無資料</td></tr>';
+  renderPagination('contract', total, totalPages); 
+  if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+}
+
+function addContract(){
+  const o={
+    customer: document.getElementById('con_customer').value,
+    service: document.getElementById('co_service').value.trim(),
+    date: document.getElementById('co_date').value,
+    member_type: document.getElementById('co_member_type').value,
+    price_plan: document.getElementById('co_price_plan').value,
+    package_price: document.getElementById('co_package_price').value,
+    point_price: document.getElementById('co_point_price').value,
+    price: document.getElementById('co_price').value,
+    point: document.getElementById('co_point').value,
+    invoice_date: document.getElementById('co_invoice_date').value,
+    payment_date: document.getElementById('co_payment_date').value,
+    remark: document.getElementById('co_remark').value.trim(),
+    status: document.getElementById('co_status').value
+  };
+  if(!o.customer||!o.price_plan){alert('請填公司與價目方案');return;}
+  if(!o.date) {alert('請選擇簽約日期');return;}
+  
+  contractData.push(o);
+  saveAll();
+  resetPage('contract');
+  renderContractTable();
+  clearContractForm();
+  alert('儲存成功');
+}
+
+function editContract(i){
+  const d=contractData[i];
+  document.getElementById('con_customer').value=d.customer;
+  document.getElementById('co_service').value=d.service||'';
+  document.getElementById('co_date').value=d.date||'';
+  document.getElementById('co_member_type').value=d.member_type||'';
+  document.getElementById('co_price_plan').value=d.price_plan||'';
+  document.getElementById('co_package_price').value=d.package_price||'';
+  document.getElementById('co_point_price').value=d.point_price||'';
+  document.getElementById('co_price').value=d.price||0;
+  document.getElementById('co_point').value=d.point||0;
+  document.getElementById('co_invoice_date').value=d.invoice_date||'';
+  document.getElementById('co_payment_date').value=d.payment_date||'';
+  document.getElementById('co_remark').value=d.remark||'';
+  document.getElementById('co_status').value=d.status;
+  editContractIndex=i;
+  document.getElementById('btnUpdateContract').style.display='inline-block';
+}
+
+function updateContract(){
+  if(editContractIndex<0)return addContract();
+  const o={
+    customer: document.getElementById('con_customer').value,
+    service: document.getElementById('co_service').value.trim(),
+    date: document.getElementById('co_date').value,
+    member_type: document.getElementById('co_member_type').value,
+    price_plan: document.getElementById('co_price_plan').value,
+    package_price: document.getElementById('co_package_price').value,
+    point_price: document.getElementById('co_point_price').value,
+    price: document.getElementById('co_price').value,
+    point: document.getElementById('co_point').value,
+    invoice_date: document.getElementById('co_invoice_date').value,
+    payment_date: document.getElementById('co_payment_date').value,
+    remark: document.getElementById('co_remark').value.trim(),
+    status: document.getElementById('co_status').value
+  };
+  if(!o.customer||!o.price_plan){alert('請填公司與價目方案');return;}
+  
+  contractData[editContractIndex]=o;
+  saveAll();
+  resetPage('contract');
+  renderContractTable();
+  clearContractForm();
+  alert('修改成功');
+}
+
+function delContract(i){
+  if(!confirm('確定刪除？刪除後相關點數統計將受影響'))return;
+  contractData.splice(i,1);
+  saveAll();
+  resetPage('contract');
+  renderContractTable();
+}
+
+function clearContractForm(){
+  document.getElementById('con_customer').value='';
+  document.getElementById('co_service').value='';
+  document.getElementById('co_date').value='';
+  document.getElementById('co_member_type').value='';
+  document.getElementById('co_price_plan').value='';
+  document.getElementById('co_package_price').value='';
+  document.getElementById('co_point_price').value='';
+  document.getElementById('co_price').value='0';
+  document.getElementById('co_point').value='0';
+  document.getElementById('co_invoice_date').value='';
+  document.getElementById('co_payment_date').value='';
+  document.getElementById('co_remark').value='';
+  document.getElementById('co_status').value='正常';
+  editContractIndex=-1;
+  document.getElementById('btnUpdateContract').style.display='none';
+}
+
+// ===================== 人員相關函數 =====================
+function renderStaffTable(){
+  const fs=document.getElementById('staff_filter_status').value;
+  let list=staffData.filter(x=>fs==='all'||x.status===fs);
+  const {pagedList, total, totalPages}=getPagedData(list,'staff');
+  let html='';
+  pagedList.forEach(item=>{
+    const idx=staffData.findIndex(x=>x.name===item.name);
+    const tp=getStaffTotalPoint(item.name);
+    const th=getStaffTotalHours(item.name); // 取得實際累積總工時
+    const cls=getPointAlertClass(tp);
+    
+    // 動態判斷時薪顯示方式
+    let displayHourly = +item.hourly || 0;
+    if (displayHourly === 0) {
+        displayHourly = `<span style="color:#2d9d5c; font-weight:bold;">${getStaffTieredHourly(item.name)}</span>`;
+    }
+
+    html+=`<tr>
+      <td>${item.name}</td>
+      <td>${item.tel||'-'}</td>
+      <td>${item.addr||'-'}</td>
+      <td>${item.id||'-'}</td>
+      <td>${item.birthday||'-'}</td>
+      <td>${displayHourly}</td>
+      <td>${item.labor||0}</td>
+      <td>${item.health||0}</td>
+      <td>${item.remark||'-'}</td>
+      <td>${item.status}</td>
+      <td>${th.toFixed(1)} h</td>
+      <td class="${cls}">${tp}</td>
+      <td>
+        <button class="btn-sm btn-warning" onclick="editStaff(${idx})"><i class="fas fa-edit"></i> 修改</button>
+        <button class="btn-sm btn-pdf" onclick="delStaff(${idx})"><i class="fas fa-trash"></i> 刪除</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('staffTable').innerHTML=html||'<tr><td colspan="13">無資料</td></tr>';
+  renderPagination('staff',total,totalPages); fillFilters(); 
+  if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
+}
+
+function addStaff(){
+  const o={
+    name: document.getElementById('staff_name').value.trim(),
+    tel: document.getElementById('staff_tel').value.trim(),
+    addr: document.getElementById('staff_addr').value.trim(),
+    id: document.getElementById('staff_id').value.trim(),
+    birthday: document.getElementById('staff_birthday').value,
+    hourly: document.getElementById('staff_hourly').value,
+    labor: document.getElementById('staff_labor').value,
+    health: document.getElementById('staff_health').value,
+    remark: document.getElementById('staff_remark').value.trim(),
+    status: document.getElementById('staff_status').value
+  };
+  if(!o.name){alert('請輸入姓名');return;}
+  if(staffData.some(x => x.name === o.name)) {alert('此人員姓名已存在，請使用其他姓名');return;}
+  staffData.push(o);
+  saveAll();
+  resetPage('staff');
+  renderStaffTable();
+  clearStaffForm();
+  alert('新增成功');
+}
+
+function editStaff(i){
+  const d=staffData[i];
+  document.getElementById('staff_name').value=d.name;
+  document.getElementById('staff_tel').value=d.tel||'';
+  document.getElementById('staff_addr').value=d.addr||'';
+  document.getElementById('staff_id').value=d.id||'';
+  document.getElementById('staff_birthday').value=d.birthday||'';
+  document.getElementById('staff_hourly').value=d.hourly||0;
+  document.getElementById('staff_labor').value=d.labor||0;
+  document.getElementById('staff_health').value=d.health||0;
+  document.getElementById('staff_remark').value=d.remark||'';
+  document.getElementById('staff_status').value=d.status;
+  editStaffIndex=i;
+  document.getElementById('btnUpdateStaff').style.display='inline-block';
+}
+
+function updateStaff(){
+  if(editStaffIndex<0)return;
+  const o={
+    name: document.getElementById('staff_name').value.trim(),
+    tel: document.getElementById('staff_tel').value.trim(),
+    addr: document.getElementById('staff_addr').value.trim(),
+    id: document.getElementById('staff_id').value.trim(),
+    birthday: document.getElementById('staff_birthday').value,
+    hourly: document.getElementById('staff_hourly').value,
+    labor: document.getElementById('staff_labor').value,
+    health: document.getElementById('staff_health').value,
+    remark: document.getElementById('staff_remark').value.trim(),
+    status: document.getElementById('staff_status').value
+  };
+  if(!o.name){alert('請輸入姓名');return;}
+  const duplicate = staffData.some((x, idx) => x.name === o.name && idx !== editStaffIndex);
+  if(duplicate) {alert('此人員姓名已存在，請使用其他姓名');return;}
+  staffData[editStaffIndex]=o;
+  saveAll();
+  resetPage('staff');
+  renderStaffTable();
+  clearStaffForm();
+  alert('修改成功');
+}
+
+function delStaff(i){
+  const staffName = staffData[i].name;
+  const hasAttend = attendData.some(x => x.staff === staffName);
+  if(hasAttend && !confirm('此人員有派遣記錄，刪除後相關記錄將無法對應，確定刪除？')) return;
+  if(!confirm('確定刪除？'))return;
+  staffData.splice(i,1);
+  saveAll();
+  resetPage('staff');
+  renderStaffTable();
+}
+
+function clearStaffForm(){
+  document.getElementById('staff_name').value='';
+  document.getElementById('staff_tel').value='';
+  document.getElementById('staff_addr').value='';
+  document.getElementById('staff_id').value='';
+  document.getElementById('staff_birthday').value='';
+  document.getElementById('staff_hourly').value='0';
+  document.getElementById('staff_labor').value='0';
+  document.getElementById('staff_health').value='0';
+  document.getElementById('staff_remark').value='';
+  document.getElementById('staff_status').value='在職';
+  editStaffIndex=-1;
+  document.getElementById('btnUpdateStaff').style.display='none';
+}
+
+// ===================== 派遣記錄相關函數 =====================
+function renderAttend(){
+  const y=document.getElementById('filter_year').value;
+  const m=document.getElementById('filter_month').value;
+  const c=document.getElementById('filter_company').value;
+  const ss=document.getElementById('filter_staff_status').value;
+  const sList=ss!=='all'?staffData.filter(x=>x.status===ss).map(x=>x.name):staffData.map(x=>x.name);
+  let list=attendData.filter(x=>
+    (y==='all'||x.date.startsWith(y)) &&
+    (m==='all'||x.date.slice(5,7)===String(m).padStart(2,'0')) &&
+    (!c||x.company===c) && sList.includes(x.staff)
+  );
+  const {pagedList, total, totalPages}=getPagedData(list,'attend');
+  let html='';
+  
+  pagedList.forEach(item=>{
+    const idx=attendData.findIndex(x=>
+      x.company===item.company && x.staff===item.staff && x.date===item.date
+    );
+    const am=item.am_s&&item.am_e?`${item.am_s}-${item.am_e}`:'-';
+    const pm=item.pm_s&&item.pm_e?`${item.pm_s}-${item.pm_e}`:'-';
+    const hour=((+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e))).toFixed(1);
+    const point=Math.ceil(+hour);
+    
+    html+=`<tr>
+      <td>${item.company}</td>
+      <td>${item.staff}</td>
+      <td>${item.date}</td>
+      <td>${am}</td>
+      <td>${pm}</td>
+      <td>${hour}</td>
+      <td>${point}</td>
+      <td>
+        <button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i> 修改</button>
+        <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i> 刪除</button>
+      </td>
+    </tr>`;
+  });
+  document.getElementById('attendTable').innerHTML=html||'<tr><td colspan=8>無派遣記錄</td></tr>';
+  renderPagination('attend', total, totalPages);
+}
+
+function addAttend(){
+  const o={
+    company: document.getElementById('attend_company').value,
+    staff: document.getElementById('attend_staff').value,
+    date: document.getElementById('attend_date').value,
+    am_s: document.getElementById('am_s').value,
+    am_e: document.getElementById('am_e').value,
+    pm_s: document.getElementById('pm_s').value,
+    pm_e: document.getElementById('pm_e').value
+  };
+  if(!o.company||!o.staff||!o.date){alert('請填寫公司、人員、日期');return;}
+  if(!o.am_s && !o.am_e && !o.pm_s && !o.pm_e) {alert('請至少填寫一個工時區段');return;}
+  
+  const isDuplicate=attendData.some(x=>x.company===o.company && x.staff===o.staff && x.date===o.date);
+  if(isDuplicate){
+    if(!confirm('此日期已有派遣記錄，是否覆蓋？'))return;
+    const idx=attendData.findIndex(x=>x.company===o.company && x.staff===o.staff && x.date===o.date);
+    attendData[idx]=o;
+  }else{
+    attendData.push(o);
+  }
+  
+  saveAll();
+  resetPage('attend');
+  renderAttend();
+  clearAttendForm();
+  checkStaffPointAlert(o.staff);
+  alert('儲存成功');
+}
+
+function editAttend(i){
+  const d=attendData[i];
+  document.getElementById('attend_company').value=d.company;
+  document.getElementById('attend_staff').value=d.staff;
+  document.getElementById('attend_date').value=d.date;
+  document.getElementById('am_s').value=d.am_s||'';
+  document.getElementById('am_e').value=d.am_e||'';
+  document.getElementById('pm_s').value=d.pm_s||'';
+  document.getElementById('pm_e').value=d.pm_e||'';
+  editAttendIndex=i;
+}
+
+function delAttend(i){
+  if(!confirm('確定刪除此派遣記錄？刪除後點數統計和薪資計算將受影響'))return;
+  attendData.splice(i,1);
+  saveAll();
+  resetPage('attend');
+  renderAttend();
+}
+
+function clearAttendForm(){
+  document.getElementById('attend_company').value='';
+  document.getElementById('attend_staff').value='';
+  document.getElementById('attend_date').value='';
+  document.getElementById('am_s').value='';
+  document.getElementById('am_e').value='';
+  document.getElementById('pm_s').value='';
+  document.getElementById('pm_e').value='';
+  editAttendIndex=-1;
+}
+
+// ===================== 點數統計相關函數 =====================
+function renderPoint(){
+  const cp=document.getElementById('point_filter_company').value;
+  let list=custData.filter(x=>!cp||x.name===cp);
+  const {pagedList, total, totalPages}=getPagedData(list,'point');
+  
+  let html='';
+  pagedList.forEach(cust=>{
+    const contractPoints=contractData
+      .filter(x=>x.customer===cust.name)
+      .reduce((sum,item)=>sum+(+item.point||0),0);
+    const usedPoints=attendData
+      .filter(x=>x.company===cust.name)
+      .reduce((sum,item)=>{
+        const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+        return sum + Math.ceil(hour);
+      },0);
+    const remainPoints=contractPoints - usedPoints;
+    const statusClass=remainPoints<0?'red':'green';
+    const statusText=remainPoints<0?'不足':'充足';
+    
+    html+=`<tr>
+      <td>${cust.name}</td>
+      <td>${contractPoints}</td>
+      <td>${usedPoints}</td>
+      <td class="${statusClass}">${remainPoints}</td>
+      <td>${statusText}</td>
+    </tr>`;
+  });
+  document.getElementById('pointTable').innerHTML=html||'<tr><td colspan=5>無統計資料</td></tr>';
+  renderPagination('point', total, totalPages);
+}
+
+// ===================== 對帳單相關函數 =====================
+function renderBill(){
+  const cb=document.getElementById('bill_filter_company').value;
+  const yb=document.getElementById('bill_filter_year').value;
+  const mb=document.getElementById('bill_filter_month').value;
+  if(!cb){alert('請選擇公司');return;}
+  
+  let list=attendData.filter(x=>
+    x.company===cb &&
+    (yb==='all'||x.date.startsWith(yb)) &&
+    (mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))
+  );
+  const {pagedList, total, totalPages}=getPagedData(list,'bill');
+  
+  const totalHours=list.reduce((sum,item)=>{
+    return sum + (+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+  },0);
+  const totalPoints=list.reduce((sum,item)=>{
+    const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+    return sum + Math.ceil(hour);
+  },0);
+  const contractPoints=contractData
+    .filter(x=>x.customer===cb)
+    .reduce((sum,item)=>sum+(+item.point||0),0);
+  
+  const remainPoints=contractPoints - totalPoints;
+  
+  document.getElementById('billSummary').innerHTML=`
+    客戶：${cb} | 統計期間：${yb==='all'?'全部年份':yb}年${mb==='all'?'全部月份':mb+'月'} | 
+    總工時：${totalHours.toFixed(1)}小時 | 使用點數：${totalPoints}點 | 
+    合約總點數：${contractPoints}點 | 剩餘點數：<span class="${remainPoints<0?'red':'green'}">${remainPoints}</span>點
+  `;
+  
+  let html='';
+  pagedList.forEach(item=>{
+    const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e)).toFixed(1);
+    const point=Math.ceil(+hour);
+    html+=`<tr>
+      <td>${item.date}</td>
+      <td>${item.staff}</td>
+      <td>${hour}</td>
+      <td>${point}</td>
+      <td>${contractPoints - point}</td>
+      <td>${contractPoints}</td>
+    </tr>`;
+  });
+  document.getElementById('billTable').innerHTML=html||'<tr><td colspan=6>無對帳資料</td></tr>';
+  renderPagination('bill', total, totalPages);
+}
+
+// ===================== 薪資計算相關函數 =====================
+function renderSalary(){
+  const s=document.getElementById('sal_filter_staff').value;
+  const ys=document.getElementById('sal_filter_year').value;
+  const ms=document.getElementById('sal_filter_month').value;
+  let list=[];
+  let totalSummary = { totalHour: 0, totalSalary: 0, totalLabor: 0, totalHealth: 0, totalNet: 0 };
+  if(s==='all'){
+    list=attendData.filter(x=>
+      (ys==='all'||x.date.startsWith(ys)) &&
+      (ms==='all'||x.date.slice(5,7)===String(ms).padStart(2,'0'))
+    );
+  }else{
+    const staff=staffData.find(x=>x.name===s);
+    if(!staff){alert('找不到此人員資料');return;}
+    list=attendData.filter(x=>
+      x.staff===s &&
+      (ys==='all'||x.date.startsWith(ys)) &&
+      (ms==='all'||x.date.slice(5,7)===String(ms).padStart(2,'0'))
+    );
+  }
+  
+  const {pagedList, total, totalPages}=getPagedData(list,'salary');
+  
+  let html='';
+  pagedList.forEach(item=>{
+    const staff=staffData.find(x=>x.name===item.staff);
+    if(!staff) return;
+    
+    // 動態取得時薪 (如果是 0，就採用自動等級計算)
+    let hourly = +staff.hourly || 0;
+    if (hourly === 0) hourly = getStaffTieredHourly(staff.name);
+    
+    const labor=+staff.labor||0;
+    const health=+staff.health||0;
+    const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+    
+    totalSummary.totalHour+=hour;
+    const salary=(hour * hourly).toFixed(0);
+    totalSummary.totalSalary+=+salary;
+    totalSummary.totalLabor+=labor;
+    totalSummary.totalHealth+=health;
+    const net = (salary - labor - health).toFixed(0);
+    totalSummary.totalNet+=+net;
+    
+    html+=`<tr>
+      <td>${item.staff}</td>
+      <td>${item.date}</td>
+      <td>${item.company}</td>
+      <td>${hour.toFixed(1)}</td>
+      <td>${salary} <span style="font-size:12px;color:#888;">(${hourly}/h)</span></td>
+      <td>${labor}</td>
+      <td>${health}</td>
+      <td>${net}</td>
+    </tr>`;
+  });
+  if(s==='all'){
+    document.getElementById('salResult').innerHTML=`
+      人員：全部人員 | 統計期間：${ys==='all'?'全部年份':ys}年${ms==='all'?'全部月份':ms+'月'} | 
+      總工時：${totalSummary.totalHour.toFixed(1)}小時 | 總薪資：${totalSummary.totalSalary.toFixed(0)}元
+    `;
+  }else{
+    document.getElementById('salResult').innerHTML=`
+      人員：${s} | 統計期間：${ys==='all'?'全部年份':ys}年${ms==='all'?'全部月份':ms+'月'} |
+      總工時：${totalSummary.totalHour.toFixed(1)}小時 | 總薪資：${totalSummary.totalSalary.toFixed(0)}元
+    `;
+  }
+  
+  document.getElementById('salLabor').textContent=totalSummary.totalLabor.toFixed(0);
+  document.getElementById('salHealth').textContent=totalSummary.totalHealth.toFixed(0);
+  document.getElementById('salNet').textContent=totalSummary.totalNet.toFixed(0);
+  
+  document.getElementById('salaryTable').innerHTML=html||'<tr><td colspan=8>無薪資資料</td></tr>';
+  renderPagination('salary', total, totalPages);
+}
+
+// ===================== 老闆專區相關函數 =====================
+function showBoss(){
+  const cy=document.getElementById('boss_year').value;
+  const cm=document.getElementById('boss_month').value;
+  const ccust=document.getElementById('boss_cust_filter').value;
+  
+  let arr = [];
+  let cs = ccust ? custData.filter(x=>x.name===ccust) : custData;
+  cs.forEach(cc => {
+    contractData.filter(co=>co.customer===cc.name).forEach(co => {
+      const dispatchHours=attendData.filter(x=>
+        x.company===cc.name &&
+        (cy==='all'||x.date.startsWith(cy)) &&
+        (cm==='all'||x.date.slice(5,7)===String(cm).padStart(2,'0'))
+      ).reduce((sum, item) => {
+        const hour = (+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e));
+        return sum + hour;
+      }, 0);
+      
+      const usedPoints=attendData
+        .filter(x=>x.company===cc.name)
+        .reduce((sum,item)=>{
+          const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+          return sum + Math.ceil(hour);
+        },0);
+      
+      const remainPoints=(+co.point||0) - usedPoints;
+      arr.push({ cust:cc, contract:co, dispatchHours: dispatchHours.toFixed(1), remainPoints });
+    });
+  });
+  const {pagedList, total, totalPages}=getPagedData(arr,'boss');
+  
+  let html='';
+  pagedList.forEach(item=>{
+    const pointStatusClass = item.remainPoints < 50 ? 'red' : 'green';
+    html+=`<tr>
+      <td>${item.cust.coop}</td>
+      <td>${item.cust.name}</td>
+      <td>${item.contract.price_plan||'-'}</td>
+      <td>${item.contract.status}</td>
+      <td class="${pointStatusClass}">${item.remainPoints}</td>
+      <td>${item.dispatchHours}</td>
+    </tr>`;
+  });
+  document.getElementById('bossTable').innerHTML=html||'<tr><td colspan=6>無資料</td></tr>';
+  renderPagination('boss', total, totalPages);
+}
+
+// ===================== 儀表板相關函數 (強化版) =====================
+function renderDashboard(){
+  // --- 1. 更新上方 KPI 卡片 ---
+  const totalCust = custData.length;
+  const activeCust = custData.filter(x=>x.coop==='正合作').length;
+  const inactiveCust = custData.filter(x=>x.coop==='無合作').length;
+  
+  let pointGe50 = 0;
+  let pointLt50 = 0;
+  let alertHtml = '';
+  
+  custData.forEach(cust=>{
+    const contractPoints=contractData
+      .filter(x=>x.customer===cust.name)
+      .reduce((sum,item)=>sum+(+item.point||0),0);
+    
+    const usedPoints=attendData
+      .filter(x=>x.company===cust.name)
+      .reduce((sum,item)=>{
+        const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
+        return sum + Math.ceil(hour);
+      },0);
+    
+    const remainPoints = contractPoints - usedPoints;
+    
+    if(remainPoints >= 50) {
+      pointGe50++;
+    } else {
+      pointLt50++;
+      if (cust.coop !== '無合作') {
+        alertHtml += `<tr>
+          <td>${cust.name}</td>
+          <td class="red">${remainPoints} 點</td>
+          <td><button class="btn-sm btn-success" onclick="document.querySelector('[data-page=contract]').click();"><i class="fas fa-file-contract"></i> 去續約</button></td>
+        </tr>`;
+      }
+    }
+  });
+  
+  const staffCount = staffData.length;
+  
+  document.getElementById('dash_total_cust').textContent=totalCust;
+  document.getElementById('dash_active_cust').textContent=activeCust;
+  document.getElementById('dash_inactive_cust').textContent=inactiveCust;
+  document.getElementById('dash_point_ge50').textContent=pointGe50;
+  document.getElementById('dash_point_lt50').textContent=pointLt50;
+  document.getElementById('dash_staff_count').textContent=staffCount;
+
+  // 渲染點數警示表
+  const alertTableObj = document.getElementById('dash_alert_table');
+  if (alertTableObj) {
+      alertTableObj.innerHTML = alertHtml || '<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">目前無點數低於 50 的客戶 🎉</td></tr>';
+  }
+
+  // --- 2. 渲染今日派遣動態 ---
+  const todayDate = new Date();
+  const todayStr = todayDate.getFullYear() + '-' + String(todayDate.getMonth() + 1).padStart(2, '0') + '-' + String(todayDate.getDate()).padStart(2, '0');
+  const todayAttends = attendData.filter(x => x.date === todayStr);
+  let todayHtml = '';
+  todayAttends.forEach(item => {
+    const am = item.am_s && item.am_e ? `${item.am_s}-${item.am_e}` : '';
+    const pm = item.pm_s && item.pm_e ? `${item.pm_s}-${item.pm_e}` : '';
+    const timeStr = [am, pm].filter(x => x).join(' / ');
+    
+    todayHtml += `<tr>
+      <td>${item.staff}</td>
+      <td>${item.company}</td>
+      <td>${timeStr || '-'}</td>
+    </tr>`;
+  });
+  const todayTableObj = document.getElementById('dash_today_table');
+  if (todayTableObj) {
+     todayTableObj.innerHTML = todayHtml || '<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">今日暫無派遣記錄</td></tr>';
+  }
+
+  // --- 3. 渲染本月壽星 (生日禮提醒) ---
+  const currentMonth = todayDate.getMonth() + 1;
+  let bdayHtml = '';
+
+  const birthdayStaff = staffData.filter(x => {
+    if (x.status !== '在職' || !x.birthday) return false;
+    const month = parseInt(x.birthday.split('-')[1], 10);
+    return month === currentMonth;
+  }).sort((a, b) => {
+    const dayA = parseInt(a.birthday.split('-')[2], 10);
+    const dayB = parseInt(b.birthday.split('-')[2], 10);
+    return dayA - dayB;
+  });
+
+  birthdayStaff.forEach(item => {
+    const shortDate = item.birthday.substring(5);
+    bdayHtml += `<tr>
+      <td style="font-weight:bold; color:#333;">${item.name}</td>
+      <td>${shortDate}</td>
+      <td><span style="color:#e91e63; font-weight:bold; font-size:13px;"><i class="fas fa-gift"></i> 準備生日禮</span></td>
+    </tr>`;
+  });
+
+  const bdayTableObj = document.getElementById('dash_birthday_table');
+  if (bdayTableObj) {
+     bdayTableObj.innerHTML = bdayHtml || '<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">本月目前無壽星 🎂</td></tr>';
+  }
+}
+
+// ===================== Logo 上傳相關函數 =====================
+function handleLogoUpload(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      companyLogoBase64 = e.target.result;
+      localStorage.setItem('companyLogo', companyLogoBase64); // 永遠記住 Logo
+      updateLogoPreview();
+      alert('Logo 上傳成功！未來匯出對帳單將會自動帶入此 Logo。');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function clearLogo() {
+  if(!confirm('確定要移除目前設定的 Logo 嗎？')) return;
+  companyLogoBase64 = '';
+  localStorage.removeItem('companyLogo');
+  updateLogoPreview();
+}
+
+function updateLogoPreview() {
+  const preview = document.getElementById('logoPreview');
+  const btnClear = document.getElementById('btnClearLogo');
+  if (companyLogoBase64) {
+    preview.src = companyLogoBase64;
+    preview.style.display = 'block';
+    btnClear.style.display = 'inline-block';
+  } else {
+    preview.src = '';
+    preview.style.display = 'none';
+    btnClear.style.display = 'none';
+  }
+}
+
+// ===================== 匯出相關函數 =====================
+function exportExcel(tableId, fileName) {
+  try {
+    const table = document.getElementById(tableId);
+    if(!table) { alert('匯出失敗：找不到匯出表格'); return; }
+    const wb = XLSX.utils.table_to_book(table, {sheet: fileName});
+    XLSX.writeFile(wb, `${fileName}_${new Date().toLocaleDateString()}.xlsx`);
+    alert('Excel匯出成功！');
+  } catch (e) {
+    alert('Excel匯出失敗：' + e.message);
+    console.error('Excel匯出錯誤:', e);
+  }
+}
+
+function exportPDF(tableId, fileName) {
+  try {
+    const element = document.getElementById(tableId);
+    if(!element) { alert('匯出失敗：找不到匯出表格'); return; }
+    const opt = {
+      margin: 10,
+      filename: `${fileName}_${new Date().toLocaleDateString()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+    html2pdf().set(opt).from(element).save();
+    alert('PDF匯出成功！');
+  } catch (e) {
+    alert('PDF匯出失敗：' + e.message);
+    console.error('PDF匯出錯誤:', e);
+  }
+}
+
+// ===================== 一鍵生成客戶專屬對帳單 =====================
+function generateStatementPDF() {
+  const cb = document.getElementById('bill_filter_company').value;
+  const yb = document.getElementById('bill_filter_year').value;
+  const mb = document.getElementById('bill_filter_month').value;
+
+  if(!cb) {
+    alert('請先在上方過濾條件選擇「公司」，才能生成專屬對帳單！');
+    return;
+  }
+
+  // 1. 取得該公司的合約資料 (取最新的一筆)
+  const contracts = contractData.filter(x => x.customer === cb);
+  const contract = contracts.length > 0 ? contracts[contracts.length - 1] : {};
+  const planName = contract.price_plan || '無紀錄';
+  const signDate = contract.date || '無紀錄';
+  const totalPoints = Number(contract.point) || 0;
+
+  // 2. 取得該公司「歷史所有」派遣記錄 (用來計算真正剩餘點數)
+  const allUsedPoints = attendData.filter(x => x.company === cb).reduce((sum, item) => {
+    const hour = (+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e));
+    return sum + Math.ceil(hour);
+  }, 0);
+  const remainPoints = totalPoints - allUsedPoints;
+
+  // 3. 取得「當期選定月份」的派遣記錄 (用來列出明細)
+  let periodAttends = attendData.filter(x => 
+    x.company === cb &&
+    (yb === 'all' || x.date.startsWith(yb)) &&
+    (mb === 'all' || x.date.slice(5,7) === String(mb).padStart(2,'0'))
+  );
+  
+  // 依日期排序
+  periodAttends.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // 4. 建立 PDF 專用的隱藏排版 (A4 比例)
+  const printArea = document.createElement('div');
+  printArea.style.padding = '40px';
+  printArea.style.fontFamily = "'Microsoft JhengHei', sans-serif";
+  printArea.style.color = '#333';
+  printArea.style.backgroundColor = '#fff';
+
+  // 組合明細表格 HTML
+  let attendHtml = '';
+  if(periodAttends.length > 0) {
+     periodAttends.forEach(item => {
+       const hour = ((+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e))).toFixed(1);
+       const pt = Math.ceil(+hour);
+       attendHtml += `
+         <tr>
+           <td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.date}</td>
+           <td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.staff}</td>
+           <td style="border:1px solid #ddd; padding:10px; text-align:center;">${hour}</td>
+           <td style="border:1px solid #ddd; padding:10px; text-align:center;">${pt}</td>
+         </tr>
+       `;
+     });
+  } else {
+     attendHtml = `<tr><td colspan="4" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">本期無派遣紀錄</td></tr>`;
+  }
+
+  const periodText = (yb==='all' && mb==='all') ? '全部歷史期間' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
+
+  // 處理系統 Logo
+  const logoHtml = companyLogoBase64 
+      ? `<img src="${companyLogoBase64}" style="height: 60px; border-radius: 12px; margin-right: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">` 
+      : ``;
+
+  // 注入排版內容 (包含動態 Logo、頂部資訊、統計數據、明細與底部簽章區塊)
+  printArea.innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: center; margin-bottom:30px; border-bottom: 2px solid #2d9d5c; padding-bottom: 15px;">
+        ${logoHtml}
+        <h2 style="font-size:28px; margin:0; color:#2d9d5c; letter-spacing: 2px;">愜易居 - 客戶服務對帳單</h2>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 25px; font-size:15px; line-height:1.8;">
+        <div>
+            <p style="margin:5px 0;"><strong>客戶名稱：</strong>${cb}</p>
+            <p style="margin:5px 0;"><strong>對帳期間：</strong>${periodText}</p>
+        </div>
+        <div>
+            <p style="margin:5px 0;"><strong>購買方案：</strong>${planName}</p>
+            <p style="margin:5px 0;"><strong>合約日期：</strong>${signDate}</p>
+        </div>
+    </div>
+
+    <div style="background-color:#f0f8f4; padding:15px; border-radius:6px; margin-bottom:25px; display:flex; justify-content:space-around; text-align:center; font-size:16px;">
+        <div>購買總點數<br><strong style="font-size:22px; color:#333;">${totalPoints}</strong></div>
+        <div>累計已用點數<br><strong style="font-size:22px; color:#555;">${allUsedPoints}</strong></div>
+        <div>當前剩餘點數<br><strong style="font-size:22px; color:${remainPoints<0?'#dc2626':'#2d9d5c'};">${remainPoints}</strong></div>
+    </div>
+
+    <h3 style="font-size:16px; margin-bottom:10px; color:#444; border-left: 4px solid #2d9d5c; padding-left: 8px;">派遣明細</h3>
+    <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:30px;">
+        <thead>
+            <tr style="background-color:#f9f9f9; color:#555;">
+                <th style="border:1px solid #ddd; padding:12px; width:25%;">派遣日期</th>
+                <th style="border:1px solid #ddd; padding:12px; width:25%;">派遣人員</th>
+                <th style="border:1px solid #ddd; padding:12px; width:25%;">工時 (小時)</th>
+                <th style="border:1px solid #ddd; padding:12px; width:25%;">扣除點數</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${attendHtml}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 15px; color: #333;">
+        <div style="width: 40%;">
+            <p style="margin-bottom: 45px; font-weight: bold;">客戶確認簽章：</p>
+            <div style="border-bottom: 1px solid #666; width: 100%;"></div>
+            <p style="margin-top: 8px; font-size: 13px; color: #666;">確認日期：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;年&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;月&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;日</p>
+        </div>
+        <div style="width: 40%; text-align: left;">
+            <p style="margin-bottom: 45px; font-weight: bold;">愜易居 經辦人簽章：</p>
+            <div style="border-bottom: 1px solid #666; width: 100%;"></div>
+            <p style="margin-top: 8px; font-size: 13px; color: #888; text-align: right;">產製日期：${new Date().toLocaleDateString('zh-TW')}</p>
+        </div>
+    </div>
+  `;
+
+  // 5. 呼叫 html2pdf 進行輸出
+  const opt = {
+    margin: 15,
+    filename: `${cb}_服務對帳單_${new Date().getTime()}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(printArea).save().then(() => {
+     alert('專屬對帳單已成功下載！');
+  });
+}
+</script>
+</body>
+</html>
