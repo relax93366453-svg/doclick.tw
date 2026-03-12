@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>點籽響客戶及派遣管理系統 (專業企業版)</title>
+<title>點籽響客戶及派遣管理系統 (企業前後台版)</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,7 +12,6 @@
   * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft JhengHei', 'Arial', sans-serif; }
   body { background-color: #f7f8fa; color: #333; line-height: 1.6; }
   
-  /* 登入畫面 */
   #login-screen { display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #2d9d5c 0%, #175d33 100%); }
   .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 400px; text-align: center; }
   .login-box h1 { color: #2d9d5c; margin-bottom: 10px; font-size: 24px; }
@@ -23,41 +22,34 @@
   .btn-login { width: 100%; padding: 12px; background: #2d9d5c; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.3s; }
   .btn-login:hover { background: #21834a; }
 
-  /* 布局容器 */
   .app-container { display: none; min-height: 100vh; }
   .staff-container { display: none; min-height: 100vh; background: #f0f4f8; }
 
-  /* 側邊導航欄 */
-  .sidebar { width: 220px; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.05); padding: 20px 0; position: fixed; height: 100vh; overflow-y: auto; z-index: 10; }
+  .sidebar { width: 230px; background-color: #ffffff; box-shadow: 0 0 10px rgba(0,0,0,0.05); padding: 20px 0; position: fixed; height: 100vh; overflow-y: auto; z-index: 10; }
   .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #f0f0f0; margin-bottom: 10px; }
-  .sidebar-header h1 { font-size: 18px; color: #2d9d5c; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .sidebar-header h1 { font-size: 17px; color: #2d9d5c; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .sidebar-nav { list-style: none; }
-  .sidebar-nav li { margin: 5px 0; }
-  .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #555; text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s ease; cursor: pointer;}
-  .sidebar-nav a:hover, .sidebar-nav a.active { background-color: #f0f8f4; color: #2d9d5c; border-left-color: #2d9d5c; }
-  .sidebar-nav a i { font-size: 14px; width: 16px; text-align: center; }
+  .sidebar-nav li { margin: 3px 0; }
+  .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #555; text-decoration: none; border-left: 3px solid transparent; transition: all 0.2s ease; cursor: pointer; font-size: 14px;}
+  .sidebar-nav a:hover, .sidebar-nav a.active { background-color: #f0f8f4; color: #2d9d5c; border-left-color: #2d9d5c; font-weight:bold;}
+  .sidebar-nav a i { font-size: 14px; width: 18px; text-align: center; }
 
-  /* 主內容區域 */
-  .main-content { flex: 1; margin-left: 220px; padding: 20px; width: calc(100% - 220px); overflow-x: auto; }
+  .main-content { flex: 1; margin-left: 230px; padding: 20px; width: calc(100% - 230px); overflow-x: auto; }
   .page-header { background-color: #ffffff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
   .page-header h2 { font-size: 18px; font-weight: 600; color: #333; margin:0;}
   .header-actions { display: flex; align-items: center; gap: 15px; }
 
-  /* 切換按鈕樣式 */
   .switch-role-btn { background: transparent; color: #3b82f6; border: 1.5px solid #3b82f6; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;}
   .switch-role-btn:hover { background: #3b82f6; color: white; }
 
-  /* 頁面容器 */
   .page { display: none; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 20px; }
   .page.active { display: block; }
   .page-title { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: #444; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
 
-  /* 篩選欄 */
   .filter-bar { background-color: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; }
   .filter-bar label { color: #666; font-size: 14px; margin-right: 5px; }
   .filter-bar select, .filter-bar input { padding: 6px 10px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; min-width: 120px; }
 
-  /* 表單網格 */
   .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
   @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } .sidebar { width: 180px; } .main-content { margin-left: 180px; width: calc(100% - 180px); } }
@@ -67,12 +59,10 @@
   .grid input, .grid select { padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 4px; font-size: 14px; transition: border 0.2s; }
   .grid input:focus, .grid select:focus { outline: none; border-color: #2d9d5c; }
   
-  /* 複選框樣式 */
   .checkbox-group { display: flex; gap: 15px; align-items: center; background: #fff; padding: 8px 15px; border: 1px solid #ddd; border-radius: 6px; flex-wrap: wrap;}
   .checkbox-group label { margin-bottom: 0; display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; color: #333; }
   .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 
-  /* 按鈕樣式 */
   button.btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; margin-bottom: 10px; font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; transition: background-color 0.2s; color:white;}
   .btn-success { background: #2d9d5c; } .btn-success:hover { background: #268a50; }
   .btn-warning { background: #f59e0b; } .btn-warning:hover { background: #d97706; }
@@ -85,28 +75,24 @@
   .btn-large { padding: 15px 30px; font-size: 18px; }
   .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-  /* 表格樣式 */
   .table-responsive { width: 100%; overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; min-width: 800px; }
   table th { padding: 12px 8px; background: #f8f9fa; color: #444; font-weight: 600; text-align: left; border-bottom: 2px solid #e0e0e0; white-space: nowrap; }
   table td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; color: #555; }
   table tr:hover { background-color: #f9f9f9; }
 
-  /* 狀態標籤 */
   .badge { padding: 3px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
   .badge-green { background: #dcfce7; color: #166534; }
   .badge-red { background: #fee2e2; color: #991b1b; }
   .badge-blue { background: #e0f2fe; color: #0369a1; }
   .badge-yellow { background: #fef3c7; color: #b45309; }
 
-  /* 分頁 */
   .pagination { margin-top: 20px; display: flex; gap: 8px; align-items: center; justify-content: flex-end; }
   .pagination button { padding: 6px 12px; border: 1px solid #e0e0e0; background: white; cursor: pointer; border-radius: 4px; font-size: 14px; }
   .pagination button:hover:not(:disabled) { background-color: #f0f8f4; border-color: #2d9d5c; color: #2d9d5c; }
   .pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
   .pagination span { font-size: 14px; color: #666; }
 
-  /* 儀表板 */
   .quick-actions { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; }
   .dashboard-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
   @media (max-width: 900px) { .dashboard-panels { grid-template-columns: 1fr; } }
@@ -146,8 +132,6 @@
   .workspace-hr .ws-business { display: none !important; }
   .workspace-business .ws-hr { display: none !important; }
   #admin-screen.mode-hr .admin-only { display: none !important; }
-  
-  .section-divider { grid-column: span 4; border-bottom: 2px dashed #ddd; margin: 10px 0; padding-bottom: 5px; color: #2d9d5c; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -271,7 +255,13 @@
         <div><label>客戶名稱 <span class="required">*</span></label><input id="c_name" required></div><div><label>行業別</label><input id="c_industry"></div><div><label>聯絡人</label><input id="c_user"></div><div><label>電話</label><input id="c_tel"></div>
         <div><label>地址</label><input id="c_addr"></div><div><label>統編</label><input id="c_tax"></div><div><label>商品簡介</label><input id="c_goods"></div><div><label>前台帳號</label><input id="c_account"></div>
         <div><label>前台密碼</label><input id="c_pwd" type="text"></div><div><label>前台連結</label><input id="c_url" placeholder="客戶前台網址"></div>
-        <div style="grid-column: span 2;"><label>雲端資料夾 (合約建檔用)</label><div style="display:flex; gap:5px;"><input id="c_drive" placeholder="Google雲端連結" style="flex:1;"><button type="button" class="btn-sm btn-excel" onclick="autoCreateFolder()" id="btnCreateFolder" style="margin-bottom:0;"><i class="fas fa-folder-plus"></i> 建檔</button></div></div>
+        <div style="grid-column: span 2;">
+          <label>專屬雲端資料夾網址 (請貼上您建好的連結)</label>
+          <div style="display:flex; gap:5px;">
+            <input id="c_drive" placeholder="貼上 https://drive.google.com/..." style="flex:1;">
+            <button type="button" class="btn-sm btn-warning" onclick="autoCreateFolder()" id="btnCreateFolder" style="margin-bottom:0;" title="無資料夾時，可讓系統代建"><i class="fas fa-magic"></i> 自動建新資料夾</button>
+          </div>
+        </div>
         <div><label>備註</label><input id="c_remark"></div><div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div>
       </div>
       <button class="btn btn-success" onclick="addCust()"><i class="fas fa-plus"></i> 新增客戶</button><button class="btn btn-warning" onclick="updateCust()" id="btnUpdateCust" style="display:none"><i class="fas fa-edit"></i> 修改客戶</button>
@@ -315,10 +305,15 @@
         <div><label>代扣勞保</label><input id="staff_labor" type="number" value="0" min="0"></div>
         <div><label>代扣健保</label><input id="staff_health" type="number" value="0" min="0"></div>
         <div><label>備註</label><input id="staff_remark"></div>
+        
         <div style="grid-column: span 4;">
-          <label>專屬雲端資料夾 (存放身分證/存摺/勞動契約)</label>
-          <div style="display:flex; gap:5px;"><input id="staff_drive" placeholder="Google雲端連結" style="flex:1;"><button type="button" class="btn-sm btn-excel" onclick="autoCreateStaffFolder('staff_name', 'staff_drive')" style="margin-bottom:0; padding:8px;"><i class="fas fa-folder-plus"></i> 一鍵建檔</button></div>
+          <label>專屬雲端資料夾網址 (請貼上您建好的連結)</label>
+          <div style="display:flex; gap:5px;">
+            <input id="staff_drive" placeholder="貼上 https://drive.google.com/..." style="flex:1;">
+            <button type="button" class="btn-sm btn-warning" onclick="autoCreateStaffFolder('staff_name', 'staff_drive')" style="margin-bottom:0; padding:8px;" title="無資料夾時，可讓系統代建"><i class="fas fa-magic"></i> 自動建新資料夾</button>
+          </div>
         </div>
+        
         <div style="grid-column: span 4; background: #fffbeb; padding: 15px; border-radius: 8px; border: 1px dashed #f59e0b;">
           <label style="color:#d97706; font-weight:bold; font-size:15px;"><i class="fas fa-tasks"></i> 到職資料繳交狀態核對 (已交請打勾)</label>
           <div class="checkbox-group" style="margin-top:8px;">
@@ -361,9 +356,13 @@
 
         <div><label>代扣勞保</label><input id="ft_labor" type="number" value="0" min="0"></div>
         <div><label>代扣健保</label><input id="ft_health" type="number" value="0" min="0"></div>
+        
         <div style="grid-column: span 2;">
-          <label>專屬雲端資料夾</label>
-          <div style="display:flex; gap:5px;"><input id="ft_drive" placeholder="Google雲端連結" style="flex:1;"><button type="button" class="btn-sm btn-excel" onclick="autoCreateStaffFolder('ft_name', 'ft_drive')" style="margin-bottom:0; padding:8px;"><i class="fas fa-folder-plus"></i> 一鍵建檔</button></div>
+          <label>專屬雲端資料夾網址 (請貼上您建好的連結)</label>
+          <div style="display:flex; gap:5px;">
+            <input id="ft_drive" placeholder="貼上 https://drive.google.com/..." style="flex:1;">
+            <button type="button" class="btn-sm btn-warning" onclick="autoCreateStaffFolder('ft_name', 'ft_drive')" style="margin-bottom:0; padding:8px;" title="無資料夾時，可讓系統代建"><i class="fas fa-magic"></i> 自動建新資料夾</button>
+          </div>
         </div>
       </div>
       <button class="btn btn-success" onclick="addFtStaff()"><i class="fas fa-plus"></i> 新增正職</button>
@@ -820,8 +819,7 @@ function syncTalentFromForm() {
               updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒');
           }
       } catch(e) {
-          alert('❌ 連線被 Google 權限阻擋！\n\n這代表您在 Apps Script 部署時，沒有把「誰可以存取」設定為「所有人 (Anyone)」。\n請回後台重新部署，並確認 SCRIPT_URL 網址是否正確。');
-          console.log("錯誤內容:", text);
+          alert('❌ 連線被 Google 權限阻擋！\n\n這代表您在 Apps Script 部署時，沒有把「誰可以存取」設定為「所有人 (Anyone)」。\n請回後台重新部署。');
           updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 權限錯誤', true);
       }
   })
@@ -834,7 +832,7 @@ function syncTalentFromForm() {
 function autoCreateFolder() {
   const cName = document.getElementById('c_name').value.trim(); if (!cName) { alert('請輸入名稱！'); return; }
   const btn = document.getElementById('btnCreateFolder'); btn.innerHTML = '建檔中...'; btn.disabled = true;
-  fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { document.getElementById('c_drive').value = res.folderUrl; alert('資料夾建立成功！請儲存資料。'); } else { alert('建立失敗'); } }).catch(err => alert('連線錯誤')).finally(() => { btn.innerHTML = '<i class="fas fa-folder-plus"></i> 建檔'; btn.disabled = false; });
+  fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { document.getElementById('c_drive').value = res.folderUrl; alert('資料夾建立成功！請儲存資料。'); } else { alert('建立失敗'); } }).catch(err => alert('連線錯誤')).finally(() => { btn.innerHTML = '<i class="fas fa-magic"></i> 自動建新資料夾'; btn.disabled = false; });
 }
 function autoCreateStaffFolder(nameId, driveId) {
   const sName = document.getElementById(nameId).value.trim(); if (!sName) { alert('請輸入姓名！'); return; }
@@ -891,7 +889,7 @@ function changePage(module, targetPage) {
   switch(module) { case 'customer': renderCustTable(); break; case 'contract': renderContractTable(); break; case 'staff': renderStaffTable(); break; case 'attend': renderAttend(); break; case 'point': renderPoint(); break; case 'bill': renderBill(); break; case 'salary': renderSalary(); break; case 'ft_staff': renderFtStaffTable(); break; case 'ft_attend': renderFtAttendTable(); break; case 'talent': renderTalentTable(); break; }
 }
 
-function renderAll() { renderCustTable(); renderContractTable(); renderStaffTable(); renderAttend(); renderPoint(); renderDashboard(); renderFtStaffTable(); renderFtAttendTable(); renderTalentTable(); }
+function renderAll() { renderCustTable(); renderContractTable(); renderStaffTable(); renderAttend(); renderPoint(); renderDashboard(); updateLogoPreview(); renderFtStaffTable(); renderFtAttendTable(); renderTalentTable(); }
 function fillFilters() {
   const y=new Date().getFullYear(); const m=new Date().getMonth()+1;
   document.querySelectorAll('#filter_year,#bill_filter_year,#sal_filter_year,#boss_year').forEach(el=>{el.innerHTML='<option value="all">全部</option>';for(let i=y-2;i<=y;i++)el.innerHTML+=`<option value="${i}" ${i==y?'selected':''}>${i}</option>`;});
@@ -913,7 +911,6 @@ function renderCustTable(){
 function addCust(){ const o={name:document.getElementById('c_name').value.trim(),industry:document.getElementById('c_industry').value.trim(),user:document.getElementById('c_user').value.trim(),tel:document.getElementById('c_tel').value.trim(),addr:document.getElementById('c_addr').value.trim(),tax:document.getElementById('c_tax').value.trim(),goods:document.getElementById('c_goods').value.trim(),account:document.getElementById('c_account').value.trim(),pwd:document.getElementById('c_pwd').value.trim(),url:document.getElementById('c_url').value.trim(),drive:document.getElementById('c_drive').value.trim(),remark:document.getElementById('c_remark').value.trim(),coop:document.getElementById('c_coop').value}; if(!o.name)return; custData.push(o); saveAll(); resetPage('customer'); renderCustTable(); clearCustForm(); }
 function editCust(i){ const d=custData[i]; document.getElementById('c_name').value=d.name; document.getElementById('c_industry').value=d.industry||''; document.getElementById('c_user').value=d.user||''; document.getElementById('c_tel').value=d.tel||''; document.getElementById('c_addr').value=d.addr||''; document.getElementById('c_tax').value=d.tax||''; document.getElementById('c_goods').value=d.goods||''; document.getElementById('c_account').value=d.account||''; document.getElementById('c_pwd').value=d.pwd||''; document.getElementById('c_url').value=d.url||''; document.getElementById('c_drive').value=d.drive||''; document.getElementById('c_remark').value=d.remark||''; document.getElementById('c_coop').value=d.coop; editCustIndex=i; document.getElementById('btnUpdateCust').style.display='inline-block'; }
 function updateCust(){ if(editCustIndex<0)return; const o={name:document.getElementById('c_name').value.trim(),industry:document.getElementById('c_industry').value.trim(),user:document.getElementById('c_user').value.trim(),tel:document.getElementById('c_tel').value.trim(),addr:document.getElementById('c_addr').value.trim(),tax:document.getElementById('c_tax').value.trim(),goods:document.getElementById('c_goods').value.trim(),account:document.getElementById('c_account').value.trim(),pwd:document.getElementById('c_pwd').value.trim(),url:document.getElementById('c_url').value.trim(),drive:document.getElementById('c_drive').value.trim(),remark:document.getElementById('c_remark').value.trim(),coop:document.getElementById('c_coop').value}; custData[editCustIndex]=o; saveAll(); resetPage('customer'); renderCustTable(); clearCustForm(); }
-function delCust(i){ if(!confirm('刪？'))return; custData.splice(i,1); saveAll(); resetPage('customer'); renderCustTable(); }
 function clearCustForm(){ document.querySelectorAll('#page-customer input').forEach(i=>i.value=''); document.getElementById('c_coop').value='正合作'; editCustIndex=-1; document.getElementById('btnUpdateCust').style.display='none'; }
 
 function renderContractTable(){
@@ -924,7 +921,6 @@ function renderContractTable(){
 function addContract(){ const o={customer:document.getElementById('con_customer').value,service:document.getElementById('co_service').value,date:document.getElementById('co_date').value,member_type:document.getElementById('co_member_type').value,price_plan:document.getElementById('co_price_plan').value,package_price:document.getElementById('co_package_price').value,point_price:document.getElementById('co_point_price').value,price:document.getElementById('co_price').value,point:document.getElementById('co_point').value,invoice_date:document.getElementById('co_invoice_date').value,payment_date:document.getElementById('co_payment_date').value,remark:document.getElementById('co_remark').value,status:document.getElementById('co_status').value}; if(!o.customer)return; contractData.push(o); saveAll(); resetPage('contract'); renderContractTable(); clearContractForm(); }
 function editContract(i){ const d=contractData[i]; document.getElementById('con_customer').value=d.customer; document.getElementById('co_service').value=d.service; document.getElementById('co_date').value=d.date; document.getElementById('co_member_type').value=d.member_type; document.getElementById('co_price_plan').value=d.price_plan; document.getElementById('co_package_price').value=d.package_price; document.getElementById('co_point_price').value=d.point_price; document.getElementById('co_price').value=d.price; document.getElementById('co_point').value=d.point; document.getElementById('co_invoice_date').value=d.invoice_date; document.getElementById('co_payment_date').value=d.payment_date; document.getElementById('co_remark').value=d.remark; document.getElementById('co_status').value=d.status; editContractIndex=i; document.getElementById('btnUpdateContract').style.display='inline-block'; }
 function updateContract(){ if(editContractIndex<0)return; const o={customer:document.getElementById('con_customer').value,service:document.getElementById('co_service').value,date:document.getElementById('co_date').value,member_type:document.getElementById('co_member_type').value,price_plan:document.getElementById('co_price_plan').value,package_price:document.getElementById('co_package_price').value,point_price:document.getElementById('co_point_price').value,price:document.getElementById('co_price').value,point:document.getElementById('co_point').value,invoice_date:document.getElementById('co_invoice_date').value,payment_date:document.getElementById('co_payment_date').value,remark:document.getElementById('co_remark').value,status:document.getElementById('co_status').value}; contractData[editContractIndex]=o; saveAll(); resetPage('contract'); renderContractTable(); clearContractForm(); }
-function delContract(i){ if(!confirm('刪？'))return; contractData.splice(i,1); saveAll(); resetPage('contract'); renderContractTable(); }
 function clearContractForm(){ document.querySelectorAll('#page-contract input').forEach(i=>i.value=''); document.getElementById('co_point').value='0'; document.getElementById('co_price').value='0'; document.getElementById('co_status').value='正常'; editContractIndex=-1; document.getElementById('btnUpdateContract').style.display='none'; }
 
 function renderStaffTable(){
@@ -950,7 +946,6 @@ function renderAttend(){
 function calcAttendTemp(){ const h=(+getHours(document.getElementById('am_s').value,document.getElementById('am_e').value))+(+getHours(document.getElementById('pm_s').value,document.getElementById('pm_e').value)); if(h>0){document.getElementById('attend_salary_hours').value=h.toFixed(1);document.getElementById('attend_deduct_points').value=Math.ceil(h);}else{document.getElementById('attend_salary_hours').value='';document.getElementById('attend_deduct_points').value='';} }
 function addAttend(){ const o={company:document.getElementById('attend_company').value,staff:document.getElementById('attend_staff').value,date:document.getElementById('attend_date').value,service:document.getElementById('attend_service').value,remark:document.getElementById('attend_remark').value,am_s:document.getElementById('am_s').value,am_e:document.getElementById('am_e').value,pm_s:document.getElementById('pm_s').value,pm_e:document.getElementById('pm_e').value,salary_hours:document.getElementById('attend_salary_hours').value,deduct_points:document.getElementById('attend_deduct_points').value}; if(!o.company||!o.staff||!o.date)return; const idx=attendData.findIndex(x=>x.company===o.company&&x.staff===o.staff&&x.date===o.date); if(idx>-1) attendData[idx]=o; else attendData.push(o); saveAll(); resetPage('attend'); renderAttend(); clearAttendForm(); }
 function editAttend(i){ const d=attendData[i]; document.getElementById('attend_company').value=d.company; document.getElementById('attend_staff').value=d.staff; document.getElementById('attend_date').value=d.date; document.getElementById('attend_service').value=d.service; document.getElementById('attend_remark').value=d.remark; document.getElementById('am_s').value=d.am_s; document.getElementById('am_e').value=d.am_e; document.getElementById('pm_s').value=d.pm_s; document.getElementById('pm_e').value=d.pm_e; document.getElementById('attend_salary_hours').value=d.salary_hours; document.getElementById('attend_deduct_points').value=d.deduct_points; editAttendIndex=i; }
-function delAttend(i){ if(!confirm('刪？'))return; attendData.splice(i,1); saveAll(); resetPage('attend'); renderAttend(); }
 function clearAttendForm(){ document.querySelectorAll('#page-attend input').forEach(i=>i.value=''); document.getElementById('attend_service').value=''; editAttendIndex=-1; }
 
 function renderFtStaffTable(){
@@ -972,7 +967,7 @@ function clearFtAttendForm(){ document.querySelectorAll('#page-ft_attend input[t
 
 function renderFtSalaryTable(){ const m=document.getElementById('fts_filter_month').value; const sd=Number(document.getElementById('fts_standard_days').value)||22; if(!m)return document.getElementById('ftSalaryTable').innerHTML='<tr><td colspan="8" style="text-align:center;">請先選擇發薪年月</td></tr>'; let list=ftStaffData.filter(x=>x.status==='在職'); const {pagedList,total,totalPages}=getPagedData(list,'ft_salary'); let html=''; pagedList.forEach(s=>{ let bs=Number(s.salary)||30000; let dly=bs/30; let hr=dly/8; let mya=ftAttendData.filter(x=>x.staff===s.name&&x.date.startsWith(m)); let tw=0; let dd=0; let ov=0; mya.forEach(a=>{ let h=Number(a.hours)||0; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班')tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){if(a.leave_type==='事假')dd+=h*hr; if(a.leave_type==='病假'||a.leave_type==='生理假')dd+=h*hr*0.5;} else if(a.record_type==='加班')ov+=h*hr*1.34; }); let net=bs-dd+ov-(Number(s.labor)||0)-(Number(s.health)||0); html+=`<tr><td>${s.name}</td><td>${bs}</td><td>${tw.toFixed(1)}</td><td class="red">-${Math.round(dd)}</td><td class="green">+${Math.round(ov)}</td><td>${(Number(s.labor)||0)+(Number(s.health)||0)}</td><td style="font-weight:bold;color:#1e3a8a;">$${Math.round(net)}</td><td>-</td></tr>`; }); document.getElementById('ftSalaryTable').innerHTML=html||'<tr><td colspan="8">無資料</td></tr>'; renderPagination('ft_salary',total,totalPages); }
 
-function renderTalentTable(){ const tr=document.getElementById('tp_filter_role').value.toLowerCase(); const ts=document.getElementById('tp_filter_status').value; let list=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(list,'talent'); let html=''; pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; html+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.role||'-'}</td><td>${item.exp||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.date||'-'}</td><td><button class="btn-sm btn-warning" onclick="editTalent(${idx})">修改</button></td></tr>`; }); document.getElementById('talentTable').innerHTML=html||'<tr><td colspan="7">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
+function renderTalentTable(){ const tr=document.getElementById('tp_filter_role').value.toLowerCase(); const ts=document.getElementById('tp_filter_status').value; let list=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(list,'talent'); let html=''; pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; html+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.role||'-'}</td><td>${item.exp||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.date||'-'}</td><td><button class="btn-sm btn-warning" onclick="editTalent(${idx})">修改</button></td></tr>`; }); document.getElementById('talentTable').innerHTML=html||'<tr><td colspan="7">無</td></tr>'; renderPagination('talent',total,totalPages); }
 function addTalent(){ const o={name:document.getElementById('tp_name').value.trim(),tel:document.getElementById('tp_tel').value.trim(),role:document.getElementById('tp_role').value.trim(),status:document.getElementById('tp_status').value,exp:document.getElementById('tp_exp').value.trim(),date:new Date().toISOString().split('T')[0]}; if(!o.name)return; talentData.push(o); saveAll(); resetPage('talent'); renderTalentTable(); clearTalentForm(); }
 function editTalent(i){ const d=talentData[i]; document.getElementById('tp_name').value=d.name; document.getElementById('tp_tel').value=d.tel||''; document.getElementById('tp_role').value=d.role||''; document.getElementById('tp_status').value=d.status||'待聯絡'; document.getElementById('tp_exp').value=d.exp||''; editTalentIndex=i; document.getElementById('btnUpdateTalent').style.display='inline-block'; }
 function updateTalent(){ if(editTalentIndex<0)return; const o={name:document.getElementById('tp_name').value.trim(),tel:document.getElementById('tp_tel').value.trim(),role:document.getElementById('tp_role').value.trim(),status:document.getElementById('tp_status').value,exp:document.getElementById('tp_exp').value.trim(),date:talentData[editTalentIndex].date}; talentData[editTalentIndex]=o; saveAll(); resetPage('talent'); renderTalentTable(); clearTalentForm(); }
@@ -1013,3 +1008,4 @@ function renderDashboard(){
 </script>
 </body>
 </html>
+]
