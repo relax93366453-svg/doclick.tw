@@ -612,10 +612,35 @@
           <option value="all">全部人員</option><option value="在職">僅在職</option><option value="離職">僅離職</option>
         </select>
       </div>
-      <div class="grid" style="grid-template-columns:1fr 1fr 1fr;">
+      
+      <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr 1.5fr;">
         <div><label>公司 <span class="required">*</span></label><select id="attend_company" required></select></div>
         <div><label>人員 <span class="required">*</span></label><select id="attend_staff" required></select></div>
         <div><label>日期 <span class="required">*</span></label><input type="date" id="attend_date" required></div>
+        <div><label>服務類型</label>
+          <select id="attend_service">
+            <option value="">請選擇</option>
+            <option value="行政">行政</option>
+            <option value="會計">會計</option>
+            <option value="服務員">服務員</option>
+            <option value="快遞">快遞</option>
+            <option value="理貨包裝">理貨包裝</option>
+            <option value="揀貨">揀貨</option>
+            <option value="進出貨人員">進出貨人員</option>
+            <option value="倉管">倉管</option>
+            <option value="美編上架">美編上架</option>
+            <option value="攝影上架">攝影上架</option>
+            <option value="辦公小編">辦公小編</option>
+            <option value="平面設計">平面設計</option>
+            <option value="助理">助理</option>
+            <option value="業務">業務</option>
+            <option value="裁縫">裁縫</option>
+            <option value="剪布">剪布</option>
+            <option value="報關員">報關員</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div><label>備註 (選其他請填)</label><input type="text" id="attend_remark" placeholder="輸入備註事項"></div>
       </div>
       <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr;">
         <div><label>上午上班</label><input type="time" id="am_s"></div>
@@ -627,7 +652,7 @@
       <button class="btn btn-warning" onclick="clearAttendForm()"><i class="fas fa-eraser"></i> 清空</button>
       <button class="btn btn-excel" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出</button>
       <table id="attendTableBox">
-        <thead><tr><th>公司</th><th>人員</th><th>日期</th><th>上午</th><th>下午</th><th>工時</th><th>點數</th><th>操作</th></tr></thead>
+        <thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務類型</th><th>上午</th><th>下午</th><th>工時</th><th>點數</th><th>備註</th><th>操作</th></tr></thead>
         <tbody id="attendTable"></tbody>
       </table>
     </div>
@@ -656,7 +681,7 @@
       <button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
       <button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-file-invoice"></i> 一鍵生成客戶對帳單</button>
       <table id="billTableBox">
-        <thead><tr><th>日期</th><th>人員</th><th>工時</th><th>使用點數</th><th>剩餘時數</th><th>原儲值點數</th></tr></thead>
+        <thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>工時</th><th>使用點數</th><th>剩餘時數</th><th>原儲值點數</th></tr></thead>
         <tbody id="billTable"></tbody>
       </table>
     </div>
@@ -677,7 +702,7 @@
       <button class="btn btn-excel" onclick="exportExcel('salaryTableBox','薪資明細')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
       <button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-file-invoice-dollar"></i> 一鍵下載員工薪資單</button>
       <table id="salaryTableBox">
-        <thead><tr><th>人員</th><th>日期</th><th>公司</th><th>工時</th><th>應付金額</th><th>代扣勞保</th><th>代扣健保</th><th>實付金額</th></tr></thead>
+        <thead><tr><th>人員</th><th>日期</th><th>公司</th><th>服務項目</th><th>工時</th><th>應付金額</th><th>代扣勞保</th><th>代扣健保</th><th>實付金額</th></tr></thead>
         <tbody id="salaryTable"></tbody>
       </table>
     </div>
@@ -741,9 +766,18 @@ const memberPrices = {
   "愜易居PRO企業會員": { "時數方案1": 310, "時數方案2": 310, "時數方案3": 310, "時數方案4": 310, "時數方案5": 310, "時數方案6": 310, "時數方案7": 310, "時數方案8": 310 }
 };
 
+// 確保所有物件具備新屬性 (相容雲端試算表標題)
+function standardizeData() {
+  attendData = attendData.map(x => ({
+    company: x.company, staff: x.staff, date: x.date,
+    service: x.service || '', remark: x.remark || '',
+    am_s: x.am_s || '', am_e: x.am_e || '', pm_s: x.pm_s || '', pm_e: x.pm_e || ''
+  }));
+}
+
 // ===================== 系統初始化與雲端載入 =====================
 document.addEventListener('DOMContentLoaded', function () {
-  initNav(); renderAll(); fillFilters();
+  initNav(); standardizeData(); renderAll(); fillFilters();
   showPage('dashboard', document.querySelector('[data-page="dashboard"]'));
   updateCurrentTime(); setInterval(updateCurrentTime, 1000);
   document.querySelectorAll('form, .grid').forEach(el => el.addEventListener('submit', (e) => e.preventDefault()));
@@ -768,6 +802,7 @@ function loadDataFromCloud() {
       if(result.contractData && result.contractData.length > 0) contractData = result.contractData;
       if(result.staffData && result.staffData.length > 0) staffData = result.staffData;
       if(result.attendData && result.attendData.length > 0) attendData = result.attendData;
+      standardizeData();
       localStorage.setItem('custData', JSON.stringify(custData));
       localStorage.setItem('contractData', JSON.stringify(contractData));
       localStorage.setItem('staffData', JSON.stringify(staffData));
@@ -783,6 +818,7 @@ function loadDataFromCloud() {
 }
 
 function saveAll() {
+  standardizeData();
   try {
     localStorage.setItem('custData', JSON.stringify(custData));
     localStorage.setItem('contractData', JSON.stringify(contractData));
@@ -960,8 +996,8 @@ function renderCustTable(){
   const {pagedList, total, totalPages} = getPagedData(list, 'customer'); let html = '';
   pagedList.forEach((item,i)=>{
     const idx = custData.findIndex(x=>x.name===item.name);
-    // 若有雲端連結，生成開啟按鈕
-    const folderBtn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}', '_blank')"><i class="fas fa-folder-open"></i> 打開資料夾</button>` : '-';
+    // 雲端連結按鈕
+    const folderBtn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}', '_blank')"><i class="fas fa-folder-open"></i> 打開</button>` : '-';
     
     html+=`<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.industry||'-'}</td><td>${item.user||'-'}</td><td>${item.tel||'-'}</td><td>${item.addr||'-'}</td><td>${item.tax||'-'}</td><td>${item.goods||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd?'******':'-'}</td><td>${item.url||'-'}</td><td>${folderBtn}</td><td>${item.remark||'-'}</td><td><button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
   });
@@ -1065,23 +1101,52 @@ function renderAttend(){
     const idx=attendData.findIndex(x=> x.company===item.company && x.staff===item.staff && x.date===item.date );
     const am=item.am_s&&item.am_e?`${item.am_s}-${item.am_e}`:'-'; const pm=item.pm_s&&item.pm_e?`${item.pm_s}-${item.pm_e}`:'-';
     const hour=((+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e))).toFixed(1); const point=Math.ceil(+hour);
-    html+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${am}</td><td>${pm}</td><td>${hour}</td><td>${point}</td><td><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+    // 新增服務類型與備註呈現
+    html+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${hour}</td><td>${point}</td><td>${item.remark||'-'}</td><td><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
   });
-  document.getElementById('attendTable').innerHTML=html||'<tr><td colspan=8>無派遣記錄</td></tr>';
+  document.getElementById('attendTable').innerHTML=html||'<tr><td colspan="10">無派遣記錄</td></tr>';
   renderPagination('attend', total, totalPages);
 }
 function addAttend(){
-  const o={ company: document.getElementById('attend_company').value, staff: document.getElementById('attend_staff').value, date: document.getElementById('attend_date').value, am_s: document.getElementById('am_s').value, am_e: document.getElementById('am_e').value, pm_s: document.getElementById('pm_s').value, pm_e: document.getElementById('pm_e').value };
+  const o={ 
+    company: document.getElementById('attend_company').value, 
+    staff: document.getElementById('attend_staff').value, 
+    date: document.getElementById('attend_date').value, 
+    service: document.getElementById('attend_service').value, 
+    remark: document.getElementById('attend_remark').value.trim(),
+    am_s: document.getElementById('am_s').value, 
+    am_e: document.getElementById('am_e').value, 
+    pm_s: document.getElementById('pm_s').value, 
+    pm_e: document.getElementById('pm_e').value 
+  };
   if(!o.company||!o.staff||!o.date){alert('請填寫公司、人員、日期');return;} if(!o.am_s && !o.am_e && !o.pm_s && !o.pm_e) {alert('請填寫工時區段');return;}
   const isDuplicate=attendData.some(x=>x.company===o.company && x.staff===o.staff && x.date===o.date);
   if(isDuplicate){ if(!confirm('日期已存在，是否覆蓋？'))return; const idx=attendData.findIndex(x=>x.company===o.company && x.staff===o.staff && x.date===o.date); attendData[idx]=o; }else{ attendData.push(o); }
   saveAll(); resetPage('attend'); renderAttend(); clearAttendForm(); checkStaffPointAlert(o.staff); alert('儲存成功');
 }
 function editAttend(i){
-  const d=attendData[i]; document.getElementById('attend_company').value=d.company; document.getElementById('attend_staff').value=d.staff; document.getElementById('attend_date').value=d.date; document.getElementById('am_s').value=d.am_s||''; document.getElementById('am_e').value=d.am_e||''; document.getElementById('pm_s').value=d.pm_s||''; document.getElementById('pm_e').value=d.pm_e||''; editAttendIndex=i;
+  const d=attendData[i]; 
+  document.getElementById('attend_company').value=d.company; 
+  document.getElementById('attend_staff').value=d.staff; 
+  document.getElementById('attend_date').value=d.date; 
+  document.getElementById('attend_service').value=d.service||''; 
+  document.getElementById('attend_remark').value=d.remark||'';
+  document.getElementById('am_s').value=d.am_s||''; 
+  document.getElementById('am_e').value=d.am_e||''; 
+  document.getElementById('pm_s').value=d.pm_s||''; 
+  document.getElementById('pm_e').value=d.pm_e||''; 
+  editAttendIndex=i;
 }
 function delAttend(i){ if(!confirm('確定刪除？'))return; attendData.splice(i,1); saveAll(); resetPage('attend'); renderAttend(); }
-function clearAttendForm(){ document.getElementById('attend_company').value=''; document.getElementById('attend_staff').value=''; document.getElementById('attend_date').value=''; document.getElementById('am_s').value=''; document.getElementById('am_e').value=''; document.getElementById('pm_s').value=''; document.getElementById('pm_e').value=''; editAttendIndex=-1; }
+function clearAttendForm(){ 
+  document.getElementById('attend_company').value=''; 
+  document.getElementById('attend_staff').value=''; 
+  document.getElementById('attend_date').value=''; 
+  document.getElementById('attend_service').value=''; 
+  document.getElementById('attend_remark').value='';
+  document.getElementById('am_s').value=''; document.getElementById('am_e').value=''; document.getElementById('pm_s').value=''; document.getElementById('pm_e').value=''; 
+  editAttendIndex=-1; 
+}
 
 // ===================== 點數統計 =====================
 function renderPoint(){
@@ -1111,9 +1176,9 @@ function renderBill(){
   let html='';
   pagedList.forEach(item=>{
     const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e)).toFixed(1); const point=Math.ceil(+hour);
-    html+=`<tr><td>${item.date}</td><td>${item.staff}</td><td>${hour}</td><td>${point}</td><td>${contractPoints - point}</td><td>${contractPoints}</td></tr>`;
+    html+=`<tr><td>${item.date}</td><td>${item.staff}</td><td>${item.service||'-'}</td><td>${hour}</td><td>${point}</td><td>${contractPoints - point}</td><td>${contractPoints}</td></tr>`;
   });
-  document.getElementById('billTable').innerHTML=html||'<tr><td colspan=6>無資料</td></tr>'; renderPagination('bill', total, totalPages);
+  document.getElementById('billTable').innerHTML=html||'<tr><td colspan="7">無資料</td></tr>'; renderPagination('bill', total, totalPages);
 }
 
 function generateStatementPDF() {
@@ -1151,9 +1216,9 @@ function generateStatementPDF() {
      periodAttends.forEach(item => {
        const hour = ((+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e))).toFixed(1);
        const pt = Math.ceil(+hour);
-       attendHtml += `<tr><td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.date}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.staff}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${hour}</td><td style="border:1px solid #ddd; padding:10px; text-align:center; font-weight:bold;">${pt}</td></tr>`;
+       attendHtml += `<tr><td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.date}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.staff}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.service||'-'}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${hour}</td><td style="border:1px solid #ddd; padding:10px; text-align:center; font-weight:bold;">${pt}</td></tr>`;
      });
-  } else { attendHtml = `<tr><td colspan="4" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">本期無派遣紀錄</td></tr>`; }
+  } else { attendHtml = `<tr><td colspan="5" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">本期無派遣紀錄</td></tr>`; }
 
   const periodText = (yb==='all' && mb==='all') ? '全部歷史期間' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
   const logoHtml = companyLogoBase64 ? `<img src="${companyLogoBase64}" style="height: 60px; border-radius: 12px; margin-right: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">` : ``;
@@ -1178,7 +1243,7 @@ function generateStatementPDF() {
     </div>
     <h3 style="font-size:16px; margin-bottom:10px; color:#444; border-left: 4px solid #2d9d5c; padding-left: 8px;">本期派遣明細</h3>
     <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:30px;">
-        <thead><tr style="background-color:#f9f9f9; color:#555;"><th style="border:1px solid #ddd; padding:12px; width:25%;">派遣日期</th><th style="border:1px solid #ddd; padding:12px; width:25%;">派遣人員</th><th style="border:1px solid #ddd; padding:12px; width:25%;">工時 (小時)</th><th style="border:1px solid #ddd; padding:12px; width:25%;">扣除點數</th></tr></thead>
+        <thead><tr style="background-color:#f9f9f9; color:#555;"><th style="border:1px solid #ddd; padding:12px; width:20%;">派遣日期</th><th style="border:1px solid #ddd; padding:12px; width:20%;">派遣人員</th><th style="border:1px solid #ddd; padding:12px; width:25%;">服務項目</th><th style="border:1px solid #ddd; padding:12px; width:15%;">工時</th><th style="border:1px solid #ddd; padding:12px; width:20%;">扣除點數</th></tr></thead>
         <tbody>${attendHtml}</tbody>
     </table>
     <div style="margin-top: 30px; text-align: right; font-size: 13px; color: #888;">
@@ -1206,7 +1271,7 @@ function renderSalary(){
     const labor=+staff.labor||0; const health=+staff.health||0; const hour=(+getHours(item.am_s,item.am_e)) + (+getHours(item.pm_s,item.pm_e));
     
     totalSummary.totalHour+=hour; const salary=(hour * hourly).toFixed(0); totalSummary.totalSalary+=+salary; totalSummary.totalLabor+=labor; totalSummary.totalHealth+=health; const net = (salary - labor - health).toFixed(0); totalSummary.totalNet+=+net;
-    html+=`<tr><td>${item.staff}</td><td>${item.date}</td><td>${item.company}</td><td>${hour.toFixed(1)}</td><td>${salary} <span style="font-size:12px;color:#888;">(${hourly}/h)</span></td><td>${labor}</td><td>${health}</td><td>${net}</td></tr>`;
+    html+=`<tr><td>${item.staff}</td><td>${item.date}</td><td>${item.company}</td><td>${item.service||'-'}</td><td>${hour.toFixed(1)}</td><td>${salary} <span style="font-size:12px;color:#888;">(${hourly}/h)</span></td><td>${labor}</td><td>${health}</td><td>${net}</td></tr>`;
   });
 
   let periodText = '';
@@ -1215,7 +1280,7 @@ function renderSalary(){
 
   document.getElementById('salResult').innerHTML=`人員：${s==='all'?'全部人員':s} | 計薪期間：${periodText} | 總工時：${totalSummary.totalHour.toFixed(1)}h | 總薪資：${totalSummary.totalSalary.toFixed(0)}元`;
   document.getElementById('salLabor').textContent=totalSummary.totalLabor.toFixed(0); document.getElementById('salHealth').textContent=totalSummary.totalHealth.toFixed(0); document.getElementById('salNet').textContent=totalSummary.totalNet.toFixed(0);
-  document.getElementById('salaryTable').innerHTML=html||'<tr><td colspan=8>無薪資資料</td></tr>'; renderPagination('salary', total, totalPages);
+  document.getElementById('salaryTable').innerHTML=html||'<tr><td colspan="9">無薪資資料</td></tr>'; renderPagination('salary', total, totalPages);
 }
 
 // ==== 員工個人專屬薪資單 PDF 生成 ====
@@ -1246,10 +1311,10 @@ function generatePayslipPDF() {
      const hour = +(+getHours(item.am_s, item.am_e) + +getHours(item.pm_s, item.pm_e)).toFixed(1);
      const dailyAmount = Math.round(hour * hourly);
      totalHours += hour; totalPayable += dailyAmount;
-     tableRows += `<tr><td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.date}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${hour}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${hourly}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${dailyAmount}</td></tr>`;
+     tableRows += `<tr><td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.date}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${item.service||'-'}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${hour}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${hourly}</td><td style="border:1px solid #ddd; padding:10px; text-align:center;">${dailyAmount}</td></tr>`;
   });
 
-  if (periodAttends.length === 0) { tableRows = `<tr><td colspan="4" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">本期無出勤紀錄</td></tr>`; }
+  if (periodAttends.length === 0) { tableRows = `<tr><td colspan="5" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">本期無出勤紀錄</td></tr>`; }
 
   const labor = +staff.labor || 0;
   const health = +staff.health || 0;
@@ -1282,16 +1347,17 @@ function generatePayslipPDF() {
     <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:30px;">
         <thead>
             <tr style="background-color:#f9f9f9; color:#555;">
-                <th style="border:1px solid #ddd; padding:10px; width:25%;">工作日期</th>
-                <th style="border:1px solid #ddd; padding:10px; width:25%;">工作時數</th>
-                <th style="border:1px solid #ddd; padding:10px; width:25%;">時薪</th>
+                <th style="border:1px solid #ddd; padding:10px; width:20%;">工作日期</th>
+                <th style="border:1px solid #ddd; padding:10px; width:20%;">服務項目</th>
+                <th style="border:1px solid #ddd; padding:10px; width:15%;">工作時數</th>
+                <th style="border:1px solid #ddd; padding:10px; width:20%;">時薪</th>
                 <th style="border:1px solid #ddd; padding:10px; width:25%;">每日金額</th>
             </tr>
         </thead>
         <tbody>${tableRows}</tbody>
         <tfoot>
             <tr style="background-color:#f0f8f4; font-weight:bold;">
-                <td style="border:1px solid #ddd; padding:10px; text-align:center;">總計</td>
+                <td colspan="2" style="border:1px solid #ddd; padding:10px; text-align:center;">總計</td>
                 <td style="border:1px solid #ddd; padding:10px; text-align:center;">${totalHours.toFixed(1)}</td>
                 <td style="border:1px solid #ddd; padding:10px; text-align:center;">-</td>
                 <td style="border:1px solid #ddd; padding:10px; text-align:center;">${totalPayable}</td>
