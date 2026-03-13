@@ -19,12 +19,9 @@
   /* ================= 💎 頂級毛玻璃 登入畫面 ================= */
   #login-screen { 
     display: flex; justify-content: center; align-items: center; height: 100vh; 
-    /* 💡 強制讀取同資料夾下的 S__19718160.jpg 作為專屬背景 */
+    /* 預設線上備用背景圖，防止變黑 */
+    background: url('https://images.unsplash.com/photo-1554774853-719586f82d77?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat;
     background-color: #1e293b;
-    background-image: url('./S__19718160.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
     position: relative;
   }
   /* 深色半透明遮罩，增加前景對比度 */
@@ -127,7 +124,7 @@
       <img id="login-logo-img" src="" alt="點籽響 LOGO" style="display:none;">
       <i class="fas fa-leaf" id="login-logo-icon"></i>
     </div>
-    <h1 style="margin-top:10px;">點籽響管理系統</h1>
+    <h1>點籽響管理系統</h1>
     <div class="pro-badge">專業企業版</div>
     
     <div class="login-field">
@@ -177,7 +174,8 @@
 
   <div class="main-content">
     <div class="page-header">
-      <div></div> <div class="header-actions">
+      <div></div>
+      <div class="header-actions">
         <button id="workspace-toggle-btn" onclick="toggleWorkspace()" class="switch-role-btn">
           <i class="fas fa-exchange-alt"></i> <span>切換至人事區</span>
         </button>
@@ -579,12 +577,12 @@
       <input type="file" id="restoreFile" accept=".json" onchange="restoreData(this)" style="display:none;">
       
       <div class="panel admin-only" style="margin-top: 40px; border-top: 4px solid #3b82f6;">
-        <h3 class="panel-title"><i class="fas fa-cogs"></i> 系統進階設定 (專屬 LOGO 與 價目表)</h3>
+        <h3 class="panel-title"><i class="fas fa-cogs"></i> 系統進階設定 (外觀與價目表)</h3>
         
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f8fafc;">
             <label style="font-weight:bold; display:block; margin-bottom:10px; color:#1e293b;">👑 登入畫面專屬 LOGO (圖 1)</label>
-            <p style="font-size:12px; color:#64748b; margin-bottom:10px;">這張圖片將顯示在所有人開啟系統的第一個登入畫面上。</p>
+            <p style="font-size:12px; color:#64748b; margin-bottom:10px;">顯示在所有人開啟系統的第一個登入畫面上。</p>
             <div style="display:flex; align-items:center; gap:15px;">
               <img id="loginLogoPreview" src="" style="height:50px; border-radius:8px; display:none; border:1px solid #ddd; background:#fff;">
               <button class="btn btn-warning" onclick="document.getElementById('loginLogoUpload').click()"><i class="fas fa-image"></i> 上傳登入 Logo</button>
@@ -601,6 +599,17 @@
               <button class="btn btn-success" onclick="document.getElementById('pdfLogoUpload').click()"><i class="fas fa-file-pdf"></i> 上傳報表 Logo</button>
               <input type="file" id="pdfLogoUpload" accept="image/*" style="display:none" onchange="handlePdfLogoUpload(this)">
               <button class="btn btn-pdf" onclick="clearPdfLogo()" id="btnClearPdfLogo" style="display:none; margin:0;"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+          
+          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f8fafc; grid-column: span 2;">
+            <label style="font-weight:bold; display:block; margin-bottom:10px; color:#1e293b;">🖼️ 登入畫面專屬背景圖</label>
+            <p style="font-size:12px; color:#64748b; margin-bottom:10px;">您可以直接上傳您的「商務聯網圖 (S__19718160.jpg)」，系統會自動將它設為登入背景，解決破圖問題！</p>
+            <div style="display:flex; align-items:center; gap:15px;">
+              <button class="btn btn-excel" onclick="document.getElementById('loginBgUpload').click()"><i class="fas fa-image"></i> 上傳專屬背景圖</button>
+              <input type="file" id="loginBgUpload" accept="image/*" style="display:none" onchange="handleLoginBgUpload(this)">
+              <button class="btn btn-pdf" onclick="clearLoginBg()" id="btnClearLoginBg" style="display:none; margin:0;"><i class="fas fa-trash"></i> 恢復預設</button>
+              <span id="bg-upload-status" style="font-size:13px; color:#10b981; font-weight:bold; display:none;"><i class="fas fa-check-circle"></i> 已套用自訂背景，請登出查看</span>
             </div>
           </div>
         </div>
@@ -678,16 +687,16 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 let custData = []; let contractData = []; let staffData = []; let attendData = []; let ftStaffData = []; let ftAttendData = []; let talentData = [];
 
-// 💡 雙 LOGO 變數
+// 💡 LOGO 與 背景 變數
 let loginLogoBase64 = localStorage.getItem('loginLogo') || '';
 let pdfLogoBase64 = localStorage.getItem('pdfLogo') || '';
+let loginBgBase64 = localStorage.getItem('loginBg') || '';
 
 let currentLoginStaff = null; let currentWorkspace = 'business'; 
 let editCustIndex = -1; let editContractIndex = -1; let editStaffIndex = -1; let editAttendIndex = -1;
 let editFtStaffIndex = -1; let editFtAttendIndex = -1; let editTalentIndex = -1;
 const pageConfig = { pageSize: 10, currentPage: { customer: 1, contract: 1, staff: 1, attend: 1, point: 1, bill: 1, salary: 1, boss: 1, ft_staff: 1, ft_attend: 1, ft_salary: 1, talent: 1 } };
 
-// ===================== 價目表擴充引擎 =====================
 const defaultPriceTable = { "無購買時數(零工派遣)": { points: 0, packagePrice: 0, pointPrice: 400 }, "時數方案1": { points: 50, packagePrice: 17000, pointPrice: 340 }, "時數方案2": { points: 90, packagePrice: 30600, pointPrice: 340 }, "時數方案3": { points: 120, packagePrice: 40800, pointPrice: 340 }, "時數方案4": { points: 250, packagePrice: 85000, pointPrice: 340 }, "時數方案5": { points: 370, packagePrice: 122100, pointPrice: 330 }, "時數方案6": { points: 550, packagePrice: 181500, pointPrice: 330 }, "時數方案7": { points: 750, packagePrice: 247500, pointPrice: 330 }, "時數方案8": { points: 1000, packagePrice: 330000, pointPrice: 330 }, "客製化方案": { points: 0, packagePrice: 0, pointPrice: 0 } };
 let priceTable = JSON.parse(localStorage.getItem('priceTable')) || defaultPriceTable;
 
@@ -721,14 +730,13 @@ function getStaffTotalHours(name) { return attendData.filter(x=>x.staff===name).
 function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h <= 175) return 210; if (h <= 350) return 220; if (h <= 525) return 230; if (h <= 700) return 240; return 250; }
 function getStaffTotalPoint(name) { return attendData.filter(x=>x.staff===name).reduce((sum,item)=> sum + getItemDeductPoints(item),0); }
 
-// ===================== 登入與防 F5 登出機制 (Session Storage) =====================
 document.addEventListener('DOMContentLoaded', function () {
   custData = JSON.parse(localStorage.getItem('custData') || '[]'); contractData = JSON.parse(localStorage.getItem('contractData') || '[]'); staffData = JSON.parse(localStorage.getItem('staffData') || '[]'); attendData = JSON.parse(localStorage.getItem('attendData') || '[]'); ftStaffData = JSON.parse(localStorage.getItem('ftStaffData') || '[]'); ftAttendData = JSON.parse(localStorage.getItem('ftAttendData') || '[]'); talentData = JSON.parse(localStorage.getItem('talentData') || '[]');
   standardizeData();
   
   document.getElementById('config_price_table').value = JSON.stringify(priceTable, null, 2);
   renderPricePlanOptions();
-  updateLogoPreview();
+  updateLogoPreview(); // 顯示 LOGO 與 背景
   
   loadDataFromCloud();
   restoreLoginState();
@@ -800,15 +808,20 @@ function logout() {
 }
 function toggleLoginFields() {}
 
+// 💡 雙 LOGO 與 背景圖 處理引擎
 function handleLoginLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginLogoBase64 = e.target.result; localStorage.setItem('loginLogo', loginLogoBase64); updateLogoPreview(); alert('登入Logo上傳成功！請登出查看效果。'); }; reader.readAsDataURL(input.files[0]); } }
 function handlePdfLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { pdfLogoBase64 = e.target.result; localStorage.setItem('pdfLogo', pdfLogoBase64); updateLogoPreview(); alert('報表Logo上傳成功！'); }; reader.readAsDataURL(input.files[0]); } }
+function handleLoginBgUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginBgBase64 = e.target.result; localStorage.setItem('loginBg', loginBgBase64); updateLogoPreview(); alert('登入背景圖上傳成功！請登出查看效果。'); }; reader.readAsDataURL(input.files[0]); } }
+
 function clearLoginLogo() { if(!confirm('移除登入Logo？')) return; loginLogoBase64 = ''; localStorage.removeItem('loginLogo'); updateLogoPreview(); }
 function clearPdfLogo() { if(!confirm('移除報表Logo？')) return; pdfLogoBase64 = ''; localStorage.removeItem('pdfLogo'); updateLogoPreview(); }
+function clearLoginBg() { if(!confirm('移除自訂背景，恢復預設圖嗎？')) return; loginBgBase64 = ''; localStorage.removeItem('loginBg'); updateLogoPreview(); }
 
 function updateLogoPreview() { 
   const pl = document.getElementById('loginLogoPreview'); const bl = document.getElementById('btnClearLoginLogo'); 
   const pp = document.getElementById('pdfLogoPreview'); const bp = document.getElementById('btnClearPdfLogo'); 
   const limg = document.getElementById('login-logo-img'); const licon = document.getElementById('login-logo-icon');
+  const ls = document.getElementById('login-screen'); const btnBg = document.getElementById('btnClearLoginBg'); const bgStatus = document.getElementById('bg-upload-status');
   
   if (loginLogoBase64) { 
     if(pl) { pl.src = loginLogoBase64; pl.style.display = 'block'; bl.style.display = 'inline-block'; }
@@ -819,6 +832,16 @@ function updateLogoPreview() {
   } 
   if (pdfLogoBase64) { if(pp) { pp.src = pdfLogoBase64; pp.style.display = 'block'; bp.style.display = 'inline-block'; } } 
   else { if(pp) { pp.src = ''; pp.style.display = 'none'; bp.style.display = 'none'; } }
+  
+  if (loginBgBase64) {
+      if(ls) ls.style.backgroundImage = `url('${loginBgBase64}')`;
+      if(btnBg) btnBg.style.display = 'inline-block';
+      if(bgStatus) bgStatus.style.display = 'inline-block';
+  } else {
+      if(ls) ls.style.backgroundImage = "url('S__19718160.jpg'), url('https://images.unsplash.com/photo-1554774853-719586f82d77?q=80&w=2000&auto=format&fit=crop')";
+      if(btnBg) btnBg.style.display = 'none';
+      if(bgStatus) bgStatus.style.display = 'none';
+  }
 }
 
 function initStaffFrontend() {
@@ -909,7 +932,7 @@ function autoCreateStaffFolder(nameId, driveId) {
   fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: '[員工] ' + sName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { document.getElementById(driveId).value = res.folderUrl; alert('員工資料夾建立成功！請儲存資料。'); } else { alert('建立失敗'); } }).catch(err => alert('連線錯誤')).finally(() => { btn.innerHTML = originHtml; btn.disabled = false; });
 }
 
-// 💡 PDF 產生器
+// 💡 PDF 產生器 - 自動套用報表專屬 LOGO
 function uploadTablePDF(tableId, title, compFilterId, isCloud, isStaff = false) {
   const cb = compFilterId ? document.getElementById(compFilterId).value : '';
   if(isCloud && compFilterId && (!cb || cb === 'all')) return alert('請先在上方選擇特定「對象」，才能存入專屬雲端資料夾！');
@@ -1102,7 +1125,7 @@ function renderStaffTable(){
   const fs=document.getElementById('staff_filter_status').value; const fn=document.getElementById('staff_filter_name').value.toLowerCase(); let list=staffData.filter(x=>(fs==='all'||x.status===fs)&&(!fn||x.name.toLowerCase().includes(fn)));
   const {pagedList,total,totalPages}=getPagedData(list,'staff'); let html='';
   pagedList.forEach(item=>{ const idx=staffData.findIndex(x=>x.name===item.name); const btn=item.drive?`<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>`:'-';
-    let docs=[]; if(item.doc_id)docs.push('<span class="badge badge-green">身分證</span>');else docs.push('<span class="badge badge-red">缺身分證</span>'); if(item.doc_bank)docs.push('<span class="badge badge-green">存摺</span>');else docs.push('<span class="badge badge-red">缺存摺</span>'); if(item.doc_contract)docs.push('<span class="badge badge-green">合約</span>');else docs.push('<span class="badge badge-red">缺合約</span>'); if(item.doc_resume)docs.push('<span class="badge badge-green">履歷</span>');else docs.push('<span class="badge badge-red">缺履歷</span>');
+    let docs=[]; if(item.doc_id)docs.push('<span class="badge badge-green">身</span>');else docs.push('<span class="badge badge-red">缺身</span>'); if(item.doc_bank)docs.push('<span class="badge badge-green">存</span>');else docs.push('<span class="badge badge-red">缺存</span>'); if(item.doc_contract)docs.push('<span class="badge badge-green">契</span>');else docs.push('<span class="badge badge-red">缺契</span>'); if(item.doc_resume)docs.push('<span class="badge badge-green">歷</span>');else docs.push('<span class="badge badge-red">缺歷</span>');
     html+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.id||'-'}</td><td>${item.birthday||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd||'-'}</td><td>${item.hourly||'自動'}</td><td>${item.labor||0} / ${item.health||0}</td><td>${btn}</td><td>${item.remark||'-'}</td><td><div style="display:flex;gap:4px;flex-wrap:wrap;">${docs.join('')}</div></td><td>${item.status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editStaff(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delStaff(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
   document.getElementById('staffTable').innerHTML=html||'<tr><td colspan="13" style="text-align:center;">無資料</td></tr>'; renderPagination('staff',total,totalPages); if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
@@ -1128,7 +1151,7 @@ function clearAttendForm(){ document.querySelectorAll('#page-attend input').forE
 function renderFtStaffTable(){
   const fs=document.getElementById('ft_staff_filter_status').value; const fn=document.getElementById('ft_staff_filter_name').value.toLowerCase(); let list=ftStaffData.filter(x=>(fs==='all'||x.status===fs)&&(!fn||x.name.toLowerCase().includes(fn))); const {pagedList,total,totalPages}=getPagedData(list,'ft_staff'); let html='';
   pagedList.forEach(item=>{ const idx=ftStaffData.findIndex(x=>x.name===item.name); const btn=item.drive?`<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>`:'-'; 
-    let docs=[]; if(item.doc_id)docs.push('<span class="badge badge-green">身分證</span>');else docs.push('<span class="badge badge-red">缺身分證</span>'); if(item.doc_bank)docs.push('<span class="badge badge-green">存摺</span>');else docs.push('<span class="badge badge-red">缺存摺</span>'); if(item.doc_contract)docs.push('<span class="badge badge-green">合約</span>');else docs.push('<span class="badge badge-red">缺合約</span>'); if(item.doc_resume)docs.push('<span class="badge badge-green">履歷</span>');else docs.push('<span class="badge badge-red">缺履歷</span>');
+    let docs=[]; if(item.doc_id)docs.push('<span class="badge badge-green">身</span>');else docs.push('<span class="badge badge-red">缺身</span>'); if(item.doc_bank)docs.push('<span class="badge badge-green">存</span>');else docs.push('<span class="badge badge-red">缺存</span>'); if(item.doc_contract)docs.push('<span class="badge badge-green">契</span>');else docs.push('<span class="badge badge-red">缺契</span>'); if(item.doc_resume)docs.push('<span class="badge badge-green">歷</span>');else docs.push('<span class="badge badge-red">缺歷</span>');
     html+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.hire_date||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd||'-'}</td><td>${item.salary||0}</td><td>${item.labor||0}/${item.health||0}</td><td>${btn}</td><td><div style="display:flex;gap:4px;flex-wrap:wrap;">${docs.join('')}</div></td><td>${item.status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtStaff(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtStaff(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
   document.getElementById('ftStaffTable').innerHTML=html||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_staff',total,totalPages); fillFilters();
 }
