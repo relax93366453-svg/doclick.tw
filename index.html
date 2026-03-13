@@ -19,15 +19,22 @@
   /* ================= 💎 頂級毛玻璃 登入畫面 ================= */
   #login-screen { 
     display: flex; justify-content: center; align-items: center; height: 100vh; 
-    background: url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;
+    /* 💡 自動抓取同資料夾下的 S__19718160.jpg，若無則顯示備用商務圖 */
+    background: url('./S__19718160.jpg') center/cover no-repeat, url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat; 
     background-color: #1e293b;
     position: relative;
   }
-  #login-screen::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65); }
+  #login-screen::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.65); 
+  }
   .login-box { 
-    background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.5); padding: 45px 40px; border-radius: 16px; 
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 100%; max-width: 420px; text-align: center; 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 45px 40px; border-radius: 16px; 
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+    width: 100%; max-width: 420px; text-align: center; 
     position: relative; z-index: 1; border-top: 6px solid #2d9d5c;
   }
   .login-logo-container { margin-bottom: 20px; height: 80px; display: flex; justify-content: center; align-items: center; }
@@ -117,7 +124,7 @@
       <img id="login-logo-img" src="" alt="點籽響 LOGO" style="display:none;">
       <i class="fas fa-leaf" id="login-logo-icon"></i>
     </div>
-    <h1>點籽響管理系統</h1>
+    <h1 style="margin-top:10px;">點籽響管理系統</h1>
     <div class="pro-badge">專業企業版</div>
     
     <div class="login-field">
@@ -147,27 +154,28 @@
       <h1 class="ws-hr" id="admin-sidebar-title-hr"><i class="fas fa-users-cog" id="sidebar-icon-hr"></i> 人事員工區</h1>
     </div>
     <ul class="sidebar-nav">
-      <li class="ws-business"><a class="ws-business-dashboard-link active" onclick="showAdminPage('dashboard', this)"><i class="fas fa-border-all"></i> 總覽儀表板</a></li>
-      <li class="ws-business admin-only"><a onclick="showAdminPage('customer', this)"><i class="fas fa-building"></i> 客戶資料</a></li>
-      <li class="ws-business admin-only"><a onclick="showAdminPage('contract', this)"><i class="fas fa-file-contract"></i> 合約方案</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('attend', this)"><i class="fas fa-clock"></i> 派遣記錄</a></li>
-      <li class="ws-business admin-only"><a onclick="showAdminPage('point', this)"><i class="fas fa-calculator"></i> 點數統計</a></li>
-      <li class="ws-business admin-only"><a onclick="showAdminPage('bill', this)"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('salary', this)"><i class="fas fa-wallet"></i> 派遣薪資計算</a></li>
-      <li class="ws-business admin-only"><a onclick="showAdminPage('boss', this)"><i class="fas fa-cogs"></i> 系統進階設定</a></li>
+      <li class="ws-business"><a class="ws-business-dashboard-link active" onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 總覽儀表板</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('customer')"><i class="fas fa-building"></i> 客戶資料</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('contract')"><i class="fas fa-file-contract"></i> 合約方案</a></li>
+      <li class="ws-business"><a onclick="showAdminPage('attend')"><i class="fas fa-clock"></i> 派遣記錄</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('point')"><i class="fas fa-calculator"></i> 點數統計</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('bill')"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</a></li>
+      <li class="ws-business"><a onclick="showAdminPage('salary')"><i class="fas fa-wallet"></i> 派遣薪資計算</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('boss')"><i class="fas fa-cogs"></i> 系統進階設定</a></li>
       
-      <li class="ws-hr"><a class="ws-hr-dashboard-link" onclick="showAdminPage('dashboard', this)"><i class="fas fa-border-all"></i> 人事儀表板</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('staff', this)"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('ft_staff', this)"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('ft_attend', this)"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('ft_salary', this)"><i class="fas fa-money-check-alt"></i> 正職薪資結算</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('talent', this)"><i class="fas fa-address-card"></i> 人才招募庫</a></li>
+      <li class="ws-hr"><a class="ws-hr-dashboard-link" onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 人事儀表板</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('staff')"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('ft_salary')"><i class="fas fa-money-check-alt"></i> 正職薪資結算</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('talent')"><i class="fas fa-address-card"></i> 人才招募收集庫</a></li>
     </ul>
   </div>
 
   <div class="main-content">
     <div class="page-header">
-      <div></div> <div class="header-actions">
+      <div></div>
+      <div class="header-actions">
         <button id="workspace-toggle-btn" onclick="toggleWorkspace()" class="switch-role-btn">
           <i class="fas fa-exchange-alt"></i> <span>切換至人事區</span>
         </button>
@@ -182,12 +190,12 @@
       <h2 class="ws-hr" style="font-size:20px; font-weight:800; color:#1e293b; margin-bottom:20px;"><i class="fas fa-sun" style="color:#f59e0b;"></i> 人事動態總覽</h2>
 
       <div class="quick-actions" style="margin-bottom: 25px;">
-        <button class="btn btn-success ws-business" onclick="showAdminPage('attend', document.querySelector('.ws-business:nth-child(4) a'));"><i class="fas fa-plus"></i> 新增派遣記錄</button>
-        <button class="btn btn-warning ws-business admin-only" onclick="showAdminPage('customer', document.querySelector('.ws-business:nth-child(2) a'));"><i class="fas fa-building"></i> 新增客戶</button>
+        <button class="btn btn-success ws-business" onclick="showAdminPage('attend');"><i class="fas fa-plus"></i> 新增派遣記錄</button>
+        <button class="btn btn-warning ws-business admin-only" onclick="showAdminPage('customer');"><i class="fas fa-building"></i> 新增客戶</button>
         
-        <button class="btn btn-warning ws-hr" onclick="showAdminPage('staff', document.querySelector('.ws-hr:nth-child(2) a'));"><i class="fas fa-user-tag"></i> 新增派遣員工</button>
-        <button class="btn btn-success ws-hr" onclick="showAdminPage('ft_staff', document.querySelector('.ws-hr:nth-child(3) a'));"><i class="fas fa-user-tie"></i> 新增正職員工</button>
-        <button class="btn btn-excel ws-hr" onclick="showAdminPage('ft_attend', document.querySelector('.ws-hr:nth-child(4) a'));"><i class="fas fa-calendar-check"></i> 新增正職出勤</button>
+        <button class="btn btn-warning ws-hr" onclick="showAdminPage('staff');"><i class="fas fa-user-tag"></i> 新增派遣員工</button>
+        <button class="btn btn-success ws-hr" onclick="showAdminPage('ft_staff');"><i class="fas fa-user-tie"></i> 新增正職員工</button>
+        <button class="btn btn-excel ws-hr" onclick="showAdminPage('ft_attend');"><i class="fas fa-calendar-check"></i> 新增正職出勤</button>
       </div>
       
       <div class="ws-business admin-only">
@@ -290,6 +298,7 @@
             <button type="button" class="btn-sm btn-warning" onclick="autoCreateStaffFolder('staff_name', 'staff_drive')" style="margin-bottom:0; padding:8px;" title="無資料夾時，可讓系統代建"><i class="fas fa-magic"></i> 自動建新資料夾</button>
           </div>
         </div>
+        
         <div style="grid-column: span 4; background: #fffbeb; padding: 15px; border-radius: 8px; border: 1px dashed #f59e0b;">
           <label style="color:#d97706; font-weight:bold; font-size:15px;"><i class="fas fa-tasks"></i> 到職資料繳交狀態核對 (已交請打勾)</label>
           <div class="checkbox-group" style="margin-top:8px;">
@@ -321,14 +330,22 @@
       </div>
       <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; background: #ecfdf5; padding: 25px; border-radius: 12px; border: 1px solid #a7f3d0;">
         <div><label>正職姓名 <span class="required">*</span></label><input id="ft_name" required></div>
-        <div><label>電話</label><input id="ft_tel"></div><div><label>身份證字號</label><input id="ft_id"></div><div><label>生日</label><input type="date" id="ft_birthday"></div>
+        <div><label>電話</label><input id="ft_tel"></div>
+        <div><label>身份證字號</label><input id="ft_id"></div>
+        <div><label>生日</label><input type="date" id="ft_birthday"></div>
+        
         <div><label>聯絡地址</label><input id="ft_addr"></div>
         <div style="background:#e0f2fe; padding:10px; border-radius:6px; margin:-10px 0;"><label style="color:#0369a1;">前台帳號</label><input id="ft_account"></div>
         <div style="background:#e0f2fe; padding:10px; border-radius:6px; margin:-10px 0;"><label style="color:#0369a1;">前台密碼</label><input id="ft_pwd" type="text" value="1234"></div>
         <div><label>狀態</label><select id="ft_status"><option>在職</option><option>離職</option></select></div>
-        <div><label>到職日</label><input type="date" id="ft_hire_date"></div><div><label>離職日</label><input type="date" id="ft_leave_date"></div>
-        <div><label>月薪 (固定薪資)</label><input type="number" id="ft_salary" value="30000" step="1000"></div><div><label>備註</label><input id="ft_remark"></div>
-        <div><label>代扣勞保</label><input id="ft_labor" type="number" value="0" min="0"></div><div><label>代扣健保</label><input id="ft_health" type="number" value="0" min="0"></div>
+        
+        <div><label>到職日 (特休計算用) <span class="required">*</span></label><input type="date" id="ft_hire_date"></div>
+        <div><label>離職日</label><input type="date" id="ft_leave_date"></div>
+        <div><label>月薪 (固定薪資)</label><input type="number" id="ft_salary" value="30000" step="1000"></div>
+        <div><label>備註</label><input id="ft_remark"></div>
+
+        <div><label>代扣勞保</label><input id="ft_labor" type="number" value="0" min="0"></div>
+        <div><label>代扣健保</label><input id="ft_health" type="number" value="0" min="0"></div>
         
         <div class="section-divider"><i class="fas fa-folder"></i> 檔案管理與審核區</div>
         <div style="grid-column: span 4;">
@@ -341,7 +358,7 @@
         <div style="grid-column: span 4; background: #fffbeb; padding: 15px; border-radius: 8px; border: 1px dashed #f59e0b;">
           <label style="color:#d97706; font-weight:bold; font-size:15px;"><i class="fas fa-tasks"></i> 到職資料繳交狀態核對 (已交請打勾)</label>
           <div class="checkbox-group" style="margin-top:8px;">
-            <label><input type="checkbox" id="ft_doc_id"> 身分證影本</label><label><input type="checkbox" id="ft_doc_bank"> 存摺影本</label><label><input type="checkbox" id="ft_doc_contract"> 勞動契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷表</label>
+            <label><input type="checkbox" id="ft_doc_id"> 身分證</label><label><input type="checkbox" id="ft_doc_bank"> 存摺</label><label><input type="checkbox" id="ft_doc_contract"> 勞動契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label>
           </div>
         </div>
       </div>
@@ -437,7 +454,7 @@
         <div>
             <label>合計時數 <span style="font-size:11px;color:#888;">(自動/可手改)</span></label>
             <div style="display:flex; align-items:center; gap:10px;">
-                <input type="number" id="fta_hours" step="0.1" min="0" style="width:90px;">
+                <input type="number" id="fta_hours" step="0.1" min="0" style="width:90px; padding:8px; border:1px solid #ccc; border-radius:4px;">
                 <label style="font-size:13px; cursor:pointer; display:flex; align-items:center; color:#0369a1; font-weight:bold; margin:0;"><input type="checkbox" id="fta_deduct_break" checked onchange="calcFtaHours()" style="width:16px; height:16px; margin-right:5px;"> ☕ 扣除休息 1h</label>
             </div>
         </div>
@@ -712,9 +729,21 @@
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
-let custData = []; let contractData = []; let staffData = []; let attendData = []; let ftStaffData = []; let ftAttendData = []; let talentData = [];
 
-// 💡 LOGO 與 背景 變數
+// 💡 金鐘罩引擎：保護所有 localStorage 讀取，避免格式錯誤導致系統卡死
+function safeJSONParse(key, fallback) {
+    try { const val = localStorage.getItem(key); return val ? JSON.parse(val) : fallback; } 
+    catch(e) { console.error("資料讀取錯誤:", key); return fallback; }
+}
+
+let custData = safeJSONParse('custData', []);
+let contractData = safeJSONParse('contractData', []);
+let staffData = safeJSONParse('staffData', []);
+let attendData = safeJSONParse('attendData', []);
+let ftStaffData = safeJSONParse('ftStaffData', []);
+let ftAttendData = safeJSONParse('ftAttendData', []);
+let talentData = safeJSONParse('talentData', []);
+
 let loginLogoBase64 = localStorage.getItem('loginLogo') || '';
 let pdfLogoBase64 = localStorage.getItem('pdfLogo') || '';
 let loginBgBase64 = localStorage.getItem('loginBg') || '';
@@ -724,9 +753,8 @@ let editCustIndex = -1; let editContractIndex = -1; let editStaffIndex = -1; let
 let editFtStaffIndex = -1; let editFtAttendIndex = -1; let editTalentIndex = -1;
 const pageConfig = { pageSize: 10, currentPage: { customer: 1, contract: 1, staff: 1, attend: 1, point: 1, bill: 1, salary: 1, boss: 1, ft_staff: 1, ft_attend: 1, ft_salary: 1, talent: 1 } };
 
-// ===================== 價目表擴充引擎 =====================
 const defaultPriceTable = { "無購買時數(零工派遣)": { points: 0, packagePrice: 0, pointPrice: 400 }, "時數方案1": { points: 50, packagePrice: 17000, pointPrice: 340 }, "時數方案2": { points: 90, packagePrice: 30600, pointPrice: 340 }, "時數方案3": { points: 120, packagePrice: 40800, pointPrice: 340 }, "時數方案4": { points: 250, packagePrice: 85000, pointPrice: 340 }, "時數方案5": { points: 370, packagePrice: 122100, pointPrice: 330 }, "時數方案6": { points: 550, packagePrice: 181500, pointPrice: 330 }, "時數方案7": { points: 750, packagePrice: 247500, pointPrice: 330 }, "時數方案8": { points: 1000, packagePrice: 330000, pointPrice: 330 }, "客製化方案": { points: 0, packagePrice: 0, pointPrice: 0 } };
-let priceTable = JSON.parse(localStorage.getItem('priceTable')) || defaultPriceTable;
+let priceTable = safeJSONParse('priceTable', defaultPriceTable);
 
 function renderPricePlanOptions() {
   document.querySelectorAll('#co_price_plan').forEach(sel => {
@@ -759,16 +787,17 @@ function getStaffTotalHours(name) { return attendData.filter(x=>x.staff===name).
 function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h <= 175) return 210; if (h <= 350) return 220; if (h <= 525) return 230; if (h <= 700) return 240; return 250; }
 function getStaffTotalPoint(name) { return attendData.filter(x=>x.staff===name).reduce((sum,item)=> sum + getItemDeductPoints(item),0); }
 
-// 💡 修復時鐘顯示引擎
+// 💡 穩定版：動態時間顯示引擎
 function updateSystemClock() {
   const now = new Date();
   const timeStr = now.toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit', hour12: false}); 
   const clockHtml = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${timeStr}`;
+  
   const ct = document.getElementById('current-time'); if(ct) ct.innerHTML = clockHtml; 
   const sct = document.getElementById('staff-current-time'); if(sct) sct.innerHTML = clockHtml;
 }
 
-// 💡 確保 Excel 匯出功能存在
+// 💡 Excel 匯出引擎
 function exportExcel(tableId, filename) {
   let table = document.getElementById(tableId);
   if(!table) return alert('找不到表格資料');
@@ -777,7 +806,6 @@ function exportExcel(tableId, filename) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  custData = JSON.parse(localStorage.getItem('custData') || '[]'); contractData = JSON.parse(localStorage.getItem('contractData') || '[]'); staffData = JSON.parse(localStorage.getItem('staffData') || '[]'); attendData = JSON.parse(localStorage.getItem('attendData') || '[]'); ftStaffData = JSON.parse(localStorage.getItem('ftStaffData') || '[]'); ftAttendData = JSON.parse(localStorage.getItem('ftAttendData') || '[]'); talentData = JSON.parse(localStorage.getItem('talentData') || '[]');
   standardizeData();
   
   if(document.getElementById('config_price_table')) {
@@ -786,8 +814,14 @@ document.addEventListener('DOMContentLoaded', function () {
   renderPricePlanOptions();
   updateLogoPreview(); 
   
+  // 啟動時間引擎
   updateSystemClock();
   setInterval(updateSystemClock, 1000);
+  
+  // 密碼框按 Enter 自動登入
+  document.getElementById('login_pwd').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') handleLogin();
+  });
   
   loadDataFromCloud();
   restoreLoginState();
@@ -819,7 +853,12 @@ function restoreLoginState() {
 }
 
 function handleLogin() {
-  const role = document.getElementById('login_role').value; const acc = document.getElementById('login_acc').value; const pwd = document.getElementById('login_pwd').value;
+  const role = document.getElementById('login_role').value; 
+  const acc = document.getElementById('login_acc').value.trim(); 
+  const pwd = document.getElementById('login_pwd').value.trim();
+  
+  if(!acc || !pwd) { alert('請輸入帳號與密碼！'); return; }
+
   if (role === 'admin') {
     if (acc === 'admin' && pwd === '1234') { 
       localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'business'); restoreLoginState();
@@ -849,8 +888,8 @@ function logout() {
   currentLoginStaff = null; currentWorkspace = 'business'; document.getElementById('admin-screen').style.display = 'none'; document.getElementById('staff-screen').style.display = 'none'; document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('login_acc').value = ''; document.getElementById('login_pwd').value = ''; document.getElementById('admin-screen').classList.remove('mode-hr');
 }
-function toggleLoginFields() {}
 
+// 💡 雙 LOGO 與 背景圖 處理引擎
 function handleLoginBgUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginBgBase64 = e.target.result; localStorage.setItem('loginBg', loginBgBase64); updateLogoPreview(); alert('登入背景圖上傳成功！請登出查看效果。'); }; reader.readAsDataURL(input.files[0]); } }
 function handleLoginLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginLogoBase64 = e.target.result; localStorage.setItem('loginLogo', loginLogoBase64); updateLogoPreview(); alert('登入Logo上傳成功！請登出查看效果。'); }; reader.readAsDataURL(input.files[0]); } }
 function handlePdfLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { pdfLogoBase64 = e.target.result; localStorage.setItem('pdfLogo', pdfLogoBase64); updateLogoPreview(); alert('報表Logo上傳成功！'); }; reader.readAsDataURL(input.files[0]); } }
@@ -957,9 +996,9 @@ function syncTalentFromForm() {
       try {
           let res = JSON.parse(text);
           if (res.status === 'success') { alert(`✅ 成功！已抓取 ${res.count} 筆新履歷。`); loadDataFromCloud(); } 
-          else { alert('❌ 抓取失敗 (雲端回報)：\n' + res.message + '\n\n【排解方法】請確認您的 Google 試算表裡面，有沒有一個分頁叫做「表單回應 1」。'); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); }
-      } catch(e) { alert('❌ 連線被 Google 權限阻擋！\n\n這代表您在 Apps Script 部署時，沒有把「誰可以存取」設定為「所有人 (Anyone)」。\n請回後台重新部署。'); updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 權限錯誤', true); }
-  }).catch(err => { alert('❌ 網路斷線，或您的 SCRIPT_URL 網址填寫錯誤。'); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
+          else { alert('❌ 抓取失敗 (雲端回報)：\n' + res.message); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); }
+      } catch(e) { alert('❌ 連線被 Google 權限阻擋！請確認 Apps Script 部署設為「所有人」。'); updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 權限錯誤', true); }
+  }).catch(err => { alert('❌ 網路斷線，或 SCRIPT_URL 錯誤。'); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
 }
 
 function autoCreateFolder() {
@@ -973,7 +1012,6 @@ function autoCreateStaffFolder(nameId, driveId) {
   fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: '[員工] ' + sName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { document.getElementById(driveId).value = res.folderUrl; alert('員工資料夾建立成功！請儲存資料。'); } else { alert('建立失敗'); } }).catch(err => alert('連線錯誤')).finally(() => { btn.innerHTML = originHtml; btn.disabled = false; });
 }
 
-// 💡 PDF 產生器
 function uploadTablePDF(tableId, title, compFilterId, isCloud, isStaff = false) {
   const cb = compFilterId ? document.getElementById(compFilterId).value : '';
   if(isCloud && compFilterId && (!cb || cb === 'all')) return alert('請先在上方選擇特定「對象」，才能存入專屬雲端資料夾！');
@@ -1194,7 +1232,6 @@ function renderAttend(){
     html+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
   document.getElementById('attendTable').innerHTML=html||'<tr><td colspan="10" style="text-align:center;">無記錄</td></tr>'; renderPagination('attend',total,totalPages);
 }
-function calcAttendTemp(){ const h=(+getHours(document.getElementById('am_s').value,document.getElementById('am_e').value))+(+getHours(document.getElementById('pm_s').value,document.getElementById('pm_e').value)); if(h>0){document.getElementById('attend_salary_hours').value=h.toFixed(1);document.getElementById('attend_deduct_points').value=Math.ceil(h);}else{document.getElementById('attend_salary_hours').value='';document.getElementById('attend_deduct_points').value='';} }
 function addAttend(){ const o={company:document.getElementById('attend_company').value,staff:document.getElementById('attend_staff').value,date:document.getElementById('attend_date').value,service:document.getElementById('attend_service').value,remark:document.getElementById('attend_remark').value,am_s:document.getElementById('am_s').value,am_e:document.getElementById('am_e').value,pm_s:document.getElementById('pm_s').value,pm_e:document.getElementById('pm_e').value,salary_hours:document.getElementById('attend_salary_hours').value,deduct_points:document.getElementById('attend_deduct_points').value}; if(!o.company||!o.staff||!o.date)return; const idx=attendData.findIndex(x=>x.company===o.company&&x.staff===o.staff&&x.date===o.date); if(idx>-1) attendData[idx]=o; else attendData.push(o); saveAll(); resetPage('attend'); renderAttend(); clearAttendForm(); }
 function editAttend(i){ const d=attendData[i]; document.getElementById('attend_company').value=d.company; document.getElementById('attend_staff').value=d.staff; document.getElementById('attend_date').value=d.date; document.getElementById('attend_service').value=d.service; document.getElementById('attend_remark').value=d.remark; document.getElementById('am_s').value=d.am_s; document.getElementById('am_e').value=d.am_e; document.getElementById('pm_s').value=d.pm_s; document.getElementById('pm_e').value=d.pm_e; document.getElementById('attend_salary_hours').value=d.salary_hours; document.getElementById('attend_deduct_points').value=d.deduct_points; editAttendIndex=i; }
 function delAttend(i){ if(!confirm('確定刪除此記錄？'))return; attendData.splice(i,1); saveAll(); resetPage('attend'); renderAttend(); }
@@ -1213,22 +1250,24 @@ function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:document.g
 function delFtStaff(i){ if(!confirm('確定刪除此正職員工嗎？'))return; ftStaffData.splice(i,1); saveAll(); resetPage('ft_staff'); renderFtStaffTable(); }
 function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff input[type="text"],#page-ft_staff input[type="date"],#page-ft_staff input[type="number"]').forEach(i=>i.value=''); document.querySelectorAll('#page-ft_staff input[type="checkbox"]').forEach(i=>i.checked=false); document.getElementById('ft_salary').value='30000'; document.getElementById('ft_labor').value='0'; document.getElementById('ft_health').value='0'; document.getElementById('ft_pwd').value='1234'; document.getElementById('ft_status').value='在職'; editFtStaffIndex=-1; document.getElementById('btnUpdateFtStaff').style.display='none'; }
 
-// 💡 智慧計算正職出勤時數 (含自動扣除休息一小時)
+// 💡 智慧計算正職出勤時數 (自動扣除休息 1 小時)
 function toggleFtaFields(){ const t=document.getElementById('fta_record_type').value; document.getElementById('fta_time_block').style.display='grid'; document.getElementById('fta_leave_type_block').style.display=t==='請假'?'block':'none'; document.getElementById('fta_approval_block').style.display=t==='請假'?'block':'none'; if(t==='請假'){document.getElementById('fta_time_in').value='';document.getElementById('fta_time_out').value='';document.getElementById('fta_hours').value='8';} }
 function calcFtaHours(){ 
     const s = document.getElementById('fta_time_in').value;
     const e = document.getElementById('fta_time_out').value;
     if(!s || !e) { document.getElementById('fta_hours').value = ''; return; }
     let h = (+getHours(s, e)); 
-    if(document.getElementById('fta_deduct_break').checked && h > 1) { h -= 1; }
+    const deduct = document.getElementById('fta_deduct_break');
+    if(deduct && deduct.checked && h > 1) { h -= 1; }
     if(h > 0) document.getElementById('fta_hours').value = h.toFixed(1); 
-    else document.getElementById('fta_hours').value = '';
+    else document.getElementById('fta_hours').value = '0';
 }
 
 // 💡 智慧特休儀表板
 function showLeaveInfo() {
     const staffName = document.getElementById('fta_staff').value;
     const infoPanel = document.getElementById('leave-info-panel');
+    if(!infoPanel) return;
     if(!staffName || staffName === 'all' || staffName === '') { infoPanel.style.display = 'none'; return; }
 
     const staff = ftStaffData.find(x => x.name === staffName);
@@ -1297,9 +1336,9 @@ function editFtAttend(i){ const d=ftAttendData[i]; document.getElementById('fta_
 function delFtAttend(i){ if(!confirm('確定刪除此紀錄？'))return; ftAttendData.splice(i,1); saveAll(); resetPage('ft_attend'); renderFtAttendTable(); showLeaveInfo(); }
 function clearFtAttendForm(){ document.querySelectorAll('#page-ft_attend input[type="time"],#page-ft_attend input[type="text"],#page-ft_attend input[type="date"],#page-ft_attend input[type="number"]').forEach(i=>i.value=''); document.getElementById('fta_record_type').value='正常出勤'; document.getElementById('fta_approval').value='已核准'; document.getElementById('fta_deduct_break').checked=true; toggleFtaFields(); editFtAttendIndex=-1; }
 
-function renderFtSalaryTable(){ const m=document.getElementById('fts_filter_month').value; const s=document.getElementById('fts_filter_staff').value; const sd=Number(document.getElementById('fts_standard_days').value)||22; if(!m)return document.getElementById('ftSalaryTable').innerHTML='<tr><td colspan="8" style="text-align:center;">請先選擇發薪年月</td></tr>'; let list=ftStaffData.filter(x=>x.status==='在職' && (s==='all'||x.name===s)); const {pagedList,total,totalPages}=getPagedData(list,'ft_salary'); let html=''; pagedList.forEach(st=>{ let bs=Number(st.salary)||30000; let dly=bs/30; let hr=dly/8; let mya=ftAttendData.filter(x=>x.staff===st.name&&x.date.startsWith(m)); let tw=0; let dd=0; let ov=0; mya.forEach(a=>{ let h=Number(a.hours)||0; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班')tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){if(a.leave_type==='事假')dd+=h*hr; if(a.leave_type==='病假'||a.leave_type==='生理假')dd+=h*hr*0.5;} else if(a.record_type==='加班')ov+=h*hr*1.34; }); let net=bs-dd+ov-(Number(st.labor)||0)-(Number(st.health)||0); html+=`<tr><td>${st.name}</td><td>${bs}</td><td>${tw.toFixed(1)}</td><td class="red">-${Math.round(dd)}</td><td class="green">+${Math.round(ov)}</td><td>${(Number(st.labor)||0)+(Number(st.health)||0)}</td><td style="font-weight:bold;color:#1e3a8a;">$${Math.round(net)}</td></tr>`; }); document.getElementById('ftSalaryTable').innerHTML=html||'<tr><td colspan="8" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_salary',total,totalPages); }
+function renderFtSalaryTable(){ const m=document.getElementById('fts_filter_month').value; const s=document.getElementById('fts_filter_staff').value; const sd=Number(document.getElementById('fts_standard_days').value)||22; if(!m)return document.getElementById('ftSalaryTable').innerHTML='<tr><td colspan="8" style="text-align:center;">請先選擇發薪年月</td></tr>'; let list=ftStaffData.filter(x=>x.status==='在職' && (s==='all'||x.name===s)); const {pagedList,total,totalPages}=getPagedData(list,'ft_salary'); let html=''; pagedList.forEach(st=>{ let bs=Number(st.salary)||30000; let dly=bs/30; let hr=dly/8; let mya=ftAttendData.filter(x=>x.staff===st.name&&x.date.startsWith(m)); let tw=0; let dd=0; let ov=0; mya.forEach(a=>{ let h=Number(a.hours)||0; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班')tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){if(a.leave_type==='事假')dd+=h*hr; if(a.leave_type==='病假'||a.leave_type==='生理假')dd+=h*hr*0.5;} else if(a.record_type==='加班')ov+=h*hr*1.34; }); let net=bs-dd+ov-(Number(st.labor)||0)-(Number(st.health)||0); html+=`<tr><td>${st.name}</td><td>${bs}</td><td>${tw.toFixed(1)}</td><td class="red">-${Math.round(dd)}</td><td class="green">+${Math.round(ov)}</td><td>${(Number(st.labor)||0)+(Number(st.health)||0)}</td><td style="font-weight:bold;color:#1e3a8a;">$${Math.round(net)}</td><td><button class="btn-sm btn-pdf" onclick="document.getElementById('fts_filter_staff').value='${st.name}'; generateFtPayslipPDF(false)"><i class="fas fa-file-pdf"></i></button></td></tr>`; }); document.getElementById('ftSalaryTable').innerHTML=html||'<tr><td colspan="8" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_salary',total,totalPages); }
 
-// 💡 人才招募庫擴充
+// 💡 擴充版：人才招募收集庫
 function renderTalentTable(){ 
   const tr=document.getElementById('tp_filter_role').value.toLowerCase(); 
   const ts=document.getElementById('tp_filter_status').value; 
