@@ -1372,4 +1372,8 @@ function renderDashboard(){
   let tHtml=''; attendData.filter(x=>x.date===tStr).forEach(i=>{ const am=i.am_s&&i.am_e?`${i.am_s}-${i.am_e}`:''; const pm=i.pm_s&&i.pm_e?`${i.pm_s}-${i.pm_e}`:''; tHtml+=`<tr><td>${i.staff}</td><td>${i.company}</td><td>${[am,pm].filter(x=>x).join('/')||'-'}</td></tr>`; });
   document.getElementById('dash_today_table').innerHTML = tHtml||'<tr><td colspan="3" style="text-align:center;color:#999;">本日無派遣記錄</td></tr>';
   let bHtml=''; const cm=td.getMonth()+1; allActive.filter(x=>x.birthday&&parseInt(x.birthday.split('-')[1],10)===cm).sort((a,b)=>parseInt(a.birthday.split('-')[2],10)-parseInt(b.birthday.split('-')[2],10)).forEach(i=>{ const isFt = ftStaffData.some(x=>x.name === i.name); const tag = isFt ? '<span class="badge badge-blue">正職</span>' : '<span class="badge badge-yellow">派遣</span>'; bHtml+=`<tr><td style="font-weight:bold;">${i.name} ${tag}</td><td>${i.birthday.substring(5)}</td><td><span style="color:#e91e63;"><i class="fas fa-gift"></i> 生日禮</span></td></tr>`; });
-  document.getElementById('dash_birthday_table').innerHTML = bHtml||'<tr><td colspan
+  document.getElementById('dash_birthday_table').innerHTML = bHtml||'<tr><td colspan="3" style="text-align:center;color:#999;">本月無壽星</td></tr>';
+}
+</script>
+</body>
+</html>
