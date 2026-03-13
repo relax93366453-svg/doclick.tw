@@ -19,18 +19,27 @@
   /* ================= 💎 頂級毛玻璃 登入畫面 ================= */
   #login-screen { 
     display: flex; justify-content: center; align-items: center; height: 100vh; 
-    background: url('./S__19718160.jpg') center/cover no-repeat, url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;
-    background-color: #1e293b; position: relative;
+    /* 預設線上高畫質商務圖，防止沒上傳圖片時變黑 */
+    background: url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;
+    background-color: #1e293b;
+    position: relative;
+    transition: background-image 0.5s ease;
   }
-  #login-screen::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65); }
+  #login-screen::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.65); 
+  }
   .login-box { 
-    background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.5); padding: 45px 40px; border-radius: 16px; 
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 100%; max-width: 420px; text-align: center; 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 45px 40px; border-radius: 16px; 
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+    width: 100%; max-width: 420px; text-align: center; 
     position: relative; z-index: 1; border-top: 6px solid #2d9d5c;
   }
   .login-logo-container { margin-bottom: 20px; height: 80px; display: flex; justify-content: center; align-items: center; }
-  .login-logo-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .login-logo-container img { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
   #login-logo-icon { font-size: 50px; color: #2d9d5c; }
   .login-box h1 { color: #1e293b; margin-bottom: 5px; font-size: 24px; font-weight: 900; letter-spacing: 1px;}
   .pro-badge { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; letter-spacing: 1px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(245, 158, 11, 0.3);}
@@ -45,7 +54,7 @@
   .app-container, .staff-container { display: none; min-height: 100vh; }
   .sidebar { width: 240px; background-color: #ffffff; box-shadow: 2px 0 15px rgba(0,0,0,0.03); padding: 20px 0; position: fixed; height: 100vh; overflow-y: auto; z-index: 10; border-right: 1px solid #e2e8f0;}
   .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #f1f5f9; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; flex-direction: column;}
-  .sidebar-header img { max-height: 40px; max-width: 100%; margin-bottom: 10px;}
+  .sidebar-header img { max-height: 40px; max-width: 100%; margin-bottom: 10px; display: none;}
   .sidebar-header h1 { font-size: 16px; color: #2d9d5c; font-weight: 800; display: flex; align-items: center; gap: 8px; margin:0;}
   .sidebar-nav { list-style: none; padding: 0 10px; }
   .sidebar-nav li { margin: 4px 0; }
@@ -60,7 +69,7 @@
   .header-actions { display: flex; align-items: center; gap: 15px; flex-wrap: wrap;}
   
   /* 🕒 穩定版時間顯示區 */
-  .sys-time { font-size: 14px; font-weight: 700; color: #334155; background: #ffffff; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
+  .sys-time { font-size: 14px; font-weight: 700; color: #334155; background: #ffffff; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.02); min-width: 190px; justify-content: center;}
   #sync-status { font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 8px; background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;}
 
   /* ================= 元件樣式 ================= */
@@ -97,11 +106,12 @@
   .required { color: #ef4444; margin-left: 3px; font-weight: bold;}
 
   .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
-  .dash-card { background: #ffffff; border-radius: 12px; padding: 25px 20px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; position: relative;}
+  .dash-card { background: #ffffff; border-radius: 12px; padding: 25px 20px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.03); border: 1px solid #f1f5f9; position: relative; transition: all 0.3s;}
+  .dash-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.06); }
   .dash-card.primary { border-top: 4px solid #3b82f6; } .dash-card.success { border-top: 4px solid #10b981; } .dash-card.warning { border-top: 4px solid #f59e0b; } .dash-card.danger { border-top: 4px solid #ef4444; }
-  .dash-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); font-size: 50px; opacity: 0.05; }
-  .dash-card .label { font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
-  .dash-card .num { font-size: 32px; font-weight: 800; color: #1e293b; }
+  .dash-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); font-size: 45px; opacity: 0.08; color: inherit; }
+  .dash-card .label { font-size: 14px; font-weight: 700; color: #64748b; margin-bottom: 8px; }
+  .dash-card .num { font-size: 36px; font-weight: 800; color: #1e293b; }
   
   .workspace-hr .ws-business { display: none !important; }
   .workspace-business .ws-hr { display: none !important; }
@@ -128,21 +138,15 @@
     </div>
     <div class="login-field auth-input">
       <label>登入帳號</label>
-      <input type="text" id="login_acc" placeholder="請輸入帳號 (預設admin)">
+      <input type="text" id="login_acc" placeholder="請輸入帳號 (預設admin或手機)">
     </div>
     <div class="login-field auth-input">
       <label>登入密碼</label>
-      <input type="password" id="login_pwd" placeholder="請輸入密碼 (預設1234)">
+      <input type="password" id="login_pwd" placeholder="請輸入密碼">
     </div>
     <button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登 入 系 統</button>
   </div>
 </div>
-
-<script>
-    if (localStorage.getItem('loginRole')) {
-        document.getElementById('login-screen').style.display = 'none';
-    }
-</script>
 
 <div class="app-container workspace-business" id="admin-screen">
   <div class="sidebar">
@@ -182,7 +186,7 @@
           <i class="fas fa-exchange-alt"></i> <span>切換至人事區</span>
         </button>
         <span id="sync-status"><i class="fas fa-cloud"></i> 系統就緒</span>
-        <span id="current-time" class="sys-time"><i class="far fa-clock"></i> 載入中...</span>
+        <span id="current-time" class="sys-time"><i class="far fa-clock" style="color:#2d9d5c;"></i> 載入時間中...</span>
         <button onclick="logout()" class="btn" style="background:#64748b; margin:0;"><i class="fas fa-sign-out-alt"></i> 登出</button>
       </div>
     </div>
@@ -258,7 +262,7 @@
         <div><label>客戶名稱 <span class="required">*</span></label><input id="c_name" required></div><div><label>行業別</label><input id="c_industry"></div><div><label>聯絡人</label><input id="c_user"></div><div><label>電話</label><input id="c_tel"></div>
         <div><label>地址</label><input id="c_addr"></div><div><label>統編</label><input id="c_tax"></div><div><label>商品簡介</label><input id="c_goods"></div><div><label>前台帳號</label><input id="c_account"></div>
         <div><label>前台密碼</label><input id="c_pwd" type="text"></div><div><label>前台連結</label><input id="c_url" placeholder="客戶前台網址"></div>
-        <div style="grid-column: span 2;"><label>專屬雲端資料夾網址 (請貼上您建好的連結)</label><div style="display:flex; gap:5px;"><input id="c_drive" placeholder="貼上 https://drive.google.com/..." style="flex:1;"><button type="button" class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('c_name', 'c_drive', '[客戶]')" style="margin-bottom:0;" title="無資料夾時，可讓系統代建"><i class="fas fa-magic"></i> 自動建新資料夾</button></div></div>
+        <div style="grid-column: span 2;"><label>專屬雲端資料夾網址 (請貼上您建好的連結)</label><div style="display:flex; gap:5px;"><input id="c_drive" placeholder="貼上 https://drive.google.com/..." style="flex:1;"><button type="button" class="btn-sm btn-warning" onclick="autoCreateFolder()" id="btnCreateFolder" style="margin-bottom:0;" title="無資料夾時，可讓系統代建"><i class="fas fa-magic"></i> 自動建新資料夾</button></div></div>
         <div><label>備註</label><input id="c_remark"></div><div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div>
       </div>
       <button class="btn btn-success" onclick="addCust()"><i class="fas fa-save"></i> 新增客戶</button><button class="btn btn-warning" onclick="updateCust()" id="btnUpdateCust" style="display:none"><i class="fas fa-edit"></i> 儲存修改</button>
@@ -395,7 +399,7 @@
           <label>專屬雲端資料夾網址 (請貼上您建好的連結)</label>
           <div style="display:flex; gap:5px;">
             <input id="ft_drive" placeholder="貼上 https://drive.google.com/..." style="flex:1;">
-            <button type="button" class="btn-sm btn-warning" onclick="autoCreateStaffFolder('ft_name', 'ft_drive')" style="margin-bottom:0; padding:8px;" title="無資料夾時，可讓系統代建"><i class="fas fa-magic"></i> 自動建新資料夾</button>
+            <button type="button" class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('ft_name', 'ft_drive', '[正職]')" style="margin-bottom:0; padding:8px;" title="無資料夾時，可讓系統代建"><i class="fas fa-magic"></i> 自動建新資料夾</button>
           </div>
         </div>
         <div style="grid-column: span 4; background: #fffbeb; padding: 15px; border-radius: 8px; border: 1px dashed #f59e0b;">
@@ -793,6 +797,7 @@
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 
+// 💡 金鐘罩引擎：保護所有 localStorage 讀取，避免格式錯誤導致系統卡死
 function safeJSONParse(key, fallback) {
     try { const val = localStorage.getItem(key); return val ? JSON.parse(val) : fallback; } 
     catch(e) { console.error("資料讀取錯誤:", key); return fallback; }
@@ -859,14 +864,17 @@ function getStaffTotalHours(name) { return attendData.filter(x=>x.staff===name).
 function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h <= 175) return 210; if (h <= 350) return 220; if (h <= 525) return 230; if (h <= 700) return 240; return 250; }
 function getStaffTotalPoint(name) { return attendData.filter(x=>x.staff===name).reduce((sum,item)=> sum + getItemDeductPoints(item),0); }
 
+// 💡 穩定版：動態時間顯示引擎
 function updateSystemClock() {
   const now = new Date();
   const timeStr = now.toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit', hour12: false}); 
   const clockHtml = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${timeStr}`;
+  
   const ct = document.getElementById('current-time'); if(ct) ct.innerHTML = clockHtml; 
   const sct = document.getElementById('staff-current-time'); if(sct) sct.innerHTML = clockHtml;
 }
 
+// 💡 Excel 匯出引擎
 function exportExcel(tableId, filename) {
   let table = document.getElementById(tableId);
   if(!table) return alert('找不到表格資料');
@@ -876,18 +884,23 @@ function exportExcel(tableId, filename) {
 
 document.addEventListener('DOMContentLoaded', function () {
   standardizeData();
+  
   if(document.getElementById('config_price_table')) {
       document.getElementById('config_price_table').value = JSON.stringify(priceTable, null, 2);
   }
-  document.getElementById('setting_admin_pwd').value = localStorage.getItem('adminPwd') || '1234';
-  document.getElementById('setting_hr_pwd').value = localStorage.getItem('hrPwd') || '1234';
+  
+  // 載入預設自訂密碼顯示
+  if(document.getElementById('setting_admin_pwd')) document.getElementById('setting_admin_pwd').value = localStorage.getItem('adminPwd') || '1234';
+  if(document.getElementById('setting_hr_pwd')) document.getElementById('setting_hr_pwd').value = localStorage.getItem('hrPwd') || '1234';
 
   renderPricePlanOptions();
   updateLogoPreview(); 
   
+  // 啟動時間引擎
   updateSystemClock();
   setInterval(updateSystemClock, 1000);
   
+  // 密碼框按 Enter 自動登入
   const pwdInput = document.getElementById('login_pwd');
   if(pwdInput) {
       pwdInput.addEventListener('keypress', function(e) {
@@ -899,36 +912,48 @@ document.addEventListener('DOMContentLoaded', function () {
   restoreLoginState();
 });
 
+// 🛡️ 無敵防崩潰：記憶頁面引擎
 function restoreLoginState() {
-  const role = localStorage.getItem('loginRole');
-  const acc = localStorage.getItem('loginAcc');
-  if(role === 'admin') {
-    document.getElementById('login-screen').style.display = 'none';
-    const adminScreen = document.getElementById('admin-screen'); adminScreen.style.display = 'flex';
-    currentWorkspace = localStorage.getItem('workspace') || 'business';
-    
-    if(currentWorkspace === 'hr') {
-      adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr');
-      document.getElementById('admin-sidebar-title-business').style.display = 'none'; document.getElementById('admin-sidebar-title-hr').style.display = 'flex'; 
-    } else {
-      adminScreen.classList.remove('workspace-hr', 'mode-hr'); adminScreen.classList.add('workspace-business');
-      document.getElementById('admin-sidebar-title-business').style.display = 'flex'; document.getElementById('admin-sidebar-title-hr').style.display = 'none'; 
-    }
-    fillFilters(); 
-    let lastPage = localStorage.getItem('adminPage') || 'dashboard';
-    showAdminPage(lastPage);
-    
-  } else if (role === 'staff') {
-    let staff = staffData.find(x => x.account === acc) || ftStaffData.find(x => x.account === acc);
-    if (!staff && acc) { staff = { name: acc, account: acc }; } // F5 防護機制：避免資料未載入前登出
-    if (staff) { 
-        currentLoginStaff = staff; 
-        document.getElementById('login-screen').style.display = 'none'; 
-        document.getElementById('staff-screen').style.display = 'flex'; 
-        initStaffFrontend(); 
-        let lastPage = localStorage.getItem('staffPage') || 'home';
-        showStaffPage(lastPage);
-    } else { localStorage.clear(); document.getElementById('login-screen').style.display = 'flex'; }
+  try {
+      const role = localStorage.getItem('loginRole');
+      const acc = localStorage.getItem('loginAcc');
+      if(role === 'admin') {
+        document.getElementById('login-screen').style.display = 'none';
+        const adminScreen = document.getElementById('admin-screen'); adminScreen.style.display = 'flex';
+        currentWorkspace = localStorage.getItem('workspace') || 'business';
+        
+        if(currentWorkspace === 'hr') {
+          adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr');
+          document.getElementById('admin-sidebar-title-business').style.display = 'none'; document.getElementById('admin-sidebar-title-hr').style.display = 'flex'; 
+        } else {
+          adminScreen.classList.remove('workspace-hr', 'mode-hr'); adminScreen.classList.add('workspace-business');
+          document.getElementById('admin-sidebar-title-business').style.display = 'flex'; document.getElementById('admin-sidebar-title-hr').style.display = 'none'; 
+        }
+        fillFilters(); 
+        
+        let lastPage = localStorage.getItem('adminPage') || 'dashboard';
+        showAdminPage(lastPage);
+        
+      } else if (role === 'staff') {
+        let staff = staffData.find(x => x.account === acc) || ftStaffData.find(x => x.account === acc);
+        if (!staff && acc) { staff = { name: acc, account: acc }; } 
+        if (staff) { 
+            currentLoginStaff = staff; 
+            document.getElementById('login-screen').style.display = 'none'; 
+            document.getElementById('staff-screen').style.display = 'flex'; 
+            initStaffFrontend(); 
+            
+            let lastPage = localStorage.getItem('staffPage') || 'home';
+            showStaffPage(lastPage);
+        } else { 
+            localStorage.removeItem('loginRole'); document.getElementById('login-screen').style.display = 'flex'; 
+        }
+      } else {
+          document.getElementById('login-screen').style.display = 'flex';
+      }
+  } catch(e) {
+      console.error('復原登入狀態時發生錯誤，回到預設畫面:', e);
+      document.getElementById('login-screen').style.display = 'flex';
   }
 }
 
@@ -1015,8 +1040,14 @@ function initStaffFrontend() {
   const sm = document.getElementById('staff_my_month'); sm.innerHTML = '<option value="all">全部</option>'; for(let i=1; i<=12; i++) sm.innerHTML += `<option value="${i}" ${i==m?'selected':''}>${i}月</option>`;
 }
 function showStaffPage(page, link) {
-  document.querySelectorAll('.staff-container .page').forEach(p => p.classList.remove('active')); document.getElementById('staff-page-' + page).classList.add('active');
-  document.querySelectorAll('.staff-container .sidebar-nav a').forEach(a => a.classList.remove('active')); if (link) link.classList.add('active');
+  let target = document.getElementById('staff-page-' + page);
+  if(!target) { page = 'home'; target = document.getElementById('staff-page-home'); }
+  document.querySelectorAll('.staff-container .page').forEach(p => p.classList.remove('active')); 
+  target.classList.add('active');
+  
+  document.querySelectorAll('.staff-container .sidebar-nav a').forEach(a => a.classList.remove('active')); 
+  if (link) link.classList.add('active');
+  
   localStorage.setItem('staffPage', page);
   if (page === 'mypay') renderStaffMyPay();
   if (page === 'files') {
@@ -1048,7 +1079,8 @@ function staffDownloadPayslip() {
   }
 }
 
-function loadDataFromCloud() {
+// ===================== 雲端資料同步機制 =====================
+function loadDataFromCloud(forceRender = false) {
   updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 背景同步中...');
   fetch(SCRIPT_URL).then(res => res.json()).then(result => {
       if(result.custData) custData = result.custData; if(result.contractData) contractData = result.contractData; if(result.staffData) staffData = result.staffData; if(result.attendData) attendData = result.attendData; if(result.ftStaffData) ftStaffData = result.ftStaffData; if(result.ftAttendData) ftAttendData = result.ftAttendData; if(result.talentData) talentData = result.talentData; if(result.supplierData) supplierData = result.supplierData;
@@ -1063,6 +1095,9 @@ function loadDataFromCloud() {
          else if (cp === 'staff') renderStaffTable();
          else if (cp === 'talent') renderTalentTable();
          else if (cp === 'supplier') renderSupplierTable();
+         
+         // 💡 如果是強制更新 (例如按下同步表單後)，確保重繪當前畫面
+         if(forceRender) showAdminPage(cp);
       }
   }).catch(error => { updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線模式', true); });
 }
@@ -1081,9 +1116,9 @@ function syncTalentFromForm() {
   .then(res => {
       if (res.status === 'success') { 
           alert(`✅ 成功！已抓取 ${res.count} 筆新履歷。`); 
-          loadDataFromCloud(); 
+          loadDataFromCloud(true); // 強制重新載入並繪製畫面
       } else { 
-          alert('❌ 抓取失敗：' + res.message); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); 
+          alert('❌ 抓取失敗 (雲端回報)：\n' + res.message); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); 
       }
   }).catch(err => { alert('❌ 網路斷線，或 SCRIPT_URL 設定錯誤。'); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
 }
@@ -1217,34 +1252,37 @@ function generateFtPayslipPDF(isCloud = false) {
   } else { html2pdf().set(opt).from(printArea).save(); }
 }
 
-// 💡 100% 穩定路由記憶引擎
-function showAdminPage(page, linkElement) {
-  const isHr = document.getElementById('admin-screen').classList.contains('mode-hr');
-  const restrictedPages = ['customer', 'contract', 'point', 'bill', 'boss', 'supplier'];
-  if (isHr && restrictedPages.includes(page)) { alert('抱歉，此為營業區專屬權限。'); return; }
-  
-  localStorage.setItem('adminPage', page);
-  
-  document.querySelectorAll('#admin-screen .page').forEach(p => p.classList.remove('active')); 
-  document.getElementById('page-' + page).classList.add('active');
-  
-  document.querySelectorAll('#admin-screen .sidebar-nav a').forEach(a => a.classList.remove('active')); 
-  if (linkElement) {
-      linkElement.classList.add('active');
-  } else {
+// 💡 100% 防崩潰安全路由引擎
+function showAdminPage(page) {
+  try {
+      const isHr = document.getElementById('admin-screen').classList.contains('mode-hr');
+      const restrictedPages = ['customer', 'contract', 'point', 'bill', 'boss', 'supplier'];
+      if (isHr && restrictedPages.includes(page)) { alert('抱歉，此為營業區專屬權限。'); return; }
+      
+      let targetPage = document.getElementById('page-' + page);
+      if(!targetPage) { page = 'dashboard'; targetPage = document.getElementById('page-dashboard'); } // 防呆降落
+      
+      localStorage.setItem('adminPage', page);
+      
+      document.querySelectorAll('#admin-screen .page').forEach(p => p.classList.remove('active')); 
+      targetPage.classList.add('active');
+      
+      document.querySelectorAll('#admin-screen .sidebar-nav a').forEach(a => a.classList.remove('active')); 
       let autoLink = document.querySelector(`a[onclick*="showAdminPage('${page}')"]`);
       if(autoLink) autoLink.classList.add('active');
+      
+      if (page === 'customer') { clearCustForm(); renderCustTable(); }
+      if (page === 'contract') { clearContractForm(); renderContractTable(); }
+      if (page === 'staff') { clearStaffForm(); renderStaffTable(); }
+      if (page === 'attend') { clearAttendForm(); renderAttend(); }
+      if (page === 'ft_staff') { clearFtStaffForm(); renderFtStaffTable(); }
+      if (page === 'ft_attend') { clearFtAttendForm(); renderFtAttendTable(); }
+      if (page === 'talent') { clearTalentForm(); renderTalentTable(); }
+      if (page === 'supplier') { clearSupplierForm(); renderSupplierTable(); }
+      if (page === 'dashboard') renderDashboard();
+  } catch(e) {
+      console.error(e);
   }
-  
-  if (page === 'customer') { clearCustForm(); renderCustTable(); }
-  if (page === 'contract') { clearContractForm(); renderContractTable(); }
-  if (page === 'staff') { clearStaffForm(); renderStaffTable(); }
-  if (page === 'attend') { clearAttendForm(); renderAttend(); }
-  if (page === 'ft_staff') { clearFtStaffForm(); renderFtStaffTable(); }
-  if (page === 'ft_attend') { clearFtAttendForm(); renderFtAttendTable(); }
-  if (page === 'talent') { clearTalentForm(); renderTalentTable(); }
-  if (page === 'supplier') { clearSupplierForm(); renderSupplierTable(); }
-  if (page === 'dashboard') renderDashboard();
 }
 
 function resetPage(module) { pageConfig.currentPage[module] = 1; }
