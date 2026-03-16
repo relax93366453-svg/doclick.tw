@@ -19,14 +19,24 @@
   /* ================= 💎 頂級毛玻璃 登入畫面 ================= */
   #login-screen { 
     display: flex; justify-content: center; align-items: center; height: 100vh; 
+    /* 預設線上高畫質商務圖，防止沒上傳圖片時變黑 */
     background: url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;
-    background-color: #1e293b; position: relative; transition: background-image 0.5s ease;
+    background-color: #1e293b;
+    position: relative;
+    transition: background-image 0.5s ease;
   }
-  #login-screen::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65); }
+  /* 深色半透明遮罩 */
+  #login-screen::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.65); 
+  }
   .login-box { 
-    background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.5); padding: 45px 40px; border-radius: 16px; 
-    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); width: 100%; max-width: 420px; text-align: center; 
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 45px 40px; border-radius: 16px; 
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); 
+    width: 100%; max-width: 420px; text-align: center; 
     position: relative; z-index: 1; border-top: 6px solid #2d9d5c;
   }
   .login-logo-container { margin-bottom: 20px; height: 80px; display: flex; justify-content: center; align-items: center; }
@@ -54,9 +64,12 @@
   .sidebar-nav a.active { background-color: #ecfdf5; color: #2d9d5c; }
   .sidebar-nav a i { font-size: 16px; width: 20px; text-align: center; }
 
+  /* 主內容區域 */
   .main-content { flex: 1; margin-left: 240px; padding: 25px 35px; width: calc(100% - 240px); overflow-x: auto; }
   .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
   .header-actions { display: flex; align-items: center; gap: 15px; flex-wrap: wrap;}
+  
+  /* 🕒 穩定版時間顯示區 */
   .sys-time { font-size: 14px; font-weight: 700; color: #334155; background: #ffffff; padding: 8px 16px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.02); min-width: 190px; justify-content: center;}
   #sync-status { font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 8px; background-color: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;}
 
@@ -692,20 +705,22 @@
           
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fff1f2; grid-column: span 2;">
             <label style="font-weight:bold; display:block; margin-bottom:10px; color:#be123c;">🔐 自訂系統登入帳號與密碼 (最高權限)</label>
+            <p style="font-size:12px; color:#64748b; margin-bottom:10px;">您可以將預設的 admin 與 hr 修改為您專屬的名字與密碼。如果忘記，密碼輸入 <b style="color:#ef4444;">doclick888</b> 即可強制登入！</p>
             <div style="display:flex; gap:15px; align-items:center; flex-wrap:wrap;">
                 <div style="background:white; padding:10px; border-radius:6px; border:1px solid #fecdd3;">
                     <label style="font-size:12px; font-weight:bold; color:#e11d48; display:block; margin-bottom:5px;">👑 老闆專屬登入設定</label>
-                    帳號：<input type="text" id="setting_admin_acc" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px; width:100px; margin-right:5px;">
-                    密碼：<input type="text" id="setting_admin_pwd" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px; width:100px;">
+                    帳號：<input type="text" id="setting_admin_acc" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px; width:100px; margin-right:5px;" placeholder="admin">
+                    密碼：<input type="text" id="setting_admin_pwd" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px; width:100px;" placeholder="1234">
                 </div>
                 <div style="background:white; padding:10px; border-radius:6px; border:1px solid #bfdbfe;">
                     <label style="font-size:12px; font-weight:bold; color:#2563eb; display:block; margin-bottom:5px;">💼 人資專屬登入設定</label>
-                    帳號：<input type="text" id="setting_hr_acc" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px; width:100px; margin-right:5px;">
-                    密碼：<input type="text" id="setting_hr_pwd" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px; width:100px;">
+                    帳號：<input type="text" id="setting_hr_acc" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px; width:100px; margin-right:5px;" placeholder="hr">
+                    密碼：<input type="text" id="setting_hr_pwd" style="padding:6px; border:1px solid #cbd5e1; border-radius:4px; width:100px;" placeholder="1234">
                 </div>
                 <button class="btn btn-pdf" onclick="savePasswords()" style="margin:0; height:fit-content;"><i class="fas fa-save"></i> 儲存帳密設定</button>
             </div>
           </div>
+
         </div>
 
         <label style="font-weight:bold; display:block; margin-bottom:10px; margin-top:20px;">💰 價目表與方案設定 (JSON格式)</label>
@@ -724,15 +739,19 @@
 <div class="staff-container" id="staff-screen">
   <div class="sidebar" style="background: #2d9d5c;">
     <div class="sidebar-header" style="border-bottom: 1px solid #4ade80;">
-      <h1 style="color: white;"><i class="fas fa-user-circle"></i> 員工專區</h1>
+      <h1 style="color: white;"><i class="fas fa-user-circle"></i> 員工自助專區</h1>
     </div>
     <ul class="sidebar-nav">
-      <li><a onclick="showStaffPage('home', this)" style="color: white;" class="active"><i class="fas fa-bullhorn"></i> 報班注意事項</a></li>
-      <li><a onclick="showStaffPage('files', this)" style="color: white;"><i class="fas fa-folder-open"></i> 我的資料繳交</a></li>
-      <li><a onclick="showStaffPage('mypay', this)" style="color: white;"><i class="fas fa-wallet"></i> 我的出勤與薪資</a></li>
+      <li><a onclick="showStaffPage('home', this)" style="color: white;" class="active"><i class="fas fa-bullhorn"></i> 管理規範與注意</a></li>
+      <li><a onclick="showStaffPage('profile', this)" style="color: white;"><i class="fas fa-id-card"></i> 基本資料與繳件</a></li>
+      <li><a onclick="showStaffPage('records', this)" style="color: white;"><i class="fas fa-history"></i> 歷史派遣記錄</a></li>
+      <li><a onclick="showStaffPage('mypay', this)" style="color: white;"><i class="fas fa-wallet"></i> 薪資單下載專區</a></li>
+      <li><a onclick="showStaffPage('about', this)" style="color: white;"><i class="fas fa-building"></i> 關於公司介紹</a></li>
+      <li><a onclick="showStaffPage('links', this)" style="color: white;"><i class="fas fa-link"></i> 常用入口連結</a></li>
       <li><a onclick="logout()" style="color: #ffcccb; margin-top:30px;"><i class="fas fa-sign-out-alt"></i> 登出系統</a></li>
     </ul>
   </div>
+  
   <div class="main-content">
     <div class="page-header">
       <h2>歡迎回來，<span id="staff-welcome-name"></span>！</h2>
@@ -743,49 +762,122 @@
         <span id="staff-current-time" class="sys-time"><i class="far fa-clock" style="color:#2d9d5c;"></i> 讀取時間中...</span>
       </div>
     </div>
+    
     <div class="page active" id="staff-page-home">
-      <div class="page-title"><i class="fas fa-clipboard-list"></i> 報班前注意事項及工作態度規範</div>
-      <div class="rules-box">
-        <h3>📌 報班與出勤規範</h3>
-        <ul><li>請務必於約定時間前 10 分鐘抵達工作現場。</li><li>若遇突發狀況無法準時抵達，請第一時間聯繫。</li><li>工作期間請遵守現場主管指揮，切勿擅離職守。</li></ul>
+      <div class="page-title"><i class="fas fa-clipboard-list"></i> 規範與注意事項</div>
+      
+      <div class="rules-box" style="border-left-color: #ef4444; background: #fef2f2;">
+        <h3 style="color: #dc2626;"><i class="fas fa-gavel"></i> 派遣人員管理規範新制</h3>
+        <ul style="color:#475569;">
+            <li>為保障雙方權益，派遣人員須確實簽署勞動契約並遵守保密條款。</li>
+            <li>出勤時請務必透過本系統或指定方式完成打卡，未打卡將影響薪資結算。</li>
+            <li>若需請假，請提早至少 3 天向人資部門與派駐單位主管雙重報備。</li>
+            <li>派遣期間之行為舉止皆代表本公司形象，若有重大違規，公司將保留法律追訴權。</li>
+        </ul>
       </div>
+
       <div class="rules-box" style="border-left-color: #3b82f6; background: #eff6ff;">
-        <h3 style="color: #2563eb;">📌 服裝儀容與態度</h3>
-        <ul><li>請穿著整潔得體的服裝，保持良好精神面貌。</li><li>對待客戶請保持禮貌與微笑，展現專業。</li><li>嚴禁於工作場所內吸菸、飲酒或嚼食檳榔。</li></ul>
+        <h3 style="color: #2563eb;"><i class="fas fa-user-clock"></i> 求職者報班前注意事項及工作態度規範</h3>
+        <ul style="color:#475569;">
+            <li>請務必於約定時間前 <b>10 分鐘</b>抵達工作現場。</li>
+            <li>若遇突發狀況無法準時抵達，請「第一時間」電話聯繫本公司督導。</li>
+            <li>請穿著整潔得體的服裝，保持良好精神面貌，嚴禁奇裝異服或拖鞋。</li>
+            <li>工作期間請遵守現場主管指揮，對待客戶請保持禮貌與微笑，展現專業。</li>
+            <li>嚴禁於工作場所內吸菸、飲酒、嚼食檳榔或滑手機做私事。</li>
+        </ul>
       </div>
     </div>
-    <div class="page" id="staff-page-files">
-      <div class="page-title"><i class="fas fa-file-signature"></i> 到職資料繳交進度</div>
-      <p style="color:#555; margin-bottom: 20px;">為確保權益與薪資發放，請確認資料是否繳齊。若顯示「未交」，請點擊下方按鈕上傳。</p>
-      <div class="checklist-box">
-        <div class="checklist-item"><div class="doc-name"><i class="fas fa-id-card"></i> 身分證正反面影本</div><div id="staff_status_id"></div></div>
-        <div class="checklist-item"><div class="doc-name"><i class="fas fa-money-check"></i> 本人存摺封面影本</div><div id="staff_status_bank"></div></div>
-        <div class="checklist-item"><div class="doc-name"><i class="fas fa-file-contract"></i> 勞動契約簽名檔</div><div id="staff_status_contract"></div></div>
-        <div class="checklist-item"><div class="doc-name"><i class="fas fa-file-alt"></i> 個人履歷表</div><div id="staff_status_resume"></div></div>
+
+    <div class="page" id="staff-page-profile">
+      <div class="page-title"><i class="fas fa-id-card"></i> 個人基本資料與繳件進度</div>
+      
+      <div class="grid" style="background:#f8fafc; padding:20px; border-radius:12px; margin-bottom:20px;">
+          <div><label>姓名</label><p style="font-weight:bold; color:#1e293b; font-size:16px;" id="staff-profile-name">-</p></div>
+          <div><label>聯絡電話</label><p style="font-weight:bold; color:#1e293b; font-size:16px;" id="staff-profile-tel">-</p></div>
+          <div><label>身分證字號</label><p style="font-weight:bold; color:#1e293b; font-size:16px;" id="staff-profile-id">-</p></div>
+          <div><label>系統帳號</label><p style="font-weight:bold; color:#1e293b; font-size:16px;" id="staff-profile-acc">-</p></div>
       </div>
-      <div style="text-align: center; padding: 30px; background: #f8fafc; border: 2px dashed #93c5fd; border-radius: 12px;">
+
+      <p style="color:#555; margin-bottom: 20px;">為確保您的權益與薪資順利發放，請隨時確認下方資料是否繳齊。若顯示<span class="badge badge-red">未交</span>，請點擊按鈕前往上傳區。</p>
+      
+      <div class="checklist-box" style="display:grid; grid-template-columns:repeat(2, 1fr); gap:15px; margin-bottom:25px;">
+        <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <div><i class="fas fa-id-card text-gray-500"></i> 身分證正反面影本</div><div id="staff_status_id"></div>
+        </div>
+        <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <div><i class="fas fa-money-check text-gray-500"></i> 本人存摺封面影本</div><div id="staff_status_bank"></div>
+        </div>
+        <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <div><i class="fas fa-file-contract text-gray-500"></i> 勞動契約簽名檔</div><div id="staff_status_contract"></div>
+        </div>
+        <div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+            <div><i class="fas fa-file-alt text-gray-500"></i> 個人履歷表</div><div id="staff_status_resume"></div>
+        </div>
+      </div>
+      
+      <div style="text-align: center; padding: 30px; background: #eff6ff; border: 2px dashed #93c5fd; border-radius: 12px;">
         <i class="fas fa-cloud-upload-alt" style="font-size: 40px; color: #60a5fa; margin-bottom: 15px;"></i>
-        <h3 style="color: #1e3a8a; margin-bottom: 10px;">檔案上傳區</h3>
-        <button class="btn btn-large btn-excel" id="btnOpenStaffDrive" onclick="openStaffDrive()">前往我的雲端資料夾上傳</button>
+        <h3 style="color: #1e3a8a; margin-bottom: 10px;">資料繳交與更新區</h3>
+        <button class="btn btn-large btn-excel" id="btnOpenStaffDrive" onclick="openStaffDrive()"><i class="fas fa-folder-open"></i> 前往我的雲端專屬資料夾</button>
       </div>
     </div>
+
+    <div class="page" id="staff-page-records">
+      <div class="page-title"><i class="fas fa-history"></i> 我的歷史派遣記錄</div>
+      <div class="table-responsive">
+        <table style="background: white; width:100%;">
+            <thead><tr><th>出勤日期</th><th>派駐客戶 / 公司</th><th>服務項目</th><th>結算工時</th><th>備註</th></tr></thead>
+            <tbody id="staffRecordsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="page" id="staff-page-mypay">
-      <div class="page-title"><i class="fas fa-money-check-alt"></i> 我的出勤紀錄與薪資單下載</div>
+      <div class="page-title"><i class="fas fa-wallet"></i> 薪資單下載專區</div>
       <div class="filter-bar">
-        <label>發薪年</label><select id="staff_my_year" onchange="renderStaffMyPay()"></select>
-        <label>發薪月</label><select id="staff_my_month" onchange="renderStaffMyPay()"></select>
-        <button class="btn btn-success" onclick="staffDownloadPayslip()" style="margin:0 0 0 15px;"><i class="fas fa-download"></i> 下載本期薪資單 PDF</button>
+        <label>發薪年：</label><select id="staff_my_year" onchange="renderStaffMyPay()"></select>
+        <label>發薪月：</label><select id="staff_my_month" onchange="renderStaffMyPay()"></select>
+        <button class="btn btn-success" onclick="staffDownloadPayslip()" style="margin:0 0 0 15px;"><i class="fas fa-download"></i> 下載本期專屬薪資單 (PDF)</button>
       </div>
       <div id="staffMyPaySummary" style="padding: 15px; background-color: #f0fdf4; border-radius: 6px; margin-bottom: 15px; font-weight: bold; color: #166534; border: 1px solid #bbf7d0;"></div>
-      <table style="background: white;"><thead><tr><th>日期</th><th>派駐公司</th><th>服務項目</th><th>出勤紀錄/工時</th></tr></thead><tbody id="staffMyPayTable"></tbody></table>
+      <div class="table-responsive">
+          <table style="background: white;"><thead><tr><th>日期</th><th>派駐公司 / 類別</th><th>服務項目 / 假別</th><th>當日出勤工時</th></tr></thead><tbody id="staffMyPayTable"></tbody></table>
+      </div>
     </div>
+
+    <div class="page" id="staff-page-about">
+      <div class="page-title"><i class="fas fa-building"></i> 關於我們</div>
+      <div class="rules-box" style="border-left-color: #10b981; background: #ecfdf5; padding: 25px;">
+        <h3 style="color: #047857; font-size: 18px; margin-bottom: 15px;"><i class="fas fa-seedling"></i> 點籽響 / 愜易居 企業精神</h3>
+        <p style="color:#334155; line-height: 2; font-size: 14px;">
+            我們致力於提供最專業、最有溫度的人才媒合與企業派遣服務。我們相信，每一位員工都是企業最珍貴的種子，只要放在對的土壤，就能發芽茁壯、發出響亮的成就。<br><br>
+            透過「點籽響」系統與「愜易居」平台的雙引擎驅動，我們不僅為企業解決人力短缺的痛點，更為廣大求職者創造安全、透明、有保障的就業機會。感謝您加入我們的團隊，讓我們一起創造共贏！
+        </p>
+      </div>
+    </div>
+
+    <div class="page" id="staff-page-links">
+      <div class="page-title"><i class="fas fa-link"></i> 常用入口連結</div>
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap:30px;">
+        <div class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;" onclick="window.open('https://your-platform-url.com', '_blank')">
+           <i class="fas fa-globe" style="font-size:50px; color:#3b82f6; margin-bottom:20px;"></i>
+           <h3 style="color:#1e293b; font-size:18px;">愜易居 官方平台</h3>
+           <p style="font-size:14px; color:#64748b; margin-top:10px;">點擊前往瀏覽最新職缺與平台服務</p>
+        </div>
+        <div class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;" onclick="window.open('https://instagram.com/', '_blank')">
+           <i class="fab fa-instagram" style="font-size:50px; color:#e1306c; margin-bottom:20px;"></i>
+           <h3 style="color:#1e293b; font-size:18px;">官方 Instagram</h3>
+           <p style="font-size:14px; color:#64748b; margin-top:10px;">追蹤我們的 IG，掌握第一手招募與活動資訊</p>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 
-// 💡 金鐘罩引擎：保護所有 localStorage 讀取，避免格式錯誤導致系統卡死
 function safeJSONParse(key, fallback) {
     try { const val = localStorage.getItem(key); return val ? JSON.parse(val) : fallback; } 
     catch(e) { console.error("資料讀取錯誤:", key); return fallback; }
@@ -827,7 +919,6 @@ function savePriceConfig() {
   } catch(e) { alert('❌ JSON 格式有誤！系統已為您攔截錯誤，請檢查您的括號與逗號是否正確填寫。'); }
 }
 
-// 💡 帳號密碼儲存引擎 (支援同時修改帳號與密碼)
 function savePasswords() {
     const aa = document.getElementById('setting_admin_acc').value.trim();
     const ap = document.getElementById('setting_admin_pwd').value.trim();
@@ -853,8 +944,8 @@ function standardizeData() {
   if(!Array.isArray(contractData)) contractData = [];
 
   attendData = attendData.map(x => ({ company: x.company, staff: x.staff, date: x.date, service: x.service || '', remark: x.remark || '', am_s: x.am_s || '', am_e: x.am_e || '', pm_s: x.pm_s || '', pm_e: x.pm_e || '', salary_hours: x.salary_hours !== undefined ? x.salary_hours : '', deduct_points: x.deduct_points !== undefined ? x.deduct_points : '' }));
-  staffData = staffData.map(x => ({ ...x, account: x.account || '', pwd: x.pwd || '', drive: x.drive || '', doc_id: x.doc_id || false, doc_bank: x.doc_bank || false, doc_contract: x.doc_contract || false, doc_resume: x.doc_resume || false, addr: x.addr || '', labor: x.labor || 0, health: x.health || 0, remark: x.remark || '' }));
-  ftStaffData = ftStaffData.map(x => ({ ...x, account: x.account || '', pwd: x.pwd || '', drive: x.drive || '', salary: x.salary || 30000, labor: x.labor || 0, health: x.health || 0, doc_id: x.doc_id || false, doc_bank: x.doc_bank || false, doc_contract: x.doc_contract || false, doc_resume: x.doc_resume || false, hire_date: x.hire_date || '' }));
+  staffData = staffData.map(x => ({ ...x, account: x.account || '', pwd: x.pwd || '', drive: x.drive || '', doc_id: x.doc_id || false, doc_bank: x.doc_bank || false, doc_contract: x.doc_contract || false, doc_resume: x.doc_resume || false, addr: x.addr || '', labor: x.labor || 0, health: x.health || 0, remark: x.remark || '', tel: x.tel || '', id: x.id || '' }));
+  ftStaffData = ftStaffData.map(x => ({ ...x, account: x.account || '', pwd: x.pwd || '', drive: x.drive || '', salary: x.salary || 30000, labor: x.labor || 0, health: x.health || 0, doc_id: x.doc_id || false, doc_bank: x.doc_bank || false, doc_contract: x.doc_contract || false, doc_resume: x.doc_resume || false, hire_date: x.hire_date || '', tel: x.tel || '', id: x.id || '' }));
   ftAttendData = ftAttendData.map(x => ({ ...x, record_type: x.record_type || '正常出勤', hours: x.hours || 0 }));
   talentData = talentData.map(x => ({ ...x, name: x.name||'', tel: x.tel||'', source: x.source||'', location: x.location||'', shift: x.shift||'', role: x.role||'', status: x.status||'', eval: x.eval||'', resume: x.resume||'', exp: x.exp||'', date: x.date||'' }));
   supplierData = supplierData.map(x => ({...x, name: x.name||'', contact: x.contact||'', tel: x.tel||'', addr: x.addr||'', tax: x.tax||'', pay_method: x.pay_method||'', pay_date: x.pay_date||'', invoice_date: x.invoice_date||'', invoice_no: x.invoice_no||'', invoice_amt: x.invoice_amt||'', drive: x.drive||''}));
@@ -868,7 +959,6 @@ function getStaffTotalHours(name) { return attendData.filter(x=>x.staff===name).
 function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h <= 175) return 210; if (h <= 350) return 220; if (h <= 525) return 230; if (h <= 700) return 240; return 250; }
 function getStaffTotalPoint(name) { return attendData.filter(x=>x.staff===name).reduce((sum,item)=> sum + getItemDeductPoints(item),0); }
 
-// 💡 穩定版：動態時間顯示引擎
 function updateSystemClock() {
   const now = new Date();
   const timeStr = now.toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit', hour12: false}); 
@@ -878,64 +968,6 @@ function updateSystemClock() {
   const sct = document.getElementById('staff-current-time'); if(sct) sct.innerHTML = clockHtml;
 }
 
-// 💡 完整系統備份引擎
-function backupAllData() {
-    const data = {
-        custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData,
-        sysConfig: {
-            loginLogo: localStorage.getItem('loginLogo'),
-            pdfLogo: localStorage.getItem('pdfLogo'),
-            loginBg: localStorage.getItem('loginBg'),
-            priceTable: localStorage.getItem('priceTable'),
-            adminAcc: localStorage.getItem('adminAcc'),
-            adminPwd: localStorage.getItem('adminPwd'),
-            hrAcc: localStorage.getItem('hrAcc'),
-            hrPwd: localStorage.getItem('hrPwd')
-        }
-    };
-    const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `點籽響系統備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-// 💡 完整系統還原引擎
-function restoreData(input) {
-    if (!input.files || !input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const res = JSON.parse(e.target.result);
-            if (res.custData) custData = res.custData;
-            if (res.contractData) contractData = res.contractData;
-            if (res.staffData) staffData = res.staffData;
-            if (res.attendData) attendData = res.attendData;
-            if (res.ftStaffData) ftStaffData = res.ftStaffData;
-            if (res.ftAttendData) ftAttendData = res.ftAttendData;
-            if (res.talentData) talentData = res.talentData;
-            if (res.supplierData) supplierData = res.supplierData;
-            
-            if (res.sysConfig) {
-                if (res.sysConfig.loginLogo) localStorage.setItem('loginLogo', res.sysConfig.loginLogo);
-                if (res.sysConfig.pdfLogo) localStorage.setItem('pdfLogo', res.sysConfig.pdfLogo);
-                if (res.sysConfig.loginBg) localStorage.setItem('loginBg', res.sysConfig.loginBg);
-                if (res.sysConfig.priceTable) localStorage.setItem('priceTable', res.sysConfig.priceTable);
-                if (res.sysConfig.adminAcc) localStorage.setItem('adminAcc', res.sysConfig.adminAcc);
-                if (res.sysConfig.adminPwd) localStorage.setItem('adminPwd', res.sysConfig.adminPwd);
-                if (res.sysConfig.hrAcc) localStorage.setItem('hrAcc', res.sysConfig.hrAcc);
-                if (res.sysConfig.hrPwd) localStorage.setItem('hrPwd', res.sysConfig.hrPwd);
-            }
-            
-            saveAll(); // 同步業務資料到雲端
-            alert('✅ 系統資料與設定已成功還原！即將重新整理。');
-            window.location.reload();
-        } catch(err) {
-            alert('❌ 備份檔格式錯誤或損毀！');
-        }
-    };
-    reader.readAsText(input.files[0]);
-}
-
-// 💡 Excel 匯出引擎
 function exportExcel(tableId, filename) {
   let table = document.getElementById(tableId);
   if(!table) return alert('找不到表格資料');
@@ -951,7 +983,6 @@ document.addEventListener('DOMContentLoaded', function () {
           document.getElementById('config_price_table').value = JSON.stringify(priceTable, null, 2);
       }
       
-      // 載入自訂帳號與密碼顯示
       if(document.getElementById('setting_admin_acc')) document.getElementById('setting_admin_acc').value = localStorage.getItem('adminAcc') || 'admin';
       if(document.getElementById('setting_admin_pwd')) document.getElementById('setting_admin_pwd').value = localStorage.getItem('adminPwd') || '1234';
       if(document.getElementById('setting_hr_acc')) document.getElementById('setting_hr_acc').value = localStorage.getItem('hrAcc') || 'hr';
@@ -960,7 +991,6 @@ document.addEventListener('DOMContentLoaded', function () {
       renderPricePlanOptions();
       updateLogoPreview(); 
       
-      // 啟動時間引擎
       updateSystemClock();
       setInterval(updateSystemClock, 1000);
       
@@ -980,7 +1010,6 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 });
 
-// 🛡️ 無敵防崩潰記憶頁面引擎 (安全切換)
 function restoreLoginState() {
   try {
       const role = localStorage.getItem('loginRole');
@@ -1033,14 +1062,12 @@ function handleLogin() {
   
   if(!acc || !pwd) { alert('請輸入帳號與密碼！'); return; }
 
-  // 💡 取出使用者自訂的帳號與密碼
   const savedAdminAcc = localStorage.getItem('adminAcc') || 'admin';
   const savedAdminPwd = localStorage.getItem('adminPwd') || '1234';
   const savedHrAcc = localStorage.getItem('hrAcc') || 'hr';
   const savedHrPwd = localStorage.getItem('hrPwd') || '1234';
 
   if (role === 'admin') {
-    // 支援自訂帳密，也保留 doclick888 作為強制救援後門
     if ((acc === savedAdminAcc && pwd === savedAdminPwd) || (acc === 'admin' && pwd === 'doclick888')) { 
       localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'business'); restoreLoginState();
     } else if ((acc === savedHrAcc && pwd === savedHrPwd) || (acc === 'hr' && pwd === 'doclick888')) {
@@ -1106,12 +1133,21 @@ function updateLogoPreview() {
   else { if(pp) { pp.src = ''; pp.style.display = 'none'; bp.style.display = 'none'; } }
 }
 
+// 💡 員工專屬入口網 (Portal) 引擎
 function initStaffFrontend() {
-  document.getElementById('staff-welcome-name').textContent = currentLoginStaff.name;
+  document.getElementById('staff-welcome-name').textContent = currentLoginStaff.name || '員工';
+  
+  // 載入基本資料
+  document.getElementById('staff-profile-name').textContent = currentLoginStaff.name || '-';
+  document.getElementById('staff-profile-tel').textContent = currentLoginStaff.tel || '-';
+  document.getElementById('staff-profile-id').textContent = currentLoginStaff.id || '-';
+  document.getElementById('staff-profile-acc').textContent = currentLoginStaff.account || '-';
+  
   const y = new Date().getFullYear(); const m = new Date().getMonth() + 1;
-  const sy = document.getElementById('staff_my_year'); sy.innerHTML = '<option value="all">全部</option>'; for(let i=y-1; i<=y; i++) sy.innerHTML += `<option value="${i}" ${i==y?'selected':''}>${i}</option>`;
-  const sm = document.getElementById('staff_my_month'); sm.innerHTML = '<option value="all">全部</option>'; for(let i=1; i<=12; i++) sm.innerHTML += `<option value="${i}" ${i==m?'selected':''}>${i}月</option>`;
+  const sy = document.getElementById('staff_my_year'); if(sy) { sy.innerHTML = '<option value="all">全部</option>'; for(let i=y-1; i<=y; i++) sy.innerHTML += `<option value="${i}" ${i==y?'selected':''}>${i}</option>`; }
+  const sm = document.getElementById('staff_my_month'); if(sm) { sm.innerHTML = '<option value="all">全部</option>'; for(let i=1; i<=12; i++) sm.innerHTML += `<option value="${i}" ${i==m?'selected':''}>${i}月</option>`; }
 }
+
 function showStaffPage(page, link) {
   let target = document.getElementById('staff-page-' + page);
   if(!target) { page = 'home'; target = document.getElementById('staff-page-home'); }
@@ -1120,26 +1156,50 @@ function showStaffPage(page, link) {
   
   document.querySelectorAll('.staff-container .sidebar-nav a').forEach(a => a.classList.remove('active')); 
   if (link) link.classList.add('active');
+  else {
+      let autoLink = document.querySelector(`.staff-container a[onclick*="showStaffPage('${page}'"]`);
+      if(autoLink) autoLink.classList.add('active');
+  }
   
   localStorage.setItem('staffPage', page);
+  
   if (page === 'mypay') renderStaffMyPay();
-  if (page === 'files') {
+  if (page === 'records') renderStaffRecords();
+  if (page === 'profile') {
     const gBadge = `<span class="badge badge-green"><i class="fas fa-check-circle"></i> 已繳交</span>`; const rBadge = `<span class="badge badge-red"><i class="fas fa-times-circle"></i> 未交</span>`;
-    document.getElementById('staff_status_id').innerHTML = currentLoginStaff.doc_id ? gBadge : rBadge; document.getElementById('staff_status_bank').innerHTML = currentLoginStaff.doc_bank ? gBadge : rBadge; document.getElementById('staff_status_contract').innerHTML = currentLoginStaff.doc_contract ? gBadge : rBadge; document.getElementById('staff_status_resume').innerHTML = currentLoginStaff.doc_resume ? gBadge : rBadge;
-    const btn = document.getElementById('btnOpenStaffDrive'); if(currentLoginStaff.drive) { btn.disabled = false; btn.textContent = '前往我的雲端資料夾上傳'; } else { btn.disabled = true; btn.textContent = '管理員尚未為您設定專屬資料夾'; }
+    document.getElementById('staff_status_id').innerHTML = currentLoginStaff.doc_id ? gBadge : rBadge; 
+    document.getElementById('staff_status_bank').innerHTML = currentLoginStaff.doc_bank ? gBadge : rBadge; 
+    document.getElementById('staff_status_contract').innerHTML = currentLoginStaff.doc_contract ? gBadge : rBadge; 
+    document.getElementById('staff_status_resume').innerHTML = currentLoginStaff.doc_resume ? gBadge : rBadge;
+    const btn = document.getElementById('btnOpenStaffDrive'); 
+    if(currentLoginStaff.drive) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-folder-open"></i> 前往我的雲端專屬資料夾'; } 
+    else { btn.disabled = true; btn.textContent = '管理員尚未為您設定專屬資料夾'; }
   }
 }
+
 function openStaffDrive() { if (currentLoginStaff && currentLoginStaff.drive) window.open(currentLoginStaff.drive, '_blank'); }
+
+function renderStaffRecords() {
+    if(!currentLoginStaff) return;
+    let list = attendData.filter(x => x.staff === currentLoginStaff.name).sort((a,b) => new Date(b.date) - new Date(a.date));
+    let html = '';
+    list.forEach(item => {
+        html += `<tr><td style="border-bottom:1px solid #eee;">${item.date}</td><td style="border-bottom:1px solid #eee; font-weight:bold; color:#1e293b;">${item.company}</td><td style="border-bottom:1px solid #eee;">${item.service||'-'}</td><td style="border-bottom:1px solid #eee; color:#10b981; font-weight:bold;">${getItemClockHours(item).toFixed(1)} h</td><td style="border-bottom:1px solid #eee;">${item.remark||'-'}</td></tr>`;
+    });
+    document.getElementById('staffRecordsTable').innerHTML = html || '<tr><td colspan="5" style="text-align:center; padding:15px; color:#999;">暫無歷史派遣記錄</td></tr>';
+}
+
 function renderStaffMyPay() {
   const ys = document.getElementById('staff_my_year').value; const ms = document.getElementById('staff_my_month').value;
   let list = attendData.filter(x => x.staff === currentLoginStaff.name && isInPayrollPeriod(x.date, ys, ms));
   let ftList = ftAttendData.filter(x => x.staff === currentLoginStaff.name && x.date.startsWith(ys==='all'?'':ys) && (ms==='all'||x.date.slice(5,7)===String(ms).padStart(2,'0')));
   let html = ''; let tHour = 0;
-  if(list.length > 0) { list.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(item => { const payHour = getItemSalaryHours(item); tHour += payHour; html += `<tr><td style="border-bottom:1px solid #eee;">${item.date}</td><td style="border-bottom:1px solid #eee;">${item.company}</td><td style="border-bottom:1px solid #eee;">${item.service||'-'}</td><td style="border-bottom:1px solid #eee; font-weight:bold;">${payHour.toFixed(1)} h</td></tr>`; }); } 
-  else if (ftList.length > 0) { ftList.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(item => { html += `<tr><td style="border-bottom:1px solid #eee;">${item.date}</td><td style="border-bottom:1px solid #eee;">內部/正職</td><td style="border-bottom:1px solid #eee;">${item.record_type} ${item.leave_type||''}</td><td style="border-bottom:1px solid #eee; font-weight:bold;">${item.hours} h</td></tr>`; }); }
+  if(list.length > 0) { list.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(item => { const payHour = getItemSalaryHours(item); tHour += payHour; html += `<tr><td style="border-bottom:1px solid #eee;">${item.date}</td><td style="border-bottom:1px solid #eee;">${item.company}</td><td style="border-bottom:1px solid #eee;">${item.service||'-'}</td><td style="border-bottom:1px solid #eee; font-weight:bold; color:#3b82f6;">${payHour.toFixed(1)} h</td></tr>`; }); } 
+  else if (ftList.length > 0) { ftList.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(item => { html += `<tr><td style="border-bottom:1px solid #eee;">${item.date}</td><td style="border-bottom:1px solid #eee;">內部/正職</td><td style="border-bottom:1px solid #eee;">${item.record_type} ${item.leave_type||''}</td><td style="border-bottom:1px solid #eee; font-weight:bold; color:#3b82f6;">${item.hours} h</td></tr>`; }); }
   document.getElementById('staffMyPayTable').innerHTML = html || '<tr><td colspan="4" style="text-align:center; padding:15px; color:#999;">本期無出勤紀錄</td></tr>';
-  document.getElementById('staffMyPaySummary').textContent = `出勤紀錄總覽 (詳細薪資請下載薪資單)`;
+  document.getElementById('staffMyPaySummary').textContent = `本期出勤紀錄總覽 (詳細薪資明細請點擊右方按鈕下載)`;
 }
+
 function staffDownloadPayslip() {
   const ys = document.getElementById('staff_my_year').value; const ms = document.getElementById('staff_my_month').value;
   if (ys === 'all' || ms === 'all') return alert('請選擇特定發薪年月下載！');
@@ -1154,7 +1214,6 @@ function staffDownloadPayslip() {
 
 // ===================== 雲端資料同步機制 =====================
 function loadDataFromCloud(forceRender = false) {
-  updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 背景同步中...');
   fetch(SCRIPT_URL).then(res => res.json()).then(result => {
       if(result.custData) custData = result.custData; if(result.contractData) contractData = result.contractData; if(result.staffData) staffData = result.staffData; if(result.attendData) attendData = result.attendData; if(result.ftStaffData) ftStaffData = result.ftStaffData; if(result.ftAttendData) ftAttendData = result.ftAttendData; if(result.talentData) talentData = result.talentData; if(result.supplierData) supplierData = result.supplierData;
       standardizeData();
@@ -1189,7 +1248,7 @@ function syncTalentFromForm() {
   .then(res => {
       if (res.status === 'success') { 
           alert(`✅ 成功！已抓取 ${res.count} 筆新履歷。`); 
-          loadDataFromCloud(true); // 強制重新繪製
+          loadDataFromCloud(true); 
       } else { 
           alert('❌ 抓取失敗 (雲端回報)：\n' + res.message); updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); 
       }
@@ -1325,8 +1384,8 @@ function generateFtPayslipPDF(isCloud = false) {
   } else { html2pdf().set(opt).from(printArea).save(); }
 }
 
-// 💡 100% 穩定且不會出錯的路由切換引擎 (安全保護)
-function showAdminPage(page) {
+// 💡 100% 穩定且不會出錯的路由切換引擎
+function showAdminPage(page, linkElement) {
   try {
       const isHr = document.getElementById('admin-screen').classList.contains('mode-hr');
       const restrictedPages = ['customer', 'contract', 'point', 'bill', 'boss', 'supplier'];
@@ -1341,8 +1400,12 @@ function showAdminPage(page) {
       targetPage.classList.add('active');
       
       document.querySelectorAll('#admin-screen .sidebar-nav a').forEach(a => a.classList.remove('active')); 
-      let autoLink = document.querySelector(`a[onclick*="showAdminPage('${page}')"]`);
-      if(autoLink) autoLink.classList.add('active');
+      if (linkElement) {
+          linkElement.classList.add('active');
+      } else {
+          let autoLink = document.querySelector(`a[onclick*="showAdminPage('${page}')"]`);
+          if(autoLink) autoLink.classList.add('active');
+      }
       
       if (page === 'customer') { clearCustForm(); renderCustTable(); }
       if (page === 'contract') { clearContractForm(); renderContractTable(); }
@@ -1412,7 +1475,6 @@ function renderSupplierTable() {
     document.getElementById('supplierTable').innerHTML = html || '<tr><td colspan="11" style="text-align:center;">無資料</td></tr>';
     renderPagination('supplier', total, totalPages);
     fillFilters();
-    if(document.getElementById('page-dashboard').classList.contains('active')) renderDashboard();
 }
 function addSupplier() { const o = {name:document.getElementById('sup_name').value.trim(), contact:document.getElementById('sup_contact').value.trim(), tel:document.getElementById('sup_tel').value.trim(), addr:document.getElementById('sup_addr').value.trim(), tax:document.getElementById('sup_tax').value.trim(), pay_method:document.getElementById('sup_pay_method').value.trim(), pay_date:document.getElementById('sup_pay_date').value, invoice_date:document.getElementById('sup_invoice_date').value, invoice_no:document.getElementById('sup_invoice_no').value.trim(), invoice_amt:document.getElementById('sup_invoice_amt').value, drive:document.getElementById('sup_drive').value.trim()}; if(!o.name)return; supplierData.push(o); saveAll(); renderSupplierTable(); clearSupplierForm(); }
 function editSupplier(i) { const d = supplierData[i]; document.getElementById('sup_name').value=d.name; document.getElementById('sup_contact').value=d.contact||''; document.getElementById('sup_tel').value=d.tel||''; document.getElementById('sup_addr').value=d.addr||''; document.getElementById('sup_tax').value=d.tax||''; document.getElementById('sup_pay_method').value=d.pay_method||''; document.getElementById('sup_pay_date').value=d.pay_date||''; document.getElementById('sup_invoice_date').value=d.invoice_date||''; document.getElementById('sup_invoice_no').value=d.invoice_no||''; document.getElementById('sup_invoice_amt').value=d.invoice_amt||''; document.getElementById('sup_drive').value=d.drive||''; editSupplierIndex=i; document.getElementById('btnUpdateSupplier').style.display='inline-block'; }
@@ -1485,7 +1547,6 @@ function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:document.g
 function delFtStaff(i){ if(!confirm('確定刪除此正職員工嗎？'))return; ftStaffData.splice(i,1); saveAll(); renderFtStaffTable(); }
 function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff input[type="text"],#page-ft_staff input[type="date"],#page-ft_staff input[type="number"]').forEach(i=>i.value=''); document.querySelectorAll('#page-ft_staff input[type="checkbox"]').forEach(i=>i.checked=false); document.getElementById('ft_salary').value='30000'; document.getElementById('ft_labor').value='0'; document.getElementById('ft_health').value='0'; document.getElementById('ft_pwd').value='1234'; document.getElementById('ft_status').value='在職'; editFtStaffIndex=-1; document.getElementById('btnUpdateFtStaff').style.display='none'; }
 
-// 💡 智慧計算正職出勤時數
 function toggleFtaFields(){ const t=document.getElementById('fta_record_type').value; document.getElementById('fta_time_block').style.display='grid'; document.getElementById('fta_leave_type_block').style.display=t==='請假'?'block':'none'; document.getElementById('fta_approval_block').style.display=t==='請假'?'block':'none'; if(t==='請假'){document.getElementById('fta_time_in').value='';document.getElementById('fta_time_out').value='';document.getElementById('fta_hours').value='8';} }
 function calcFtaHours(){ 
     const s = document.getElementById('fta_time_in').value;
