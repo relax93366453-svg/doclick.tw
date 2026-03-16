@@ -1,23 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>點籽響客戶及派遣管理系統 (專業企業版)</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>點籽響客戶及派遣管理系統 (專業企業版)</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei','Arial',sans-serif}body{background-color:#f4f7fb;color:#334155;line-height:1.6}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#94a3b8}
-#login-screen{display:flex;justify-content:center;align-items:center;height:100vh;background:url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;background-color:#1e293b;position:relative;transition:background-image 0.5s ease; z-index:9999;}
-#login-screen::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65)}.login-box{background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.5);padding:45px 40px;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);width:100%;max-width:420px;text-align:center;position:relative;z-index:1;border-top:6px solid #2d9d5c}
-.login-logo-container{margin-bottom:20px;height:80px;display:flex;justify-content:center;align-items:center}.login-logo-container img{max-width:100%;max-height:100%;object-fit:contain;display:none}#login-logo-icon{font-size:50px;color:#2d9d5c}.login-box h1{color:#1e293b;margin-bottom:5px;font-size:24px;font-weight:900;letter-spacing:1px}.pro-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:bold;letter-spacing:1px;margin-bottom:25px;box-shadow:0 4px 6px rgba(245,158,11,0.3)}
-.login-field{margin-bottom:18px;text-align:left}.login-field label{display:block;margin-bottom:6px;font-weight:700;color:#475569;font-size:13px}.login-field input,.login-field select{width:100%;padding:14px 16px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;outline:none;transition:all 0.3s;background:rgba(255,255,255,0.9);color:#1e293b}.login-field input:focus,.login-field select:focus{border-color:#2d9d5c;background:#fff;box-shadow:0 0 0 4px rgba(45,157,92,0.15)}.btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#2d9d5c,#15803d);color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px;transition:all 0.3s;box-shadow:0 10px 15px -3px rgba(45,157,92,0.3)}.btn-login:hover{transform:translateY(-2px);box-shadow:0 15px 20px -3px rgba(45,157,92,0.4)}
-.app-container,.staff-container{display:none;min-height:100vh}.sidebar{width:240px;background-color:#ffffff;box-shadow:2px 0 15px rgba(0,0,0,0.03);padding:20px 0;position:fixed;height:100vh;overflow-y:auto;z-index:10;border-right:1px solid #e2e8f0}.sidebar-header{padding:0 20px 20px;border-bottom:1px solid #f1f5f9;margin-bottom:15px;display:flex;align-items:center;justify-content:center;flex-direction:column}.sidebar-header img{max-height:40px;max-width:100%;margin-bottom:10px;display:none}.sidebar-header h1{font-size:16px;color:#2d9d5c;font-weight:800;display:flex;align-items:center;gap:8px;margin:0}.sidebar-nav{list-style:none;padding:0 10px}.sidebar-nav li{margin:4px 0}.sidebar-nav a{display:flex;align-items:center;gap:12px;padding:12px 15px;color:#64748b;text-decoration:none;border-radius:8px;transition:all 0.2s ease;cursor:pointer;font-size:14px;font-weight:600}.sidebar-nav a:hover{background-color:#f8fafc;color:#2d9d5c}.sidebar-nav a.active{background-color:#ecfdf5;color:#2d9d5c}.sidebar-nav a i{font-size:16px;width:20px;text-align:center}
-.main-content{flex:1;margin-left:240px;padding:25px 35px;width:calc(100% - 240px);overflow-x:auto}.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.header-actions{display:flex;align-items:center;gap:15px;flex-wrap:wrap}.sys-time{font-size:14px;font-weight:700;color:#334155;background:#ffffff;padding:8px 16px;border-radius:8px;display:inline-flex;align-items:center;gap:8px;border:1px solid #cbd5e1;box-shadow:0 2px 4px rgba(0,0,0,0.02);min-width:190px;justify-content:center}#sync-status{font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;background-color:#f1f5f9;color:#475569;border:1px solid #e2e8f0;transition:0.3s}
-.switch-role-btn{background:white;color:#3b82f6;border:1px solid #e2e8f0;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.2s ease;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 4px rgba(0,0,0,0.02)}.switch-role-btn:hover{background:#f8fafc;border-color:#cbd5e1;transform:translateY(-1px);box-shadow:0 4px 6px rgba(0,0,0,0.04)}.page{display:none;background-color:#ffffff;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);padding:30px;margin-bottom:20px;border:1px solid #f1f5f9}.page.active{display:block}.page-title{font-size:18px;font-weight:700;margin-bottom:20px;color:#334155;padding-bottom:12px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px}
-.filter-bar{background-color:#f8fafc;padding:15px 20px;border-radius:8px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:15px;align-items:center;border:1px solid #e2e8f0}.filter-bar label{color:#475569;font-size:14px;font-weight:600}.filter-bar select,.filter-bar input{padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;outline:none}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:25px}.grid div{display:flex;flex-direction:column}.grid label{margin-bottom:6px;font-weight:600;font-size:13px;color:#475569}.grid input,.grid select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;outline:none;background:#fff}.checkbox-group{display:flex;gap:15px;align-items:center;background:#fff;padding:10px 15px;border:1px solid #cbd5e1;border-radius:6px;flex-wrap:wrap}
-button.btn{padding:10px 18px;border:none;border-radius:6px;cursor:pointer;margin-right:10px;margin-bottom:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:8px;color:white;transition:0.2s}.btn:hover{transform:translateY(-1px);box-shadow:0 4px 6px rgba(0,0,0,0.15)}.btn-success{background:#10b981}.btn-warning{background:#f59e0b}.btn-excel{background:#3b82f6}.btn-pdf{background:#ef4444}.btn-backup{background:#8b5cf6}.btn-restore{background:#06b6d4}.btn-sync{background:#0ea5e9}.btn-sm{padding:6px 12px;font-size:12px;margin-bottom:0}.table-responsive{width:100%;overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0}table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;background:#fff}table th{padding:14px 12px;background:#f8fafc;color:#475569;font-weight:700;text-align:left;border-bottom:2px solid #e2e8f0}table td{padding:12px 12px;border-bottom:1px solid #e2e8f0;color:#334155;vertical-align:middle}table tr:hover td{background-color:#f1f5f9}
-.badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block}.badge-green{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}.badge-red{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}.badge-blue{background:#dbeafe;color:#075985;border:1px solid #bfdbfe}.badge-yellow{background:#fef3c7;color:#92400e;border:1px solid #fde68a}.pagination{margin-top:20px;display:flex;gap:8px;justify-content:flex-end}.pagination button{padding:8px 14px;border:1px solid #cbd5e1;background:white;cursor:pointer;border-radius:6px;font-size:13px;font-weight:600;color:#475569}.section-divider{grid-column:span 4;border-bottom:2px dashed #ddd;margin:10px 0;padding-bottom:5px;color:#2d9d5c;font-weight:bold}.required{color:#ef4444;margin-left:3px;font-weight:bold}
-.dashboard-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:30px}.dash-card{background:#ffffff;border-radius:12px;padding:25px 20px;text-align:left;box-shadow:0 4px 10px rgba(0,0,0,0.03);border:1px solid #f1f5f9;position:relative;transition:all 0.3s}.dash-card:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(0,0,0,0.06)}.dash-card.primary{border-top:4px solid #3b82f6}.dash-card.success{border-top:4px solid #10b981}.dash-card.warning{border-top:4px solid #f59e0b}.dash-card.danger{border-top:4px solid #ef4444}.dash-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:45px;opacity:0.08;color:inherit}.dash-card .label{font-size:14px;font-weight:700;color:#64748b;margin-bottom:8px}.dash-card .num{font-size:36px;font-weight:800;color:#1e293b}
-.workspace-hr .ws-business{display:none !important}.workspace-business .ws-hr{display:none !important}#admin-screen.mode-hr .admin-only{display:none !important}
-#toast{display:none;position:fixed;bottom:30px;right:30px;background:#10b981;color:white;padding:15px 25px;border-radius:8px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.2);z-index:9999;font-weight:bold;font-size:15px;transition:opacity 0.3s}
+/* 核心樣式極速壓縮版 */
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei',sans-serif}body{background:#f4f7fb;color:#334155;line-height:1.6}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#94a3b8}#login-screen{display:flex;justify-content:center;align-items:center;height:100vh;background:url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;background-color:#1e293b;position:fixed;top:0;left:0;width:100%;z-index:9998}#login-screen::before{content:'';position:absolute;inset:0;background:rgba(15,23,42,.65)}.login-box{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.5);padding:45px 40px;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);width:100%;max-width:420px;text-align:center;position:relative;z-index:1;border-top:6px solid #2d9d5c}.login-logo-container{margin-bottom:20px;height:80px;display:flex;justify-content:center;align-items:center}.login-logo-container img{max-width:100%;max-height:100%;object-fit:contain;display:none}#login-logo-icon{font-size:50px;color:#2d9d5c}.login-box h1{color:#1e293b;margin-bottom:5px;font-size:24px;font-weight:900;letter-spacing:1px}.pro-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:bold;letter-spacing:1px;margin-bottom:25px;box-shadow:0 4px 6px rgba(245,158,11,.3)}.login-field{margin-bottom:18px;text-align:left}.login-field label{display:block;margin-bottom:6px;font-weight:700;color:#475569;font-size:13px}.login-field input,.login-field select{width:100%;padding:14px 16px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;outline:none;transition:all .3s;background:rgba(255,255,255,.9);color:#1e293b}.login-field input:focus,.login-field select:focus{border-color:#2d9d5c;background:#fff;box-shadow:0 0 0 4px rgba(45,157,92,.15)}.btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#2d9d5c,#15803d);color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px;transition:all .3s;box-shadow:0 10px 15px -3px rgba(45,157,92,.3)}.btn-login:hover{transform:translateY(-2px);box-shadow:0 15px 20px -3px rgba(45,157,92,.4)}.app-container,.staff-container{display:none;min-height:100vh}.sidebar{width:240px;background-color:#fff;box-shadow:2px 0 15px rgba(0,0,0,.03);padding:20px 0;position:fixed;height:100vh;overflow-y:auto;z-index:10;border-right:1px solid #e2e8f0}.sidebar-header{padding:0 20px 20px;border-bottom:1px solid #f1f5f9;margin-bottom:15px;display:flex;align-items:center;justify-content:center;flex-direction:column}.sidebar-header img{max-height:40px;max-width:100%;margin-bottom:10px;display:none}.sidebar-header h1{font-size:16px;color:#2d9d5c;font-weight:800;display:flex;align-items:center;gap:8px;margin:0}.sidebar-nav{list-style:none;padding:0 10px}.sidebar-nav li{margin:4px 0}.sidebar-nav a{display:flex;align-items:center;gap:12px;padding:12px 15px;color:#64748b;text-decoration:none;border-radius:8px;transition:all .2s ease;cursor:pointer;font-size:14px;font-weight:600}.sidebar-nav a:hover{background-color:#f8fafc;color:#2d9d5c}.sidebar-nav a.active{background-color:#ecfdf5;color:#2d9d5c}.sidebar-nav a i{font-size:16px;width:20px;text-align:center}.main-content{flex:1;margin-left:240px;padding:25px 35px;width:calc(100% - 240px);overflow-x:auto}.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.header-actions{display:flex;align-items:center;gap:15px;flex-wrap:wrap}.sys-time{font-size:14px;font-weight:700;color:#334155;background:#fff;padding:8px 16px;border-radius:8px;display:inline-flex;align-items:center;gap:8px;border:1px solid #cbd5e1;box-shadow:0 2px 4px rgba(0,0,0,.02);min-width:190px;justify-content:center}#sync-status{font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;background-color:#f1f5f9;color:#475569;border:1px solid #e2e8f0;transition:.3s}.switch-role-btn{background:#fff;color:#3b82f6;border:1px solid #e2e8f0;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s ease;text-decoration:none;display:inline-flex;align-items:center;gap:8px;box-shadow:0 2px 4px rgba(0,0,0,.02)}.switch-role-btn:hover{background:#f8fafc;border-color:#cbd5e1;transform:translateY(-1px);box-shadow:0 4px 6px rgba(0,0,0,.04)}.page{display:none;background-color:#fff;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.05);padding:30px;margin-bottom:20px;border:1px solid #f1f5f9}.page.active{display:block}.page-title{font-size:18px;font-weight:700;margin-bottom:20px;color:#334155;padding-bottom:12px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px}.filter-bar{background-color:#f8fafc;padding:15px 20px;border-radius:8px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:15px;align-items:center;border:1px solid #e2e8f0}.filter-bar label{color:#475569;font-size:14px;font-weight:600}.filter-bar select,.filter-bar input{padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;outline:none}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:25px}.grid div{display:flex;flex-direction:column}.grid label{margin-bottom:6px;font-weight:600;font-size:13px;color:#475569}.grid input,.grid select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;outline:none;background:#fff}.checkbox-group{display:flex;gap:15px;align-items:center;background:#fff;padding:10px 15px;border:1px solid #cbd5e1;border-radius:6px;flex-wrap:wrap}button.btn{padding:10px 18px;border:none;border-radius:6px;cursor:pointer;margin-right:10px;margin-bottom:10px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:8px;color:#fff;transition:.2s}.btn:hover{transform:translateY(-1px);box-shadow:0 4px 6px rgba(0,0,0,.15)}.btn-success{background:#10b981}.btn-warning{background:#f59e0b}.btn-excel{background:#3b82f6}.btn-pdf{background:#ef4444}.btn-backup{background:#8b5cf6}.btn-restore{background:#06b6d4}.btn-sync{background:#0ea5e9}.btn-sm{padding:6px 12px;font-size:12px;margin-bottom:0}.table-responsive{width:100%;overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0}table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;background:#fff}table th{padding:14px 12px;background:#f8fafc;color:#475569;font-weight:700;text-align:left;border-bottom:2px solid #e2e8f0}table td{padding:12px 12px;border-bottom:1px solid #e2e8f0;color:#334155;vertical-align:middle}table tr:hover td{background-color:#f1f5f9}.badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block}.badge-green{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}.badge-red{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}.badge-blue{background:#dbeafe;color:#075985;border:1px solid #bfdbfe}.badge-yellow{background:#fef3c7;color:#92400e;border:1px solid #fde68a}.pagination{margin-top:20px;display:flex;gap:8px;justify-content:flex-end}.pagination button{padding:8px 14px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;border-radius:6px;font-size:13px;font-weight:600;color:#475569}.section-divider{grid-column:span 4;border-bottom:2px dashed #ddd;margin:10px 0;padding-bottom:5px;color:#2d9d5c;font-weight:bold}.required{color:#ef4444;margin-left:3px;font-weight:bold}.dashboard-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:30px}.dash-card{background:#fff;border-radius:12px;padding:25px 20px;text-align:left;box-shadow:0 4px 10px rgba(0,0,0,.03);border:1px solid #f1f5f9;position:relative;transition:all .3s}.dash-card:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(0,0,0,.06)}.dash-card.primary{border-top:4px solid #3b82f6}.dash-card.success{border-top:4px solid #10b981}.dash-card.warning{border-top:4px solid #f59e0b}.dash-card.danger{border-top:4px solid #ef4444}.dash-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:45px;opacity:.08;color:inherit}.dash-card .label{font-size:14px;font-weight:700;color:#64748b;margin-bottom:8px}.dash-card .num{font-size:36px;font-weight:800;color:#1e293b}.workspace-hr .ws-business{display:none !important}.workspace-business .ws-hr{display:none !important}#admin-screen.mode-hr .admin-only{display:none !important}
+
+/* 確保 Toast 永遠在最上層，蓋過 Login Screen */
+#toast{display:none;position:fixed;bottom:30px;right:30px;background:#10b981;color:#fff;padding:15px 25px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,.5);z-index:10000;font-weight:bold;font-size:16px;transition:opacity .3s}
 </style>
 </head>
 <body>
@@ -28,7 +23,13 @@ button.btn{padding:10px 18px;border:none;border-radius:6px;cursor:pointer;margin
   <div class="login-box">
     <div class="login-logo-container"><img id="login-logo-img" src=""><i class="fas fa-leaf" id="login-logo-icon"></i></div>
     <h1 style="margin-top:10px;">點籽響管理系統</h1><div class="pro-badge">專業企業版</div>
-    <div class="login-field"><label>登入身分</label><select id="login_role"><option value="admin" style="color:#dc2626; font-weight:bold;">👑 系統管理員 (老闆/人資)</option><option value="staff" style="color:#2563eb; font-weight:bold;">💼 員工專區 (正職/派遣)</option></select></div>
+    <div class="login-field">
+      <label>登入身分</label>
+      <select id="login_role">
+        <option value="admin" style="color:#dc2626; font-weight:bold;">👑 系統管理員 (老闆/人資)</option>
+        <option value="staff" style="color:#2563eb; font-weight:bold;">💼 員工專區 (正職/派遣)</option>
+      </select>
+    </div>
     <div class="login-field auth-input"><label>登入帳號</label><input type="text" id="login_acc" placeholder="請輸入帳號"></div>
     <div class="login-field auth-input"><label>登入密碼</label><input type="password" id="login_pwd" placeholder="請輸入密碼"></div>
     <button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登 入 系 統</button>
@@ -152,7 +153,6 @@ button.btn{padding:10px 18px;border:none;border-radius:6px;cursor:pointer;margin
         <label style="font-weight:bold; display:block; margin-top:20px;">💰 價目表 JSON 設定</label><textarea id="config_price_table" style="width:100%; height:100px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea><br><button class="btn btn-success" onclick="savePriceConfig()">儲存價目表</button>
       </div>
     </div>
-
   </div>
 </div>
 
@@ -234,8 +234,15 @@ button.btn{padding:10px 18px;border:none;border-radius:6px;cursor:pointer;margin
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 const el = id => document.getElementById(id);
 
-function showToast(msg, isErr = false) { const t = el('toast'); if(!t) return; t.style.background = isErr ? '#ef4444' : '#10b981'; t.innerHTML = msg; t.style.display = 'block'; t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 2500); }
-function updateSyncStatus(msg, isErr = false) { const e = el('sync-status'); if (!e) return; e.innerHTML = msg; e.style.backgroundColor = isErr ? '#fee2e2' : '#f1f5f9'; e.style.color = isErr ? '#dc2626' : '#475569'; }
+function showToast(msg, isErr = false) { 
+    const t = el('toast'); if(!t) return; 
+    t.style.background = isErr ? '#ef4444' : '#10b981'; t.innerHTML = msg; t.style.display = 'block'; t.style.opacity = '1'; 
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.style.display = 'none', 300); }, 2500); 
+}
+function updateSyncStatus(msg, isErr = false) { 
+    const e = el('sync-status'); if (!e) return; 
+    e.innerHTML = msg; e.style.backgroundColor = isErr ? '#fee2e2' : '#f1f5f9'; e.style.color = isErr ? '#dc2626' : '#475569'; 
+}
 function safeJSONParse(k, f) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch(e) { return f; } }
 
 let custData=safeJSONParse('custData',[]), contractData=safeJSONParse('contractData',[]), staffData=safeJSONParse('staffData',[]), attendData=safeJSONParse('attendData',[]), ftStaffData=safeJSONParse('ftStaffData',[]), ftAttendData=safeJSONParse('ftAttendData',[]), talentData=safeJSONParse('talentData',[]), supplierData=safeJSONParse('supplierData',[]); 
@@ -292,7 +299,7 @@ function standardizeData() {
   talentData = (talentData||[]).filter(x=>x).map(x => {
       if (Array.isArray(x)) {
           let extra = []; if(x[8]) extra.push('經驗:'+x[8]); if(x[10]) extra.push('專長:'+x[10]); if(x[5]) extra.push('Line:'+x[5]);
-          return { name: x[1]||x[0]||'', tel: x[4]||x[2]||x[1]||'', source: 'Google表單', location: '', shift: '', role: x[9]||x[6]||'', status: '待聯絡', eval: '', resume: '', exp: extra.join(' | '), date: String(x[0]||'').split('T')[0].split(' ')[0] || new Date().toISOString().split('T')[0] };
+          return { name: x[1]||'', tel: x[4]||x[2]||x[1]||'', source: 'Google表單', location: '', shift: '', role: x[9]||x[6]||'', status: '待聯絡', eval: '', resume: '', exp: extra.join(' | '), date: String(x[0]||'').split('T')[0].split(' ')[0] || new Date().toISOString().split('T')[0] };
       }
       const ks = Object.keys(x); const gv = (ws) => { for(let k of ks){ let cleanK = String(k).replace(/\s+/g, '').toLowerCase(); for(let w of ws){ if(cleanK.includes(w.toLowerCase())) return x[k]; } } return ''; };
       return { ...x, name: x.name || gv(['姓名','名字','全名','name']), tel: x.tel || gv(['電話','手機','號碼','tel','聯絡']), source: x.source || gv(['來源','管道'])||'Google表單', location: x.location || gv(['地區','地點','縣市']), shift: x.shift || gv(['班別','時段','時間']), role: x.role || gv(['職務','應徵','職位','感興趣']), status: x.status || gv(['狀態']) || '待聯絡', eval: x.eval || gv(['評價','面試']), resume: x.resume || gv(['履歷','連結','附件']), exp: x.exp || gv(['專長','經歷','備註','經驗']), date: x.date || gv(['時間戳記','日期','時間']) || new Date().toISOString().split('T')[0] };
@@ -332,34 +339,34 @@ document.addEventListener('DOMContentLoaded', function () {
       
       const pwdInput = el('login_pwd'); if(pwdInput) pwdInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
       loadDataFromCloud();
-  } catch (err) { console.error("系統初始化保護:", err); document.getElementById('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
+  } catch (err) { console.error("系統初始化保護:", err); el('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
 });
 
 function restoreLoginState() {
   try {
       const role = localStorage.getItem('loginRole'); const acc = localStorage.getItem('loginAcc');
-      if (!role) { document.getElementById('login-screen').style.display = 'flex'; document.getElementById('admin-screen').style.display = 'none'; document.getElementById('staff-screen').style.display = 'none'; return; }
-      document.getElementById('login-screen').style.display = 'none';
+      if (!role) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; return; }
+      el('login-screen').style.display = 'none';
 
       if(role === 'admin') {
-        const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; document.getElementById('staff-screen').style.display = 'none';
+        const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; el('staff-screen').style.display = 'none';
         currentWorkspace = localStorage.getItem('workspace') || 'business';
         if(currentWorkspace === 'hr') { adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr'); el('admin-sidebar-title-business').style.display = 'none'; el('admin-sidebar-title-hr').style.display = 'flex'; } 
         else { adminScreen.classList.remove('workspace-hr', 'mode-hr'); adminScreen.classList.add('workspace-business'); el('admin-sidebar-title-business').style.display = 'flex'; el('admin-sidebar-title-hr').style.display = 'none'; }
         fillFilters(); showAdminPage(localStorage.getItem('adminPage') || 'dashboard');
       } else if (role === 'staff') {
-        document.getElementById('staff-screen').style.display = 'flex'; document.getElementById('admin-screen').style.display = 'none';
+        el('staff-screen').style.display = 'flex'; el('admin-screen').style.display = 'none';
         let staff = staffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || ftStaffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || { name: acc || '員工', account: acc };
         currentLoginStaff = staff; 
         initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage') || 'home');
       }
-  } catch(e) { document.getElementById('login-screen').style.display = 'flex'; document.getElementById('admin-screen').style.display = 'none'; document.getElementById('staff-screen').style.display = 'none'; console.error(e); }
+  } catch(e) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; console.error(e); }
 }
 
 function handleLogin() {
   try {
       const role = el('login_role').value; const acc = el('login_acc').value.trim(); const pwd = el('login_pwd').value.trim();
-      if(!acc || !pwd) { showToast('請輸入帳密！', true); return; }
+      if(!acc || !pwd) { showToast('請輸入帳號與密碼！', true); return; }
 
       const sAA = localStorage.getItem('adminAcc') || 'admin'; const sAP = localStorage.getItem('adminPwd') || '1234';
       const sHA = localStorage.getItem('hrAcc') || 'hr'; const sHP = localStorage.getItem('hrPwd') || '1234';
@@ -367,14 +374,14 @@ function handleLogin() {
       if (role === 'admin') {
         if ((acc === sAA && pwd === sAP) || (acc === 'admin' && pwd === 'doclick888')) { localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'business'); restoreLoginState(); showToast('登入成功'); } 
         else if ((acc === sHA && pwd === sHP) || (acc === 'hr' && pwd === 'doclick888')) { localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'hr'); restoreLoginState(); showToast('登入成功'); } 
-        else { showToast('帳密錯誤！', true); }
+        else { showToast('帳號或密碼錯誤！', true); }
       } else {
         const staff = staffData.find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         const ftStaff = ftStaffData.find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         if (staff || ftStaff) { localStorage.setItem('loginRole', 'staff'); localStorage.setItem('loginAcc', acc); restoreLoginState(); showToast('登入成功'); } 
-        else { showToast('員工帳密錯誤！', true); }
+        else { showToast('員工帳號或密碼錯誤！', true); }
       }
-  } catch(e) { showToast('登入錯誤', true); console.error(e); }
+  } catch(e) { showToast('系統錯誤，請重整頁面', true); console.error(e); }
 }
 
 function toggleWorkspace() {
@@ -515,7 +522,7 @@ function syncTalentFromForm() {
   .then(res => res.json()).then(res => {
       showToast(`✅ 啟動資料庫防護同步！正在匯入...`); 
       setTimeout(() => loadDataFromCloud(true), 2000); 
-  }).catch(err => { alert('❌ 網路斷線或 URL 錯誤。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
+  }).catch(err => { alert('❌ 網路斷線或 SCRIPT_URL 設定錯誤。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
 }
 
 function autoCreateFolder() { const cName = el('c_name').value.trim(); if (!cName) { showToast('請輸入名稱！', true); return; } if(el('c_drive').value.trim() !== '' && !confirm('⚠️ 已有網址！確定要覆蓋？')) return; const btn = el('btnCreateFolder'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el('c_drive').value = res.folderUrl; showToast('建立成功！請儲存'); } else { showToast('失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = '<i class="fas fa-magic"></i> 自動建檔'; btn.disabled = false; }); }
@@ -764,7 +771,7 @@ function renderDashboard(){
           if(diffDays <= 7) { let st = diffDays < 0 ? `<span class="badge badge-red">逾期 ${Math.abs(diffDays)} 天</span>` : (diffDays===0 ? `<span class="badge badge-red">今日到期</span>` : `<span class="badge badge-yellow">剩 ${diffDays} 天</span>`); apHtml += `<tr><td style="font-weight:bold;">${s.name}</td><td>$${s.invoice_amt||0}</td><td>${s.pay_date}</td><td>${st}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('supplier'); setTimeout(()=>editSupplier(${idx}),300)"><i class="fas fa-eye"></i></button></td></tr>`; }
       }
   });
-  el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無帳款提醒</td></tr>';
+  el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無急需付款</td></tr>';
 }
 </script>
 </body>
