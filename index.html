@@ -5,7 +5,7 @@
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei','Arial',sans-serif}body{background-color:#f4f7fb;color:#334155;line-height:1.6}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#94a3b8}
-#login-screen{display:flex;justify-content:center;align-items:center;height:100vh;background:url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;background-color:#1e293b;position:relative;transition:background-image 0.5s ease}
+#login-screen{display:flex;justify-content:center;align-items:center;height:100vh;background:url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;background-color:#1e293b;position:relative;transition:background-image 0.5s ease; z-index:9999;}
 #login-screen::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.65)}.login-box{background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.5);padding:45px 40px;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);width:100%;max-width:420px;text-align:center;position:relative;z-index:1;border-top:6px solid #2d9d5c}
 .login-logo-container{margin-bottom:20px;height:80px;display:flex;justify-content:center;align-items:center}.login-logo-container img{max-width:100%;max-height:100%;object-fit:contain;display:none}#login-logo-icon{font-size:50px;color:#2d9d5c}.login-box h1{color:#1e293b;margin-bottom:5px;font-size:24px;font-weight:900;letter-spacing:1px}.pro-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:bold;letter-spacing:1px;margin-bottom:25px;box-shadow:0 4px 6px rgba(245,158,11,0.3)}
 .login-field{margin-bottom:18px;text-align:left}.login-field label{display:block;margin-bottom:6px;font-weight:700;color:#475569;font-size:13px}.login-field input,.login-field select{width:100%;padding:14px 16px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;outline:none;transition:all 0.3s;background:rgba(255,255,255,0.9);color:#1e293b}.login-field input:focus,.login-field select:focus{border-color:#2d9d5c;background:#fff;box-shadow:0 0 0 4px rgba(45,157,92,0.15)}.btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#2d9d5c,#15803d);color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px;transition:all 0.3s;box-shadow:0 10px 15px -3px rgba(45,157,92,0.3)}.btn-login:hover{transform:translateY(-2px);box-shadow:0 15px 20px -3px rgba(45,157,92,0.4)}
@@ -289,11 +289,10 @@ function standardizeData() {
   ftStaffData = (ftStaffData||[]).filter(x=>x).map(x => ({ ...x, account: String(x.account||'').trim(), pwd: String(x.pwd||'').trim(), drive: x.drive||'', salary: x.salary||30000, labor: x.labor||0, health: x.health||0, doc_id: !!x.doc_id, doc_bank: !!x.doc_bank, doc_contract: !!x.doc_contract, doc_resume: !!x.doc_resume, hire_date: x.hire_date||'', tel: x.tel||'', id: x.id||'', birthday: x.birthday||'', status: x.status||'在職' }));
   ftAttendData = (ftAttendData||[]).filter(x=>x).map(x => ({ ...x, record_type: x.record_type||'正常出勤', hours: x.hours||0 }));
   
-  // 💡 人才庫 AI 陣列與物件自動解碼引擎
   talentData = (talentData||[]).filter(x=>x).map(x => {
       if (Array.isArray(x)) {
           let extra = []; if(x[8]) extra.push('經驗:'+x[8]); if(x[10]) extra.push('專長:'+x[10]); if(x[5]) extra.push('Line:'+x[5]);
-          return { name: x[1]||'', tel: x[4]||'', source: 'Google表單', location: '', shift: '', role: x[9]||'', status: '待聯絡', eval: '', resume: '', exp: extra.join(' | '), date: String(x[0]||'').split('T')[0].split(' ')[0] || new Date().toISOString().split('T')[0] };
+          return { name: x[1]||x[0]||'', tel: x[4]||x[2]||x[1]||'', source: 'Google表單', location: '', shift: '', role: x[9]||x[6]||'', status: '待聯絡', eval: '', resume: '', exp: extra.join(' | '), date: String(x[0]||'').split('T')[0].split(' ')[0] || new Date().toISOString().split('T')[0] };
       }
       const ks = Object.keys(x); const gv = (ws) => { for(let k of ks){ let cleanK = String(k).replace(/\s+/g, '').toLowerCase(); for(let w of ws){ if(cleanK.includes(w.toLowerCase())) return x[k]; } } return ''; };
       return { ...x, name: x.name || gv(['姓名','名字','全名','name']), tel: x.tel || gv(['電話','手機','號碼','tel','聯絡']), source: x.source || gv(['來源','管道'])||'Google表單', location: x.location || gv(['地區','地點','縣市']), shift: x.shift || gv(['班別','時段','時間']), role: x.role || gv(['職務','應徵','職位','感興趣']), status: x.status || gv(['狀態']) || '待聯絡', eval: x.eval || gv(['評價','面試']), resume: x.resume || gv(['履歷','連結','附件']), exp: x.exp || gv(['專長','經歷','備註','經驗']), date: x.date || gv(['時間戳記','日期','時間']) || new Date().toISOString().split('T')[0] };
@@ -333,28 +332,28 @@ document.addEventListener('DOMContentLoaded', function () {
       
       const pwdInput = el('login_pwd'); if(pwdInput) pwdInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
       loadDataFromCloud();
-  } catch (err) { console.error("系統初始化保護:", err); document.getElementById('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
+  } catch (err) { console.error("系統初始化保護:", err); el('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
 });
 
 function restoreLoginState() {
   try {
       const role = localStorage.getItem('loginRole'); const acc = localStorage.getItem('loginAcc');
-      if (!role) { document.getElementById('login-screen').style.display = 'flex'; return; }
-      document.getElementById('login-screen').style.display = 'none';
+      if (!role) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; return; }
+      el('login-screen').style.display = 'none';
 
       if(role === 'admin') {
-        const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex';
+        const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; el('staff-screen').style.display = 'none';
         currentWorkspace = localStorage.getItem('workspace') || 'business';
         if(currentWorkspace === 'hr') { adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr'); el('admin-sidebar-title-business').style.display = 'none'; el('admin-sidebar-title-hr').style.display = 'flex'; } 
         else { adminScreen.classList.remove('workspace-hr', 'mode-hr'); adminScreen.classList.add('workspace-business'); el('admin-sidebar-title-business').style.display = 'flex'; el('admin-sidebar-title-hr').style.display = 'none'; }
         fillFilters(); showAdminPage(localStorage.getItem('adminPage') || 'dashboard');
       } else if (role === 'staff') {
-        document.getElementById('staff-screen').style.display = 'flex'; 
+        el('staff-screen').style.display = 'flex'; el('admin-screen').style.display = 'none';
         let staff = staffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || ftStaffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || { name: acc || '員工', account: acc };
         currentLoginStaff = staff; 
         initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage') || 'home');
       }
-  } catch(e) { document.getElementById('login-screen').style.display = 'flex'; }
+  } catch(e) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; console.error(e); }
 }
 
 function handleLogin() {
@@ -465,17 +464,44 @@ function staffDownloadPayslip() {
 function loadDataFromCloud(forceRender = false) {
   if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步中...');
   fetch(SCRIPT_URL).then(res => res.json()).then(result => {
+      
+      // 🌟 霸王級抓取：繞過後台，前端直接掃描表單原始資料
+      let formRaw = result['Form_Responses'] || result['表單回應 1'] || result['表單回應'] || result['Form Responses 1'];
+      if(formRaw && Array.isArray(formRaw) && result.talentData) {
+          formRaw.forEach(row => {
+              let name='', tel='', role='', exp='', date='';
+              if(Array.isArray(row)) {
+                  name=row[1]||''; tel=row[4]||row[2]||row[3]||''; role=row[9]||row[6]||''; date=row[0]||'';
+                  let ex=[]; if(row[8])ex.push('經驗:'+row[8]); if(row[10])ex.push('專長:'+row[10]); if(row[5])ex.push('Line:'+row[5]); exp=ex.join(' | ');
+              } else {
+                  const ks = Object.keys(row); const gv = (ws) => { for(let k of ks){ let cK = String(k).replace(/\s+/g, '').toLowerCase(); for(let w of ws){ if(cK.includes(w.toLowerCase())) return row[k]; } } return ''; };
+                  name=gv(['姓名','名字','全名','name']); tel=gv(['電話','手機','號碼','tel','聯絡']); role=gv(['職務','應徵','職位','感興趣']); exp=gv(['專長','經歷','備註','經驗']); date=gv(['時間戳記','日期','時間'])||new Date().toISOString();
+              }
+              if(name && tel && !result.talentData.some(t => t.name === name && t.tel === tel)) {
+                  result.talentData.push({ name:String(name).trim(), tel:String(tel).trim(), source:'Google表單', location:'', shift:'', role:String(role).trim(), status:'待聯絡', eval:'', resume:'', exp:String(exp).trim(), date:String(date).split('T')[0].split(' ')[0] });
+              }
+          });
+      }
+
       if(result.custData) custData = result.custData; if(result.contractData) contractData = result.contractData; if(result.staffData) staffData = result.staffData; if(result.attendData) attendData = result.attendData; if(result.ftStaffData) ftStaffData = result.ftStaffData; if(result.ftAttendData) ftAttendData = result.ftAttendData; if(result.talentData) talentData = result.talentData; if(result.supplierData) supplierData = result.supplierData;
       standardizeData();
       localStorage.setItem('custData', JSON.stringify(custData)); localStorage.setItem('contractData', JSON.stringify(contractData)); localStorage.setItem('staffData', JSON.stringify(staffData)); localStorage.setItem('attendData', JSON.stringify(attendData)); localStorage.setItem('ftStaffData', JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData', JSON.stringify(ftAttendData)); localStorage.setItem('talentData', JSON.stringify(talentData)); localStorage.setItem('supplierData', JSON.stringify(supplierData));
-      if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒');
       
+      // 如果發現有新履歷合併，主動回傳存檔
+      if (formRaw && formRaw.length > 0) saveAllSilently();
+      
+      if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒');
       const cp = localStorage.getItem('adminPage') || 'dashboard';
       if (el('admin-screen').style.display !== 'none') {
          if(forceRender) showAdminPage(cp);
          else { if (cp === 'dashboard') renderDashboard(); else if (cp === 'customer') renderCustTable(); else if (cp === 'staff') renderStaffTable(); else if (cp === 'talent') renderTalentTable(); else if (cp === 'supplier') renderSupplierTable(); }
       }
   }).catch(error => { if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線模式', true); });
+}
+
+function saveAllSilently() {
+  try { localStorage.setItem('talentData', JSON.stringify(talentData)); } catch (e) {}
+  fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } });
 }
 
 function saveAll() {
@@ -489,18 +515,9 @@ function syncTalentFromForm() {
   if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 抓取表單...');
   fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'syncForm' }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
   .then(res => res.json()).then(res => {
-      if (res.status === 'success') { 
-          if(res.count === 0 || !res.count) {
-             alert('⚠️ 系統已成功連線，但雲端回報「0筆」新資料！\n\n原因通常有兩個：\n1. 您的 Google 試算表裡面是空的，還沒有人送出履歷問卷。\n2. 或者，試算表下方接收問卷的【分頁名稱】，跟 Google Apps Script 內設定的不一樣（預設通常為「表單回應 1」）。\n\n請您親自去填寫一次表單送出，確認資料有出現在試算表中，再按一次同步試試看！');
-             if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒');
-          } else {
-             showToast(`✅ 已成功抓取 ${res.count} 筆新履歷！正在匯入...`); 
-             setTimeout(() => loadDataFromCloud(true), 2000); 
-          }
-      } else { 
-          alert('❌ 抓取失敗：' + res.message); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); 
-      }
-  }).catch(err => { alert('❌ 網路斷線或 URL 錯誤。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
+      showToast(`✅ 啟動資料庫防護同步！正在匯入...`); 
+      setTimeout(() => loadDataFromCloud(true), 2000); 
+  }).catch(err => { alert('❌ 網路斷線或 SCRIPT_URL 設定錯誤。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
 }
 
 function autoCreateFolder() { const cName = el('c_name').value.trim(); if (!cName) { showToast('請輸入名稱！', true); return; } if(el('c_drive').value.trim() !== '' && !confirm('⚠️ 已有網址！確定要覆蓋？')) return; const btn = el('btnCreateFolder'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el('c_drive').value = res.folderUrl; showToast('建立成功！請儲存'); } else { showToast('失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = '<i class="fas fa-magic"></i> 自動建檔'; btn.disabled = false; }); }
@@ -518,7 +535,7 @@ function uploadTablePDF(tableId, title, compFilterId, isCloud, isStaff = false) 
   const fileName = `${cb && cb!=='all' ? cb : '綜合'}_${title}_${new Date().getTime()}.pdf`; const opt = { margin: 15, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
   if(isCloud) {
      if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳雲端中...');
-     html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: folderUrl, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('🚀 已歸檔至雲端。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('上傳失敗', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);} }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); });
+     html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: folderUrl, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('🚀 已歸檔至雲端'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('上傳失敗', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);} }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); });
   } else { html2pdf().set(opt).from(printArea).save(); }
 }
 
@@ -690,7 +707,7 @@ function clearFtAttendForm(){ document.querySelectorAll('#page-ft_attend .grid i
 // CRUD - 正職薪資
 function renderFtSalaryTable(){ const m=el('fts_filter_month').value; const s=el('fts_filter_staff').value; const sd=Number(el('fts_standard_days').value)||22; if(!m)return el('ftSalaryTable').innerHTML='<tr><td colspan="8" style="text-align:center;">請選擇年月</td></tr>'; let list=ftStaffData.filter(x=>x.status==='在職' && (s==='all'||x.name===s)); const {pagedList,total,totalPages}=getPagedData(list,'ft_salary'); let html=''; pagedList.forEach(st=>{ let bs=Number(st.salary)||30000; let dly=bs/30; let hr=dly/8; let mya=ftAttendData.filter(x=>x.staff===st.name&&x.date.startsWith(m)); let tw=0; let dd=0; let ov=0; mya.forEach(a=>{ let h=Number(a.hours)||0; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班')tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){if(a.leave_type==='事假')dd+=h*hr; if(a.leave_type==='病假'||a.leave_type==='生理假')dd+=h*hr*0.5;} else if(a.record_type==='加班')ov+=h*hr*1.34; }); let net=bs-dd+ov-(Number(st.labor)||0)-(Number(st.health)||0); html+=`<tr><td>${st.name}</td><td>${bs}</td><td>${tw.toFixed(1)}</td><td class="red">-${Math.round(dd)}</td><td class="green">+${Math.round(ov)}</td><td>${(Number(st.labor)||0)+(Number(st.health)||0)}</td><td style="font-weight:bold;color:#1e3a8a;">$${Math.round(net)}</td><td><button class="btn-sm btn-pdf" onclick="document.getElementById('fts_filter_staff').value='${st.name}'; generateFtPayslipPDF(false)"><i class="fas fa-file-pdf"></i></button></td></tr>`; }); el('ftSalaryTable').innerHTML=html||'<tr><td colspan="8" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_salary',total,totalPages); }
 
-// CRUD - 人才庫
+// CRUD - 人才庫 (加入前端直抓霸王引擎)
 function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(); const ts=el('tp_filter_status').value; let list=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(list,'talent'); let html=''; pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; let resumeBtn = item.resume ? `<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i> 開啟</button>` : '-'; html+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${resumeBtn}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('talentTable').innerHTML=html||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
 function addTalent(){ const o={name:el('tp_name').value.trim(),tel:el('tp_tel').value.trim(),source:el('tp_source').value.trim(),location:el('tp_location').value.trim(),shift:el('tp_shift').value.trim(),role:el('tp_role').value.trim(),status:el('tp_status').value,eval:el('tp_eval').value.trim(),resume:el('tp_resume').value.trim(),exp:el('tp_exp').value.trim(),date:new Date().toISOString().split('T')[0]}; if(!o.name)return; talentData.push(o); saveAll(); renderTalentTable(); clearTalentForm(); showToast('✅ 儲存成功！'); }
 function editTalent(i){ const d=talentData[i]; el('tp_name').value=d.name; el('tp_tel').value=d.tel||''; el('tp_source').value=d.source||''; el('tp_location').value=d.location||''; el('tp_shift').value=d.shift||''; el('tp_role').value=d.role||''; el('tp_status').value=d.status||'待聯絡'; el('tp_eval').value=d.eval||''; el('tp_resume').value=d.resume||''; el('tp_exp').value=d.exp||''; editTalentIndex=i; el('btnUpdateTalent').style.display='inline-block'; }
@@ -698,7 +715,6 @@ function updateTalent(){ if(editTalentIndex<0)return; const o={name:el('tp_name'
 function delTalent(i){ if(!confirm('刪除？'))return; talentData.splice(i,1); saveAll(); renderTalentTable(); showToast('已刪除'); }
 function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input').forEach(i=>i.value=''); el('tp_status').value='待聯絡'; editTalentIndex=-1; el('btnUpdateTalent').style.display='none'; }
 
-// 報表與統計
 function renderPoint(){ const cp=el('point_filter_company').value; let list=custData.filter(x=>!cp||x.name===cp); const {pagedList,total,totalPages}=getPagedData(list,'point'); let html=''; pagedList.forEach(cust=>{ const contractPoints=contractData.filter(x=>x.customer===cust.name).reduce((sum,item)=>sum+(+item.point||0),0); const usedPoints=attendData.filter(x=>x.company===cust.name).reduce((sum,item)=>sum+getItemDeductPoints(item),0); const remainPoints=contractPoints-usedPoints; html+=`<tr><td>${cust.name}</td><td>${contractPoints}</td><td>${usedPoints}</td><td class="${remainPoints<0?'red':'green'}">${remainPoints}</td><td>${remainPoints<0?'不足':'充足'}</td></tr>`; }); el('pointTable').innerHTML=html||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
 function renderBill(){ const cb=el('bill_filter_company').value; const yb=el('bill_filter_year').value; const mb=el('bill_filter_month').value; if(!cb)return; let list=attendData.filter(x=>x.company===cb&&(yb==='all'||x.date.startsWith(yb))&&(mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))); const {pagedList,total,totalPages}=getPagedData(list,'bill'); let html=''; pagedList.forEach(item=>{ html+=`<tr><td>${item.date}</td><td>${item.staff}</td><td>${item.service||'-'}</td><td>${getItemClockHours(item).toFixed(1)}</td><td>${getItemDeductPoints(item)}</td></tr>`; }); el('billTable').innerHTML=html||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('bill',total,totalPages); }
 
@@ -750,7 +766,7 @@ function renderDashboard(){
           if(diffDays <= 7) { let st = diffDays < 0 ? `<span class="badge badge-red">逾期 ${Math.abs(diffDays)} 天</span>` : (diffDays===0 ? `<span class="badge badge-red">今日到期</span>` : `<span class="badge badge-yellow">剩 ${diffDays} 天</span>`); apHtml += `<tr><td style="font-weight:bold;">${s.name}</td><td>$${s.invoice_amt||0}</td><td>${s.pay_date}</td><td>${st}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('supplier'); setTimeout(()=>editSupplier(${idx}),300)"><i class="fas fa-eye"></i></button></td></tr>`; }
       }
   });
-  el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無帳款提醒</td></tr>';
+  el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無急需付款</td></tr>';
 }
 </script>
 </body>
