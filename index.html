@@ -505,7 +505,7 @@ function uploadTablePDF(tableId, title, compFilterId, isCloud, isStaff = false) 
   const cb = compFilterId ? el(compFilterId).value : '';
   if(isCloud && compFilterId && (!cb || cb === 'all')) { showToast('請先選擇特定對象！', true); return; }
   let folderUrl = ''; 
-  if(isCloud && cb && cb !== 'all') { let targetInfo = isStaff ? (staffData.find(x => x.name === cb) || ftStaffData.find(x => x.name === cb)) : custData.find(x => x.name === cb); if(targetInfo && targetInfo.drive) folderUrl = targetInfo.drive; else { showToast('未設定雲端資料夾！', true); return; } }
+  if(isCloud && cb && cb !== 'all') { let targetInfo = isStaff ? (staffData.find(x => x.name === cb) || ftStaffData.find(x => x.name === cb)) : custData.find(x => x.name === cb); if(targetInfo && targetInfo.drive) folderUrl = targetInfo.drive; else { showToast('此對象未設定雲端資料夾！', true); return; } }
   const printArea = document.createElement('div'); printArea.style.padding = '40px'; printArea.style.fontFamily = "'Microsoft JhengHei', sans-serif"; printArea.style.background = '#fff';
   const logoHtml = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height: 50px; border-radius: 8px; margin-bottom: 10px;"><br>` : ``;
   let tableHtml = el(tableId).outerHTML.replace(/<table/g, '<table style="width:100%; border-collapse:collapse; font-size:14px; text-align:left;" border="1" bordercolor="#dddddd" cellpadding="8"');
@@ -693,6 +693,7 @@ function updateTalent(){ if(editTalentIndex<0)return; const o={name:el('tp_name'
 function delTalent(i){ if(!confirm('刪除？'))return; talentData.splice(i,1); saveAll(); renderTalentTable(); showToast('已刪除'); }
 function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input').forEach(i=>i.value=''); el('tp_status').value='待聯絡'; editTalentIndex=-1; el('btnUpdateTalent').style.display='none'; }
 
+// 報表與統計
 function renderPoint(){ const cp=el('point_filter_company').value; let list=custData.filter(x=>!cp||x.name===cp); const {pagedList,total,totalPages}=getPagedData(list,'point'); let html=''; pagedList.forEach(cust=>{ const contractPoints=contractData.filter(x=>x.customer===cust.name).reduce((sum,item)=>sum+(+item.point||0),0); const usedPoints=attendData.filter(x=>x.company===cust.name).reduce((sum,item)=>sum+getItemDeductPoints(item),0); const remainPoints=contractPoints-usedPoints; html+=`<tr><td>${cust.name}</td><td>${contractPoints}</td><td>${usedPoints}</td><td class="${remainPoints<0?'red':'green'}">${remainPoints}</td><td>${remainPoints<0?'不足':'充足'}</td></tr>`; }); el('pointTable').innerHTML=html||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
 function renderBill(){ const cb=el('bill_filter_company').value; const yb=el('bill_filter_year').value; const mb=el('bill_filter_month').value; if(!cb)return; let list=attendData.filter(x=>x.company===cb&&(yb==='all'||x.date.startsWith(yb))&&(mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))); const {pagedList,total,totalPages}=getPagedData(list,'bill'); let html=''; pagedList.forEach(item=>{ html+=`<tr><td>${item.date}</td><td>${item.staff}</td><td>${item.service||'-'}</td><td>${getItemClockHours(item).toFixed(1)}</td><td>${getItemDeductPoints(item)}</td></tr>`; }); el('billTable').innerHTML=html||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('bill',total,totalPages); }
 
@@ -744,7 +745,7 @@ function renderDashboard(){
           if(diffDays <= 7) { let st = diffDays < 0 ? `<span class="badge badge-red">逾期 ${Math.abs(diffDays)} 天</span>` : (diffDays===0 ? `<span class="badge badge-red">今日到期</span>` : `<span class="badge badge-yellow">剩 ${diffDays} 天</span>`); apHtml += `<tr><td style="font-weight:bold;">${s.name}</td><td>$${s.invoice_amt||0}</td><td>${s.pay_date}</td><td>${st}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('supplier'); setTimeout(()=>editSupplier(${idx}),300)"><i class="fas fa-eye"></i></button></td></tr>`; }
       }
   });
-  el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無急需付款</td></tr>';
+  el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無帳款提醒</td></tr>';
 }
 </script>
 </body>
