@@ -338,22 +338,22 @@ document.addEventListener('DOMContentLoaded', function () {
 function restoreLoginState() {
   try {
       const role = localStorage.getItem('loginRole'); const acc = localStorage.getItem('loginAcc');
-      if (!role) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; return; }
-      el('login-screen').style.display = 'none';
+      if (!role) { document.getElementById('login-screen').style.display = 'flex'; document.getElementById('admin-screen').style.display = 'none'; document.getElementById('staff-screen').style.display = 'none'; return; }
+      document.getElementById('login-screen').style.display = 'none';
 
       if(role === 'admin') {
-        const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; el('staff-screen').style.display = 'none';
+        const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; document.getElementById('staff-screen').style.display = 'none';
         currentWorkspace = localStorage.getItem('workspace') || 'business';
         if(currentWorkspace === 'hr') { adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr'); el('admin-sidebar-title-business').style.display = 'none'; el('admin-sidebar-title-hr').style.display = 'flex'; } 
         else { adminScreen.classList.remove('workspace-hr', 'mode-hr'); adminScreen.classList.add('workspace-business'); el('admin-sidebar-title-business').style.display = 'flex'; el('admin-sidebar-title-hr').style.display = 'none'; }
         fillFilters(); showAdminPage(localStorage.getItem('adminPage') || 'dashboard');
       } else if (role === 'staff') {
-        el('staff-screen').style.display = 'flex'; el('admin-screen').style.display = 'none';
+        document.getElementById('staff-screen').style.display = 'flex'; document.getElementById('admin-screen').style.display = 'none';
         let staff = staffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || ftStaffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || { name: acc || '員工', account: acc };
         currentLoginStaff = staff; 
         initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage') || 'home');
       }
-  } catch(e) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; console.error(e); }
+  } catch(e) { document.getElementById('login-screen').style.display = 'flex'; document.getElementById('admin-screen').style.display = 'none'; document.getElementById('staff-screen').style.display = 'none'; console.error(e); }
 }
 
 function handleLogin() {
@@ -465,10 +465,8 @@ function loadDataFromCloud(forceRender = false) {
   if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步中...');
   fetch(SCRIPT_URL).then(res => res.json()).then(result => {
       
-      // 🌟 霸王級抓取：繞過後台，前端直接掃描表單原始資料
       let formRaw = result['Form_Responses'] || result['表單回應 1'] || result['表單回應'] || result['Form Responses 1'];
-      if(formRaw && Array.isArray(formRaw)) {
-          if(!Array.isArray(talentData)) talentData = [];
+      if(formRaw && Array.isArray(formRaw) && result.talentData) {
           formRaw.forEach(row => {
               let name='', tel='', role='', exp='', date='';
               if(Array.isArray(row)) {
@@ -478,17 +476,16 @@ function loadDataFromCloud(forceRender = false) {
                   const ks = Object.keys(row); const gv = (ws) => { for(let k of ks){ let cK = String(k).replace(/\s+/g, '').toLowerCase(); for(let w of ws){ if(cK.includes(w.toLowerCase())) return row[k]; } } return ''; };
                   name=gv(['姓名','名字','全名','name']); tel=gv(['電話','手機','號碼','tel','聯絡']); role=gv(['職務','應徵','職位','感興趣']); exp=gv(['專長','經歷','備註','經驗']); date=gv(['時間戳記','日期','時間'])||new Date().toISOString();
               }
-              if(name && tel && !talentData.some(t => t.name === name && t.tel === tel)) {
-                  talentData.push({ name:String(name).trim(), tel:String(tel).trim(), source:'Google表單', location:'', shift:'', role:String(role).trim(), status:'待聯絡', eval:'', resume:'', exp:String(exp).trim(), date:String(date).split('T')[0].split(' ')[0] });
+              if(name && tel && !result.talentData.some(t => t.name === name && t.tel === tel)) {
+                  result.talentData.push({ name:String(name).trim(), tel:String(tel).trim(), source:'Google表單', location:'', shift:'', role:String(role).trim(), status:'待聯絡', eval:'', resume:'', exp:String(exp).trim(), date:String(date).split('T')[0].split(' ')[0] });
               }
           });
       }
 
-      if(result.custData) custData = result.custData; if(result.contractData) contractData = result.contractData; if(result.staffData) staffData = result.staffData; if(result.attendData) attendData = result.attendData; if(result.ftStaffData) ftStaffData = result.ftStaffData; if(result.ftAttendData) ftAttendData = result.ftAttendData; if(result.talentData && !formRaw) talentData = result.talentData; if(result.supplierData) supplierData = result.supplierData;
+      if(result.custData) custData = result.custData; if(result.contractData) contractData = result.contractData; if(result.staffData) staffData = result.staffData; if(result.attendData) attendData = result.attendData; if(result.ftStaffData) ftStaffData = result.ftStaffData; if(result.ftAttendData) ftAttendData = result.ftAttendData; if(result.talentData) talentData = result.talentData; if(result.supplierData) supplierData = result.supplierData;
       standardizeData();
       localStorage.setItem('custData', JSON.stringify(custData)); localStorage.setItem('contractData', JSON.stringify(contractData)); localStorage.setItem('staffData', JSON.stringify(staffData)); localStorage.setItem('attendData', JSON.stringify(attendData)); localStorage.setItem('ftStaffData', JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData', JSON.stringify(ftAttendData)); localStorage.setItem('talentData', JSON.stringify(talentData)); localStorage.setItem('supplierData', JSON.stringify(supplierData));
       
-      // 如果發現有新履歷合併，主動回傳存檔
       if (formRaw && formRaw.length > 0) saveAllSilently();
       
       if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒');
@@ -518,7 +515,7 @@ function syncTalentFromForm() {
   .then(res => res.json()).then(res => {
       showToast(`✅ 啟動資料庫防護同步！正在匯入...`); 
       setTimeout(() => loadDataFromCloud(true), 2000); 
-  }).catch(err => { alert('❌ 網路斷線或 SCRIPT_URL 設定錯誤。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
+  }).catch(err => { alert('❌ 網路斷線或 URL 錯誤。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
 }
 
 function autoCreateFolder() { const cName = el('c_name').value.trim(); if (!cName) { showToast('請輸入名稱！', true); return; } if(el('c_drive').value.trim() !== '' && !confirm('⚠️ 已有網址！確定要覆蓋？')) return; const btn = el('btnCreateFolder'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el('c_drive').value = res.folderUrl; showToast('建立成功！請儲存'); } else { showToast('失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = '<i class="fas fa-magic"></i> 自動建檔'; btn.disabled = false; }); }
