@@ -490,12 +490,17 @@ function syncTalentFromForm() {
   fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'syncForm' }), headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
   .then(res => res.json()).then(res => {
       if (res.status === 'success') { 
-          showToast(`✅ 已成功抓取 ${res.count} 筆新履歷！正在匯入...`); 
-          setTimeout(() => loadDataFromCloud(true), 2000); 
+          if(res.count === 0 || !res.count) {
+             alert('⚠️ 系統已成功連線，但雲端回報「0筆」新資料！\n\n原因通常有兩個：\n1. 您的 Google 試算表裡面是空的，還沒有人送出履歷問卷。\n2. 或者，試算表下方接收問卷的【分頁名稱】，跟 Google Apps Script 內設定的不一樣（預設通常為「表單回應 1」）。\n\n請您親自去填寫一次表單送出，確認資料有出現在試算表中，再按一次同步試試看！');
+             if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒');
+          } else {
+             showToast(`✅ 已成功抓取 ${res.count} 筆新履歷！正在匯入...`); 
+             setTimeout(() => loadDataFromCloud(true), 2000); 
+          }
       } else { 
           alert('❌ 抓取失敗：' + res.message); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); 
       }
-  }).catch(err => { alert('❌ 網路斷線或 SCRIPT_URL 設定錯誤。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
+  }).catch(err => { alert('❌ 網路斷線或 URL 錯誤。'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); });
 }
 
 function autoCreateFolder() { const cName = el('c_name').value.trim(); if (!cName) { showToast('請輸入名稱！', true); return; } if(el('c_drive').value.trim() !== '' && !confirm('⚠️ 已有網址！確定要覆蓋？')) return; const btn = el('btnCreateFolder'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el('c_drive').value = res.folderUrl; showToast('建立成功！請儲存'); } else { showToast('失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = '<i class="fas fa-magic"></i> 自動建檔'; btn.disabled = false; }); }
@@ -604,7 +609,7 @@ function fillFilters() {
   let mh = '<option value="all">全部</option>'; for(let i=1;i<=12;i++) mh += `<option value="${i}">${i}月</option>`; refill('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month', mh);
   let ch = '<option value="">全部</option>'; custData.forEach(c=> ch += `<option value="${c.name}">${c.name}</option>`); refill('#cust_filter_company,#contract_filter_company,#filter_company,#point_filter_company,#bill_filter_company,#con_customer,#attend_company', ch);
   let bc = '<option value="" selected>全部客戶</option>'; custData.forEach(c => bc += `<option value="${c.name}">${c.name}</option>`); refill('#boss_cust_filter', bc);
-  let sh = '<option value="all" selected>全部人員</option><optgroup label="在職">'; staffData.filter(s=>s.status==='在職').forEach(s=>sh+=`<option value="${s.name}">${s.name}</option>`); sh+='</optgroup><optgroup label="離職">'; staffData.filter(s=>s.status==='離職').forEach(s=>sh+=`<option value="${s.name}">${s.name}</option>`); sh+='</optgroup>'; refill('#sal_filter_staff,#attend_staff', sh);
+  let sh = '<option value="all" selected>全部人員</option><optgroup label="在職">'; staffData.filter(s=>s.status==='在職').forEach(s=>staffHtml+=`<option value="${s.name}">${s.name}</option>`); sh+='</optgroup><optgroup label="離職">'; staffData.filter(s=>s.status==='離職').forEach(s=>staffHtml+=`<option value="${s.name}">${s.name}</option>`); sh+='</optgroup>'; refill('#sal_filter_staff,#attend_staff', sh);
   let fh = '<option value="all">全部正職</option>'; ftStaffData.filter(s=>s.status==='在職').forEach(s => fh += `<option value="${s.name}">${s.name}</option>`); refill('#fta_filter_staff,#fta_staff, #fts_filter_staff', fh);
   let su = '<option value="">全部</option>'; supplierData.forEach(s => su += `<option value="${s.name}">${s.name}</option>`); refill('#sup_filter_name', su);
 }
