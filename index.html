@@ -310,10 +310,6 @@ function uploadTablePDF(tableId, title, compFilterId, isCloud, isStaff = false) 
      html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: folderUrl, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('🚀 已歸檔至雲端'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('上傳失敗', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);} }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); });
   } else { html2pdf().set(opt).from(printArea).save().then(()=>showToast('✅ 下載完成！')); }
 }
-
-// --- 模塊 1 結束，請將下方的模塊 2 緊接著貼上 ---
-  // --- 模塊 2 開始 ---
-
 function generateStatementPDF(isCloud = false) {
   const cb = el('bill_filter_company').value; const yb = el('bill_filter_year').value; const mb = el('bill_filter_month').value;
   if(!cb) { showToast('請選公司！', true); return; }
