@@ -325,8 +325,16 @@ function restoreLoginState() {
       if(role === 'admin') {
         const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; el('staff-screen').style.display = 'none';
         currentWorkspace = localStorage.getItem('workspace') || 'business';
-        if(currentWorkspace === 'hr') { adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr'); el('admin-sidebar-title-business').style.display = 'none'; el('admin-sidebar-title-hr').style.display = 'flex'; } 
-        else { adminScreen.classList.remove('workspace-hr', 'mode-hr'); adminScreen.classList.add('workspace-business'); el('admin-sidebar-title-business').style.display = 'flex'; el('admin-sidebar-title-hr').style.display = 'none'; }
+        if(currentWorkspace === 'hr') { 
+            adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr'); 
+            el('admin-sidebar-title-business').style.display = 'none'; el('admin-sidebar-title-hr').style.display = 'flex'; 
+            if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML = '<i class="fas fa-exchange-alt"></i> <span>切換至營業區</span>';
+        } 
+        else { 
+            adminScreen.classList.remove('workspace-hr', 'mode-hr'); adminScreen.classList.add('workspace-business'); 
+            el('admin-sidebar-title-business').style.display = 'flex'; el('admin-sidebar-title-hr').style.display = 'none'; 
+            if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML = '<i class="fas fa-exchange-alt"></i> <span>切換至人事區</span>';
+        }
         fillFilters(); showAdminPage(localStorage.getItem('adminPage') || 'dashboard');
       } else if (role === 'staff') {
         el('staff-screen').style.display = 'flex'; el('admin-screen').style.display = 'none';
@@ -339,8 +347,19 @@ function restoreLoginState() {
 
 function toggleWorkspace() {
   const scr = el('admin-screen');
-  if (currentWorkspace === 'business') { currentWorkspace = 'hr'; localStorage.setItem('workspace', 'hr'); scr.classList.remove('workspace-business'); scr.classList.add('workspace-hr', 'mode-hr'); el('admin-sidebar-title-business').style.display = 'none'; el('admin-sidebar-title-hr').style.display = 'flex'; showAdminPage('dashboard'); } 
-  else { currentWorkspace = 'business'; localStorage.setItem('workspace', 'business'); scr.classList.remove('workspace-hr', 'mode-hr'); scr.classList.add('workspace-business'); el('admin-sidebar-title-business').style.display = 'flex'; el('admin-sidebar-title-hr').style.display = 'none'; showAdminPage('dashboard'); }
+  if (currentWorkspace === 'business') { 
+      currentWorkspace = 'hr'; localStorage.setItem('workspace', 'hr'); 
+      scr.classList.remove('workspace-business'); scr.classList.add('workspace-hr', 'mode-hr'); 
+      el('admin-sidebar-title-business').style.display = 'none'; el('admin-sidebar-title-hr').style.display = 'flex'; 
+      if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML = '<i class="fas fa-exchange-alt"></i> <span>切換至營業區</span>';
+      showAdminPage('dashboard'); 
+  } else { 
+      currentWorkspace = 'business'; localStorage.setItem('workspace', 'business'); 
+      scr.classList.remove('workspace-hr', 'mode-hr'); scr.classList.add('workspace-business'); 
+      el('admin-sidebar-title-business').style.display = 'flex'; el('admin-sidebar-title-hr').style.display = 'none'; 
+      if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML = '<i class="fas fa-exchange-alt"></i> <span>切換至人事區</span>';
+      showAdminPage('dashboard'); 
+  }
 }
 function logout() { localStorage.removeItem('loginRole'); localStorage.removeItem('loginAcc'); localStorage.removeItem('workspace'); window.location.reload(); }
 
