@@ -42,7 +42,6 @@
       <li class="ws-business admin-only"><a onclick="showAdminPage('bill')"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</a></li>
       <li class="ws-business"><a onclick="showAdminPage('salary')"><i class="fas fa-wallet"></i> 派遣薪資計算</a></li>
       <li class="ws-business admin-only"><a onclick="showAdminPage('boss')"><i class="fas fa-cogs"></i> 系統進階設定</a></li>
-      
       <li class="ws-hr"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 人事儀表板</a></li>
       <li class="ws-hr"><a onclick="showAdminPage('staff')"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
       <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
@@ -126,6 +125,7 @@
       
       <div class="panel admin-only" style="margin-top: 40px; border-top: 4px solid #3b82f6;">
         <h3 class="panel-title"><i class="fas fa-shield-alt"></i> 系統進階設定</h3>
+        <p style="color:#ef4444; font-size:13px; margin-bottom:10px;"><i class="fas fa-exclamation-circle"></i> 提示：圖片上傳後，請務必點擊最下方任一綠色「儲存並同步雲端」按鈕，對方才會看到新圖片。建議圖片檔案小於 100KB。</p>
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f8fafc;"><label style="font-weight:bold;">👑 登入 LOGO</label><div style="display:flex; gap:15px;"><img id="loginLogoPreview" src="" style="height:50px; display:none;"><button class="btn btn-warning" onclick="document.getElementById('loginLogoUpload').click()">上傳</button><input type="file" id="loginLogoUpload" accept="image/*" style="display:none" onchange="handleLoginLogoUpload(this)"><button class="btn btn-pdf" onclick="clearLoginLogo()" id="btnClearLoginLogo" style="display:none;"><i class="fas fa-trash"></i></button></div></div>
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f0fdf4;"><label style="font-weight:bold;">📄 報表 LOGO</label><div style="display:flex; gap:15px;"><img id="pdfLogoPreview" src="" style="height:50px; display:none;"><button class="btn btn-success" onclick="document.getElementById('pdfLogoUpload').click()">上傳</button><input type="file" id="pdfLogoUpload" accept="image/*" style="display:none" onchange="handlePdfLogoUpload(this)"><button class="btn btn-pdf" onclick="clearPdfLogo()" id="btnClearPdfLogo" style="display:none;"><i class="fas fa-trash"></i></button></div></div>
@@ -141,10 +141,10 @@
              <div><label>按鈕一 (標題/副標/網址)</label><input id="conf_l1_title" style="margin-bottom:5px;"><input id="conf_l1_desc" style="margin-bottom:5px;"><input id="conf_l1_url"></div>
              <div><label>按鈕二 (標題/副標/網址)</label><input id="conf_l2_title" style="margin-bottom:5px;"><input id="conf_l2_desc" style="margin-bottom:5px;"><input id="conf_l2_url"></div>
           </div>
-          <button class="btn btn-success" onclick="savePortalConfig()" style="margin-top:10px;">儲存設定並同步雲端</button>
+          <button class="btn btn-success" onclick="savePortalConfig()" style="margin-top:10px;"><i class="fas fa-cloud-upload-alt"></i> 儲存設定並同步雲端</button>
         </div>
 
-        <label style="font-weight:bold; display:block; margin-top:20px;">💰 價目表 JSON 設定</label><textarea id="config_price_table" style="width:100%; height:100px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea><br><button class="btn btn-success" onclick="savePriceConfig()">儲存價目表並同步雲端</button>
+        <label style="font-weight:bold; display:block; margin-top:20px;">💰 價目表 JSON 設定</label><textarea id="config_price_table" style="width:100%; height:100px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea><br><button class="btn btn-success" onclick="savePriceConfig()"><i class="fas fa-cloud-upload-alt"></i> 儲存價目表並同步雲端</button>
       </div>
     </div>
   </div>
@@ -246,9 +246,12 @@ let currentLoginStaff=null, currentWorkspace='business';
 let editCustIndex=-1, editContractIndex=-1, editStaffIndex=-1, editAttendIndex=-1, editFtStaffIndex=-1, editFtAttendIndex=-1, editTalentIndex=-1, editSupplierIndex=-1;
 const pageConfig = { pageSize: 10, currentPage: { customer:1, contract:1, staff:1, attend:1, point:1, bill:1, salary:1, boss:1, ft_staff:1, ft_attend:1, ft_salary:1, talent:1, supplier:1 } };
 
-// 【雲端 JSON 連動：均價 avg 屬性修復】
 let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packagePrice:0,avg:400} });
-let portalConf = safeJSONParse('portalConf', { r1Title: "愜易居 管理規範", r1Content: "一、【溝通管理】<br>嚴禁直接與業主方聯繫。", r2Title: "求職注意事項", r2Content: "<li>保持親切微笑及精神。</li>", l1Title: "官方平台", l1Desc: "點擊前往瀏覽", l1Url: "https://google.com", l2Title: "官方 IG", l2Desc: "追蹤最新資訊", l2Url: "https://instagram.com" });
+let portalConf = safeJSONParse('portalConf', {
+  r1Title: "愜易居 管理規範", r1Content: "一、【溝通管理】<br>嚴禁直接與業主方聯繫。",
+  r2Title: "求職注意事項", r2Content: "<li>保持親切微笑及精神。</li>",
+  l1Title: "官方平台", l1Desc: "點擊前往", l1Url: "", l2Title: "官方 IG", l2Desc: "追蹤最新資訊", l2Url: ""
+});
 
 document.addEventListener('DOMContentLoaded', function () {
   try {
@@ -265,36 +268,34 @@ document.addEventListener('DOMContentLoaded', function () {
       const pwdInput = el('login_pwd'); 
       if(pwdInput) pwdInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
       
-      // 網頁載入時立刻執行雲端同步 (包含 sysConfig)
+      // 開啟網頁立即向雲端同步最新密碼與資料
       loadDataFromCloud();
-  } catch (err) { console.error("系統初始化錯誤:", err); el('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
+  } catch (err) { console.error("初始化錯誤:", err); el('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
 });
 
-// ================= ✅ 修復 1：員工無縫登入 (防呆解決卡住問題) =================
+// ================= ✅ 無縫登入 =================
 function handleLogin() {
   try {
       const role = el('login_role').value;
       const acc = el('login_acc').value.trim(); const pwd = el('login_pwd').value.trim();
-      if(!acc || !pwd) { showToast('請輸入帳號與密碼！', true); return; }
+      if(!acc || !pwd) { showToast('請輸入帳密！', true); return; }
 
       const sAA = localStorage.getItem('adminAcc') || 'admin'; const sAP = localStorage.getItem('adminPwd') || '1234';
       const sHA = localStorage.getItem('hrAcc') || 'hr'; const sHP = localStorage.getItem('hrPwd') || '1234';
-
+      
       if (role === 'admin') {
         if ((acc === sAA && pwd === sAP) || (acc === 'admin' && pwd === 'doclick888')) { localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'business'); restoreLoginState(); showToast('登入成功'); } 
         else if ((acc === sHA && pwd === sHP) || (acc === 'hr' && pwd === 'doclick888')) { localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'hr'); restoreLoginState(); showToast('登入成功'); } 
         else { showToast('帳密錯誤！', true); }
       } else {
-        // 修復：立即尋找並鎖定員工，防止跳轉後抓不到資料而彈回登入框
         const staff = staffData.find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         const ftStaff = ftStaffData.find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         if (staff || ftStaff) { 
-            currentLoginStaff = staff || ftStaff;
-            localStorage.setItem('loginRole', 'staff'); localStorage.setItem('loginAcc', acc); 
-            restoreLoginState(); showToast('登入成功');
+            currentLoginStaff = staff || ftStaff; localStorage.setItem('loginRole', 'staff'); localStorage.setItem('loginAcc', acc); 
+            restoreLoginState(); showToast('員工登入成功');
         } else { showToast('員工帳密錯誤！', true); }
       }
-  } catch(e) { showToast('登入發生錯誤', true); console.error(e); }
+  } catch(e) { showToast('系統錯誤', true); }
 }
 
 function restoreLoginState() {
@@ -302,7 +303,6 @@ function restoreLoginState() {
       const role = localStorage.getItem('loginRole'); const acc = localStorage.getItem('loginAcc');
       if (!role) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; return; }
       el('login-screen').style.display = 'none';
-
       if(role === 'admin') {
         const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; el('staff-screen').style.display = 'none';
         currentWorkspace = localStorage.getItem('workspace') || 'business';
@@ -311,12 +311,10 @@ function restoreLoginState() {
         fillFilters(); showAdminPage(localStorage.getItem('adminPage') || 'dashboard');
       } else if (role === 'staff') {
         el('staff-screen').style.display = 'flex'; el('admin-screen').style.display = 'none';
-        // 確保重整頁面時仍能抓回正確對象，並初始化員工專區介面
         if(!currentLoginStaff) currentLoginStaff = staffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || ftStaffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim());
-        initStaffFrontend(); 
-        showStaffPage(localStorage.getItem('staffPage') || 'home');
+        initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage') || 'home');
       }
-  } catch(e) { console.error('恢復狀態錯誤', e); el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; }
+  } catch(e) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; }
 }
 
 function toggleWorkspace() {
@@ -326,16 +324,25 @@ function toggleWorkspace() {
 }
 function logout() { localStorage.removeItem('loginRole'); localStorage.removeItem('loginAcc'); localStorage.removeItem('workspace'); window.location.reload(); }
 
-// ================= 雲端設定管理 (老闆專區) =================
-// 將設定打包送上雲端
-function getSysConfigPayload() { return { adminAcc: localStorage.getItem('adminAcc') || 'admin', adminPwd: localStorage.getItem('adminPwd') || '1234', hrAcc: localStorage.getItem('hrAcc') || 'hr', hrPwd: localStorage.getItem('hrPwd') || '1234', priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf') }; }
+// ================= ✅ 雲端設定同步邏輯 =================
+// 取得系統設定包 (包含圖片檔，要傳上雲端)
+function getSysConfigPayload() {
+    return {
+        adminAcc: localStorage.getItem('adminAcc') || 'admin', adminPwd: localStorage.getItem('adminPwd') || '1234',
+        hrAcc: localStorage.getItem('hrAcc') || 'hr', hrPwd: localStorage.getItem('hrPwd') || '1234',
+        priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'),
+        loginLogo: localStorage.getItem('loginLogo') || '',
+        pdfLogo: localStorage.getItem('pdfLogo') || '',
+        loginBg: localStorage.getItem('loginBg') || ''
+    };
+}
 
 function savePasswords() {
     const aa = el('setting_admin_acc').value.trim(); const ap = el('setting_admin_pwd').value.trim();
     const ha = el('setting_hr_acc').value.trim(); const hp = el('setting_hr_pwd').value.trim();
     if(aa) localStorage.setItem('adminAcc', aa); if(ap) localStorage.setItem('adminPwd', ap); if(ha) localStorage.setItem('hrAcc', ha); if(hp) localStorage.setItem('hrPwd', hp);
     saveAllSilently(); // 同步至雲端
-    showToast('✅ 帳密儲存並已同步雲端！');
+    showToast('✅ 帳密儲存並同步至雲端成功！');
 }
 
 function renderPortalConfigUI() {
@@ -344,7 +351,9 @@ function renderPortalConfigUI() {
 }
 function savePortalConfig() {
     ['r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { portalConf[k] = el('conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase())).value; });
-    localStorage.setItem('portalConf', JSON.stringify(portalConf)); saveAllSilently(); showToast('✅ 員工專區設定已同步雲端！'); applyPortalConfigToStaff();
+    localStorage.setItem('portalConf', JSON.stringify(portalConf)); 
+    saveAllSilently(); // 同步至雲端
+    showToast('✅ 員工專區設定已儲存至雲端！'); applyPortalConfigToStaff();
 }
 function applyPortalConfigToStaff() {
     if(!el('staff_r1_title')) return;
@@ -354,10 +363,9 @@ function applyPortalConfigToStaff() {
     el('staff_l2_title').textContent = portalConf.l2Title; el('staff_l2_desc').textContent = portalConf.l2Desc; el('btn_l2').onclick = () => window.open(portalConf.l2Url, '_blank');
 }
 
-// 【修復：均價 avg 讀取】
 function renderPricePlanOptions() { document.querySelectorAll('#co_price_plan').forEach(s => { const v = s.value; s.innerHTML = '<option value="">請選擇</option>'; Object.keys(priceTable).forEach(k => s.innerHTML += `<option value="${k}">${k}</option>`); s.value = v; }); }
 function updatePriceByPlan() { const p = el('co_price_plan').value; if(priceTable[p]){ el('co_package_price').value = priceTable[p].price || priceTable[p].packagePrice || 0; el('co_point_price').value = priceTable[p].avg || priceTable[p].pointPrice || 0; el('co_point').value = priceTable[p].points || 0; el('co_price').value = priceTable[p].price || priceTable[p].packagePrice || 0; } }
-function savePriceConfig() { try { priceTable = JSON.parse(el('config_price_table').value); localStorage.setItem('priceTable', JSON.stringify(priceTable)); saveAllSilently(); renderPricePlanOptions(); showToast('✅ 價目表已更新並同步雲端！'); } catch(e) { showToast('❌ JSON 格式有誤！', true); } }
+function savePriceConfig() { try { priceTable = JSON.parse(el('config_price_table').value); localStorage.setItem('priceTable', JSON.stringify(priceTable)); saveAllSilently(); renderPricePlanOptions(); showToast('✅ 價目表更新並同步雲端成功！'); } catch(e) { showToast('❌ JSON 格式有誤！', true); } }
 
 function standardizeData() {
   attendData = (attendData||[]).filter(x=>x).map(x => ({ company: x.company||'', staff: x.staff||'', date: x.date||'', service: x.service||'', remark: x.remark||'', am_s: x.am_s||'', am_e: x.am_e||'', pm_s: x.pm_s||'', pm_e: x.pm_e||'', salary_hours: x.salary_hours!==undefined?x.salary_hours:'', deduct_points: x.deduct_points!==undefined?x.deduct_points:'' }));
@@ -384,12 +392,14 @@ function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h 
 function updateSystemClock() { const now = new Date(); const tStr = now.toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit', hour12: false}); const ct = el('current-time'); if(ct) ct.innerHTML = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${tStr}`; const sct = el('staff-current-time'); if(sct) sct.innerHTML = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${tStr}`; }
 function exportExcel(tableId, filename) { let tbl = el(tableId); if(!tbl) { showToast('找不到表格', true); return; } XLSX.writeFile(XLSX.utils.table_to_book(tbl, {sheet: "Sheet1"}), filename + ".xlsx"); }
 
-function handleLoginBgUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginBgBase64 = e.target.result; localStorage.setItem('loginBg', loginBgBase64); updateLogoPreview(); showToast('背景圖上傳成功'); }; reader.readAsDataURL(input.files[0]); } }
-function handleLoginLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginLogoBase64 = e.target.result; localStorage.setItem('loginLogo', loginLogoBase64); updateLogoPreview(); showToast('Logo上傳成功'); }; reader.readAsDataURL(input.files[0]); } }
-function handlePdfLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { pdfLogoBase64 = e.target.result; localStorage.setItem('pdfLogo', pdfLogoBase64); updateLogoPreview(); showToast('報表Logo上傳成功'); }; reader.readAsDataURL(input.files[0]); } }
-function clearLoginBg() { if(!confirm('移除自訂背景？')) return; loginBgBase64 = ''; localStorage.removeItem('loginBg'); updateLogoPreview(); }
-function clearLoginLogo() { if(!confirm('移除登入Logo？')) return; loginLogoBase64 = ''; localStorage.removeItem('loginLogo'); updateLogoPreview(); }
-function clearPdfLogo() { if(!confirm('移除報表Logo？')) return; pdfLogoBase64 = ''; localStorage.removeItem('pdfLogo'); updateLogoPreview(); }
+// 圖片上傳後呼叫 saveAllSilently() 將圖片同步到雲端
+function handleLoginBgUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginBgBase64 = e.target.result; localStorage.setItem('loginBg', loginBgBase64); updateLogoPreview(); saveAllSilently(); showToast('背景圖已上傳並同步至雲端'); }; reader.readAsDataURL(input.files[0]); } }
+function handleLoginLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginLogoBase64 = e.target.result; localStorage.setItem('loginLogo', loginLogoBase64); updateLogoPreview(); saveAllSilently(); showToast('Logo已上傳並同步至雲端'); }; reader.readAsDataURL(input.files[0]); } }
+function handlePdfLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { pdfLogoBase64 = e.target.result; localStorage.setItem('pdfLogo', pdfLogoBase64); updateLogoPreview(); saveAllSilently(); showToast('報表Logo已上傳並同步至雲端'); }; reader.readAsDataURL(input.files[0]); } }
+function clearLoginBg() { if(!confirm('移除自訂背景？')) return; loginBgBase64 = ''; localStorage.removeItem('loginBg'); updateLogoPreview(); saveAllSilently(); }
+function clearLoginLogo() { if(!confirm('移除登入Logo？')) return; loginLogoBase64 = ''; localStorage.removeItem('loginLogo'); updateLogoPreview(); saveAllSilently(); }
+function clearPdfLogo() { if(!confirm('移除報表Logo？')) return; pdfLogoBase64 = ''; localStorage.removeItem('pdfLogo'); updateLogoPreview(); saveAllSilently(); }
+
 function updateLogoPreview() { 
   const pl=el('loginLogoPreview'), bl=el('btnClearLoginLogo'), pp=el('pdfLogoPreview'), bp=el('btnClearPdfLogo'), limg=el('login-logo-img'), licon=el('login-logo-icon'), ls=el('login-screen'), btnBg=el('btnClearLoginBg'), bgStatus=el('bg-upload-status');
   if (loginBgBase64) { if(ls) ls.style.backgroundImage = `url('${loginBgBase64}')`; if(btnBg) btnBg.style.display = 'inline-block'; if(bgStatus) bgStatus.style.display = 'inline-block'; } else { if(ls) ls.style.backgroundImage = "url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')"; if(btnBg) btnBg.style.display = 'none'; if(bgStatus) bgStatus.style.display = 'none'; }
@@ -397,20 +407,27 @@ function updateLogoPreview() {
   if (pdfLogoBase64) { if(pp) { pp.src = pdfLogoBase64; pp.style.display = 'block'; bp.style.display = 'inline-block'; } } else { if(pp) { pp.src = ''; pp.style.display = 'none'; bp.style.display = 'none'; } }
 }
 
-// ================= ✅ 修復 2：AI 履歷同步精準回報與讀取雲端設定 =================
+// ================= ✅ 雲端讀取 (包含圖片與設定) =================
 function loadDataFromCloud(forceRender = false) {
   if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步中...');
   fetch(SCRIPT_URL).then(res => res.json()).then(result => {
-      let newlyAdded = 0; let prevCount = talentData.length;
+      let prevCount = talentData.length;
+      let newlyAdded = 0;
       
-      // ✅ 讀取雲端系統設定
+      // ✅ 優先讀取雲端系統設定 (包含圖片) 解決分享連結無設定的問題
       if(result.sysConfig) {
-          if(result.sysConfig.adminAcc) { localStorage.setItem('adminAcc', result.sysConfig.adminAcc); el('setting_admin_acc').value = result.sysConfig.adminAcc; }
-          if(result.sysConfig.adminPwd) { localStorage.setItem('adminPwd', result.sysConfig.adminPwd); el('setting_admin_pwd').value = result.sysConfig.adminPwd; }
-          if(result.sysConfig.hrAcc) { localStorage.setItem('hrAcc', result.sysConfig.hrAcc); el('setting_hr_acc').value = result.sysConfig.hrAcc; }
-          if(result.sysConfig.hrPwd) { localStorage.setItem('hrPwd', result.sysConfig.hrPwd); el('setting_hr_pwd').value = result.sysConfig.hrPwd; }
-          if(result.sysConfig.priceTable) { localStorage.setItem('priceTable', result.sysConfig.priceTable); priceTable = JSON.parse(result.sysConfig.priceTable); el('config_price_table').value = result.sysConfig.priceTable; renderPricePlanOptions(); }
+          if(result.sysConfig.adminAcc) { localStorage.setItem('adminAcc', result.sysConfig.adminAcc); if(el('setting_admin_acc')) el('setting_admin_acc').value = result.sysConfig.adminAcc; }
+          if(result.sysConfig.adminPwd) { localStorage.setItem('adminPwd', result.sysConfig.adminPwd); if(el('setting_admin_pwd')) el('setting_admin_pwd').value = result.sysConfig.adminPwd; }
+          if(result.sysConfig.hrAcc) { localStorage.setItem('hrAcc', result.sysConfig.hrAcc); if(el('setting_hr_acc')) el('setting_hr_acc').value = result.sysConfig.hrAcc; }
+          if(result.sysConfig.hrPwd) { localStorage.setItem('hrPwd', result.sysConfig.hrPwd); if(el('setting_hr_pwd')) el('setting_hr_pwd').value = result.sysConfig.hrPwd; }
+          if(result.sysConfig.priceTable) { localStorage.setItem('priceTable', result.sysConfig.priceTable); priceTable = JSON.parse(result.sysConfig.priceTable); if(el('config_price_table')) el('config_price_table').value = result.sysConfig.priceTable; renderPricePlanOptions(); }
           if(result.sysConfig.portalConf) { localStorage.setItem('portalConf', result.sysConfig.portalConf); portalConf = JSON.parse(result.sysConfig.portalConf); renderPortalConfigUI(); applyPortalConfigToStaff(); }
+          
+          // 雲端抓取圖片並更新本地
+          if(result.sysConfig.loginLogo) { localStorage.setItem('loginLogo', result.sysConfig.loginLogo); loginLogoBase64 = result.sysConfig.loginLogo; }
+          if(result.sysConfig.pdfLogo) { localStorage.setItem('pdfLogo', result.sysConfig.pdfLogo); pdfLogoBase64 = result.sysConfig.pdfLogo; }
+          if(result.sysConfig.loginBg) { localStorage.setItem('loginBg', result.sysConfig.loginBg); loginBgBase64 = result.sysConfig.loginBg; }
+          updateLogoPreview();
       }
 
       if(!result.talentData) result.talentData = talentData || [];
@@ -445,7 +462,7 @@ function loadDataFromCloud(forceRender = false) {
       if (newlyAdded > 0) saveAllSilently();
       
       if (forceRender) {
-          if (newlyAdded > 0) alert(`🎉 AI 比對完成！本次同步成功為您匯入了 【 ${newlyAdded} 】 筆新履歷！`);
+          if (newlyAdded > 0) alert(`🎉 恭喜！系統已為您比對並匯入 【 ${newlyAdded} 】 筆新履歷！`);
           else alert(`ℹ️ 目前雲端試算表無新的履歷可供匯入。`);
       }
       
@@ -465,11 +482,11 @@ function syncTalentFromForm() { if (el('sync-status')) updateSyncStatus('<i clas
 function backupAllData() { const data = { custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, sysConfig: getSysConfigPayload() }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `系統備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
 function restoreData(input) { if (!input.files || !input.files[0]) return; const reader = new FileReader(); reader.onload = function(e) { try { const res = JSON.parse(e.target.result); if (res.custData) custData = res.custData; if (res.contractData) contractData = res.contractData; if (res.staffData) staffData = res.staffData; if (res.attendData) attendData = res.attendData; if (res.ftStaffData) ftStaffData = res.ftStaffData; if (res.ftAttendData) ftAttendData = res.ftAttendData; if (res.talentData) talentData = res.talentData; if (res.supplierData) supplierData = res.supplierData; if (res.sysConfig) { if (res.sysConfig.loginLogo) localStorage.setItem('loginLogo', res.sysConfig.loginLogo); if (res.sysConfig.pdfLogo) localStorage.setItem('pdfLogo', res.sysConfig.pdfLogo); if (res.sysConfig.loginBg) localStorage.setItem('loginBg', res.sysConfig.loginBg); if (res.sysConfig.priceTable) localStorage.setItem('priceTable', res.sysConfig.priceTable); if (res.sysConfig.adminAcc) localStorage.setItem('adminAcc', res.sysConfig.adminAcc); if (res.sysConfig.adminPwd) localStorage.setItem('adminPwd', res.sysConfig.adminPwd); if (res.sysConfig.hrAcc) localStorage.setItem('hrAcc', res.sysConfig.hrAcc); if (res.sysConfig.hrPwd) localStorage.setItem('hrPwd', res.sysConfig.hrPwd); if (res.sysConfig.portalConf) localStorage.setItem('portalConf', res.sysConfig.portalConf); } saveAll(); alert('✅ 還原成功！'); window.location.reload(); } catch(err) { alert('❌ 格式錯誤！'); } }; reader.readAsText(input.files[0]); }
 
-// ✅ 修正 3：自動建檔更名為「第一次建立」與等候提示
+// ================= ✅ 建立資料夾防呆設計 =================
 function autoCreateFolder() { const cName = el('c_name').value.trim(); if (!cName) { showToast('請輸入名稱！', true); return; } if(el('c_drive').value.trim() !== '' && !confirm('⚠️ 已有網址！確定要重新建立並覆蓋？')) return; const btn = el('btnCreateFolder'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el('c_drive').value = res.folderUrl; showToast('建立成功！請記得按儲存'); } else { showToast('建立失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = '<i class="fas fa-magic"></i> 第一次建立'; btn.disabled = false; }); }
 function autoCreateSupplierFolder(nameId, driveId, prefix) { const sName = el(nameId).value.trim(); if (!sName) { showToast('請輸入名稱！', true); return; } if(el(driveId).value.trim() !== '' && !confirm('⚠️ 已有網址！確定要重新建立並覆蓋？')) return; const btn = el(driveId).nextElementSibling; const originHtml = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: prefix + ' ' + sName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el(driveId).value = res.folderUrl; showToast('建立成功！請記得按儲存'); } else { showToast('失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = originHtml; btn.disabled = false; }); }
 
-// ✅ 修正 4：PDF 生成等候提示
+// ================= PDF 提示防呆設計 =================
 function uploadTablePDF(tableId, title, compFilterId, isCloud, isStaff = false) {
   const cb = compFilterId ? el(compFilterId).value : ''; if(isCloud && compFilterId && (!cb || cb === 'all')) { showToast('請先選擇特定對象！', true); return; }
   let folderUrl = ''; if(isCloud && cb && cb !== 'all') { let targetInfo = isStaff ? (staffData.find(x => x.name === cb) || ftStaffData.find(x => x.name === cb)) : custData.find(x => x.name === cb); if(targetInfo && targetInfo.drive) folderUrl = targetInfo.drive; else { showToast('此對象未設定雲端資料夾！', true); return; } }
@@ -534,7 +551,7 @@ function generateFtPayslipPDF(isCloud = false) {
   if (isCloud) { if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳中...'); html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: staffInfo.drive, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('上傳成功！'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('失敗：' + res.message, true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true); } }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); } else { html2pdf().set(opt).from(printArea).save().then(()=>showToast('✅ 下載完成！')); }
 }
 
-// ================= 頁面切換與渲染 =================
+// ================= 頁面顯示與切換 =================
 function showAdminPage(page) {
   try {
       const isHr = el('admin-screen').classList.contains('mode-hr');
@@ -568,7 +585,7 @@ function fillFilters() {
   let su = '<option value="">全部</option>'; supplierData.forEach(s => su += `<option value="${s.name}">${s.name}</option>`); refill('#sup_filter_name', su);
 }
 
-// ================= ✅ 按鈕全域連動防呆機制 (CRUD 介面) =================
+// ================= ✅ 修正 4：防呆機制 (自動隱藏新增按鈕) =================
 
 function renderSupplierTable() { const fn = el('sup_filter_name').value; let list = supplierData.filter(x => !fn || x.name === fn); const { pagedList, total, totalPages } = getPagedData(list, 'supplier'); let html = ''; pagedList.forEach((item, i) => { const idx = supplierData.indexOf(item); const btn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>` : '-'; html += `<tr><td>${item.name}</td><td>${item.contact||'-'}</td><td>${item.tel||'-'}</td><td>${item.tax||'-'}</td><td>${item.pay_method||'-'}</td><td><b class="red">${item.pay_date||'-'}</b></td><td>${item.invoice_date||'-'}</td><td>${item.invoice_no||'-'}</td><td>${item.invoice_amt||0}</td><td>${btn}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editSupplier(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delSupplier(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('supplierTable').innerHTML = html || '<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('supplier', total, totalPages); fillFilters(); }
 function addSupplier() { const o = {name:el('sup_name').value.trim(), contact:el('sup_contact').value.trim(), tel:el('sup_tel').value.trim(), addr:el('sup_addr').value.trim(), tax:el('sup_tax').value.trim(), pay_method:el('sup_pay_method').value.trim(), pay_date:el('sup_pay_date').value, invoice_date:el('sup_invoice_date').value, invoice_no:el('sup_invoice_no').value.trim(), invoice_amt:el('sup_invoice_amt').value, drive:el('sup_drive').value.trim()}; if(!o.name)return; supplierData.push(o); saveAll(); renderSupplierTable(); clearSupplierForm(); showToast('✅ 新增成功！'); }
@@ -707,7 +724,7 @@ function renderDashboard(){
   el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無帳款提醒</td></tr>';
 }
 
-// ================= 員工自助專區前端邏輯 =================
+// 員工專區介面邏輯
 function initStaffFrontend() {
     if (!currentLoginStaff) return;
     if(el('staff-welcome-name')) el('staff-welcome-name').textContent = currentLoginStaff.name || '';
