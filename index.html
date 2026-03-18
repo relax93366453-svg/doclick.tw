@@ -42,6 +42,7 @@
       <li class="ws-business admin-only"><a onclick="showAdminPage('bill')"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</a></li>
       <li class="ws-business"><a onclick="showAdminPage('salary')"><i class="fas fa-wallet"></i> 派遣薪資計算</a></li>
       <li class="ws-business admin-only"><a onclick="showAdminPage('boss')"><i class="fas fa-cogs"></i> 系統進階設定</a></li>
+      
       <li class="ws-hr"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 人事儀表板</a></li>
       <li class="ws-hr"><a onclick="showAdminPage('staff')"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
       <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
@@ -112,7 +113,7 @@
       <div class="page-title"><i class="fas fa-address-card"></i> 人才招募庫</div>
       <div class="filter-bar"><label>職務搜尋：</label><input type="text" id="tp_filter_role" oninput="resetPage('talent'); renderTalentTable()"><label>狀態：</label><select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select><button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button></div>
       <div class="grid"><div><label>姓名 *</label><input id="tp_name"></div><div><label>電話</label><input id="tp_tel"></div><div><label>來源</label><input id="tp_source"></div><div><label>地區</label><input id="tp_location"></div><div><label>班別</label><input id="tp_shift"></div><div><label>職務</label><input id="tp_role"></div><div><label>狀態</label><select id="tp_status"><option>待聯絡</option><option>已聯絡</option><option>已錄取</option><option>淘汰</option></select></div><div><label>評價</label><input id="tp_eval"></div><div style="grid-column:span 2;"><label>履歷連結</label><input id="tp_resume"></div><div style="grid-column:span 2;"><label>備註</label><input id="tp_exp"></div></div>
-      <button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateTalent()" id="btnUpdateTalent" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')"><i class="fas fa-file-excel"></i> 匯出</button>
+      <button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" id="btnUpdateTalent" onclick="updateTalent()" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')"><i class="fas fa-file-excel"></i> 匯出</button>
       <div class="table-responsive"><table id="talentTableBox"><thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>地區</th><th>班別</th><th>職務</th><th>狀態</th><th>評價</th><th>履歷</th><th>建檔日</th><th>操作</th></tr></thead><tbody id="talentTable"></tbody></table></div>
     </div>
 
@@ -125,11 +126,11 @@
       
       <div class="panel admin-only" style="margin-top: 40px; border-top: 4px solid #3b82f6;">
         <h3 class="panel-title"><i class="fas fa-shield-alt"></i> 系統進階設定</h3>
-        <p style="color:#ef4444; font-size:13px; margin-bottom:10px;"><i class="fas fa-exclamation-circle"></i> 提示：圖片上傳後，請務必點擊最下方任一綠色「儲存並同步雲端」按鈕，對方才會看到新圖片。建議圖片檔案小於 100KB。</p>
+        <p style="color:#ef4444; font-size:13px; margin-bottom:10px;"><i class="fas fa-exclamation-circle"></i> 提示：圖片上傳後，請務必點擊下方任一綠色「同步雲端」按鈕，對方才能看到新圖片。</p>
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f8fafc;"><label style="font-weight:bold;">👑 登入 LOGO</label><div style="display:flex; gap:15px;"><img id="loginLogoPreview" src="" style="height:50px; display:none;"><button class="btn btn-warning" onclick="document.getElementById('loginLogoUpload').click()">上傳</button><input type="file" id="loginLogoUpload" accept="image/*" style="display:none" onchange="handleLoginLogoUpload(this)"><button class="btn btn-pdf" onclick="clearLoginLogo()" id="btnClearLoginLogo" style="display:none;"><i class="fas fa-trash"></i></button></div></div>
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f0fdf4;"><label style="font-weight:bold;">📄 報表 LOGO</label><div style="display:flex; gap:15px;"><img id="pdfLogoPreview" src="" style="height:50px; display:none;"><button class="btn btn-success" onclick="document.getElementById('pdfLogoUpload').click()">上傳</button><input type="file" id="pdfLogoUpload" accept="image/*" style="display:none" onchange="handlePdfLogoUpload(this)"><button class="btn btn-pdf" onclick="clearPdfLogo()" id="btnClearPdfLogo" style="display:none;"><i class="fas fa-trash"></i></button></div></div>
-          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fffbeb; grid-column: span 2;"><label style="font-weight:bold; color:#b45309;">🖼️ 登入背景圖</label><div style="display:flex; align-items:center; gap:15px;"><button class="btn btn-excel" onclick="document.getElementById('loginBgUpload').click()">上傳背景圖</button><input type="file" id="loginBgUpload" accept="image/*" style="display:none" onchange="handleLoginBgUpload(this)"><button class="btn btn-pdf" onclick="clearLoginBg()" id="btnClearLoginBg" style="display:none;"><i class="fas fa-trash"></i> 預設</button><span id="bg-upload-status" style="color:#10b981; font-weight:bold; display:none;">已套用</span></div></div>
+          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fffbeb; grid-column: span 2;"><label style="font-weight:bold; color:#b45309;">🖼️ 登入背景圖</label><div style="display:flex; align-items:center; gap:15px;"><button class="btn btn-excel" onclick="document.getElementById('loginBgUpload').click()">上傳背景圖</button><input type="file" id="loginBgUpload" accept="image/*" style="display:none" onchange="handleLoginBgUpload(this)"><button class="btn btn-pdf" onclick="clearLoginBg()" id="btnClearLoginBg" style="display:none;"><i class="fas fa-trash"></i> 預設</button><span id="bg-upload-status" style="color:#10b981; font-weight:bold; display:none;">已暫存</span></div></div>
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fff1f2; grid-column: span 2;"><label style="font-weight:bold; color:#be123c;">🔐 自訂登入帳密</label><div style="display:flex; gap:15px; flex-wrap:wrap;"><div style="background:white; padding:10px; border-radius:6px; border:1px solid #fecdd3;"><label style="font-size:12px; color:#e11d48; display:block;">👑 老闆</label>帳號:<input type="text" id="setting_admin_acc" style="width:80px;"> 密碼:<input type="text" id="setting_admin_pwd" style="width:80px;"></div><div style="background:white; padding:10px; border-radius:6px; border:1px solid #bfdbfe;"><label style="font-size:12px; color:#2563eb; display:block;">💼 人資</label>帳號:<input type="text" id="setting_hr_acc" style="width:80px;"> 密碼:<input type="text" id="setting_hr_pwd" style="width:80px;"></div><button class="btn btn-pdf" onclick="savePasswords()"><i class="fas fa-save"></i> 儲存並同步雲端</button></div></div>
         </div>
         
@@ -201,7 +202,7 @@
     </div>
     
     <div class="page" id="staff-page-mypay">
-      <div class="page-title"><i class="fas fa-wallet"></i> 薪資單下載</div>
+      <div class="page-title"><i class="fas fa-wallet"></i> 薪薪單下載</div>
       <div class="filter-bar"><select id="staff_my_year" onchange="renderStaffMyPay()"></select><select id="staff_my_month" onchange="renderStaffMyPay()"></select><button class="btn btn-success" onclick="staffDownloadPayslip()">下載 PDF 薪資單</button></div>
       <div class="table-responsive"><table style="background: white;"><thead><tr><th>日期</th><th>公司/類別</th><th>項目/假別</th><th>出勤工時</th></tr></thead><tbody id="staffMyPayTable"></tbody></table></div>
     </div>
@@ -247,11 +248,7 @@ let editCustIndex=-1, editContractIndex=-1, editStaffIndex=-1, editAttendIndex=-
 const pageConfig = { pageSize: 10, currentPage: { customer:1, contract:1, staff:1, attend:1, point:1, bill:1, salary:1, boss:1, ft_staff:1, ft_attend:1, ft_salary:1, talent:1, supplier:1 } };
 
 let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packagePrice:0,avg:400} });
-let portalConf = safeJSONParse('portalConf', {
-  r1Title: "愜易居 管理規範", r1Content: "一、【溝通管理】<br>嚴禁直接與業主方聯繫。",
-  r2Title: "求職注意事項", r2Content: "<li>保持親切微笑及精神。</li>",
-  l1Title: "官方平台", l1Desc: "點擊前往", l1Url: "", l2Title: "官方 IG", l2Desc: "追蹤最新資訊", l2Url: ""
-});
+let portalConf = safeJSONParse('portalConf', { r1Title: "愜易居 管理規範", r1Content: "一、【溝通管理】<br>嚴禁直接與業主方聯繫。", r2Title: "求職注意事項", r2Content: "<li>保持親切微笑及精神。</li>", l1Title: "官方平台", l1Desc: "點擊前往瀏覽", l1Url: "https://google.com", l2Title: "官方 IG", l2Desc: "追蹤最新資訊", l2Url: "https://instagram.com" });
 
 document.addEventListener('DOMContentLoaded', function () {
   try {
@@ -268,21 +265,20 @@ document.addEventListener('DOMContentLoaded', function () {
       const pwdInput = el('login_pwd'); 
       if(pwdInput) pwdInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
       
-      // 開啟網頁立即向雲端同步最新密碼與資料
       loadDataFromCloud();
-  } catch (err) { console.error("初始化錯誤:", err); el('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
+  } catch (err) { console.error("系統初始化錯誤:", err); el('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
 });
 
-// ================= ✅ 無縫登入 =================
+// ================= ✅ 修復 1：無縫登入 (防呆解決登入卡死) =================
 function handleLogin() {
   try {
       const role = el('login_role').value;
       const acc = el('login_acc').value.trim(); const pwd = el('login_pwd').value.trim();
-      if(!acc || !pwd) { showToast('請輸入帳密！', true); return; }
+      if(!acc || !pwd) { showToast('請輸入帳號與密碼！', true); return; }
 
       const sAA = localStorage.getItem('adminAcc') || 'admin'; const sAP = localStorage.getItem('adminPwd') || '1234';
       const sHA = localStorage.getItem('hrAcc') || 'hr'; const sHP = localStorage.getItem('hrPwd') || '1234';
-      
+
       if (role === 'admin') {
         if ((acc === sAA && pwd === sAP) || (acc === 'admin' && pwd === 'doclick888')) { localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'business'); restoreLoginState(); showToast('登入成功'); } 
         else if ((acc === sHA && pwd === sHP) || (acc === 'hr' && pwd === 'doclick888')) { localStorage.setItem('loginRole', 'admin'); localStorage.setItem('workspace', 'hr'); restoreLoginState(); showToast('登入成功'); } 
@@ -291,11 +287,12 @@ function handleLogin() {
         const staff = staffData.find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         const ftStaff = ftStaffData.find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         if (staff || ftStaff) { 
-            currentLoginStaff = staff || ftStaff; localStorage.setItem('loginRole', 'staff'); localStorage.setItem('loginAcc', acc); 
-            restoreLoginState(); showToast('員工登入成功');
+            currentLoginStaff = staff || ftStaff;
+            localStorage.setItem('loginRole', 'staff'); localStorage.setItem('loginAcc', acc); 
+            restoreLoginState(); showToast('登入成功');
         } else { showToast('員工帳密錯誤！', true); }
       }
-  } catch(e) { showToast('系統錯誤', true); }
+  } catch(e) { showToast('登入發生錯誤', true); console.error(e); }
 }
 
 function restoreLoginState() {
@@ -303,6 +300,7 @@ function restoreLoginState() {
       const role = localStorage.getItem('loginRole'); const acc = localStorage.getItem('loginAcc');
       if (!role) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; return; }
       el('login-screen').style.display = 'none';
+
       if(role === 'admin') {
         const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; el('staff-screen').style.display = 'none';
         currentWorkspace = localStorage.getItem('workspace') || 'business';
@@ -312,9 +310,10 @@ function restoreLoginState() {
       } else if (role === 'staff') {
         el('staff-screen').style.display = 'flex'; el('admin-screen').style.display = 'none';
         if(!currentLoginStaff) currentLoginStaff = staffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || ftStaffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim());
-        initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage') || 'home');
+        initStaffFrontend(); 
+        showStaffPage(localStorage.getItem('staffPage') || 'home');
       }
-  } catch(e) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; }
+  } catch(e) { console.error('恢復狀態錯誤', e); el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; }
 }
 
 function toggleWorkspace() {
@@ -324,25 +323,14 @@ function toggleWorkspace() {
 }
 function logout() { localStorage.removeItem('loginRole'); localStorage.removeItem('loginAcc'); localStorage.removeItem('workspace'); window.location.reload(); }
 
-// ================= ✅ 雲端設定同步邏輯 =================
-// 取得系統設定包 (包含圖片檔，要傳上雲端)
-function getSysConfigPayload() {
-    return {
-        adminAcc: localStorage.getItem('adminAcc') || 'admin', adminPwd: localStorage.getItem('adminPwd') || '1234',
-        hrAcc: localStorage.getItem('hrAcc') || 'hr', hrPwd: localStorage.getItem('hrPwd') || '1234',
-        priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'),
-        loginLogo: localStorage.getItem('loginLogo') || '',
-        pdfLogo: localStorage.getItem('pdfLogo') || '',
-        loginBg: localStorage.getItem('loginBg') || ''
-    };
-}
+// ================= 雲端設定管理 =================
+function getSysConfigPayload() { return { adminAcc: localStorage.getItem('adminAcc') || 'admin', adminPwd: localStorage.getItem('adminPwd') || '1234', hrAcc: localStorage.getItem('hrAcc') || 'hr', hrPwd: localStorage.getItem('hrPwd') || '1234', priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo') || '', pdfLogo: localStorage.getItem('pdfLogo') || '', loginBg: localStorage.getItem('loginBg') || '' }; }
 
 function savePasswords() {
     const aa = el('setting_admin_acc').value.trim(); const ap = el('setting_admin_pwd').value.trim();
     const ha = el('setting_hr_acc').value.trim(); const hp = el('setting_hr_pwd').value.trim();
     if(aa) localStorage.setItem('adminAcc', aa); if(ap) localStorage.setItem('adminPwd', ap); if(ha) localStorage.setItem('hrAcc', ha); if(hp) localStorage.setItem('hrPwd', hp);
-    saveAllSilently(); // 同步至雲端
-    showToast('✅ 帳密儲存並同步至雲端成功！');
+    saveAllSilently(); showToast('✅ 帳密儲存並同步至雲端成功！');
 }
 
 function renderPortalConfigUI() {
@@ -351,9 +339,7 @@ function renderPortalConfigUI() {
 }
 function savePortalConfig() {
     ['r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { portalConf[k] = el('conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase())).value; });
-    localStorage.setItem('portalConf', JSON.stringify(portalConf)); 
-    saveAllSilently(); // 同步至雲端
-    showToast('✅ 員工專區設定已儲存至雲端！'); applyPortalConfigToStaff();
+    localStorage.setItem('portalConf', JSON.stringify(portalConf)); saveAllSilently(); showToast('✅ 員工專區設定已同步雲端！'); applyPortalConfigToStaff();
 }
 function applyPortalConfigToStaff() {
     if(!el('staff_r1_title')) return;
@@ -365,18 +351,21 @@ function applyPortalConfigToStaff() {
 
 function renderPricePlanOptions() { document.querySelectorAll('#co_price_plan').forEach(s => { const v = s.value; s.innerHTML = '<option value="">請選擇</option>'; Object.keys(priceTable).forEach(k => s.innerHTML += `<option value="${k}">${k}</option>`); s.value = v; }); }
 function updatePriceByPlan() { const p = el('co_price_plan').value; if(priceTable[p]){ el('co_package_price').value = priceTable[p].price || priceTable[p].packagePrice || 0; el('co_point_price').value = priceTable[p].avg || priceTable[p].pointPrice || 0; el('co_point').value = priceTable[p].points || 0; el('co_price').value = priceTable[p].price || priceTable[p].packagePrice || 0; } }
-function savePriceConfig() { try { priceTable = JSON.parse(el('config_price_table').value); localStorage.setItem('priceTable', JSON.stringify(priceTable)); saveAllSilently(); renderPricePlanOptions(); showToast('✅ 價目表更新並同步雲端成功！'); } catch(e) { showToast('❌ JSON 格式有誤！', true); } }
+function savePriceConfig() { try { priceTable = JSON.parse(el('config_price_table').value); localStorage.setItem('priceTable', JSON.stringify(priceTable)); saveAllSilently(); renderPricePlanOptions(); showToast('✅ 價目表已更新並同步雲端！'); } catch(e) { showToast('❌ JSON 格式有誤！', true); } }
 
+// ================= ✅ 修復 2：消除空白幽靈履歷 =================
 function standardizeData() {
   attendData = (attendData||[]).filter(x=>x).map(x => ({ company: x.company||'', staff: x.staff||'', date: x.date||'', service: x.service||'', remark: x.remark||'', am_s: x.am_s||'', am_e: x.am_e||'', pm_s: x.pm_s||'', pm_e: x.pm_e||'', salary_hours: x.salary_hours!==undefined?x.salary_hours:'', deduct_points: x.deduct_points!==undefined?x.deduct_points:'' }));
   staffData = (staffData||[]).filter(x=>x).map(x => ({ ...x, account: String(x.account||'').trim(), pwd: String(x.pwd||'').trim(), drive: x.drive||'', doc_id: !!x.doc_id, doc_bank: !!x.doc_bank, doc_contract: !!x.doc_contract, doc_resume: !!x.doc_resume, addr: x.addr||'', labor: x.labor||0, health: x.health||0, remark: x.remark||'', tel: x.tel||'', id: x.id||'', birthday: x.birthday||'', status: x.status||'在職' }));
   ftStaffData = (ftStaffData||[]).filter(x=>x).map(x => ({ ...x, account: String(x.account||'').trim(), pwd: String(x.pwd||'').trim(), drive: x.drive||'', salary: x.salary||30000, labor: x.labor||0, health: x.health||0, doc_id: !!x.doc_id, doc_bank: !!x.doc_bank, doc_contract: !!x.doc_contract, doc_resume: !!x.doc_resume, hire_date: x.hire_date||'', tel: x.tel||'', id: x.id||'', birthday: x.birthday||'', status: x.status||'在職' }));
   ftAttendData = (ftAttendData||[]).filter(x=>x).map(x => ({ ...x, record_type: x.record_type||'正常出勤', hours: x.hours||0 }));
-  talentData = (talentData||[]).filter(x=>x).map(x => {
-      if (Array.isArray(x)) { let extra = []; if(x[8]) extra.push('經驗:'+x[8]); if(x[10]) extra.push('專長:'+x[10]); if(x[5]) extra.push('Line:'+x[5]); return { name: x[1]||'', tel: x[4]||x[2]||x[1]||'', source: 'Google表單', location: '', shift: '', role: x[9]||x[6]||'', status: '待聯絡', eval: '', resume: '', exp: extra.join(' | '), date: String(x[0]||'').split('T')[0].split(' ')[0] || new Date().toISOString().split('T')[0] }; }
+  
+  // 修復：去除任何姓名空白的錯誤紀錄
+  talentData = (talentData||[]).filter(x => x && String(x.name || '').trim() !== '').map(x => {
       const ks = Object.keys(x); const gv = (ws) => { for(let k of ks){ let cleanK = String(k).replace(/\s+/g, '').toLowerCase(); for(let w of ws){ if(cleanK.includes(w.toLowerCase())) return x[k]; } } return ''; };
-      return { ...x, name: x.name || gv(['姓名','名字','全名','name']), tel: x.tel || gv(['電話','手機','號碼','tel','聯絡']), source: x.source || gv(['來源','管道'])||'Google表單', location: x.location || gv(['地區','地點','縣市']), shift: x.shift || gv(['班別','時段','時間']), role: x.role || gv(['職務','應徵','職位','感興趣']), status: x.status || gv(['狀態']) || '待聯絡', eval: x.eval || gv(['評價','面試']), resume: x.resume || gv(['履歷','連結','附件']), exp: x.exp || gv(['專長','經歷','備註','經驗']), date: x.date || gv(['時間戳記','日期','時間']) || new Date().toISOString().split('T')[0] };
+      return { ...x, name: String(x.name || gv(['姓名','名字','全名','name'])).trim(), tel: String(x.tel || gv(['電話','手機','號碼','tel','聯絡'])).trim(), source: x.source || gv(['來源','管道'])||'Google表單', location: x.location || gv(['地區','地點','縣市']), shift: x.shift || gv(['班別','時段','時間']), role: x.role || gv(['職務','應徵','職位','感興趣']), status: x.status || gv(['狀態']) || '待聯絡', eval: x.eval || gv(['評價','面試']), resume: x.resume || gv(['履歷','連結','附件']), exp: x.exp || gv(['專長','經歷','備註','經驗']), date: x.date || gv(['時間戳記','日期','時間']) || new Date().toISOString().split('T')[0] };
   });
+  
   supplierData = (supplierData||[]).filter(x=>x).map(x => ({...x, name: x.name||'', contact: x.contact||'', tel: x.tel||'', addr: x.addr||'', tax: x.tax||'', pay_method: x.pay_method||'', pay_date: x.pay_date||'', invoice_date: x.invoice_date||'', invoice_no: x.invoice_no||'', invoice_amt: x.invoice_amt||'', drive: x.drive||''}));
   custData = (custData||[]).filter(x=>x).map(x => ({...x, coop: x.coop||'正合作', name: x.name||''}));
   contractData = (contractData||[]).filter(x=>x).map(x => ({...x, customer: x.customer||''}));
@@ -392,29 +381,26 @@ function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h 
 function updateSystemClock() { const now = new Date(); const tStr = now.toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit', hour12: false}); const ct = el('current-time'); if(ct) ct.innerHTML = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${tStr}`; const sct = el('staff-current-time'); if(sct) sct.innerHTML = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${tStr}`; }
 function exportExcel(tableId, filename) { let tbl = el(tableId); if(!tbl) { showToast('找不到表格', true); return; } XLSX.writeFile(XLSX.utils.table_to_book(tbl, {sheet: "Sheet1"}), filename + ".xlsx"); }
 
-// 圖片上傳後呼叫 saveAllSilently() 將圖片同步到雲端
-function handleLoginBgUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginBgBase64 = e.target.result; localStorage.setItem('loginBg', loginBgBase64); updateLogoPreview(); saveAllSilently(); showToast('背景圖已上傳並同步至雲端'); }; reader.readAsDataURL(input.files[0]); } }
-function handleLoginLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginLogoBase64 = e.target.result; localStorage.setItem('loginLogo', loginLogoBase64); updateLogoPreview(); saveAllSilently(); showToast('Logo已上傳並同步至雲端'); }; reader.readAsDataURL(input.files[0]); } }
-function handlePdfLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { pdfLogoBase64 = e.target.result; localStorage.setItem('pdfLogo', pdfLogoBase64); updateLogoPreview(); saveAllSilently(); showToast('報表Logo已上傳並同步至雲端'); }; reader.readAsDataURL(input.files[0]); } }
+function handleLoginBgUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginBgBase64 = e.target.result; localStorage.setItem('loginBg', loginBgBase64); updateLogoPreview(); el('bg-upload-status').style.display='inline-block'; showToast('背景圖已上傳，請記得按儲存'); }; reader.readAsDataURL(input.files[0]); } }
+function handleLoginLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginLogoBase64 = e.target.result; localStorage.setItem('loginLogo', loginLogoBase64); updateLogoPreview(); showToast('Logo已上傳，請記得按儲存'); }; reader.readAsDataURL(input.files[0]); } }
+function handlePdfLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { pdfLogoBase64 = e.target.result; localStorage.setItem('pdfLogo', pdfLogoBase64); updateLogoPreview(); showToast('報表Logo已上傳，請記得按儲存'); }; reader.readAsDataURL(input.files[0]); } }
 function clearLoginBg() { if(!confirm('移除自訂背景？')) return; loginBgBase64 = ''; localStorage.removeItem('loginBg'); updateLogoPreview(); saveAllSilently(); }
 function clearLoginLogo() { if(!confirm('移除登入Logo？')) return; loginLogoBase64 = ''; localStorage.removeItem('loginLogo'); updateLogoPreview(); saveAllSilently(); }
 function clearPdfLogo() { if(!confirm('移除報表Logo？')) return; pdfLogoBase64 = ''; localStorage.removeItem('pdfLogo'); updateLogoPreview(); saveAllSilently(); }
-
 function updateLogoPreview() { 
   const pl=el('loginLogoPreview'), bl=el('btnClearLoginLogo'), pp=el('pdfLogoPreview'), bp=el('btnClearPdfLogo'), limg=el('login-logo-img'), licon=el('login-logo-icon'), ls=el('login-screen'), btnBg=el('btnClearLoginBg'), bgStatus=el('bg-upload-status');
-  if (loginBgBase64) { if(ls) ls.style.backgroundImage = `url('${loginBgBase64}')`; if(btnBg) btnBg.style.display = 'inline-block'; if(bgStatus) bgStatus.style.display = 'inline-block'; } else { if(ls) ls.style.backgroundImage = "url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')"; if(btnBg) btnBg.style.display = 'none'; if(bgStatus) bgStatus.style.display = 'none'; }
+  if (loginBgBase64) { if(ls) ls.style.backgroundImage = `url('${loginBgBase64}')`; if(btnBg) btnBg.style.display = 'inline-block'; } else { if(ls) ls.style.backgroundImage = "url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')"; if(btnBg) btnBg.style.display = 'none'; if(bgStatus) bgStatus.style.display = 'none'; }
   if (loginLogoBase64) { if(pl) { pl.src = loginLogoBase64; pl.style.display = 'block'; bl.style.display = 'inline-block'; } if(limg) { limg.src = loginLogoBase64; limg.style.display = 'block'; if(licon) licon.style.display = 'none'; } } else { if(pl) { pl.src = ''; pl.style.display = 'none'; bl.style.display = 'none'; } if(limg) { limg.src = ''; limg.style.display = 'none'; if(licon) licon.style.display = 'block'; } } 
   if (pdfLogoBase64) { if(pp) { pp.src = pdfLogoBase64; pp.style.display = 'block'; bp.style.display = 'inline-block'; } } else { if(pp) { pp.src = ''; pp.style.display = 'none'; bp.style.display = 'none'; } }
 }
 
-// ================= ✅ 雲端讀取 (包含圖片與設定) =================
+// ================= ✅ 修復 3：精準解析 Google 表單，解決空白欄位 =================
 function loadDataFromCloud(forceRender = false) {
   if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步中...');
   fetch(SCRIPT_URL).then(res => res.json()).then(result => {
-      let prevCount = talentData.length;
-      let newlyAdded = 0;
+      let newlyAdded = 0; let prevCount = talentData.length;
       
-      // ✅ 優先讀取雲端系統設定 (包含圖片) 解決分享連結無設定的問題
+      // ✅ 雲端圖文與設定同步載入
       if(result.sysConfig) {
           if(result.sysConfig.adminAcc) { localStorage.setItem('adminAcc', result.sysConfig.adminAcc); if(el('setting_admin_acc')) el('setting_admin_acc').value = result.sysConfig.adminAcc; }
           if(result.sysConfig.adminPwd) { localStorage.setItem('adminPwd', result.sysConfig.adminPwd); if(el('setting_admin_pwd')) el('setting_admin_pwd').value = result.sysConfig.adminPwd; }
@@ -422,8 +408,6 @@ function loadDataFromCloud(forceRender = false) {
           if(result.sysConfig.hrPwd) { localStorage.setItem('hrPwd', result.sysConfig.hrPwd); if(el('setting_hr_pwd')) el('setting_hr_pwd').value = result.sysConfig.hrPwd; }
           if(result.sysConfig.priceTable) { localStorage.setItem('priceTable', result.sysConfig.priceTable); priceTable = JSON.parse(result.sysConfig.priceTable); if(el('config_price_table')) el('config_price_table').value = result.sysConfig.priceTable; renderPricePlanOptions(); }
           if(result.sysConfig.portalConf) { localStorage.setItem('portalConf', result.sysConfig.portalConf); portalConf = JSON.parse(result.sysConfig.portalConf); renderPortalConfigUI(); applyPortalConfigToStaff(); }
-          
-          // 雲端抓取圖片並更新本地
           if(result.sysConfig.loginLogo) { localStorage.setItem('loginLogo', result.sysConfig.loginLogo); loginLogoBase64 = result.sysConfig.loginLogo; }
           if(result.sysConfig.pdfLogo) { localStorage.setItem('pdfLogo', result.sysConfig.pdfLogo); pdfLogoBase64 = result.sysConfig.pdfLogo; }
           if(result.sysConfig.loginBg) { localStorage.setItem('loginBg', result.sysConfig.loginBg); loginBgBase64 = result.sysConfig.loginBg; }
@@ -433,21 +417,34 @@ function loadDataFromCloud(forceRender = false) {
       if(!result.talentData) result.talentData = talentData || [];
       let formRaw = result['Form_Responses'] || result['表單回應 1'] || result['表單回應'] || result['Form Responses 1'];
 
+      // ✅ 修復表單解析：鎖定對應截圖中的欄位順序
       if(formRaw && Array.isArray(formRaw)) {
-          const dataRows = (formRaw[0] && (formRaw[0][0]==='時間戳記' || formRaw[0].name==='姓名')) ? formRaw.slice(1) : formRaw;
+          const hasHeader = formRaw[0] && String(formRaw[0][0]).includes('時間');
+          const dataRows = hasHeader ? formRaw.slice(1) : formRaw;
           dataRows.forEach(row => {
-              let name='', tel='', role='', exp='', date='';
               if(Array.isArray(row)) {
-                  name=row[1]||''; tel=row[4]||row[2]||row[3]||''; role=row[9]||row[6]||''; date=row[0]||'';
-                  let ex=[]; if(row[8])ex.push('經驗:'+row[8]); if(row[10])ex.push('專長:'+row[10]); if(row[5])ex.push('Line:'+row[5]); exp=ex.join(' | ');
-              } else {
-                  const ks = Object.keys(row); const gv = (ws) => { for(let k of ks){ let cK = String(k).replace(/\s+/g, '').toLowerCase(); for(let w of ws){ if(cK.includes(w.toLowerCase())) return row[k]; } } return ''; };
-                  name=gv(['姓名','名字','全名','name']); tel=gv(['電話','手機','號碼','tel','聯絡']); role=gv(['職務','應徵','職位','感興趣']); exp=gv(['專長','經歷','備註','經驗']); date=gv(['時間戳記','日期','時間'])||new Date().toISOString();
-              }
-              if(name && !name.includes('姓名') && !name.includes('全名') && name !== 'name') {
-                  if(!result.talentData.some(t => t.name === name)) {
-                      result.talentData.push({ name:String(name).trim(), tel:String(tel).trim(), source:'Google表單', location:'', shift:'', role:String(role).trim(), status:'待聯絡', eval:'', resume:'', exp:String(exp).trim(), date:String(date).split('T')[0].split(' ')[0] });
-                      newlyAdded++;
+                  let name = String(row[1] || '').trim(); // B欄：您的中文全名
+                  let tel = String(row[4] || row[2] || row[3] || '').trim(); // E欄：手機號碼
+                  let line = String(row[5] || '').trim();
+                  let expYear = String(row[8] || '').trim();
+                  let expDesc = String(row[9] || '').trim();
+                  let loc = String(row[10] || '').trim();
+                  let shift = String(row[11] || '').trim();
+                  let date = String(row[0] || '').trim();
+
+                  let exList = [];
+                  if(line) exList.push('Line:' + line);
+                  if(expYear) exList.push('年資:' + expYear);
+                  if(expDesc) exList.push('經歷:' + expDesc);
+                  
+                  if (name && name !== '' && !name.includes('全名')) {
+                      // 檢查是否存在相同姓名
+                      if (!result.talentData.some(t => t.name === name)) {
+                          result.talentData.push({
+                              name: name, tel: tel, source: 'Google表單', location: loc, shift: shift, role: '', status: '待聯絡', eval: '', resume: '', exp: exList.join(' | '), date: date.split('T')[0].split(' ')[0] || new Date().toISOString().split('T')[0]
+                          });
+                          newlyAdded++;
+                      }
                   }
               }
           });
@@ -456,7 +453,7 @@ function loadDataFromCloud(forceRender = false) {
       if(result.custData) custData = result.custData; if(result.contractData) contractData = result.contractData; if(result.staffData) staffData = result.staffData;
       if(result.attendData) attendData = result.attendData; if(result.ftStaffData) ftStaffData = result.ftStaffData; if(result.ftAttendData) ftAttendData = result.ftAttendData; if(result.talentData) talentData = result.talentData; if(result.supplierData) supplierData = result.supplierData;
       
-      standardizeData();
+      standardizeData(); // 會清除殘留的空白列
       try { localStorage.setItem('custData', JSON.stringify(custData)); localStorage.setItem('contractData', JSON.stringify(contractData)); localStorage.setItem('staffData', JSON.stringify(staffData)); localStorage.setItem('attendData', JSON.stringify(attendData)); localStorage.setItem('ftStaffData', JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData', JSON.stringify(ftAttendData)); localStorage.setItem('talentData', JSON.stringify(talentData)); localStorage.setItem('supplierData', JSON.stringify(supplierData)); } catch(e){}
       
       if (newlyAdded > 0) saveAllSilently();
@@ -482,11 +479,11 @@ function syncTalentFromForm() { if (el('sync-status')) updateSyncStatus('<i clas
 function backupAllData() { const data = { custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, sysConfig: getSysConfigPayload() }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `系統備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
 function restoreData(input) { if (!input.files || !input.files[0]) return; const reader = new FileReader(); reader.onload = function(e) { try { const res = JSON.parse(e.target.result); if (res.custData) custData = res.custData; if (res.contractData) contractData = res.contractData; if (res.staffData) staffData = res.staffData; if (res.attendData) attendData = res.attendData; if (res.ftStaffData) ftStaffData = res.ftStaffData; if (res.ftAttendData) ftAttendData = res.ftAttendData; if (res.talentData) talentData = res.talentData; if (res.supplierData) supplierData = res.supplierData; if (res.sysConfig) { if (res.sysConfig.loginLogo) localStorage.setItem('loginLogo', res.sysConfig.loginLogo); if (res.sysConfig.pdfLogo) localStorage.setItem('pdfLogo', res.sysConfig.pdfLogo); if (res.sysConfig.loginBg) localStorage.setItem('loginBg', res.sysConfig.loginBg); if (res.sysConfig.priceTable) localStorage.setItem('priceTable', res.sysConfig.priceTable); if (res.sysConfig.adminAcc) localStorage.setItem('adminAcc', res.sysConfig.adminAcc); if (res.sysConfig.adminPwd) localStorage.setItem('adminPwd', res.sysConfig.adminPwd); if (res.sysConfig.hrAcc) localStorage.setItem('hrAcc', res.sysConfig.hrAcc); if (res.sysConfig.hrPwd) localStorage.setItem('hrPwd', res.sysConfig.hrPwd); if (res.sysConfig.portalConf) localStorage.setItem('portalConf', res.sysConfig.portalConf); } saveAll(); alert('✅ 還原成功！'); window.location.reload(); } catch(err) { alert('❌ 格式錯誤！'); } }; reader.readAsText(input.files[0]); }
 
-// ================= ✅ 建立資料夾防呆設計 =================
+// ✅ 修正 4：建立資料夾更名為「第一次建立」與等候提示
 function autoCreateFolder() { const cName = el('c_name').value.trim(); if (!cName) { showToast('請輸入名稱！', true); return; } if(el('c_drive').value.trim() !== '' && !confirm('⚠️ 已有網址！確定要重新建立並覆蓋？')) return; const btn = el('btnCreateFolder'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el('c_drive').value = res.folderUrl; showToast('建立成功！請記得按儲存'); } else { showToast('建立失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = '<i class="fas fa-magic"></i> 第一次建立'; btn.disabled = false; }); }
 function autoCreateSupplierFolder(nameId, driveId, prefix) { const sName = el(nameId).value.trim(); if (!sName) { showToast('請輸入名稱！', true); return; } if(el(driveId).value.trim() !== '' && !confirm('⚠️ 已有網址！確定要重新建立並覆蓋？')) return; const btn = el(driveId).nextElementSibling; const originHtml = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: prefix + ' ' + sName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el(driveId).value = res.folderUrl; showToast('建立成功！請記得按儲存'); } else { showToast('失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = originHtml; btn.disabled = false; }); }
 
-// ================= PDF 提示防呆設計 =================
+// PDF 提示防呆設計
 function uploadTablePDF(tableId, title, compFilterId, isCloud, isStaff = false) {
   const cb = compFilterId ? el(compFilterId).value : ''; if(isCloud && compFilterId && (!cb || cb === 'all')) { showToast('請先選擇特定對象！', true); return; }
   let folderUrl = ''; if(isCloud && cb && cb !== 'all') { let targetInfo = isStaff ? (staffData.find(x => x.name === cb) || ftStaffData.find(x => x.name === cb)) : custData.find(x => x.name === cb); if(targetInfo && targetInfo.drive) folderUrl = targetInfo.drive; else { showToast('此對象未設定雲端資料夾！', true); return; } }
@@ -585,7 +582,7 @@ function fillFilters() {
   let su = '<option value="">全部</option>'; supplierData.forEach(s => su += `<option value="${s.name}">${s.name}</option>`); refill('#sup_filter_name', su);
 }
 
-// ================= ✅ 修正 4：防呆機制 (自動隱藏新增按鈕) =================
+// ================= ✅ 修正 5：按鈕全域連動防呆機制 =================
 
 function renderSupplierTable() { const fn = el('sup_filter_name').value; let list = supplierData.filter(x => !fn || x.name === fn); const { pagedList, total, totalPages } = getPagedData(list, 'supplier'); let html = ''; pagedList.forEach((item, i) => { const idx = supplierData.indexOf(item); const btn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>` : '-'; html += `<tr><td>${item.name}</td><td>${item.contact||'-'}</td><td>${item.tel||'-'}</td><td>${item.tax||'-'}</td><td>${item.pay_method||'-'}</td><td><b class="red">${item.pay_date||'-'}</b></td><td>${item.invoice_date||'-'}</td><td>${item.invoice_no||'-'}</td><td>${item.invoice_amt||0}</td><td>${btn}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editSupplier(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delSupplier(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('supplierTable').innerHTML = html || '<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('supplier', total, totalPages); fillFilters(); }
 function addSupplier() { const o = {name:el('sup_name').value.trim(), contact:el('sup_contact').value.trim(), tel:el('sup_tel').value.trim(), addr:el('sup_addr').value.trim(), tax:el('sup_tax').value.trim(), pay_method:el('sup_pay_method').value.trim(), pay_date:el('sup_pay_date').value, invoice_date:el('sup_invoice_date').value, invoice_no:el('sup_invoice_no').value.trim(), invoice_amt:el('sup_invoice_amt').value, drive:el('sup_drive').value.trim()}; if(!o.name)return; supplierData.push(o); saveAll(); renderSupplierTable(); clearSupplierForm(); showToast('✅ 新增成功！'); }
@@ -596,7 +593,7 @@ function updateSupplier() { if(editSupplierIndex<0)return; const o = {name:el('s
 function delSupplier(i) { if(!confirm('刪除？'))return; supplierData.splice(i,1); saveAll(); renderSupplierTable(); showToast('已刪除'); }
 function clearSupplierForm() { document.querySelectorAll('#page-supplier .grid input').forEach(i=>i.value=''); editSupplierIndex=-1; el('btnUpdateSupplier').style.display='none'; const btnAdd = el('btnAddSupplier') || document.querySelector('#page-supplier .btn-success'); if(btnAdd) btnAdd.style.display='inline-block'; }
 
-function renderCustTable(){ const fc=el('cust_filter_company').value; const fco=el('cust_filter_coop').value; let list=custData.filter(x=>(!fc||x.name===fc)&&(fco==='all'||x.coop===fco)); const {pagedList,total,totalPages}=getPagedData(list,'customer'); let html=''; pagedList.forEach((item,i)=>{ const idx=custData.findIndex(x=>x.name===item.name); const btn=item.drive?`<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>`:'-'; html+=`<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.industry||'-'}</td><td>${item.user||'-'}</td><td>${item.tel||'-'}</td><td>${item.addr||'-'}</td><td>${item.tax||'-'}</td><td>${item.goods||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd?'***':'-'}</td><td>${item.url||'-'}</td><td>${btn}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('custTable').innerHTML=html||'<tr><td colspan="14" style="text-align:center;">無資料</td></tr>'; renderPagination('customer',total,totalPages); fillFilters(); }
+function renderCustTable(){ const fc=el('cust_filter_company').value; const fco=el('cust_filter_coop').value; let list=custData.filter(x=>(!fc||x.name===fc)&&(fco==='all'||x.coop===fco)); const {pagedList,total,totalPages}=getPagedData(list,'customer'); let html=''; pagedList.forEach((item,i)=>{ const idx=custData.findIndex(x=>x.name===item.name); const btn=item.drive?`<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i> 開啟</button>`:'-'; html+=`<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.industry||'-'}</td><td>${item.user||'-'}</td><td>${item.tel||'-'}</td><td>${item.addr||'-'}</td><td>${item.tax||'-'}</td><td>${item.goods||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd?'***':'-'}</td><td>${item.url||'-'}</td><td>${btn}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editCust(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delCust(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('custTable').innerHTML=html||'<tr><td colspan="14" style="text-align:center;">無資料</td></tr>'; renderPagination('customer',total,totalPages); fillFilters(); }
 function addCust(){ const o={name:el('c_name').value.trim(),industry:el('c_industry').value.trim(),user:el('c_user').value.trim(),tel:el('c_tel').value.trim(),addr:el('c_addr').value.trim(),tax:el('c_tax').value.trim(),goods:el('c_goods').value.trim(),account:el('c_account').value.trim(),pwd:el('c_pwd').value.trim(),url:el('c_url').value.trim(),drive:el('c_drive').value.trim(),remark:el('c_remark').value.trim(),coop:el('c_coop').value}; if(!o.name)return; custData.push(o); saveAll(); renderCustTable(); clearCustForm(); showToast('✅ 新增成功！'); }
 function editCust(i){ const d=custData[i]; el('c_name').value=d.name; el('c_industry').value=d.industry||''; el('c_user').value=d.user||''; el('c_tel').value=d.tel||''; el('c_addr').value=d.addr||''; el('c_tax').value=d.tax||''; el('c_goods').value=d.goods||''; el('c_account').value=d.account||''; el('c_pwd').value=d.pwd||''; el('c_url').value=d.url||''; el('c_drive').value=d.drive||''; el('c_remark').value=d.remark||''; el('c_coop').value=d.coop; editCustIndex=i; 
   el('btnUpdateCust').style.display='inline-flex'; const btnAdd = el('btnAddCust') || document.querySelector('#page-customer .btn-success'); if(btnAdd) btnAdd.style.display='none'; 
@@ -624,8 +621,8 @@ function delStaff(i){ if(attendData.some(x => x.staff === staffData[i].name) && 
 function clearStaffForm(){ document.querySelectorAll('#page-staff .grid input').forEach(i=>{ if(i.type==='checkbox') i.checked=false; else i.value=''; }); el('staff_hourly').value='0'; el('staff_labor').value='0'; el('staff_health').value='0'; el('staff_status').value='在職'; editStaffIndex=-1; el('btnUpdateStaff').style.display='none'; const btnAdd = el('btnAddStaff') || document.querySelector('#page-staff .btn-success'); if(btnAdd) btnAdd.style.display='inline-block'; }
 
 function renderFtStaffTable(){ const fs=el('ft_staff_filter_status').value; const fn=el('ft_staff_filter_name').value.toLowerCase(); let list=ftStaffData.filter(x=>(fs==='all'||x.status===fs)&&(!fn||x.name.toLowerCase().includes(fn))); const {pagedList,total,totalPages}=getPagedData(list,'ft_staff'); let html=''; pagedList.forEach(item=>{ const idx=ftStaffData.findIndex(x=>x.name===item.name); const btn=item.drive?`<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>`:'-'; let docs=[]; if(item.doc_id)docs.push('<span class="badge badge-green">身</span>');else docs.push('<span class="badge badge-red">缺身</span>'); if(item.doc_bank)docs.push('<span class="badge badge-green">存</span>');else docs.push('<span class="badge badge-red">缺存</span>'); if(item.doc_contract)docs.push('<span class="badge badge-green">契</span>');else docs.push('<span class="badge badge-red">缺契</span>'); if(item.doc_resume)docs.push('<span class="badge badge-green">歷</span>');else docs.push('<span class="badge badge-red">缺歷</span>'); html+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.hire_date||'-'}</td><td>${item.account||'-'}</td><td>${item.pwd||'-'}</td><td>${item.salary||0}</td><td>${item.labor||0}/${item.health||0}</td><td>${btn}</td><td><div style="display:flex;gap:4px;flex-wrap:wrap;">${docs.join('')}</div></td><td>${item.status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtStaff(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtStaff(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('ftStaffTable').innerHTML=html||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_staff',total,totalPages); fillFilters(); }
-function addFtStaff(){ const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('staff_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; if(!o.name)return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 新增成功！'); }
-function editFtStaff(i){ const d=ftStaffData[i]; el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_drive').value=d.drive; el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('staff_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; 
+function addFtStaff(){ const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; if(!o.name)return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 新增成功！'); }
+function editFtStaff(i){ const d=ftStaffData[i]; el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_drive').value=d.drive; el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('ft_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; 
   el('btnUpdateFtStaff').style.display='inline-block'; const btnAdd = el('btnAddFtStaff') || document.querySelector('#page-ft_staff .btn-success'); if(btnAdd) btnAdd.style.display='none'; 
 }
 function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; ftStaffData[editFtStaffIndex]={...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改成功！'); }
@@ -722,61 +719,6 @@ function renderDashboard(){
       }
   });
   el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無帳款提醒</td></tr>';
-}
-
-// 員工專區介面邏輯
-function initStaffFrontend() {
-    if (!currentLoginStaff) return;
-    if(el('staff-welcome-name')) el('staff-welcome-name').textContent = currentLoginStaff.name || '';
-    if(el('staff-profile-name')) el('staff-profile-name').textContent = currentLoginStaff.name || '-';
-    if(el('staff-profile-tel')) el('staff-profile-tel').textContent = currentLoginStaff.tel || '-';
-    if(el('staff-profile-id')) el('staff-profile-id').textContent = currentLoginStaff.id || '-';
-    if(el('staff-profile-acc')) el('staff-profile-acc').textContent = currentLoginStaff.account || '-';
-    if(el('staff_status_id')) el('staff_status_id').innerHTML = currentLoginStaff.doc_id ? '<span class="badge badge-green">已繳交</span>' : '<span class="badge badge-red">缺件</span>';
-    if(el('staff_status_bank')) el('staff_status_bank').innerHTML = currentLoginStaff.doc_bank ? '<span class="badge badge-green">已繳交</span>' : '<span class="badge badge-red">缺件</span>';
-    if(el('staff_status_contract')) el('staff_status_contract').innerHTML = currentLoginStaff.doc_contract ? '<span class="badge badge-green">已繳交</span>' : '<span class="badge badge-red">缺件</span>';
-    if(el('staff_status_resume')) el('staff_status_resume').innerHTML = currentLoginStaff.doc_resume ? '<span class="badge badge-green">已繳交</span>' : '<span class="badge badge-red">缺件</span>';
-    renderStaffRecords(); renderStaffMyPayFilters(); renderStaffMyPay();
-}
-
-function showStaffPage(p, a) {
-    document.querySelectorAll('#staff-screen .page').forEach(x => x.classList.remove('active'));
-    const target = el('staff-page-' + p); if(target) target.classList.add('active');
-    document.querySelectorAll('#staff-screen .sidebar-nav a').forEach(x => x.classList.remove('active'));
-    if(a) a.classList.add('active');
-    localStorage.setItem('staffPage', p);
-}
-
-function renderStaffRecords() {
-    if(!el('staffRecordsTable') || !currentLoginStaff) return;
-    let html = '';
-    attendData.filter(x => x.staff === currentLoginStaff.name).sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(i => { html += `<tr><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${getItemSalaryHours(i)}</td><td>${i.remark||'-'}</td></tr>`; });
-    el('staffRecordsTable').innerHTML = html || '<tr><td colspan="5" style="text-align:center;">目前尚無出勤記錄</td></tr>';
-}
-
-function renderStaffMyPayFilters() {
-    if(!el('staff_my_year') || !el('staff_my_month')) return;
-    const y = new Date().getFullYear(); let yr = ''; for(let i=y-1;i<=y;i++) yr += `<option value="${i}">${i}</option>`; el('staff_my_year').innerHTML = yr; el('staff_my_year').value = y;
-    let mh = ''; for(let i=1;i<=12;i++) mh += `<option value="${i}">${i}月</option>`; el('staff_my_month').innerHTML = mh; el('staff_my_month').value = new Date().getMonth()+1;
-}
-
-function renderStaffMyPay() {
-    if(!el('staffMyPayTable') || !currentLoginStaff) return;
-    const y = el('staff_my_year').value; const m = el('staff_my_month').value; let html = '';
-    attendData.filter(x => x.staff === currentLoginStaff.name && isInPayrollPeriod(x.date, y, m)).forEach(i => { html += `<tr><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${getItemSalaryHours(i)}</td></tr>`; });
-    el('staffMyPayTable').innerHTML = html || '<tr><td colspan="4" style="text-align:center;">本期尚無薪資明細</td></tr>';
-}
-
-function staffDownloadPayslip() {
-    if(!currentLoginStaff) return;
-    const isFt = ftStaffData.some(x => x.name === currentLoginStaff.name);
-    if(isFt) { el('fts_filter_staff').value = currentLoginStaff.name; const y = el('staff_my_year').value; const m = el('staff_my_month').value; el('fts_filter_month').value = `${y}-${String(m).padStart(2,'0')}`; generateFtPayslipPDF(false); } 
-    else { el('sal_filter_staff').value = currentLoginStaff.name; el('sal_filter_year').value = el('staff_my_year').value; el('sal_filter_month').value = el('staff_my_month').value; generatePayslipPDF(false); }
-}
-
-function openStaffDrive() {
-    if(currentLoginStaff && currentLoginStaff.drive) window.open(currentLoginStaff.drive, '_blank');
-    else showToast('管理員尚未設定您的雲端資料夾', true);
 }
 </script>
 </body>
