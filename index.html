@@ -132,12 +132,38 @@
       
       <div class="panel admin-only" style="margin-top: 40px; border-top: 4px solid #3b82f6;">
         <h3 class="panel-title"><i class="fas fa-shield-alt"></i> 系統進階設定</h3>
-        <p style="color:#ef4444; font-size:13px; margin-bottom:10px;"><i class="fas fa-exclamation-circle"></i> 提示：圖片上傳後，請務必點擊下方任一綠色「同步雲端」按鈕，對方才能看到新圖片。</p>
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
-          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f8fafc;"><label style="font-weight:bold;">👑 登入 LOGO</label><div style="display:flex; gap:15px;"><img id="loginLogoPreview" src="" style="height:50px; display:none;"><button class="btn btn-warning" onclick="document.getElementById('loginLogoUpload').click()">上傳</button><input type="file" id="loginLogoUpload" accept="image/*" style="display:none" onchange="handleLoginLogoUpload(this)"><button class="btn btn-pdf" onclick="clearLoginLogo()" id="btnClearLoginLogo" style="display:none;"><i class="fas fa-trash"></i></button></div></div>
-          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f0fdf4;"><label style="font-weight:bold;">📄 報表 LOGO</label><div style="display:flex; gap:15px;"><img id="pdfLogoPreview" src="" style="height:50px; display:none;"><button class="btn btn-success" onclick="document.getElementById('pdfLogoUpload').click()">上傳</button><input type="file" id="pdfLogoUpload" accept="image/*" style="display:none" onchange="handlePdfLogoUpload(this)"><button class="btn btn-pdf" onclick="clearPdfLogo()" id="btnClearPdfLogo" style="display:none;"><i class="fas fa-trash"></i></button></div></div>
-          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fffbeb; grid-column: span 2;"><label style="font-weight:bold; color:#b45309;">🖼️ 登入背景圖</label><div style="display:flex; align-items:center; gap:15px;"><button class="btn btn-excel" onclick="document.getElementById('loginBgUpload').click()">上傳背景圖</button><input type="file" id="loginBgUpload" accept="image/*" style="display:none" onchange="handleLoginBgUpload(this)"><button class="btn btn-pdf" onclick="clearLoginBg()" id="btnClearLoginBg" style="display:none;"><i class="fas fa-trash"></i> 預設</button><span id="bg-upload-status" style="color:#10b981; font-weight:bold; display:none;">已暫存</span></div></div>
-          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fff1f2; grid-column: span 2;"><label style="font-weight:bold; color:#be123c;">🔐 自訂登入帳密</label><div style="display:flex; gap:15px; flex-wrap:wrap;"><div style="background:white; padding:10px; border-radius:6px; border:1px solid #fecdd3;"><label style="font-size:12px; color:#e11d48; display:block;">👑 老闆</label>帳號:<input type="text" id="setting_admin_acc" style="width:80px;"> 密碼:<input type="text" id="setting_admin_pwd" style="width:80px;"></div><div style="background:white; padding:10px; border-radius:6px; border:1px solid #bfdbfe;"><label style="font-size:12px; color:#2563eb; display:block;">💼 人資</label>帳號:<input type="text" id="setting_hr_acc" style="width:80px;"> 密碼:<input type="text" id="setting_hr_pwd" style="width:80px;"></div><button class="btn btn-pdf" onclick="savePasswords()"><i class="fas fa-save"></i> 儲存並同步雲端</button></div></div>
+          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f8fafc;">
+            <label style="font-weight:bold;">👑 登入 LOGO (貼圖片網址)</label>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+              <img id="loginLogoPreview" src="" style="height:35px; display:none;">
+              <input type="text" id="loginLogoUrl" placeholder="https://..." style="flex:1; padding:6px; font-size:12px; border:1px solid #ccc; border-radius:4px;">
+              <button class="btn-sm btn-warning" style="margin:0;" onclick="handleLogoUrl('login')">套用</button>
+              <button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearLoginLogo()" id="btnClearLoginLogo"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+          
+          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f0fdf4;">
+            <label style="font-weight:bold;">📄 報表 LOGO (貼圖片網址)</label>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+              <img id="pdfLogoPreview" src="" style="height:35px; display:none;">
+              <input type="text" id="pdfLogoUrl" placeholder="https://..." style="flex:1; padding:6px; font-size:12px; border:1px solid #ccc; border-radius:4px;">
+              <button class="btn-sm btn-success" style="margin:0;" onclick="handleLogoUrl('pdf')">套用</button>
+              <button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearPdfLogo()" id="btnClearPdfLogo"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+          
+          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fffbeb; grid-column: span 2;">
+            <label style="font-weight:bold; color:#b45309;">🖼️ 登入背景圖 (貼圖片網址)</label>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
+              <input type="text" id="loginBgUrl" placeholder="請貼上圖片網址 (如 https://i.ibb.co/.../bg.jpg)" style="flex:1; padding:8px; font-size:13px; border:1px solid #ccc; border-radius:4px;">
+              <button class="btn-sm btn-excel" style="margin:0;" onclick="handleLogoUrl('bg')">套用背景圖</button>
+              <button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearLoginBg()" id="btnClearLoginBg"><i class="fas fa-trash"></i> 預設</button>
+              <span id="bg-upload-status" style="color:#10b981; font-weight:bold; display:none;">已套用</span>
+            </div>
+          </div>
+          
+          <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fff1f2; grid-column: span 2;"><label style="font-weight:bold; color:#be123c;">🔐 自訂登入帳密</label><div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:8px;"><div style="background:white; padding:10px; border-radius:6px; border:1px solid #fecdd3;"><label style="font-size:12px; color:#e11d48; display:block;">👑 老闆</label>帳號:<input type="text" id="setting_admin_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_admin_pwd" style="width:80px; padding:4px;"></div><div style="background:white; padding:10px; border-radius:6px; border:1px solid #bfdbfe;"><label style="font-size:12px; color:#2563eb; display:block;">💼 人資</label>帳號:<input type="text" id="setting_hr_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_hr_pwd" style="width:80px; padding:4px;"></div><button class="btn btn-pdf" style="margin:0;" onclick="savePasswords()"><i class="fas fa-save"></i> 儲存並同步雲端</button></div></div>
         </div>
         
         <div style="border:1px dashed #10b981; padding:15px; border-radius:8px; background:#ecfdf5; margin-bottom: 20px;">
@@ -239,7 +265,6 @@
 </div>
 
 <script>
-// ================= 全局變數與初始化 =================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 const el = id => document.getElementById(id);
 
@@ -261,8 +286,6 @@ let editCustIndex=-1, editContractIndex=-1, editStaffIndex=-1, editAttendIndex=-
 const pageConfig = { pageSize: 10, currentPage: { customer:1, contract:1, staff:1, attend:1, point:1, bill:1, salary:1, boss:1, ft_staff:1, ft_attend:1, ft_salary:1, talent:1, supplier:1 } };
 
 let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packagePrice:0,avg:400} });
-
-// 🚀 新增：管理員儀表板公告預設值
 let portalConf = safeJSONParse('portalConf', { 
   adminNoticeTitle: "🚀 系統上線通知與操作須知", 
   adminNoticeContent: "1. 準備新增或修改資料前，請先按右上角的「🔄 重新整理」。\n2. 確保畫面為最新狀態後再進行輸入與儲存，以免互相覆蓋資料。\n3. 左側選單可以隨時切換「營業管理區」與「人事員工區」。",
@@ -372,7 +395,20 @@ function savePasswords() {
     saveAllSilently(); showToast('✅ 帳密儲存並已同步雲端！');
 }
 
-// 🚀 更新：渲染與儲存儀表板公告欄位
+// 🚀 核心升級：圖片套用網址功能
+function handleLogoUrl(type) {
+    if(type === 'login') {
+        const url = el('loginLogoUrl').value.trim(); if(!url) return showToast('請輸入網址', true);
+        loginLogoBase64 = url; localStorage.setItem('loginLogo', url); updateLogoPreview(); saveAllSilently(); showToast('登入 Logo 已套用並同步');
+    } else if(type === 'pdf') {
+        const url = el('pdfLogoUrl').value.trim(); if(!url) return showToast('請輸入網址', true);
+        pdfLogoBase64 = url; localStorage.setItem('pdfLogo', url); updateLogoPreview(); saveAllSilently(); showToast('報表 Logo 已套用並同步');
+    } else if(type === 'bg') {
+        const url = el('loginBgUrl').value.trim(); if(!url) return showToast('請輸入網址', true);
+        loginBgBase64 = url; localStorage.setItem('loginBg', url); updateLogoPreview(); el('bg-upload-status').style.display='inline-block'; saveAllSilently(); showToast('背景圖已套用並同步');
+    }
+}
+
 function renderPortalConfigUI() {
     if(!el('conf_r1_title')) return;
     ['adminNoticeTitle', 'adminNoticeContent', 'r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { 
@@ -392,11 +428,9 @@ function savePortalConfig() {
 }
 
 function applyPortalConfigToStaff() {
-    // 應用至管理員儀表板
     if(el('dash_notice_title')) el('dash_notice_title').innerHTML = `<i class="fas fa-bullhorn"></i> ` + (portalConf.adminNoticeTitle || '系統公告');
     if(el('dash_notice_content')) el('dash_notice_content').innerHTML = (portalConf.adminNoticeContent || '').replace(/\n/g, '<br>');
 
-    // 應用至員工專區
     if(!el('staff_r1_title')) return;
     el('staff_r1_title').innerHTML = `<i class="fas fa-file-contract"></i> ${portalConf.r1Title}`; el('staff_r1_content').innerHTML = portalConf.r1Content;
     el('staff_r2_title').innerHTML = `<i class="fas fa-user-clock"></i> ${portalConf.r2Title}`; el('staff_r2_content').innerHTML = portalConf.r2Content;
@@ -434,17 +468,15 @@ function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h 
 function updateSystemClock() { const now = new Date(); const tStr = now.toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit', hour12: false}); const ct = el('current-time'); if(ct) ct.innerHTML = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${tStr}`; const sct = el('staff-current-time'); if(sct) sct.innerHTML = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${tStr}`; }
 function exportExcel(tableId, filename) { let tbl = el(tableId); if(!tbl) { showToast('找不到表格', true); return; } XLSX.writeFile(XLSX.utils.table_to_book(tbl, {sheet: "Sheet1"}), filename + ".xlsx"); }
 
-function handleLoginBgUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginBgBase64 = e.target.result; localStorage.setItem('loginBg', loginBgBase64); updateLogoPreview(); el('bg-upload-status').style.display='inline-block'; showToast('背景圖已暫存，請記得按綠色儲存鈕同步雲端'); }; reader.readAsDataURL(input.files[0]); } }
-function handleLoginLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { loginLogoBase64 = e.target.result; localStorage.setItem('loginLogo', loginLogoBase64); updateLogoPreview(); showToast('Logo已暫存，請記得按綠色儲存鈕同步雲端'); }; reader.readAsDataURL(input.files[0]); } }
-function handlePdfLogoUpload(input) { if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = function(e) { pdfLogoBase64 = e.target.result; localStorage.setItem('pdfLogo', pdfLogoBase64); updateLogoPreview(); showToast('報表Logo已暫存，請記得按綠色儲存鈕同步雲端'); }; reader.readAsDataURL(input.files[0]); } }
 function clearLoginBg() { if(!confirm('移除自訂背景？')) return; loginBgBase64 = ''; localStorage.removeItem('loginBg'); updateLogoPreview(); saveAllSilently(); }
 function clearLoginLogo() { if(!confirm('移除登入Logo？')) return; loginLogoBase64 = ''; localStorage.removeItem('loginLogo'); updateLogoPreview(); saveAllSilently(); }
 function clearPdfLogo() { if(!confirm('移除報表Logo？')) return; pdfLogoBase64 = ''; localStorage.removeItem('pdfLogo'); updateLogoPreview(); saveAllSilently(); }
+
 function updateLogoPreview() { 
   const pl=el('loginLogoPreview'), bl=el('btnClearLoginLogo'), pp=el('pdfLogoPreview'), bp=el('btnClearPdfLogo'), limg=el('login-logo-img'), licon=el('login-logo-icon'), ls=el('login-screen'), btnBg=el('btnClearLoginBg'), bgStatus=el('bg-upload-status');
-  if (loginBgBase64) { if(ls) ls.style.backgroundImage = `url('${loginBgBase64}')`; if(btnBg) btnBg.style.display = 'inline-block'; } else { if(ls) ls.style.backgroundImage = "url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')"; if(btnBg) btnBg.style.display = 'none'; if(bgStatus) bgStatus.style.display = 'none'; }
-  if (loginLogoBase64) { if(pl) { pl.src = loginLogoBase64; pl.style.display = 'block'; bl.style.display = 'inline-block'; } if(limg) { limg.src = loginLogoBase64; limg.style.display = 'block'; if(licon) licon.style.display = 'none'; } } else { if(pl) { pl.src = ''; pl.style.display = 'none'; bl.style.display = 'none'; } if(limg) { limg.src = ''; limg.style.display = 'none'; if(licon) licon.style.display = 'block'; } } 
-  if (pdfLogoBase64) { if(pp) { pp.src = pdfLogoBase64; pp.style.display = 'block'; bp.style.display = 'inline-block'; } } else { if(pp) { pp.src = ''; pp.style.display = 'none'; bp.style.display = 'none'; } }
+  if (loginBgBase64) { if(ls) ls.style.backgroundImage = `url('${loginBgBase64}')`; if(btnBg) btnBg.style.display = 'inline-block'; if(el('loginBgUrl')) el('loginBgUrl').value = loginBgBase64; } else { if(ls) ls.style.backgroundImage = "url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')"; if(btnBg) btnBg.style.display = 'none'; if(bgStatus) bgStatus.style.display = 'none'; if(el('loginBgUrl')) el('loginBgUrl').value = ''; }
+  if (loginLogoBase64) { if(pl) { pl.src = loginLogoBase64; pl.style.display = 'block'; bl.style.display = 'inline-block'; } if(limg) { limg.src = loginLogoBase64; limg.style.display = 'block'; if(licon) licon.style.display = 'none'; } if(el('loginLogoUrl')) el('loginLogoUrl').value = loginLogoBase64; } else { if(pl) { pl.src = ''; pl.style.display = 'none'; bl.style.display = 'none'; } if(limg) { limg.src = ''; limg.style.display = 'none'; if(licon) licon.style.display = 'block'; } if(el('loginLogoUrl')) el('loginLogoUrl').value = ''; } 
+  if (pdfLogoBase64) { if(pp) { pp.src = pdfLogoBase64; pp.style.display = 'block'; bp.style.display = 'inline-block'; } if(el('pdfLogoUrl')) el('pdfLogoUrl').value = pdfLogoBase64; } else { if(pp) { pp.src = ''; pp.style.display = 'none'; bp.style.display = 'none'; } if(el('pdfLogoUrl')) el('pdfLogoUrl').value = ''; }
 }
 
 function loadDataFromCloud(forceRender = false) {
