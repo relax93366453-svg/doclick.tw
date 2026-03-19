@@ -9,7 +9,6 @@
 </style>
 </head>
 <body>
-
 <div id="toast"></div>
 
 <div id="login-screen">
@@ -154,7 +153,6 @@
               <button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearLoginLogo()" id="btnClearLoginLogo"><i class="fas fa-trash"></i></button>
             </div>
           </div>
-          
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f0fdf4;">
             <label style="font-weight:bold;">📄 報表 LOGO (貼圖片網址)</label>
             <div style="display:flex; gap:10px; margin-top:8px;">
@@ -164,7 +162,6 @@
               <button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearPdfLogo()" id="btnClearPdfLogo"><i class="fas fa-trash"></i></button>
             </div>
           </div>
-          
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fffbeb; grid-column: span 2;">
             <label style="font-weight:bold; color:#b45309;">🖼️ 登入背景圖 (貼圖片網址)</label>
             <div style="display:flex; align-items:center; gap:10px; margin-top:8px;">
@@ -174,7 +171,6 @@
               <span id="bg-upload-status" style="color:#10b981; font-weight:bold; display:none;">已套用</span>
             </div>
           </div>
-          
           <div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fff1f2; grid-column: span 2;"><label style="font-weight:bold; color:#be123c;">🔐 自訂登入帳密</label><div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:8px;"><div style="background:white; padding:10px; border-radius:6px; border:1px solid #fecdd3;"><label style="font-size:12px; color:#e11d48; display:block;">👑 老闆</label>帳號:<input type="text" id="setting_admin_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_admin_pwd" style="width:80px; padding:4px;"></div><div style="background:white; padding:10px; border-radius:6px; border:1px solid #bfdbfe;"><label style="font-size:12px; color:#2563eb; display:block;">💼 人資</label>帳號:<input type="text" id="setting_hr_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_hr_pwd" style="width:80px; padding:4px;"></div><button class="btn btn-pdf" style="margin:0;" onclick="savePasswords()"><i class="fas fa-save"></i> 儲存並同步雲端</button></div></div>
         </div>
         
@@ -185,14 +181,12 @@
                  <label style="font-weight:bold; color:#2563eb; font-size:14px;"><i class="fas fa-list-ul"></i> 派遣服務類型 (請用半形逗號 , 分隔)</label>
                  <input id="conf_service_types" placeholder="例如: 行政,會計,服務員,理貨包裝,其他" style="margin-top:8px; width:100%;">
              </div>
-
              <div style="grid-column: span 2; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #a7f3d0; margin-bottom: 10px;">
                  <label style="font-weight:bold; color:#059669; font-size:14px;"><i class="fas fa-bullhorn"></i> 管理員儀表板公告 (標題)</label>
                  <input id="conf_admin_notice_title" style="margin-bottom:10px; width:100%;">
                  <label style="font-weight:bold; color:#059669; font-size:14px;">管理員儀表板公告 (內文)</label>
                  <textarea id="conf_admin_notice_content" style="height:80px; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;"></textarea>
              </div>
-             
              <div><label>員工規範一標題</label><input id="conf_r1_title"></div><div><label>員工規範二標題</label><input id="conf_r2_title"></div>
              <div><label>員工規範一內文</label><textarea id="conf_r1_content" style="height:100px;width:100%;padding:5px;"></textarea></div><div><label>員工規範二內文</label><textarea id="conf_r2_content" style="height:100px;width:100%;padding:5px;"></textarea></div>
              <div><label>員工按鈕一 (標題/副標/網址)</label><input id="conf_l1_title" style="margin-bottom:5px;"><input id="conf_l1_desc" style="margin-bottom:5px;"><input id="conf_l1_url"></div>
@@ -296,7 +290,6 @@ function updateSyncStatus(msg, isErr = false) {
 }
 function safeJSONParse(k, f) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : f; } catch(e) { return f; } }
 
-// 🚀 派遣專屬：跨月計薪區間 (上月26日 ~ 本月25日)
 function isDispatchPayrollPeriod(dateStr, year, month) {
     if (year === 'all' || month === 'all') return true;
     if (!dateStr) return false;
@@ -304,10 +297,8 @@ function isDispatchPayrollPeriod(dateStr, year, month) {
     if (parts.length !== 3) return false;
     let rY = parseInt(parts[0], 10), rM = parseInt(parts[1], 10), rD = parseInt(parts[2], 10);
     let tY = parseInt(year, 10), tM = parseInt(month, 10);
-    
     let pY = tY, pM = tM - 1;
     if (pM === 0) { pM = 12; pY -= 1; }
-    
     if (rY === pY && rM === pM && rD >= 26) return true;
     if (rY === tY && rM === tM && rD <= 25) return true;
     return false;
@@ -320,7 +311,6 @@ function formatTimeInput(el) {
     else if(v.length === 2) v = v + '00';
     else if(v.length === 3) v = '0' + v;
     else if(v.length > 4) v = v.substring(0,4);
-    
     let h = parseInt(v.substring(0,2));
     let m = parseInt(v.substring(2,4));
     if(h > 23) h = 23;
@@ -333,9 +323,7 @@ let loginLogoBase64=localStorage.getItem('loginLogo')||'', pdfLogoBase64=localSt
 let currentLoginStaff=null, currentWorkspace='business';
 let editCustIndex=-1, editContractIndex=-1, editStaffIndex=-1, editAttendIndex=-1, editFtStaffIndex=-1, editFtAttendIndex=-1, editTalentIndex=-1, editSupplierIndex=-1;
 const pageConfig = { pageSize: 10, currentPage: { customer:1, contract:1, staff:1, attend:1, point:1, bill:1, salary:1, boss:1, ft_staff:1, ft_attend:1, ft_salary:1, talent:1, supplier:1 } };
-
 let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packagePrice:0,avg:400} });
-
 const defaultPortalConf = { 
   adminNoticeTitle: "🚀 系統上線通知與操作須知", 
   adminNoticeContent: "1. 準備新增或修改資料前，請先按右上角的「🔄 重新整理」。\n2. 確保畫面為最新狀態後再進行輸入與儲存，以免互相覆蓋資料。\n3. 左側選單可以隨時切換「營業管理區」與「人事員工區」。",
@@ -358,20 +346,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
       renderPricePlanOptions(); updateLogoPreview(); renderPortalConfigUI(); applyPortalConfigToStaff(); renderServiceTypes();
       updateSystemClock(); setInterval(updateSystemClock, 1000);
-      
       const pwdInput = el('login_pwd'); 
       if(pwdInput) pwdInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleLogin(); });
-      
       loadDataFromCloud();
   } catch (err) { console.error("系統初始化錯誤:", err); el('login-screen').style.display = 'flex'; } finally { restoreLoginState(); }
 });
 
 function handleLogin() {
   try {
-      const role = el('login_role').value;
-      const acc = el('login_acc').value.trim(); const pwd = el('login_pwd').value.trim();
+      const role = el('login_role').value; const acc = el('login_acc').value.trim(); const pwd = el('login_pwd').value.trim();
       if(!acc || !pwd) { showToast('請輸入帳號與密碼！', true); return; }
-
       const sAA = localStorage.getItem('adminAcc') || 'admin'; const sAP = localStorage.getItem('adminPwd') || '1234';
       const sHA = localStorage.getItem('hrAcc') || 'hr'; const sHP = localStorage.getItem('hrPwd') || '1234';
 
@@ -383,12 +367,11 @@ function handleLogin() {
         const staff = staffData.find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         const ftStaff = ftStaffData.find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         if (staff || ftStaff) { 
-            currentLoginStaff = staff || ftStaff;
-            localStorage.setItem('loginRole', 'staff'); localStorage.setItem('loginAcc', acc); 
+            currentLoginStaff = staff || ftStaff; localStorage.setItem('loginRole', 'staff'); localStorage.setItem('loginAcc', acc); 
             restoreLoginState(); showToast('登入成功');
         } else { showToast('員工帳密錯誤！', true); }
       }
-  } catch(e) { showToast('登入發生錯誤', true); console.error(e); }
+  } catch(e) { showToast('登入發生錯誤', true); }
 }
 
 function restoreLoginState() {
@@ -396,7 +379,6 @@ function restoreLoginState() {
       const role = localStorage.getItem('loginRole'); const acc = localStorage.getItem('loginAcc');
       if (!role) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; return; }
       el('login-screen').style.display = 'none';
-
       if(role === 'admin') {
         const adminScreen = el('admin-screen'); adminScreen.style.display = 'flex'; el('staff-screen').style.display = 'none';
         currentWorkspace = localStorage.getItem('workspace') || 'business';
@@ -404,8 +386,7 @@ function restoreLoginState() {
             adminScreen.classList.remove('workspace-business'); adminScreen.classList.add('workspace-hr', 'mode-hr'); 
             el('admin-sidebar-title-business').style.display = 'none'; el('admin-sidebar-title-hr').style.display = 'flex'; 
             if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML = '<i class="fas fa-exchange-alt"></i> <span>切換至營業區</span>';
-        } 
-        else { 
+        } else { 
             adminScreen.classList.remove('workspace-hr', 'mode-hr'); adminScreen.classList.add('workspace-business'); 
             el('admin-sidebar-title-business').style.display = 'flex'; el('admin-sidebar-title-hr').style.display = 'none'; 
             if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML = '<i class="fas fa-exchange-alt"></i> <span>切換至人事區</span>';
@@ -414,10 +395,9 @@ function restoreLoginState() {
       } else if (role === 'staff') {
         el('staff-screen').style.display = 'flex'; el('admin-screen').style.display = 'none';
         if(!currentLoginStaff) currentLoginStaff = staffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim()) || ftStaffData.find(x => x && String(x.account||'').trim() === String(acc||'').trim());
-        initStaffFrontend(); 
-        showStaffPage(localStorage.getItem('staffPage') || 'home');
+        initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage') || 'home');
       }
-  } catch(e) { console.error('恢復狀態錯誤', e); el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; }
+  } catch(e) { el('login-screen').style.display = 'flex'; el('admin-screen').style.display = 'none'; el('staff-screen').style.display = 'none'; }
 }
 
 function toggleWorkspace() {
@@ -437,7 +417,6 @@ function toggleWorkspace() {
   }
 }
 function logout() { localStorage.removeItem('loginRole'); localStorage.removeItem('loginAcc'); localStorage.removeItem('workspace'); window.location.reload(); }
-
 function getSysConfigPayload() { return { adminAcc: localStorage.getItem('adminAcc') || 'admin', adminPwd: localStorage.getItem('adminPwd') || '1234', hrAcc: localStorage.getItem('hrAcc') || 'hr', hrPwd: localStorage.getItem('hrPwd') || '1234', priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo') || '', pdfLogo: localStorage.getItem('pdfLogo') || '', loginBg: localStorage.getItem('loginBg') || '' }; }
 
 function savePasswords() {
@@ -448,103 +427,64 @@ function savePasswords() {
 }
 
 function handleLogoUrl(type) {
-    if(type === 'login') {
-        const url = el('loginLogoUrl').value.trim(); if(!url) return showToast('請輸入網址', true);
-        loginLogoBase64 = url; localStorage.setItem('loginLogo', url); updateLogoPreview(); saveAllSilently(); showToast('登入 Logo 已套用並同步');
-    } else if(type === 'pdf') {
-        const url = el('pdfLogoUrl').value.trim(); if(!url) return showToast('請輸入網址', true);
-        pdfLogoBase64 = url; localStorage.setItem('pdfLogo', url); updateLogoPreview(); saveAllSilently(); showToast('報表 Logo 已套用並同步');
-    } else if(type === 'bg') {
-        const url = el('loginBgUrl').value.trim(); if(!url) return showToast('請輸入網址', true);
-        loginBgBase64 = url; localStorage.setItem('loginBg', url); updateLogoPreview(); el('bg-upload-status').style.display='inline-block'; saveAllSilently(); showToast('背景圖已套用並同步');
-    }
+    if(type === 'login') { const url = el('loginLogoUrl').value.trim(); if(!url) return showToast('請輸入網址', true); loginLogoBase64 = url; localStorage.setItem('loginLogo', url); updateLogoPreview(); saveAllSilently(); showToast('登入 Logo 已套用並同步'); } 
+    else if(type === 'pdf') { const url = el('pdfLogoUrl').value.trim(); if(!url) return showToast('請輸入網址', true); pdfLogoBase64 = url; localStorage.setItem('pdfLogo', url); updateLogoPreview(); saveAllSilently(); showToast('報表 Logo 已套用並同步'); } 
+    else if(type === 'bg') { const url = el('loginBgUrl').value.trim(); if(!url) return showToast('請輸入網址', true); loginBgBase64 = url; localStorage.setItem('loginBg', url); updateLogoPreview(); el('bg-upload-status').style.display='inline-block'; saveAllSilently(); showToast('背景圖已套用並同步'); }
 }
 
 function renderPortalConfigUI() {
     if(!el('conf_r1_title')) return;
-    ['adminNoticeTitle', 'adminNoticeContent', 'serviceTypes', 'r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { 
-        let elId = 'conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase()); 
-        if(el(elId)) el(elId).value = portalConf[k] || ''; 
-    });
+    ['adminNoticeTitle', 'adminNoticeContent', 'serviceTypes', 'r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { let elId = 'conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase()); if(el(elId)) el(elId).value = portalConf[k] || ''; });
 }
-
 function savePortalConfig() {
-    ['adminNoticeTitle', 'adminNoticeContent', 'serviceTypes', 'r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { 
-        portalConf[k] = el('conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase())).value; 
-    });
-    localStorage.setItem('portalConf', JSON.stringify(portalConf)); 
-    saveAllSilently(); 
-    showToast('✅ 系統公告與設定已同步雲端！'); 
-    applyPortalConfigToStaff();
-    renderServiceTypes(); 
+    ['adminNoticeTitle', 'adminNoticeContent', 'serviceTypes', 'r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { portalConf[k] = el('conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase())).value; });
+    localStorage.setItem('portalConf', JSON.stringify(portalConf)); saveAllSilently(); showToast('✅ 系統設定已同步雲端！'); applyPortalConfigToStaff(); renderServiceTypes(); 
 }
-
 function renderServiceTypes() {
-    const select = el('attend_service');
-    if(!select) return;
+    const select = el('attend_service'); if(!select) return;
     const types = (portalConf.serviceTypes || "行政,會計,服務員,理貨包裝,進出貨人員,其他").split(',');
-    let html = '<option value="">請選擇</option>';
-    types.forEach(t => {
-        const val = t.trim();
-        if(val) html += `<option value="${val}">${val}</option>`;
-    });
-    const currentVal = select.value;
-    select.innerHTML = html;
-    if(currentVal) select.value = currentVal;
+    let html = '<option value="">請選擇</option>'; types.forEach(t => { const val = t.trim(); if(val) html += `<option value="${val}">${val}</option>`; });
+    const currentVal = select.value; select.innerHTML = html; if(currentVal) select.value = currentVal;
 }
-
 function applyPortalConfigToStaff() {
     if(el('dash_notice_title')) el('dash_notice_title').innerHTML = `<i class="fas fa-bullhorn"></i> ` + (portalConf.adminNoticeTitle || '系統公告');
     if(el('dash_notice_content')) el('dash_notice_content').innerHTML = (portalConf.adminNoticeContent || '').replace(/\n/g, '<br>');
-
     if(!el('staff_r1_title')) return;
     el('staff_r1_title').innerHTML = `<i class="fas fa-file-contract"></i> ${portalConf.r1Title}`; el('staff_r1_content').innerHTML = portalConf.r1Content;
     el('staff_r2_title').innerHTML = `<i class="fas fa-user-clock"></i> ${portalConf.r2Title}`; el('staff_r2_content').innerHTML = portalConf.r2Content;
     el('staff_l1_title').textContent = portalConf.l1Title; el('staff_l1_desc').textContent = portalConf.l1Desc; el('btn_l1').onclick = () => window.open(portalConf.l1Url, '_blank');
     el('staff_l2_title').textContent = portalConf.l2Title; el('staff_l2_desc').textContent = portalConf.l2Desc; el('btn_l2').onclick = () => window.open(portalConf.l2Url, '_blank');
 }
-
 function renderPricePlanOptions() { document.querySelectorAll('#co_price_plan').forEach(s => { const v = s.value; s.innerHTML = '<option value="">請選擇</option>'; Object.keys(priceTable).forEach(k => s.innerHTML += `<option value="${k}">${k}</option>`); s.value = v; }); }
 function updatePriceByPlan() { const p = el('co_price_plan').value; if(priceTable[p]){ el('co_package_price').value = priceTable[p].price || priceTable[p].packagePrice || 0; el('co_point_price').value = priceTable[p].avg || priceTable[p].pointPrice || 0; el('co_point').value = priceTable[p].points || 0; el('co_price').value = priceTable[p].price || priceTable[p].packagePrice || 0; } }
-function savePriceConfig() { try { priceTable = JSON.parse(el('config_price_table').value); localStorage.setItem('priceTable', JSON.stringify(priceTable)); saveAllSilently(); renderPricePlanOptions(); showToast('✅ 價目表已更新並同步雲端！'); } catch(e) { showToast('❌ JSON 格式有誤！', true); } }
-
+function savePriceConfig() { try { priceTable = JSON.parse(el('config_price_table').value); localStorage.setItem('priceTable', JSON.stringify(priceTable)); saveAllSilently(); renderPricePlanOptions(); showToast('✅ 價目表已更新！'); } catch(e) { showToast('❌ JSON 格式有誤！', true); } }
 function standardizeData() {
   attendData = (attendData||[]).filter(x=>x).map(x => ({ company: x.company||'', staff: x.staff||'', date: x.date||'', service: x.service||'', remark: x.remark||'', am_s: x.am_s||'', am_e: x.am_e||'', pm_s: x.pm_s||'', pm_e: x.pm_e||'', salary_hours: x.salary_hours!==undefined?x.salary_hours:'', deduct_points: x.deduct_points!==undefined?x.deduct_points:'' }));
   staffData = (staffData||[]).filter(x=>x).map(x => ({ ...x, account: String(x.account||'').trim(), pwd: String(x.pwd||'').trim(), drive: x.drive||'', doc_id: !!x.doc_id, doc_bank: !!x.doc_bank, doc_contract: !!x.doc_contract, doc_resume: !!x.doc_resume, addr: x.addr||'', labor: x.labor||0, health: x.health||0, remark: x.remark||'', tel: x.tel||'', id: x.id||'', birthday: x.birthday||'', status: x.status||'在職' }));
   ftStaffData = (ftStaffData||[]).filter(x=>x).map(x => ({ ...x, account: String(x.account||'').trim(), pwd: String(x.pwd||'').trim(), drive: x.drive||'', salary: x.salary||30000, labor: x.labor||0, health: x.health||0, doc_id: !!x.doc_id, doc_bank: !!x.doc_bank, doc_contract: !!x.doc_contract, doc_resume: !!x.doc_resume, hire_date: x.hire_date||'', tel: x.tel||'', id: x.id||'', birthday: x.birthday||'', status: x.status||'在職' }));
   ftAttendData = (ftAttendData||[]).filter(x=>x).map(x => ({ ...x, record_type: x.record_type||'正常出勤', hours: x.hours||0 }));
-  
-  talentData = (talentData||[]).filter(x => x && typeof x === 'object' && String(x.name || '').trim() !== '').map(x => {
-      const ks = Object.keys(x); const gv = (ws) => { for(let k of ks){ let cleanK = String(k).replace(/\s+/g, '').toLowerCase(); for(let w of ws){ if(cleanK.includes(w.toLowerCase())) return x[k]; } } return ''; };
-      return { ...x, name: String(x.name || gv(['姓名','名字','全名','name'])).trim(), tel: String(x.tel || gv(['電話','手機','號碼','tel','聯絡'])).trim(), source: x.source || gv(['來源','管道'])||'Google表單', location: x.location || gv(['地區','地點','縣市']), shift: x.shift || gv(['班別','時段','時間']), role: x.role || gv(['職務','專業','應徵','職位','感興趣']), status: x.status || gv(['狀態']) || '待聯絡', eval: x.eval || gv(['評價','面試']), resume: x.resume || gv(['履歷','連結','附件']), exp: x.exp || gv(['專長','經歷','備註','經驗']), date: x.date || gv(['時間戳記','日期','時間']) || new Date().toISOString().split('T')[0] };
-  });
-  
+  talentData = (talentData||[]).filter(x => x && typeof x === 'object' && String(x.name || '').trim() !== '').map(x => { const ks = Object.keys(x); const gv = (ws) => { for(let k of ks){ let cleanK = String(k).replace(/\s+/g, '').toLowerCase(); for(let w of ws){ if(cleanK.includes(w.toLowerCase())) return x[k]; } } return ''; }; return { ...x, name: String(x.name || gv(['姓名','名字','全名','name'])).trim(), tel: String(x.tel || gv(['電話','手機','號碼','tel','聯絡'])).trim(), source: x.source || gv(['來源','管道'])||'Google表單', location: x.location || gv(['地區','地點','縣市']), shift: x.shift || gv(['班別','時段','時間']), role: x.role || gv(['職務','專業','應徵','職位','感興趣']), status: x.status || gv(['狀態']) || '待聯絡', eval: x.eval || gv(['評價','面試']), resume: x.resume || gv(['履歷','連結','附件']), exp: x.exp || gv(['專長','經歷','備註','經驗']), date: x.date || gv(['時間戳記','日期','時間']) || new Date().toISOString().split('T')[0] }; });
   supplierData = (supplierData||[]).filter(x=>x).map(x => ({...x, name: x.name||'', contact: x.contact||'', tel: x.tel||'', addr: x.addr||'', tax: x.tax||'', pay_method: x.pay_method||'', pay_date: x.pay_date||'', invoice_date: x.invoice_date||'', invoice_no: x.invoice_no||'', invoice_amt: x.invoice_amt||'', drive: x.drive||''}));
   custData = (custData||[]).filter(x=>x).map(x => ({...x, coop: x.coop||'正合作', name: x.name||''}));
   contractData = (contractData||[]).filter(x=>x).map(x => ({...x, customer: x.customer||''}));
 }
-
 function getHours(s,e){ if(!s||!e) return 0; try { let [sh,sm] = s.split(':').map(Number); let [eh,em] = e.split(':').map(Number); let min = (eh*60+em) - (sh*60+sm); if(min < 0) min += 1440; return (min/60).toFixed(1); } catch (e) { return 0; } }
 function getItemClockHours(item) { return (+getHours(item.am_s, item.am_e)) + (+getHours(item.pm_s, item.pm_e)); }
 function getItemSalaryHours(item) { if (item.salary_hours !== undefined && item.salary_hours !== '') return Number(item.salary_hours); return getItemClockHours(item); }
 function getItemDeductPoints(item) { if (item.deduct_points !== undefined && item.deduct_points !== '') return Number(item.deduct_points); return Math.ceil(getItemClockHours(item)); }
 function getStaffTotalHours(name) { return attendData.filter(x=>x.staff===name).reduce((sum,item)=> sum + getItemSalaryHours(item),0); }
 function getStaffTieredHourly(name) { const h = getStaffTotalHours(name); if (h <= 175) return 210; if (h <= 350) return 220; if (h <= 525) return 230; if (h <= 700) return 240; return 250; }
-
 function updateSystemClock() { const now = new Date(); const tStr = now.toLocaleString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit', hour12: false}); const ct = el('current-time'); if(ct) ct.innerHTML = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${tStr}`; const sct = el('staff-current-time'); if(sct) sct.innerHTML = `<i class="far fa-clock" style="color:#2d9d5c;"></i> ${tStr}`; }
 function exportExcel(tableId, filename) { let tbl = el(tableId); if(!tbl) { showToast('找不到表格', true); return; } XLSX.writeFile(XLSX.utils.table_to_book(tbl, {sheet: "Sheet1"}), filename + ".xlsx"); }
-
 function clearLoginBg() { if(!confirm('移除自訂背景？')) return; loginBgBase64 = ''; localStorage.removeItem('loginBg'); updateLogoPreview(); saveAllSilently(); }
 function clearLoginLogo() { if(!confirm('移除登入Logo？')) return; loginLogoBase64 = ''; localStorage.removeItem('loginLogo'); updateLogoPreview(); saveAllSilently(); }
 function clearPdfLogo() { if(!confirm('移除報表Logo？')) return; pdfLogoBase64 = ''; localStorage.removeItem('pdfLogo'); updateLogoPreview(); saveAllSilently(); }
-
 function updateLogoPreview() { 
   const pl=el('loginLogoPreview'), bl=el('btnClearLoginLogo'), pp=el('pdfLogoPreview'), bp=el('btnClearPdfLogo'), limg=el('login-logo-img'), licon=el('login-logo-icon'), ls=el('login-screen'), btnBg=el('btnClearLoginBg'), bgStatus=el('bg-upload-status');
   if (loginBgBase64) { if(ls) ls.style.backgroundImage = `url('${loginBgBase64}')`; if(btnBg) btnBg.style.display = 'inline-block'; if(el('loginBgUrl')) el('loginBgUrl').value = loginBgBase64; } else { if(ls) ls.style.backgroundImage = "url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')"; if(btnBg) btnBg.style.display = 'none'; if(bgStatus) bgStatus.style.display = 'none'; if(el('loginBgUrl')) el('loginBgUrl').value = ''; }
   if (loginLogoBase64) { if(pl) { pl.src = loginLogoBase64; pl.style.display = 'block'; bl.style.display = 'inline-block'; } if(limg) { limg.src = loginLogoBase64; limg.style.display = 'block'; if(licon) licon.style.display = 'none'; } if(el('loginLogoUrl')) el('loginLogoUrl').value = loginLogoBase64; } else { if(pl) { pl.src = ''; pl.style.display = 'none'; bl.style.display = 'none'; } if(limg) { limg.src = ''; limg.style.display = 'none'; if(licon) licon.style.display = 'block'; } if(el('loginLogoUrl')) el('loginLogoUrl').value = ''; } 
   if (pdfLogoBase64) { if(pp) { pp.src = pdfLogoBase64; pp.style.display = 'block'; bp.style.display = 'inline-block'; } if(el('pdfLogoUrl')) el('pdfLogoUrl').value = pdfLogoBase64; } else { if(pp) { pp.src = ''; pp.style.display = 'none'; bp.style.display = 'none'; } if(el('pdfLogoUrl')) el('pdfLogoUrl').value = ''; }
 }
-
 function loadDataFromCloud(forceRender = false) {
   if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步中...');
   fetch(SCRIPT_URL).then(res => res.json()).then(result => {
@@ -609,23 +549,37 @@ function restoreData(input) { if (!input.files || !input.files[0]) return; const
 function autoCreateFolder() { const cName = el('c_name').value.trim(); if (!cName) { showToast('請輸入名稱！', true); return; } if(el('c_drive').value.trim() !== '' && !confirm('⚠️ 已有網址！確定要重新建立並覆蓋？')) return; const btn = el('btnCreateFolder'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: cName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el('c_drive').value = res.folderUrl; showToast('建立成功！請記得按儲存'); } else { showToast('建立失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = '<i class="fas fa-magic"></i> 第一次建立'; btn.disabled = false; }); }
 function autoCreateSupplierFolder(nameId, driveId, prefix) { const sName = el(nameId).value.trim(); if (!sName) { showToast('請輸入名稱！', true); return; } if(el(driveId).value.trim() !== '' && !confirm('⚠️ 已有網址！確定要重新建立並覆蓋？')) return; const btn = el(driveId).nextElementSibling; const originHtml = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 建檔中...'; btn.disabled = true; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'createFolder', folderName: prefix + ' ' + sName }) }).then(res => res.json()).then(res => { if (res.status === 'success') { el(driveId).value = res.folderUrl; showToast('建立成功！請記得按儲存'); } else { showToast('失敗', true); } }).catch(err => showToast('連線錯誤', true)).finally(() => { btn.innerHTML = originHtml; btn.disabled = false; }); }
 
-// 🚀 終極修復：直接將 700px 的畫布「絕對定位」於原點，藏在頁面下方 (z-index:-9999) 讓相機完美對焦
+// 🚀 終極 PDF 生成法：建立一個乾淨、無滾動干擾的 700px Div 直接轉換
+function buildPrintWrapper() {
+  const div = document.createElement('div');
+  div.style.width = '700px';
+  div.style.padding = '20px';
+  div.style.backgroundColor = '#ffffff';
+  div.style.color = '#333333';
+  div.style.fontFamily = "'Microsoft JhengHei', sans-serif";
+  div.style.boxSizing = 'border-box';
+  return div;
+}
+
 function uploadTablePDF(tableId, title, compFilterId, isCloud, isStaff = false) {
   const cb = compFilterId ? el(compFilterId).value : ''; if(isCloud && compFilterId && (!cb || cb === 'all')) { showToast('請先選擇特定對象！', true); return; }
   let folderUrl = ''; if(isCloud && cb && cb !== 'all') { let targetInfo = isStaff ? (staffData.find(x => x.name === cb) || ftStaffData.find(x => x.name === cb)) : custData.find(x => x.name === cb); if(targetInfo && targetInfo.drive) folderUrl = targetInfo.drive; else { showToast('此對象未設定雲端資料夾！', true); return; } }
   showToast(isCloud ? '📄 上傳雲端中，請稍候...' : '📄 檔案產生中，即將開始下載...');
-  const printArea = document.createElement('div'); 
-  printArea.style.position = 'absolute'; printArea.style.left = '0'; printArea.style.top = '0'; printArea.style.zIndex = '-9999';
-  printArea.style.padding = '20px'; printArea.style.width = '700px'; printArea.style.boxSizing = 'border-box'; printArea.style.fontFamily = "'Microsoft JhengHei', sans-serif"; printArea.style.background = '#fff';
+  
+  const printArea = buildPrintWrapper();
   const logoHtml = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height: 50px; border-radius: 8px; margin-bottom: 10px;"><br>` : ``;
   let tableHtml = el(tableId).outerHTML.replace(/<table/g, '<table style="width:100%; border-collapse:collapse; font-size:13px; text-align:left; table-layout:fixed; word-wrap:break-word;" border="1" bordercolor="#dddddd" cellpadding="6"');
   printArea.innerHTML = `<div style="text-align:center; margin-bottom:15px; border-bottom: 2px solid #2d9d5c; padding-bottom: 10px;">${logoHtml}<h2 style="color:#2d9d5c; margin:0;">${title} ${cb && cb!=='all' ? ' - '+cb : ''}</h2></div>${tableHtml}<div style="text-align:right; margin-top:15px; font-size:12px; color:#888;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
   
-  document.body.appendChild(printArea);
   const fileName = `${cb && cb!=='all' ? cb : '綜合'}_${title}_${new Date().getTime()}.pdf`; 
-  const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 700 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+  const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
   
-  if(isCloud) { if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳雲端中...'); html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { document.body.removeChild(printArea); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: folderUrl, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('🚀 已歸檔至雲端資料夾'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('上傳失敗', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);} }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); } else { html2pdf().set(opt).from(printArea).save().then(()=>{ document.body.removeChild(printArea); showToast('✅ 下載完成！'); }); }
+  if(isCloud) { 
+      if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳雲端中...'); 
+      html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: folderUrl, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('🚀 已歸檔至雲端資料夾'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('上傳失敗', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);} }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); 
+  } else { 
+      html2pdf().set(opt).from(printArea).save().then(()=>showToast('✅ 下載完成！')); 
+  }
 }
 
 function generateStatementPDF(isCloud = false) {
@@ -638,9 +592,8 @@ function generateStatementPDF(isCloud = false) {
   const allUsedPoints = attendData.filter(x => x.company === cb).reduce((sum, item) => sum + getItemDeductPoints(item), 0);
   const remainPoints = totalPoints - allUsedPoints;
   let periodAttends = attendData.filter(x => x.company === cb && (yb === 'all' || x.date.startsWith(yb)) && (mb === 'all' || x.date.slice(5,7) === String(mb).padStart(2,'0'))).sort((a, b) => new Date(a.date) - new Date(b.date));
-  const printArea = document.createElement('div'); 
-  printArea.style.position = 'absolute'; printArea.style.left = '0'; printArea.style.top = '0'; printArea.style.zIndex = '-9999';
-  printArea.style.padding = '20px'; printArea.style.width = '700px'; printArea.style.boxSizing = 'border-box'; printArea.style.fontFamily = "'Microsoft JhengHei', sans-serif"; printArea.style.color = '#333'; printArea.style.backgroundColor = '#fff';
+  
+  const printArea = buildPrintWrapper();
   let attendHtml = '';
   if(periodAttends.length > 0) { periodAttends.forEach(item => { const clock = getItemClockHours(item).toFixed(1); const pt = getItemDeductPoints(item); const serviceTxt = item.service ? (item.remark ? `${item.service} (${item.remark})` : item.service) : '-'; attendHtml += `<tr><td style="border:1px solid #ddd; padding:8px; text-align:center;">${item.date}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${item.staff}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${serviceTxt}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${clock}</td><td style="border:1px solid #ddd; padding:8px; text-align:center; font-weight:bold;">${pt}</td></tr>`; }); } else { attendHtml = `<tr><td colspan="5" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">本期無紀錄</td></tr>`; }
   const periodText = (yb==='all' && mb==='all') ? '全部歷史' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`; 
@@ -649,12 +602,11 @@ function generateStatementPDF(isCloud = false) {
   <table style="width:100%; border:none; margin-bottom: 20px;"><tr><td style="vertical-align:top; border:none; font-size:14px; line-height:1.8; padding:0;"><p style="margin:0 0 5px 0;"><strong>客戶：</strong>${cb}</p><p style="margin:0 0 5px 0;"><strong>期間：</strong>${periodText}</p><p style="margin:0;"><strong>方案：</strong>${Array.from(planNames).join('、')}</p></td><td style="vertical-align:top; border:none; text-align:right; padding:0;"><div style="display:inline-block; background-color:#f9f9f9; padding: 10px 15px; border-radius: 6px; border: 1px solid #eee; text-align:left; min-width: 200px;"><p style="font-weight:bold; color:#444; margin:0 0 8px 0; border-bottom:1px solid #ddd; padding-bottom:5px;">歷次簽約儲值紀錄</p><div style="color:#555; font-size: 13px;">${purchaseHistoryHtml}</div></div></td></tr></table>
   <table style="width:100%; background-color:#f0f8f4; border-radius:6px; margin-bottom:20px; text-align:center; font-size:15px;"><tr><td style="padding:15px; border:none; width:33.33%;">總儲值<br><strong style="font-size:20px;">${totalPoints} 點</strong></td><td style="padding:15px; border:none; width:33.33%;">總扣除<br><strong style="font-size:20px; color:#555;">${allUsedPoints} 點</strong></td><td style="padding:15px; border:none; width:33.33%;">剩餘點數<br><strong style="font-size:20px; color:${remainPoints<0?'#dc2626':'#2d9d5c'};">${remainPoints} 點</strong></td></tr></table>
   <table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:20px;"><thead><tr style="background-color:#f9f9f9; color:#555;"><th style="border:1px solid #ddd; padding:10px;">日期</th><th style="border:1px solid #ddd; padding:10px;">人員</th><th style="border:1px solid #ddd; padding:10px;">服務項目</th><th style="border:1px solid #ddd; padding:10px;">現場工時</th><th style="border:1px solid #ddd; padding:10px;">扣除點數</th></tr></thead><tbody>${attendHtml}</tbody></table><div style="text-align: right; font-size: 12px; color: #888;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
-  
-  document.body.appendChild(printArea);
   const fileName = `${cb}_服務對帳單_${new Date().getTime()}.pdf`; 
-  const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 700 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+  const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
   
-  if (isCloud) { if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳中...'); html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { document.body.removeChild(printArea); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: custInfo.drive, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('上傳成功！'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('失敗：' + res.message, true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true); } }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); } else { html2pdf().set(opt).from(printArea).save().then(()=>{ document.body.removeChild(printArea); showToast('✅ 下載完成！'); }); }
+  if (isCloud) { if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳中...'); html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: custInfo.drive, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('上傳成功！'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('失敗：' + res.message, true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true); } }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); } 
+  else { html2pdf().set(opt).from(printArea).save().then(()=>showToast('✅ 下載完成！')); }
 }
 
 function generatePayslipPDF(isCloud = false) {
@@ -666,9 +618,8 @@ function generatePayslipPDF(isCloud = false) {
   periodAttends.forEach(item => { const payHour = getItemSalaryHours(item); const dailyAmount = Math.round(payHour * hourly); totalHours += payHour; totalPayable += dailyAmount; const serviceTxt = item.service ? (item.remark ? `${item.service} (${item.remark})` : item.service) : '-'; tableRows += `<tr><td style="border:1px solid #ddd; padding:8px; text-align:center;">${item.date}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${serviceTxt}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${payHour.toFixed(1)}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${hourly}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${dailyAmount}</td></tr>`; });
   if (periodAttends.length === 0) tableRows = `<tr><td colspan="5" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">無紀錄</td></tr>`;
   const labor = +staffInfo.labor || 0; const health = +staffInfo.health || 0; const netPayable = totalPayable - labor - health;
-  const printArea = document.createElement('div'); 
-  printArea.style.position = 'absolute'; printArea.style.left = '0'; printArea.style.top = '0'; printArea.style.zIndex = '-9999';
-  printArea.style.padding = '20px'; printArea.style.width = '700px'; printArea.style.boxSizing = 'border-box'; printArea.style.fontFamily = "'Microsoft JhengHei', sans-serif"; printArea.style.color = '#333'; printArea.style.backgroundColor = '#fff';
+  
+  const printArea = buildPrintWrapper();
   const logoHtml = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height: 50px; border-radius: 8px; margin-bottom: 10px;"><br>` : ``;
   let pM = parseInt(ms) - 1; let pY = parseInt(ys); if(pM === 0) { pM = 12; pY -= 1; }
   let periodText = `${pY}/${String(pM).padStart(2,'0')}/26 ~ ${ys}/${String(ms).padStart(2,'0')}/25`;
@@ -678,11 +629,11 @@ function generatePayslipPDF(isCloud = false) {
   <table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:25px;"><thead><tr style="background-color:#f9f9f9; color:#555;"><th style="border:1px solid #ddd; padding:8px;">日期</th><th style="border:1px solid #ddd; padding:8px;">服務項目</th><th style="border:1px solid #ddd; padding:8px;">工時</th><th style="border:1px solid #ddd; padding:8px;">時薪</th><th style="border:1px solid #ddd; padding:8px;">日結</th></tr></thead><tbody>${tableRows}</tbody></table>
   <table style="width:100%; background-color:#f9f9f9; border-radius:8px; border:1px solid #eee; border-collapse:separate;"><tr><td style="width:50%; padding:15px; vertical-align:middle; font-size:13px; border:none;"><p style="margin:4px 0;">應付：<strong>${totalPayable} 元</strong></p><p style="margin:4px 0; color:#dc2626;">勞保：<strong>- ${labor} 元</strong></p><p style="margin:4px 0; color:#dc2626;">健保：<strong>- ${health} 元</strong></p></td><td style="width:50%; padding:15px; text-align:center; vertical-align:middle; background-color:#f0fdf4; border-radius:8px; border:2px solid #2d9d5c;"><span style="color:#2d9d5c; display:block; margin-bottom:5px; font-weight:bold;">本期實付金額</span><strong style="font-size:24px; color:#2d9d5c;">$ ${netPayable}</strong></td></tr></table>`;
   
-  document.body.appendChild(printArea);
   const fileName = `${s}_${ys}年${ms}月薪資單_${new Date().getTime()}.pdf`; 
-  const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 700 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+  const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
   
-  if (isCloud) { if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳中...'); html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { document.body.removeChild(printArea); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: staffInfo.drive, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('上傳成功！'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('失敗：' + res.message, true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true); } }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); } else { html2pdf().set(opt).from(printArea).save().then(()=>{ document.body.removeChild(printArea); showToast('✅ 下載完成！'); }); }
+  if (isCloud) { if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳中...'); html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: staffInfo.drive, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('上傳成功！'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('失敗：' + res.message, true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true); } }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); } 
+  else { html2pdf().set(opt).from(printArea).save().then(()=>showToast('✅ 下載完成！')); }
 }
 
 function generateFtPayslipPDF(isCloud = false) {
@@ -694,20 +645,19 @@ function generateFtPayslipPDF(isCloud = false) {
   mya.forEach(a => { let h = Number(a.hours)||0; let payChange = '-'; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班') { tw+=h; } else if(a.record_type==='請假' && a.approval==='已核准'){ if(a.leave_type==='事假'){ let deduct = h*hr; dd+=deduct; payChange = `扣薪 $${Math.round(deduct)}`; } if(a.leave_type==='病假'||a.leave_type==='生理假'){ let deduct = h*hr*0.5; dd+=deduct; payChange = `扣薪 $${Math.round(deduct)}`; } } else if(a.record_type==='加班') { let overtimePay = h*hr*1.34; ov+=overtimePay; payChange = `加班費 +$${Math.round(overtimePay)}`; } tableRows += `<tr><td style="border:1px solid #ddd; padding:8px; text-align:center;">${a.date}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${h} h</td><td style="border:1px solid #ddd; padding:8px; text-align:center;">${payChange}</td></tr>`; });
   if (mya.length === 0) tableRows = `<tr><td colspan="4" style="border:1px solid #ddd; padding:15px; text-align:center; color:#666;">本月無出勤紀錄</td></tr>`;
   let net = bs - dd + ov - (Number(staffInfo.labor)||0) - (Number(staffInfo.health)||0);
-  const printArea = document.createElement('div'); 
-  printArea.style.position = 'absolute'; printArea.style.left = '0'; printArea.style.top = '0'; printArea.style.zIndex = '-9999';
-  printArea.style.padding = '20px'; printArea.style.width = '700px'; printArea.style.boxSizing = 'border-box'; printArea.style.fontFamily = "'Microsoft JhengHei', sans-serif"; printArea.style.color = '#333'; printArea.style.backgroundColor = '#fff';
+  
+  const printArea = buildPrintWrapper();
   const logoHtml = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height: 50px; border-radius: 8px; margin-bottom: 10px;"><br>` : ``;
   printArea.innerHTML = `<div style="text-align:center; margin-bottom:20px; border-bottom: 2px solid #2d9d5c; padding-bottom: 15px;">${logoHtml}<h2 style="font-size:24px; margin:0; color:#2d9d5c;">點籽響有限公司</h2><h3 style="font-size:18px; margin:5px 0 0 0; color:#555;">正職員工薪資單</h3></div>
   <table style="width:100%; border:none; margin-bottom:15px;"><tr><td style="text-align:left; border:none; padding:0; font-size:14px;"><strong>姓名：</strong>${s}</td><td style="text-align:right; border:none; padding:0; font-size:14px;"><strong>月份：</strong>${m.replace('-',' 年 ')} 月</td></tr></table>
   <table style="width:100%; border-collapse:collapse; font-size:13px; margin-bottom:25px;"><thead><tr style="background-color:#f9f9f9; color:#555;"><th style="border:1px solid #ddd; padding:8px;">日期</th><th style="border:1px solid #ddd; padding:8px;">紀錄類型</th><th style="border:1px solid #ddd; padding:8px;">時數</th><th style="border:1px solid #ddd; padding:8px;">薪資異動</th></tr></thead><tbody>${tableRows}</tbody></table>
-  <table style="width:100%; background-color:#f9f9f9; border-radius:8px; border:1px solid #eee; border-collapse:separate;"><tr><td style="width:50%; padding:15px; vertical-align:middle; font-size:13px; border:none;"><p style="margin:4px 0;">底薪：<strong>${bs} 元</strong></p><p style="margin:4px 0; color:#10b981;">加班津貼：<strong>+ ${Math.round(ov)} 元</strong></p><p style="margin:4px 0; color:#dc2626;">請假扣薪：<strong>- ${Math.round(dd)} 元</strong></p><p style="margin:4px 0; color:#dc2626;">勞保：<strong>- ${Number(staffInfo.labor)||0} 元</strong></p><p style="margin:4px 0; color:#dc2626;">健保：<strong>- ${Number(staffInfo.health)||0} 元</strong></p></td><td style="width:50%; padding:15px; text-align:center; vertical-align:middle; background-color:#f0fdf4; border-radius:8px; border:2px solid #2d9d5c;"><span style="color:#2d9d5c; display:block; margin-bottom:5px; font-weight:bold;">本月實發金額</span><strong style="font-size:24px; color:#2d9d5c;">$ ${Math.round(net)}</strong></td></tr></table>`;
+  <table style="width:100%; background-color:#f9f9f9; border-radius:8px; border:1px solid #eee; border-collapse:separate;"><tr><td style="width:50%; padding:15px; vertical-align:middle; font-size:13px; border:none;"><p style="margin:4px 0;">底薪：<strong>${bs} 元</strong></p><p style="margin:4px 0; color:#10b981;">加班津貼：<strong>+ ${Math.round(ov)} 元</strong></p><p style="margin:4px 0; color:#dc2626;">請假扣薪：<strong>- ${Math.round(dd)} 元</strong></p><p style="margin:4px 0; color:#dc2626;">勞保：<strong>- ${Number(staffInfo.labor)||0} 元</strong></p><p style="margin:4px 0; color:#dc2626;">健保：<strong>- ${Number(staffInfo.health)||0} 元</strong></p></td><td style="width:50%; padding:15px; text-align:center; vertical-align:middle; background-color:#f0fdf4; border-radius:8px; border:2px solid #2d9d5c;"><span style="color:#2d9d5c; display:block; margin-bottom:5px; font-weight:bold;">本月實發金額</span><strong style="font-size:26px; color:#2d9d5c;">$ ${Math.round(net)}</strong></td></tr></table>`;
   
-  document.body.appendChild(printArea);
   const fileName = `${s}_${m.replace('-','年')}月薪資單_${new Date().getTime()}.pdf`; 
-  const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 700 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+  const opt = { margin: 10, filename: fileName, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
   
-  if (isCloud) { if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳中...'); html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { document.body.removeChild(printArea); fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: staffInfo.drive, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('上傳成功！'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('失敗：' + res.message, true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true); } }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); } else { html2pdf().set(opt).from(printArea).save().then(()=>{ document.body.removeChild(printArea); showToast('✅ 下載完成！'); }); }
+  if (isCloud) { if (el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳中...'); html2pdf().set(opt).from(printArea).outputPdf('datauristring').then(function(pdfBase64) { fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'savePDF', folderUrl: staffInfo.drive, fileName: fileName, base64Data: pdfBase64 }) }).then(res => res.json()).then(res => { if (res.status === 'success') { showToast('上傳成功！'); if (el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 系統就緒'); } else { showToast('失敗：' + res.message, true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true); } }).catch(err => {showToast('網路錯誤', true); if (el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗', true);}); }); } 
+  else { html2pdf().set(opt).from(printArea).save().then(()=>showToast('✅ 下載完成！')); }
 }
 
 function showAdminPage(page) {
