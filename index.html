@@ -8,8 +8,10 @@
 #toast{display:none;position:fixed;top:30px;right:30px;background:#10b981;color:#fff;padding:15px 25px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,.5);z-index:10000;font-weight:bold;font-size:16px;transition:opacity .3s}
 
 /* 🚀 預覽視窗樣式 */
-#preview-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; overflow:auto;}
-#preview-header-bar{background:#fff; padding:15px 25px; border-radius:8px; margin: 20px auto; max-width: 850px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 10px rgba(0,0,0,0.2);}
+#preview-overlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:99999; overflow:auto; padding:20px;}
+#preview-modal{background:#fff; max-width:850px; margin:0 auto; border-radius:12px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.5); overflow:hidden;}
+#preview-header{background:#f8fafc; padding:15px 25px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center;}
+#preview-body{padding:40px; background:#fff; min-height:400px;}
 </style>
 </head>
 <body>
@@ -17,15 +19,17 @@
 <div id="toast"></div>
 
 <div id="preview-overlay">
-  <div id="preview-header-bar">
-    <h3 id="preview-title" style="color:#1e293b; margin:0;">報表預覽</h3>
-    <div style="display:flex;gap:10px;">
-      <button id="btn-confirm-pdf" class="btn btn-success" style="margin:0;"><i class="fas fa-file-download"></i> 確認下載 PDF</button>
-      <button id="btn-upload-cloud" class="btn btn-excel" style="margin:0;"><i class="fas fa-cloud-upload-alt"></i> 歸檔雲端</button>
-      <button onclick="closePreview()" class="btn" style="background:#64748b;margin:0;"><i class="fas fa-times"></i> 關閉</button>
+  <div id="preview-modal">
+    <div id="preview-header">
+      <h3 id="preview-title" style="color:#1e293b;">報表預覽</h3>
+      <div style="display:flex;gap:10px;">
+        <button id="btn-confirm-pdf" class="btn btn-success" style="margin:0;"><i class="fas fa-file-download"></i> 確認下載 PDF</button>
+        <button id="btn-upload-cloud" class="btn btn-excel" style="margin:0;"><i class="fas fa-cloud-upload-alt"></i> 歸檔雲端</button>
+        <button onclick="closePreview()" class="btn" style="background:#64748b;margin:0;"><i class="fas fa-times"></i> 關閉</button>
+      </div>
     </div>
+    <div id="preview-body"></div>
   </div>
-  <div id="preview-body" style="display:flex; justify-content:center; padding-bottom: 40px;"></div>
 </div>
 
 <div id="login-screen"><div class="login-box"><div class="login-logo-container"><img id="login-logo-img" src=""><i class="fas fa-leaf" id="login-logo-icon"></i></div><h1 style="margin-top:10px;">點籽響管理系統</h1><div class="pro-badge">專業企業版</div><div class="login-field"><label>登入身分</label><select id="login_role"><option value="admin" style="color:#dc2626; font-weight:bold;">👑 系統管理員</option><option value="staff" style="color:#2563eb; font-weight:bold;">💼 員工專區</option></select></div><div class="login-field auth-input"><label>登入帳號</label><input type="text" id="login_acc" placeholder="請輸入帳號"></div><div class="login-field auth-input"><label>登入密碼</label><input type="password" id="login_pwd" placeholder="請輸入密碼"></div><button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登 入 系 統</button></div></div>
@@ -47,7 +51,7 @@
     
     <div class="page" id="page-ft_staff"><div class="page-title"><i class="fas fa-user-tie"></i> 正職員工資料庫</div><div class="filter-bar"><label>姓名：</label><input type="text" id="ft_staff_filter_name" oninput="resetPage('ft_staff'); renderFtStaffTable()"><label>狀態：</label><select id="ft_staff_filter_status" onchange="resetPage('ft_staff'); renderFtStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select></div><div class="grid" style="background:#ecfdf5;padding:25px;border-radius:12px;border:1px solid #a7f3d0;"><div><label>正職姓名 *</label><input id="ft_name" required></div><div><label>電話</label><input id="ft_tel"></div><div><label>身份證字號</label><input id="ft_id"></div>
     <div><label>生日 (請輸入 民國 YYY/MM/DD)</label><input type="text" id="ft_birthday" placeholder="例: 80/01/01"></div>
-    <div><label>地址</label><input id="ft_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號</label><input id="ft_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼</label><input id="ft_pwd" type="text value="1234"></div><div><label>狀態</label><select id="ft_status"><option>在職</option><option>離職</option></select></div><div><label>到職日 (特休計算)</label><input type="date" id="ft_hire_date"></div><div><label>離職日</label><input type="date" id="ft_leave_date"></div><div><label>月薪</label><input type="number" id="ft_salary" value="30000"></div><div><label>備註</label><input id="ft_remark"></div><div><label>代扣勞保</label><input id="ft_labor" type="number" value="0"></div><div><label>代扣健保</label><input id="ft_health" type="number" value="0"></div><div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="ft_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('ft_name', 'ft_drive', '[正職]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 資料繳交</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="ft_doc_id"> 身分證</label>
+    <div><label>地址</label><input id="ft_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號</label><input id="ft_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼</label><input id="ft_pwd" type="text" value="1234"></div><div><label>狀態</label><select id="ft_status"><option>在職</option><option>離職</option></select></div><div><label>到職日 (特休計算)</label><input type="date" id="ft_hire_date"></div><div><label>離職日</label><input type="date" id="ft_leave_date"></div><div><label>月薪</label><input type="number" id="ft_salary" value="30000"></div><div><label>備註</label><input id="ft_remark"></div><div><label>代扣勞保</label><input id="ft_labor" type="number" value="0"></div><div><label>代扣健保</label><input id="ft_health" type="number" value="0"></div><div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="ft_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('ft_name', 'ft_drive', '[正職]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 資料繳交</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="ft_doc_id"> 身分證</label>
     <label><input type="checkbox" id="ft_doc_bank"> 存摺</label> 
     <label><input type="checkbox" id="ft_doc_contract"> 契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddFtStaff" onclick="addFtStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateFtStaff()" id="btnUpdateFtStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearFtStaffForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('ftStaffTableBox','正職員工')"><i class="fas fa-file-excel"></i> 匯出</button><div class="table-responsive"><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>到職日</th><th>生日</th><th>帳號</th><th>密碼</th><th>月薪</th><th>勞/健保</th><th>雲端</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div></div>
     
@@ -96,7 +100,7 @@ function isDispatchPayrollPeriod(d, y, m) {
 // 🎂 民國生日轉換器 (改為直接顯示原始字串)
 function toRocDate(d) {
   if(!d) return '-';
-  return d; // 直接回傳字串
+  return d; 
 }
 
 function formatTimeInput(e) {
@@ -311,13 +315,13 @@ function restoreData(i) { if(!i.files||!i.files[0])return; const rd=new FileRead
 function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
-// 🚀 終極修復 PDF 引擎：金蟬脫殼法 (關閉預覽後，使用背景實體 DOM 拍照)
+// 🚀 最終極 PDF 修復引擎：從畫面中抓取，確保不切邊且不空白
 function openPreview(title, contentHtml, isC, fUrl, filename) {
   const overlay = el('preview-overlay');
   
-  // 顯示預覽內容 (使用直式 720px 以符合 A4 比例)
+  // 顯示預覽內容 (使用直式 700px 寬度，留出安全邊距)
   el('preview-body').innerHTML = `
-    <div style="width: 720px; background: #fff; padding: 40px; color: #333; font-family: 'Microsoft JhengHei', sans-serif; text-align: left; box-shadow: 0px 5px 15px rgba(0,0,0,0.2); margin: 0 auto;">
+    <div id="pdf-capture-box" style="width: 700px; background: #fff; padding: 30px; color: #333; font-family: 'Microsoft JhengHei', sans-serif; text-align: left; box-shadow: 0px 5px 15px rgba(0,0,0,0.2); margin: 0 auto; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
       ${contentHtml}
     </div>
   `;
@@ -325,13 +329,40 @@ function openPreview(title, contentHtml, isC, fUrl, filename) {
   overlay.style.display = 'block';
 
   const generate = (isCloud) => {
-    // 💡 關鍵修復：先關閉預覽視窗，消除 fixed overlay 的影響！
-    closePreview(); 
+    showToast(isCloud ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
     
-    // 給予 UI 一點時間關閉視窗，再呼叫 PDF 產出
-    setTimeout(() => {
-        exportPDF(title, filename, isCloud, fUrl, contentHtml);
-    }, 300);
+    // 抓取已經在畫面上的容器
+    const element = document.getElementById('pdf-capture-box');
+    element.style.boxShadow = 'none'; // 移除陰影
+    
+    window.scrollTo(0, 0); // 捲動到頂部
+
+    const opt = { 
+      margin: [10, 0, 10, 0], 
+      filename: `${filename}_${title}_${new Date().getTime()}.pdf`, 
+      image: {type:'jpeg', quality: 1}, 
+      html2canvas: { scale: 2, useCORS: true, windowWidth: 700 }, // 鎖定 700px
+      jsPDF: {unit:'mm', format:'a4', orientation:'portrait'} // 直向
+    };
+
+    const worker = html2pdf().set(opt).from(element);
+    
+    if (isCloud) {
+       if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
+       worker.outputPdf('datauristring').then(b64 => { 
+          fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
+          .then(r=>r.json()).then(r=>{ 
+              if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
+              else {showToast('失敗',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);} 
+              closePreview();
+          }).catch(e=>{showToast('錯誤',true); closePreview();}); 
+       });
+    } else {
+       worker.save().then(() => {
+          showToast('✅ 完成！');
+          closePreview(); // 等完全下載完畢後才把視窗關掉
+       });
+    }
   };
 
   el('btn-confirm-pdf').onclick = () => generate(false);
@@ -339,68 +370,12 @@ function openPreview(title, contentHtml, isC, fUrl, filename) {
 }
 function closePreview() { el('preview-overlay').style.display = 'none'; el('preview-body').innerHTML = ''; }
 
-function exportPDF(title, tgt, isC, fUrl, cHtml) {
-  showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
-  
-  // 1. 回到最上面，避免捲動造成的切邊
-  const origX = window.scrollX || window.pageXOffset;
-  const origY = window.scrollY || window.pageYOffset;
-  window.scrollTo(0, 0);
-
-  // 2. 建立純淨的實體 DOM，絕對定位，不受任何視窗縮放或捲動條干擾
-  const renderContainer = document.createElement('div');
-  // 塞小一點：把寬度設為 720px (小於 A4 預設像素)，並加上 padding
-  renderContainer.style.cssText = 'position:absolute; top:0; left:0; width:720px; padding:30px; background:#ffffff; color:#333333; font-family:"Microsoft JhengHei", sans-serif; box-sizing:border-box; z-index:-1; text-align:left; -webkit-print-color-adjust:exact; print-color-adjust:exact;';
-  renderContainer.innerHTML = cHtml;
-
-  document.body.appendChild(renderContainer);
-
-  const opt = { 
-    margin: [10, 10, 10, 10], // 上、左、下、右留白
-    filename: `${tgt}_${title}_${new Date().getTime()}.pdf`, 
-    image: {type:'jpeg', quality: 1}, 
-    html2canvas: {
-        scale: 2, 
-        useCORS: true, 
-        windowWidth: 720,
-        scrollX: 0,
-        scrollY: 0
-    }, 
-    jsPDF: {unit:'mm', format:'a4', orientation:'portrait'} // 恢復直式
-  };
-
-  const cleanup = () => {
-     if (document.body.contains(renderContainer)) document.body.removeChild(renderContainer);
-     window.scrollTo(origX, origY); 
-  };
-
-  // 3. 延遲 800ms 確保 DOM 渲染完畢
-  setTimeout(() => {
-      window.scrollTo(0, 0);
-      const worker = html2pdf().set(opt).from(renderContainer);
-      
-      if(isC) {
-         if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
-         worker.outputPdf('datauristring').then(b64 => { 
-            cleanup();
-            fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
-            .then(r=>r.json()).then(r=>{ 
-                if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
-                else {showToast('失敗',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);} 
-            }).catch(e=>{showToast('錯誤',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);}); 
-         }).catch(err => { cleanup(); showToast('❌ 產出失敗', true); });
-      } else { 
-         worker.save().then(() => { cleanup(); showToast('✅ 完成！'); }).catch(err => { cleanup(); showToast('❌ 下載失敗', true); }); 
-      }
-  }, 800); 
-}
-
 function uploadTablePDF(tid, t, cid, isC, isS=false) {
   const cb = cid ? el(cid).value : ''; if(isC && cid && (!cb || cb === 'all')) return showToast('請選對象', true);
   let fu = '';
   if(isC && cb && cb!=='all') { let ti = isS ? (staffData.find(x=>x.name===cb)||ftStaffData.find(x=>x.name===cb)) : custData.find(x=>x.name===cb); if(ti&&ti.drive) fu=ti.drive; else return showToast('無雲端資料夾', true);
   }
-  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:50px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
+  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:50px;margin-bottom:10px;"><br>` : ``;
   let tb = el(tid).outerHTML.replace(/<table/g, '<table style="width:100%;border-collapse:collapse;font-size:13px;text-align:left;" border="1" bordercolor="#dddddd" cellpadding="8"');
   let c = `<div style="text-align:center;margin-bottom:15px;border-bottom:2px solid #2d9d5c;padding-bottom:10px;">${lh}<h2 style="color:#2d9d5c;margin:0;">${t} ${cb&&cb!=='all'?'- '+cb:''}</h2></div>${tb}<div style="text-align:right;margin-top:15px;font-size:12px;color:#888;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
   openPreview(t, c, isC, fu, cb||'報表');
@@ -423,7 +398,7 @@ function generateStatementPDF(isC = false) {
   const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;border-radius:12px;margin-right:15px;">` : ``;
   
   let c = `
-  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact; width: 100%; box-sizing: border-box;">
     <div style="display:flex;align-items:center;justify-content:center;margin-bottom:30px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
         ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司 - 服務對帳單</h2>
     </div>
@@ -479,7 +454,7 @@ function generatePayslipPDF(isC = false) {
   let pm=parseInt(ms)-1, py=parseInt(ys); if(pm===0){pm=12;py-=1;} let ptxt=`${py}/${String(pm).padStart(2,'0')}/26 ~ ${ys}/${String(ms).padStart(2,'0')}/25`;
   
   let c = `
-  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact; width: 100%; box-sizing: border-box;">
     <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
         ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">派遣員工薪資單</h3>
     </div>
@@ -531,7 +506,7 @@ function generateFtPayslipPDF(isC = false) {
   const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
   
   let c = `
-  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact; width: 100%; box-sizing: border-box;">
     <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
         ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">正職員工薪資單</h3>
     </div>
@@ -569,7 +544,7 @@ function generateFtPayslipPDF(isC = false) {
     </table>
     <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
   </div>`;
-  openPreview('正職薪資單', c, isC, si.drive, s);
+  exportPDF(`${m.replace('-','年')}月薪資`, s, isC, si.drive, c);
 }
 
 function showAdminPage(p) {
@@ -671,7 +646,8 @@ function renderStaffTable(){ const fs=el('staff_filter_status').value, fn=el('st
 function addStaff(){ const o={name:el('staff_name').value.trim(),tel:el('staff_tel').value.trim(),addr:el('staff_addr').value.trim(),id:el('staff_id').value.trim(),birthday:el('staff_birthday').value,account:el('staff_account').value.trim(),pwd:el('staff_pwd').value.trim(),hourly:el('staff_hourly').value,labor:el('staff_labor').value,health:el('staff_health').value,drive:el('staff_drive').value.trim(),remark:el('staff_remark').value.trim(),status:el('staff_status').value,doc_id:el('staff_doc_id').checked,doc_bank:el('staff_doc_bank').checked,doc_contract:el('staff_doc_contract').checked,doc_resume:el('staff_doc_resume').checked}; if(!o.name)return; staffData.push(o); saveAll(); renderStaffTable(); clearStaffForm(); showToast('✅ 成功'); }
 function editStaff(i){ const d=staffData[i];
   el('staff_name').value=d.name; el('staff_tel').value=d.tel||''; el('staff_addr').value=d.addr||''; el('staff_id').value=d.id||''; el('staff_birthday').value=d.birthday||''; el('staff_account').value=d.account||''; el('staff_pwd').value=d.pwd||''; el('staff_hourly').value=d.hourly||0; el('staff_labor').value=d.labor||0; el('staff_health').value=d.health||0; el('staff_drive').value=d.drive||''; el('staff_remark').value=d.remark||''; el('staff_status').value=d.status; el('staff_doc_id').checked=d.doc_id; el('staff_doc_bank').checked=d.doc_bank; el('staff_doc_contract').checked=d.doc_contract; el('staff_doc_resume').checked=d.doc_resume; editStaffIndex=i; el('btnUpdateStaff').style.display='inline-block'; const b=el('btnAddStaff'); if(b) b.style.display='none'; }
-function updateStaff(){ if(editStaffIndex<0)return; const o={name:el('staff_name').value.trim(),tel:el('staff_tel').value.trim(),addr:el('staff_addr').value.trim(),id:el('staff_id').value.trim(),birthday:el('staff_birthday').value,account:el('staff_account').value.trim(),pwd:el('staff_pwd').value.trim(),hourly:el('staff_hourly').value,labor:el('staff_labor').value,health:el('staff_health').value,drive:el('staff_drive').value.trim(),remark:el('staff_remark').value.trim(),status:el('staff_status').value,doc_id:el('staff_doc_id').checked,doc_bank:el('staff_doc_bank').checked,doc_contract:el('staff_doc_contract').checked,doc_resume:el('staff_doc_resume').checked}; staffData[editStaffIndex]={...staffData[editStaffIndex], ...o}; saveAll(); renderStaffTable(); clearStaffForm(); showToast('✅ 修改'); }
+function updateStaff(){ if(editStaffIndex<0)return; const o={name:el('staff_name').value.trim(),tel:el('staff_tel').value.trim(),addr:el('staff_addr').value.trim(),id:el('staff_id').value.trim(),birthday:el('staff_birthday').value,account:el('staff_account').value.trim(),pwd:el('staff_pwd').value.trim(),hourly:el('staff_hourly').value,labor:el('staff_labor').value,health:el('staff_health').value,drive:el('staff_drive').value.trim(),remark:el('staff_remark').value.trim(),status:el('staff_status').value,doc_id:el('staff_doc_id').checked,doc_bank:el('staff_doc_bank').checked,doc_contract:el('staff_doc_contract').checked,doc_resume:el('staff_doc_resume').checked}; staffData[editStaffIndex]={...staffData[editStaffIndex], ...o}; saveAll(); renderStaffTable(); clearStaffForm(); showToast('✅ 修改');
+}
 function delStaff(i){ if(attendData.some(x=>x.staff===staffData[i].name) && !confirm('有記錄要刪？')) return; if(!confirm('刪除？'))return; staffData.splice(i,1); saveAll(); renderStaffTable(); showToast('刪除'); }
 function clearStaffForm(){ document.querySelectorAll('#page-staff .grid input').forEach(i=>{if(i.type==='checkbox')i.checked=false;else i.value='';}); el('staff_hourly').value='0'; el('staff_labor').value='0'; el('staff_health').value='0';
   el('staff_status').value='在職'; editStaffIndex=-1; el('btnUpdateStaff').style.display='none'; const b=el('btnAddStaff'); if(b) b.style.display='inline-block'; }
@@ -679,16 +655,12 @@ function clearStaffForm(){ document.querySelectorAll('#page-staff .grid input').
 function renderFtStaffTable(){ const fs=el('ft_staff_filter_status').value, fn=el('ft_staff_filter_name').value.toLowerCase(); let l=ftStaffData.filter(x=>(fs==='all'||x.status===fs)&&(!fn||x.name.toLowerCase().includes(fn))); const {pagedList,total,totalPages}=getPagedData(l,'ft_staff'); let h='';
   pagedList.forEach(item=>{ const idx=ftStaffData.findIndex(x=>x.name===item.name); const btn=item.drive?`<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>`:'-'; let d=[]; if(item.doc_id)d.push('<span class="badge badge-green">身</span>');else d.push('<span class="badge badge-red">缺身</span>'); if(item.doc_bank)d.push('<span class="badge badge-green">存</span>');else d.push('<span class="badge badge-red">缺存</span>'); if(item.doc_contract)d.push('<span class="badge badge-green">契</span>');else d.push('<span class="badge badge-red">缺契</span>'); if(item.doc_resume)d.push('<span class="badge badge-green">歷</span>');else d.push('<span class="badge badge-red">缺歷</span>'); h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.hire_date||'-'}</td><td>${toRocDate(item.birthday)}</td><td>${item.account||'-'}</td><td>${item.pwd||'-'}</td><td>${item.salary||0}</td><td>${item.labor||0}/${item.health||0}</td><td>${btn}</td><td><div style="display:flex;gap:4px;flex-wrap:wrap;">${d.join('')}</div></td><td>${item.status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtStaff(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtStaff(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
   }); el('ftStaffTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無</td></tr>'; renderPagination('ft_staff',total,totalPages); fillFilters(); }
-function addFtStaff(){ const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; if(!o.name)return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm();
-  showToast('✅ 成功'); }
+function addFtStaff(){ const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; if(!o.name)return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 成功'); }
 function editFtStaff(i){ const d=ftStaffData[i]; el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_drive').value=d.drive;
   el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('ft_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; el('btnUpdateFtStaff').style.display='inline-block'; const b=el('btnAddFtStaff'); if(b) b.style.display='none'; }
-function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked};
-  ftStaffData[editFtStaffIndex]={...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
+function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; ftStaffData[editFtStaffIndex]={...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
 function delFtStaff(i){ if(!confirm('刪除？'))return; ftStaffData.splice(i,1); saveAll(); renderFtStaffTable(); showToast('刪除'); }
-function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid input').forEach(i=>{if(i.type==='checkbox')i.checked=false;else i.value='';});
-  el('ft_salary').value='30000'; el('ft_labor').value='0'; el('ft_health').value='0'; el('ft_pwd').value='1234'; el('ft_status').value='在職'; editFtStaffIndex=-1; el('btnUpdateFtStaff').style.display='none'; const b=el('btnAddFtStaff'); if(b) b.style.display='inline-block';
-}
+function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid input').forEach(i=>{if(i.type==='checkbox')i.checked=false;else i.value='';}); el('ft_salary').value='30000'; el('ft_labor').value='0'; el('ft_health').value='0'; el('ft_pwd').value='1234'; el('ft_status').value='在職'; editFtStaffIndex=-1; el('btnUpdateFtStaff').style.display='none'; const b=el('btnAddFtStaff'); if(b) b.style.display='inline-block'; }
 
 function renderAttend(){ 
     const y=el('filter_year')?el('filter_year').value:'all', m=el('filter_month')?el('filter_month').value:'all', c=el('filter_company')?el('filter_company').value:''; 
@@ -840,13 +812,13 @@ function staffDownloadPayslip() { if(!currentLoginStaff)return;
   const iF=ftStaffData.some(x=>x.name===currentLoginStaff.name); if(iF){el('fts_filter_staff').value=currentLoginStaff.name; const y=el('staff_my_year').value, m=el('staff_my_month').value; el('fts_filter_month').value=`${y}-${String(m).padStart(2,'0')}`; generateFtPayslipPDF(false);} else{el('sal_filter_staff').value=currentLoginStaff.name; el('sal_filter_year').value=el('staff_my_year').value; el('sal_filter_month').value=el('staff_my_month').value; generatePayslipPDF(false);} }
 function openStaffDrive() { if(currentLoginStaff&&currentLoginStaff.drive) window.open(currentLoginStaff.drive,'_blank'); else showToast('無資料夾',true); }
 
-// 🚀 最終極修復 PDF 引擎：先關閉預覽，再使用隱形 DOM 截圖 (徹底解決空白問題)
+// 🚀 最終修復 PDF 產出引擎：全屏純白遮罩 + 雙重延遲機制 (徹底解決切邊與空白)
 function openPreview(title, contentHtml, isC, fUrl, filename) {
   const overlay = el('preview-overlay');
   
-  // 顯示預覽內容
+  // 顯示預覽內容 (使用直式 720px 寬度，留出安全邊距)
   el('preview-body').innerHTML = `
-    <div style="width: 720px; background: #fff; padding: 40px; color: #333; font-family: 'Microsoft JhengHei', sans-serif; text-align: left; box-shadow: 0px 5px 15px rgba(0,0,0,0.2); margin: 0 auto; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <div id="pdf-capture-box" style="width: 720px; background: #fff; padding: 40px; color: #333; font-family: 'Microsoft JhengHei', sans-serif; text-align: left; box-shadow: 0px 5px 15px rgba(0,0,0,0.2); margin: 0 auto;">
       ${contentHtml}
     </div>
   `;
@@ -895,7 +867,7 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
         scrollX: 0,
         scrollY: 0
     }, 
-    jsPDF: {unit:'mm', format:'a4', orientation:'portrait'} // 直式
+    jsPDF: {unit:'mm', format:'a4', orientation:'portrait'} // 恢復直式
   };
 
   const cleanup = () => {
@@ -903,6 +875,7 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
      window.scrollTo(origX, origY); 
   };
 
+  // 3. 延遲 800ms 確保 DOM 渲染完畢
   setTimeout(() => {
       window.scrollTo(0, 0);
       const worker = html2pdf().set(opt).from(renderContainer);
