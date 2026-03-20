@@ -279,33 +279,36 @@ function restoreData(i) { if(!i.files||!i.files[0])return; const rd=new FileRead
 function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
-// 🚀 終極修復 PDF 產出引擎：全屏白色遮罩 + 最上層定錨法，100% 解決切邊與空白 Bug
+// 🚀 終極 PDF 修復引擎：全屏遮罩顯示 + 強制捲動鎖定 (徹底解決切邊與空白)
 function exportPDF(title, tgt, isC, fUrl, cHtml) {
   showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
   
+  // 1. 記錄原始捲動位置，並強制將視窗捲到最上方 (0,0) 以防止 html2canvas 座標偏移
   const origX = window.scrollX || window.pageXOffset;
   const origY = window.scrollY || window.pageYOffset;
   window.scrollTo(0, 0);
 
+  // 2. 建立一個全屏白色的覆蓋圖層，強迫瀏覽器「真的」渲染出這塊內容
   const overlay = document.createElement('div');
-  overlay.id = 'pdf-render-overlay';
-  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background-color:#ffffff; z-index:9999999; overflow:hidden;';
+  overlay.id = 'pdf-gen-overlay';
+  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:white; z-index:2147483647; overflow:auto; display:flex; justify-content:flex-start; align-items:flex-start;';
   
+  // 3. 建立報表容器，精準控制 A4 寬度 (794px)
   const container = document.createElement('div');
-  container.style.cssText = 'position:absolute; top:0; left:0; width:794px; padding:35px; background-color:#ffffff; color:#333333; font-family:"Microsoft JhengHei", sans-serif; box-sizing:border-box; text-align:left; -webkit-print-color-adjust:exact; print-color-adjust:exact;';
+  container.style.cssText = 'width:794px; padding:35px; background:white; color:#333; font-family:"Microsoft JhengHei", sans-serif; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact;';
   container.innerHTML = cHtml;
 
   overlay.appendChild(container);
   document.body.appendChild(overlay);
 
   const opt = { 
-    margin: [10, 0, 10, 0], 
+    margin: 0, 
     filename: `${tgt}_${title}_${new Date().getTime()}.pdf`, 
-    image: {type:'jpeg', quality: 1}, 
+    image: {type:'jpeg', quality:1}, 
     html2canvas: {
         scale: 2, 
         useCORS: true, 
-        windowWidth: 794,
+        windowWidth: 794, // 鎖死視窗寬度，避免電腦螢幕解析度干擾
         scrollX: 0,
         scrollY: 0
     }, 
@@ -313,11 +316,11 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
   };
 
   const cleanup = () => {
-     if (document.body.contains(overlay)) document.body.removeChild(overlay);
-     window.scrollTo(origX, origY);
+     if(document.getElementById('pdf-gen-overlay')) document.body.removeChild(overlay);
+     window.scrollTo(origX, origY); // 把使用者捲回原本看的地方
   };
 
-  // 稍微延遲 500 毫秒，等內容渲染完全 (解決空白問題)
+  // 4. 重要！等待 800 毫秒讓瀏覽器畫出文字與顏色，才不會變空白
   setTimeout(() => {
       const worker = html2pdf().set(opt).from(container);
       
@@ -334,7 +337,7 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
       } else { 
          worker.save().then(() => { cleanup(); showToast('✅ 完成！'); }).catch(err => { cleanup(); showToast('❌ 下載失敗', true); }); 
       }
-  }, 500);
+  }, 800);
 }
 
 function uploadTablePDF(tid, t, cid, isC, isS=false) {
@@ -548,7 +551,7 @@ function fillFilters() {
 }
 
 function renderSupplierTable() { const f=el('sup_filter_name').value; let l=supplierData.filter(x=>!f||x.name===f); const {pagedList,total,totalPages}=getPagedData(l,'supplier'); let h='';
-  pagedList.forEach((item, i) => { const idx = supplierData.indexOf(item); const btn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>` : '-'; h += `<tr><td>${item.name}</td><td>${item.contact||'-'}</td><td>${item.tel||'-'}</td><td>${item.tax||'-'}</td><td>${item.pay_method||'-'}</td><td><b class="red">${item.pay_date||'-'}</b></td><td>${item.invoice_date||'-'}</td><td>${item.invoice_no||'-'}</td><td>${item.invoice_amt||0}</td><td>${btn}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editSupplier(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delSupplier(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
+  pagedList.forEach((item, i) => { const idx = supplierData.indexOf(item); const btn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>` : '-'; h += `<tr><td>${item.name}</td><td>${item.contact||'-'}</td><td>${item.tel||'-'}</td><td>${item.tax||'-'}</td><td>${item.pay_method||'-'}</td><td><b class="red">${item.pay_date||'-'}</b></td><td>${item.invoice_date||'-'}</td><td>${item.invoice_no||'-'}</td><td>${item.invoice_amt||0}</td><td>${btn}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editSupplier(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="clearSupplierForm(); showToast('修改'); saveAll(); delSupplier(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
   el('supplierTable').innerHTML = h || '<tr><td colspan="11" style="text-align:center;">無</td></tr>'; renderPagination('supplier', total, totalPages); fillFilters();
 }
 function addSupplier() { const o = {name:el('sup_name').value.trim(), contact:el('sup_contact').value.trim(), tel:el('sup_tel').value.trim(), addr:el('sup_addr').value.trim(), tax:el('sup_tax').value.trim(), pay_method:el('sup_pay_method').value.trim(), pay_date:el('sup_pay_date').value, invoice_date:el('sup_invoice_date').value, invoice_no:el('sup_invoice_no').value.trim(), invoice_amt:el('sup_invoice_amt').value, drive:el('sup_drive').value.trim()}; if(!o.name)return; supplierData.push(o); saveAll();
@@ -697,7 +700,7 @@ function showBoss() {
 function renderDashboard(){
   el('dash_total_cust').textContent=custData.length; el('dash_active_cust').textContent=custData.filter(x=>x.coop==='正合作').length;
   let pG=0, pL=0, aH='';
-  custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0), rP=cP-uP; if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP}點</td><td><button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
+  custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0), rP=cP-uP; if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP} 點</td><td><button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
   el('dash_point_ge50').textContent=pG; el('dash_point_lt50').textContent=pL; el('dash_alert_table').innerHTML=aH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">無</td></tr>';
   
   let aS=staffData.filter(x=>x.status==='在職'), aF=ftStaffData.filter(x=>x.status==='在職'), aA=aS.concat(aF);
@@ -738,22 +741,22 @@ function staffDownloadPayslip() { if(!currentLoginStaff)return;
   const iF=ftStaffData.some(x=>x.name===currentLoginStaff.name); if(iF){el('fts_filter_staff').value=currentLoginStaff.name; const y=el('staff_my_year').value, m=el('staff_my_month').value; el('fts_filter_month').value=`${y}-${String(m).padStart(2,'0')}`; generateFtPayslipPDF(false);} else{el('sal_filter_staff').value=currentLoginStaff.name; el('sal_filter_year').value=el('staff_my_year').value; el('sal_filter_month').value=el('staff_my_month').value; generatePayslipPDF(false);} }
 function openStaffDrive() { if(currentLoginStaff&&currentLoginStaff.drive) window.open(currentLoginStaff.drive,'_blank'); else showToast('無資料夾',true); }
 
-// 🚀 最終極 PDF 修復引擎：全屏白色遮罩 + 最上層定錨法，100% 解決切邊與空白 Bug
+// 🚀 終極 PDF 產出引擎：全屏白色遮罩 + 強制歸零機制
 function exportPDF(title, tgt, isC, fUrl, cHtml) {
   showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
   
-  // 記錄原始位置並強制回到 (0,0) 以消除偏移 Bug
+  // 1. 記錄當前位置並強制將視窗捲到最上方 (0,0) 以防止截圖偏移
   const origX = window.scrollX || window.pageXOffset;
   const origY = window.scrollY || window.pageYOffset;
   window.scrollTo(0, 0);
 
-  // 建立一個全屏白色的覆蓋層，讓截圖引擎在裡面安全拍照
+  // 2. 建立一個全屏白色的覆蓋圖層，強迫渲染引擎能抓到最高層級內容
   const overlay = document.createElement('div');
-  overlay.id = 'pdf-render-overlay';
-  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background-color:#ffffff; z-index:9999999; overflow:auto;';
+  overlay.id = 'pdf-render-overlay-final';
+  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background-color:#ffffff; z-index:99999999; overflow:auto;';
   
   const container = document.createElement('div');
-  // 強制設定寬度為 794px (A4 標準像素)，並徹底靠左定錨
+  // 設定精準 A4 寬度 (794px)，徹底靠左定錨，消除任何偏移可能
   container.style.cssText = 'position:absolute; top:0; left:0; width:794px; padding:35px; background-color:#ffffff; color:#333333; font-family:"Microsoft JhengHei", sans-serif; box-sizing:border-box; text-align:left; -webkit-print-color-adjust:exact; print-color-adjust:exact;';
   container.innerHTML = cHtml;
 
@@ -776,10 +779,10 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
 
   const cleanup = () => {
      if (document.body.contains(overlay)) document.body.removeChild(overlay);
-     window.scrollTo(origX, origY);
+     window.scrollTo(origX, origY); // 把使用者捲回原本看的地方
   };
 
-  // 給予充足的渲染時間 (500ms)，確保圖片與文字已經畫出來，解決空白問題
+  // 3. 給予瀏覽器 800 毫秒渲染時間，確保內容不再是空白
   setTimeout(() => {
       const worker = html2pdf().set(opt).from(container);
       
@@ -796,7 +799,7 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
       } else { 
          worker.save().then(() => { cleanup(); showToast('✅ 完成！'); }).catch(err => { cleanup(); showToast('❌ 下載失敗', true); }); 
       }
-  }, 500);
+  }, 800);
 }
 </script>
 </body>
