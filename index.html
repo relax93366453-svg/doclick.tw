@@ -68,13 +68,12 @@ function isDispatchPayrollPeriod(d, y, m) {
     return false;
 }
 
-// 🎂 民國生日轉換輔助函數
+// 🎂 民國生日轉換器
 function toRocDate(d) {
   if(!d) return '-';
-  let parts = d.split('-');
-  if(parts.length !== 3) return d;
-  let rYear = parseInt(parts[0]) - 1911;
-  return `民國 ${rYear}/${parts[1]}/${parts[2]}`;
+  let p = d.split('-');
+  if(p.length !== 3) return d;
+  return `民國 ${parseInt(p[0])-1911}/${p[1]}/${p[2]}`;
 }
 
 function formatTimeInput(e) {
@@ -221,7 +220,7 @@ function updateLogoPreview() {
   const pl=el('loginLogoPreview'), bl=el('btnClearLoginLogo'), pp=el('pdfLogoPreview'), bp=el('btnClearPdfLogo'), limg=el('login-logo-img'), licon=el('login-logo-icon'), ls=el('login-screen'), btnBg=el('btnClearLoginBg'), bgStatus=el('bg-upload-status');
   if (loginBgBase64) { if(ls) ls.style.backgroundImage=`url('${loginBgBase64}')`; if(btnBg) btnBg.style.display='inline-block'; if(el('loginBgUrl')) el('loginBgUrl').value=loginBgBase64; } else { if(ls) ls.style.backgroundImage="url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')"; if(btnBg) btnBg.style.display='none'; if(bgStatus) bgStatus.style.display='none'; if(el('loginBgUrl')) el('loginBgUrl').value='';
   }
-  if (loginLogoBase64) { if(pl){pl.src=loginLogoBase64;pl.style.display='block';bl.style.display='inline-block';} if(limg){limg.src=loginLogoBase64;limg.style.display='block';if(licon)licon.style.display='none';} if(el('loginLogoUrl')) el('loginLogoUrl').value=loginLogoBase64; } else { if(pl){pl.src='';pl.style.display='none';bl.style.display='none';} if(limg){limg.src='';limg.style.display='none';if(licon)licon.style.display='block';} if(el('loginLogoUrl')) el('loginLogoUrl').value=loginLogoBase64;
+  if (loginLogoBase64) { if(pl){pl.src=loginLogoBase64;pl.style.display='block';bl.style.display='inline-block';} if(limg){limg.src=loginLogoBase64;limg.style.display='block';if(licon)licon.style.display='none';} if(el('loginLogoUrl')) el('loginLogoUrl').value=loginLogoBase64; } else { if(pl){pl.src='';pl.style.display='none';bl.style.display='none';} if(limg){limg.src='';limg.style.display='none';if(licon)licon.style.display='block';} if(el('loginLogoUrl')) el('loginLogoUrl').value='';
   } 
   if (pdfLogoBase64) { if(pp){pp.src=pdfLogoBase64;pp.style.display='block';bp.style.display='inline-block';} if(el('pdfLogoUrl')) el('pdfLogoUrl').value=pdfLogoBase64; } else { if(pp){pp.src='';pp.style.display='none';bp.style.display='none';} if(el('pdfLogoUrl')) el('pdfLogoUrl').value='';
   }
@@ -289,7 +288,7 @@ function restoreData(i) { if(!i.files||!i.files[0])return; const rd=new FileRead
 function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
-// 🚀 終極 PDF 修復引擎：全屏純白遮罩 + 加強延遲機制 (徹底解決切邊與空白)
+// 🚀 最終修復 PDF 產出引擎：全屏純白遮罩 + 雙重延遲機制 (徹底解決切邊與空白)
 function exportPDF(title, tgt, isC, fUrl, cHtml) {
   showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
   
@@ -537,7 +536,7 @@ function showAdminPage(p) {
       let l=document.querySelector(`a[onclick*="showAdminPage('${p}')"]`); if(l) l.classList.add('active');
       if(p==='customer') { clearCustForm(); renderCustTable(); } if(p==='contract') { clearContractForm(); renderContractTable(); }
       if(p==='staff') { clearStaffForm(); renderStaffTable(); } if(p==='attend') { clearAttendForm(); renderAttend(); }
-      if(p==='ft_staff') { clearFtStaffForm(); renderFtStaffTable(); } if(p==='ft_attend') { clearFtAttendForm(); renderFtAttendTable(); }
+      if(p==='ft_staff') { clearFtStaffForm(); renderFtStaffTable(); } if(p==='ft_attend') { clearFtAttendTable(); }
       if(p==='talent') { clearTalentForm(); renderTalentTable(); } if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); }
       if(p==='dashboard') renderDashboard();
   } catch(e) {}
@@ -584,8 +583,7 @@ function editCust(i){ const d=custData[i];
   el('c_name').value=d.name; el('c_industry').value=d.industry||''; el('c_user').value=d.user||''; el('c_tel').value=d.tel||''; el('c_addr').value=d.addr||''; el('c_tax').value=d.tax||''; el('c_goods').value=d.goods||''; el('c_account').value=d.account||''; el('c_pwd').value=d.pwd||''; el('c_url').value=d.url||''; el('c_drive').value=d.drive||''; el('c_remark').value=d.remark||''; el('c_coop').value=d.coop; editCustIndex=i; el('btnUpdateCust').style.display='inline-flex'; const b=el('btnAddCust'); if(b) b.style.display='none';
 }
 function updateCust(){ if(editCustIndex<0)return; const o={name:el('c_name').value.trim(),industry:el('c_industry').value.trim(),user:el('c_user').value.trim(),tel:el('c_tel').value.trim(),addr:el('c_addr').value.trim(),tax:el('c_tax').value.trim(),goods:el('c_goods').value.trim(),account:el('c_account').value.trim(),pwd:el('c_pwd').value.trim(),url:el('c_url').value.trim(),drive:el('c_drive').value.trim(),remark:el('c_remark').value.trim(),coop:el('c_coop').value}; custData[editCustIndex]={...custData[editCustIndex], ...o}; saveAll(); renderCustTable(); clearCustForm(); showToast('✅ 修改'); }
-function delCust(i){ if(!confirm('刪除？'))return; custData.splice(i,1); saveAll(); renderCustTable(); showToast('刪除');
-}
+function delCust(i){ if(!confirm('刪除？'))return; custData.splice(i,1); saveAll(); renderCustTable(); showToast('刪除'); }
 function clearCustForm(){ document.querySelectorAll('#page-customer .grid input').forEach(i=>i.value=''); el('c_coop').value='正合作'; editCustIndex=-1; el('btnUpdateCust').style.display='none'; const b=el('btnAddCust'); if(b) b.style.display='inline-block'; }
 
 function renderContractTable(){ const f=el('contract_filter_company').value; let l=contractData.filter(x=>(!f||x.customer===f)); const {pagedList,total,totalPages}=getPagedData(l,'contract');
@@ -753,24 +751,28 @@ function staffDownloadPayslip() { if(!currentLoginStaff)return;
   const iF=ftStaffData.some(x=>x.name===currentLoginStaff.name); if(iF){el('fts_filter_staff').value=currentLoginStaff.name; const y=el('staff_my_year').value, m=el('staff_my_month').value; el('fts_filter_month').value=`${y}-${String(m).padStart(2,'0')}`; generateFtPayslipPDF(false);} else{el('sal_filter_staff').value=currentLoginStaff.name; el('sal_filter_year').value=el('staff_my_year').value; el('sal_filter_month').value=el('staff_my_month').value; generatePayslipPDF(false);} }
 function openStaffDrive() { if(currentLoginStaff&&currentLoginStaff.drive) window.open(currentLoginStaff.drive,'_blank'); else showToast('無資料夾',true); }
 
-// 🚀 最終極 PDF 修復引擎：全屏純白遮罩 + 加強延遲機制 (徹底解決切邊與空白)
+// 🚀 最終修復 PDF 產出引擎：全屏預覽 + 座標定錨 + 強化延遲機制 (徹底解決切邊與空白)
 function exportPDF(title, tgt, isC, fUrl, cHtml) {
   showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
   
+  // 1. 記錄當前位置並強制將視窗捲到最頂部，防止 html2canvas 的相對座標偏移
   const origX = window.scrollX || window.pageXOffset;
   const origY = window.scrollY || window.pageYOffset;
   window.scrollTo(0, 0);
 
-  const overlay = document.createElement('div');
-  overlay.id = 'pdf-final-fix-overlay';
-  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#ffffff; z-index:2147483647; overflow:auto; display:block;';
+  // 2. 建立一個可見但覆蓋全屏的預覽層，強迫瀏覽器「畫」出來
+  const previewLayer = document.createElement('div');
+  previewLayer.id = 'pdf-render-final';
+  // 設定白色背景並確保在最頂層
+  previewLayer.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:#ffffff; z-index:2147483647; overflow:auto; display:block;';
   
-  const container = document.createElement('div');
-  container.style.cssText = 'position:absolute; top:0; left:0; width:794px; padding:35px; background:#ffffff; color:#333333; font-family:"Microsoft JhengHei", sans-serif; box-sizing:border-box; text-align:left; -webkit-print-color-adjust:exact; print-color-adjust:exact;';
-  container.innerHTML = cHtml;
+  const contentBox = document.createElement('div');
+  // 鎖定寬度為 794px (A4)，定錨在左上角 (0,0)
+  contentBox.style.cssText = 'position:absolute; top:0; left:0; width:794px; padding:35px; background:#ffffff; color:#333333; font-family:"Microsoft JhengHei", sans-serif; box-sizing:border-box; text-align:left; -webkit-print-color-adjust:exact; print-color-adjust:exact;';
+  contentBox.innerHTML = cHtml;
 
-  overlay.appendChild(container);
-  document.body.appendChild(overlay);
+  previewLayer.appendChild(contentBox);
+  document.body.appendChild(previewLayer);
 
   const opt = { 
     margin: [10, 0, 10, 0], 
@@ -787,16 +789,16 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
   };
 
   const cleanup = () => {
-     if (document.body.contains(overlay)) document.body.removeChild(overlay);
+     if (document.body.contains(previewLayer)) document.body.removeChild(previewLayer);
      window.scrollTo(origX, origY); 
   };
 
+  // 3. 給予瀏覽器 1.5 秒的「上色時間」，確保表格邊框與內容不再是空白
   setTimeout(() => {
       window.scrollTo(0, 0);
-      const worker = html2pdf().set(opt).from(container);
+      const worker = html2pdf().set(opt).from(contentBox);
       
       if(isC) {
-         if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
          worker.outputPdf('datauristring').then(b64 => { 
             cleanup();
             fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
@@ -808,7 +810,7 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
       } else { 
          worker.save().then(() => { cleanup(); showToast('✅ 完成！'); }).catch(err => { cleanup(); showToast('❌ 下載失敗', true); }); 
       }
-  }, 1200); 
+  }, 1500); 
 }
 </script>
 </body>
