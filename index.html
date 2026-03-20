@@ -25,7 +25,7 @@
     <div class="page admin-only" id="page-supplier"><div class="page-title"><i class="fas fa-truck"></i> 供應商及帳款管理</div><div class="filter-bar"><label>供應商：</label><select id="sup_filter_name" onchange="resetPage('supplier'); renderSupplierTable()"></select></div><div class="grid" style="background:#f8fafc;padding:25px;border-radius:12px;border:1px solid #e2e8f0;"><div><label>公司名稱 *</label><input id="sup_name" required></div><div><label>聯絡人</label><input id="sup_contact"></div><div><label>電話</label><input id="sup_tel"></div><div><label>統編</label><input id="sup_tax"></div><div style="grid-column: span 2;"><label>地址</label><input id="sup_addr"></div><div style="grid-column: span 2;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="sup_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('sup_name', 'sup_drive', '[供應商]')" style="margin-bottom:0;"><i class="fas fa-magic"></i> 建立</button></div></div><div class="section-divider"><i class="fas fa-file-invoice-dollar"></i> 帳務資訊區</div><div><label>交易方式</label><input id="sup_pay_method"></div><div><label>應付帳款日</label><input type="date" id="sup_pay_date" style="font-weight:bold; color:#dc2626;"></div><div><label>發票日期</label><input type="date" id="sup_invoice_date"></div><div><label>發票編號</label><input type="text" id="sup_invoice_no"></div><div><label>發票金額</label><input type="number" id="sup_invoice_amt"></div></div><button class="btn btn-success" id="btnAddSupplier" onclick="addSupplier()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateSupplier()" id="btnUpdateSupplier" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearSupplierForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('supplierTableBox','供應商')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="supplierTableBox"><thead><tr><th>名稱</th><th>聯絡人</th><th>電話</th><th>統編</th><th>交易方式</th><th>應付日</th><th>發票日期</th><th>發票編號</th><th>金額</th><th>雲端</th><th>操作</th></tr></thead><tbody id="supplierTable"></tbody></table></div></div>
     <div class="page admin-only" id="page-contract"><div class="page-title"><i class="fas fa-file-contract"></i> 合約方案管理</div><div class="filter-bar"><label>公司：</label><select id="contract_filter_company" onchange="resetPage('contract'); renderContractTable()"></select></div><div class="grid"><div><label>公司 *</label><select id="con_customer" required></select></div><div><label>簽約日期</label><input type="date" id="co_date"></div><div><label>服務內容</label><input id="co_service"></div><div><label>會員類型</label><select id="co_member_type" onchange="updatePriceByPlan()"><option value="">請選擇</option><option value="點籽響標準會員">標準會員</option><option value="點籽響PRO企業會員">PRO會員</option><option value="半年會員費">半年</option><option value="每年會員費">每年</option></select></div><div><label>方案 *</label><select id="co_price_plan" onchange="updatePriceByPlan()"><option value="">請選擇</option></select></div><div><label>包價</label><input id="co_package_price" type="number" readonly></div><div><label>均價</label><input id="co_point_price" type="number" readonly></div><div><label>應收金額</label><input id="co_price" type="number"></div><div><label>點數</label><input id="co_point" type="number" value="0"></div><div><label>發票日</label><input type="date" id="co_invoice_date"></div><div><label>收款日</label><input type="date" id="co_payment_date"></div><div><label>備註</label><input id="co_remark"></div><div><label>狀態</label><select id="co_status"><option>正常</option><option>續約</option><option>到期</option></select></div></div><button class="btn btn-success" id="btnAddContract" onclick="addContract()"><i class="fas fa-save"></i> 新增</button><button class="btn btn-warning" onclick="updateContract()" id="btnUpdateContract" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearContractForm()"><i class="fas fa-eraser"></i> 清空</button><div class="table-responsive"><table id="contractTableBox"><thead><tr><th>公司</th><th>服務</th><th>會員</th><th>方案</th><th>包價</th><th>均價</th><th>應收</th><th>點數</th><th>發票日</th><th>收款日</th><th>簽約日</th><th>備註</th><th>狀態</th><th>操作</th></tr></thead><tbody id="contractTable"></tbody></table></div></div>
     <div class="page" id="page-staff"><div class="page-title"><i class="fas fa-user-tag"></i> 派遣人員資料庫</div><div class="filter-bar"><label>姓名：</label><input type="text" id="staff_filter_name" oninput="resetPage('staff'); renderStaffTable()"><label>狀態：</label><select id="staff_filter_status" onchange="resetPage('staff'); renderStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select></div><div class="grid" style="background:#fafafa;padding:25px;border-radius:12px;border:1px solid #e2e8f0;"><div><label>姓名 *</label><input id="staff_name" required></div><div><label>電話</label><input id="staff_tel"></div><div><label>身份證</label><input id="staff_id"></div><div><label>生日</label><input type="date" id="staff_birthday"></div><div><label>地址</label><input id="staff_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號 (建議電話)</label><input id="staff_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼 (預設1234)</label><input id="staff_pwd" type="text" value="1234"></div><div><label>狀態</label><select id="staff_status"><option>在職</option><option>離職</option></select></div><div><label>預設時薪</label><input id="staff_hourly" type="number" value="0"></div><div><label>代扣勞保</label><input id="staff_labor" type="number" value="0"></div><div><label>代扣健保</label><input id="staff_health" type="number" value="0"></div><div><label>備註</label><input id="staff_remark"></div><div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="staff_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('staff_name', 'staff_drive', '[派遣]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 到職資料繳交狀態</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="staff_doc_id"> 身分證</label><label><input type="checkbox" id="staff_doc_bank"> 存摺</label><label><input type="checkbox" id="staff_doc_contract"> 契約</label><label><input type="checkbox" id="staff_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddStaff" onclick="addStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateStaff()" id="btnUpdateStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearStaffForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('staffTableBox','派遣人員')"><i class="fas fa-file-excel"></i> 匯出</button><div class="table-responsive"><table id="staffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>身份證</th><th>生日</th><th>帳號</th><th>密碼</th><th>時薪</th><th>勞/健保</th><th>雲端</th><th>備註</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="staffTable"></tbody></table></div></div>
-    <div class="page" id="page-ft_staff"><div class="page-title"><i class="fas fa-user-tie"></i> 正職員工資料庫</div><div class="filter-bar"><label>姓名：</label><input type="text" id="ft_staff_filter_name" oninput="resetPage('ft_staff'); renderFtStaffTable()"><label>狀態：</label><select id="ft_staff_filter_status" onchange="resetPage('ft_staff'); renderFtStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select></div><div class="grid" style="background:#ecfdf5;padding:25px;border-radius:12px;border:1px solid #a7f3d0;"><div><label>正職姓名 *</label><input id="ft_name" required></div><div><label>電話</label><input id="ft_tel"></div><div><label>身份證字號</label><input id="ft_id"></div><div><label>生日</label><input type="date" id="ft_birthday"></div><div><label>地址</label><input id="ft_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號</label><input id="ft_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼</label><input id="ft_pwd" type="text" value="1234"></div><div><label>狀態</label><select id="ft_status"><option>在職</option><option>離職</option></select></div><div><label>到職日 (特休計算)</label><input type="date" id="ft_hire_date"></div><div><label>離職日</label><input type="date" id="ft_leave_date"></div><div><label>月薪</label><input type="number" id="ft_salary" value="30000"></div><div><label>備註</label><input id="ft_remark"></div><div><label>代扣勞保</label><input id="ft_labor" type="number" value="0"></div><div><label>代扣健保</label><input id="ft_health" type="number" value="0"></div><div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="ft_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('ft_name', 'ft_drive', '[正職]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 資料繳交</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="ft_doc_id"> 身分證</label><label><input type="checkbox" id="ft_doc_bank"> 存摺</label><label><input type="checkbox" id="ft_doc_contract"> 契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddFtStaff" onclick="addFtStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateFtStaff()" id="btnUpdateFtStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearFtStaffForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('ftStaffTableBox','正職員工')"><i class="fas fa-file-excel"></i> 匯出</button><div class="table-responsive"><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>到職日</th><th>帳號</th><th>密碼</th><th>月薪</th><th>勞/健保</th><th>雲端</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div></div>
+    <div class="page" id="page-ft_staff"><div class="page-title"><i class="fas fa-user-tie"></i> 正職員工資料庫</div><div class="filter-bar"><label>姓名：</label><input type="text" id="ft_staff_filter_name" oninput="resetPage('ft_staff'); renderFtStaffTable()"><label>狀態：</label><select id="ft_staff_filter_status" onchange="resetPage('ft_staff'); renderFtStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select></div><div class="grid" style="background:#ecfdf5;padding:25px;border-radius:12px;border:1px solid #a7f3d0;"><div><label>正職姓名 *</label><input id="ft_name" required></div><div><label>電話</label><input id="ft_tel"></div><div><label>身份證字號</label><input id="ft_id"></div><div><label>生日</label><input type="date" id="ft_birthday"></div><div><label>地址</label><input id="ft_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號</label><input id="ft_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼</label><input id="ft_pwd" type="text" value="1234"></div><div><label>狀態</label><select id="ft_status"><option>在職</option><option>離職</option></select></div><div><label>到職日 (特休計算)</label><input type="date" id="ft_hire_date"></div><div><label>離職日</label><input type="date" id="ft_leave_date"></div><div><label>月薪</label><input type="number" id="ft_salary" value="30000"></div><div><label>備註</label><input id="ft_remark"></div><div><label>代扣勞保</label><input id="ft_labor" type="number" value="0"></div><div><label>代扣健保</label><input id="ft_health" type="number" value="0"></div><div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="ft_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('ft_name', 'ft_drive', '[正職]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 資料繳交</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="ft_doc_id"> 身分證</label><label><input type="checkbox" id="staff_doc_bank"> 存摺</label><label><input type="checkbox" id="ft_doc_contract"> 契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddFtStaff" onclick="addFtStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateFtStaff()" id="btnUpdateFtStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearFtStaffForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('ftStaffTableBox','正職員工')"><i class="fas fa-file-excel"></i> 匯出</button><div class="table-responsive"><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>到職日</th><th>帳號</th><th>密碼</th><th>月薪</th><th>勞/健保</th><th>雲端</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div></div>
     <div class="page" id="page-attend"><div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div><div class="filter-bar"><label>公司</label><select id="filter_company" onchange="resetPage('attend'); renderAttend()"></select><label>年</label><select id="filter_year" onchange="resetPage('attend'); renderAttend()"></select><label>月</label><select id="filter_month" onchange="resetPage('attend'); renderAttend()"></select></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr 1.5fr;"><div><label>公司 *</label><select id="attend_company" required></select></div><div><label>人員 *</label><select id="attend_staff" required></select></div><div><label>日期 *</label><input type="date" id="attend_date" required></div><div><label>服務類型</label><select id="attend_service"><option value="">請選擇</option></select></div><div><label>備註</label><input type="text" id="attend_remark"></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr;"><div><label>上午上班</label><input type="text" id="am_s" placeholder="0830" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>上午下班</label><input type="text" id="am_e" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午上班</label><input type="text" id="pm_s" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午下班</label><input type="text" id="pm_e" placeholder="1700" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>發薪工時</label><input type="number" id="attend_salary_hours" step="0.1"></div><div><label>扣除點數</label><input type="number" id="attend_deduct_points" step="1"></div></div><button class="btn btn-success" id="btnAddAttend" onclick="addAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" id="btnClearAttend" style="background:#64748b;" onclick="clearAttendForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table></div></div>
     <div class="page" id="page-ft_attend"><div class="page-title"><i class="fas fa-calendar-check"></i> 正職出勤紀錄</div><div class="filter-bar"><label>年月</label><input type="month" id="fta_filter_month" onchange="resetPage('ft_attend'); renderFtAttendTable()"><label>員工</label><select id="fta_filter_staff" onchange="resetPage('ft_attend'); renderFtAttendTable()"></select></div><div id="leave-info-panel" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;padding:15px 20px;border-radius:8px;margin-bottom:20px;"><h4 style="color:#1e3a8a;"><i class="fas fa-plane-departure"></i> <span id="leave-info-name"></span> 特休資訊</h4><div style="display:flex;gap:25px;font-size:14px;flex-wrap:wrap;margin-top:10px;"><div>年資：<b id="leave-info-tenure" style="color:#0369a1;">-</b></div><div>依法享有：<b id="leave-info-total" style="color:#10b981;">- 天</b></div><div>已用：<b id="leave-info-used" style="color:#ef4444;">- 天</b></div><div style="padding:2px 10px;background:#dcfce7;border-radius:4px;border:1px solid #bbf7d0;">剩餘：<b id="leave-info-remain" style="color:#166534;">- 天</b></div><div>下階段：<span id="leave-info-next"></span></div></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr;"><div><label>員工 *</label><select id="fta_staff" required onchange="showLeaveInfo()"></select></div><div><label>日期 *</label><input type="date" id="fta_date" required></div><div><label>類型 *</label><select id="fta_record_type" onchange="toggleFtaFields()"><option value="正常出勤">正常出勤</option><option value="異常">異常</option><option value="請假">請假</option><option value="加班">加班</option><option value="換班">換班</option></select></div><div><label>原因</label><input type="text" id="fta_reason"></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1.5fr 1fr;" id="fta_time_block"><div><label>上班打卡</label><input type="text" id="fta_time_in" placeholder="0900" onblur="formatTimeInput(this); calcFtaHours()"></div><div><label>下班打卡</label><input type="text" id="fta_time_out" placeholder="1800" onblur="formatTimeInput(this); calcFtaHours()"></div><div><label>合計時數</label><div style="display:flex;align-items:center;gap:10px;"><input type="number" id="fta_hours" step="0.1" style="width:90px;padding:8px;"><label style="font-size:13px;cursor:pointer;display:flex;align-items:center;color:#0369a1;font-weight:bold;margin:0;"><input type="checkbox" id="fta_deduct_break" checked onchange="calcFtaHours()" style="margin-right:5px;"> 扣除休息1h</label></div></div><div id="fta_leave_type_block" style="display:none;"><label>請假假別</label><select id="fta_leave_type"><option value="事假">事假</option><option value="病假">病假</option><option value="特休假">特休假</option><option value="喪假">喪假</option></select></div><div id="fta_approval_block" style="display:none;"><label>核准狀態</label><select id="fta_approval"><option value="已核准">已核准</option><option value="待審核">待審核</option></select></div></div><button class="btn btn-success" id="btnAddFtAttend" onclick="addFtAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" style="background:#64748b;" onclick="clearFtAttendForm()"><i class="fas fa-eraser"></i> 清空</button><div class="table-responsive"><table id="ftAttendTableBox"><thead><tr><th>員工</th><th>日期</th><th>類型</th><th>時間/假別</th><th>時數</th><th>狀態/原因</th><th>操作</th></tr></thead><tbody id="ftAttendTable"></tbody></table></div></div>
     <div class="page" id="page-ft_salary"><div class="page-title"><i class="fas fa-money-check-alt"></i> 正職薪資結算</div><div class="filter-bar"><label>員工</label><select id="fts_filter_staff" onchange="resetPage('ft_salary'); renderFtSalaryTable()"></select><label>年月</label><input type="month" id="fts_filter_month" onchange="resetPage('ft_salary'); renderFtSalaryTable()"><label>標準出勤天數 *</label><input type="number" id="fts_standard_days" value="22" style="width:80px;font-weight:bold;" onchange="renderFtSalaryTable()"></div><div style="margin-bottom:15px;"><button class="btn btn-excel" onclick="exportExcel('ftSalaryTableBox','正職薪資')">匯出</button><button class="btn btn-pdf" onclick="generateFtPayslipPDF(false)"><i class="fas fa-file-pdf"></i> 下載 PDF</button></div><div class="table-responsive"><table id="ftSalaryTableBox"><thead><tr><th>員工</th><th>底薪</th><th>總工時</th><th>請假扣薪</th><th>加班費</th><th>勞健保代扣</th><th>實發薪資</th><th>操作</th></tr></thead><tbody id="ftSalaryTable"></tbody></table></div></div>
@@ -279,22 +279,48 @@ function restoreData(i) { if(!i.files||!i.files[0])return; const rd=new FileRead
 function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
-// 🚀 終極 PDF 產出引擎：純字串渲染，完美 A4 排版
+// 🚀 終極 PDF 產出引擎：實體 DOM 渲染，強制鎖定座標與 A4 寬度，徹底解決左側裁切問題
 function exportPDF(title, tgt, isC, fUrl, cHtml) {
   showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
-  const wrapper = `<div style="width:794px; padding:30px; font-family:'Microsoft JhengHei',sans-serif; color:#333; background:#fff; margin:0 auto; box-sizing:border-box;">${cHtml}</div>`;
+  
+  // 建立隱藏的實體 DOM 元素，確保排版錨定在最左上角 (0,0) 避免偏移裁切
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = cHtml;
+  wrapper.style.width = '210mm'; // 強制 A4 寬度
+  wrapper.style.padding = '12mm 15mm'; // 以內部 padding 取代外部 margin
+  wrapper.style.background = '#fff';
+  wrapper.style.color = '#333';
+  wrapper.style.fontFamily = "'Microsoft JhengHei', sans-serif";
+  wrapper.style.boxSizing = 'border-box';
+
   const opt = { 
-    margin: [10, 10, 10, 10], 
+    margin: 0, // 外部邊距設為 0，完全依賴 wrapper 的 padding，防止截圖引擎算錯座標
     filename: `${tgt}_${title}_${new Date().getTime()}.pdf`, 
     image: {type:'jpeg', quality:0.98}, 
-    html2canvas: {scale:2, useCORS:true, letterRendering:true, windowWidth: 800}, 
+    html2canvas: {
+        scale: 2, 
+        useCORS: true, 
+        letterRendering: true, 
+        scrollX: 0, // 強制鎖定捲動位置 X 軸
+        scrollY: 0, // 強制鎖定捲動位置 Y 軸
+        windowWidth: 794 // 對應標準 A4 像素寬度
+    }, 
     jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
+
   if(isC) {
      if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
-     html2pdf().set(opt).from(wrapper).outputPdf('datauristring').then(b64 => { fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) }).then(r=>r.json()).then(r=>{ if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} else {showToast('失敗',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);} }).catch(e=>{showToast('錯誤',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);}); });
-  } else { html2pdf().set(opt).from(wrapper).save().then(()=>showToast('✅ 完成！')); }
+     html2pdf().set(opt).from(wrapper).outputPdf('datauristring').then(b64 => { 
+        fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
+        .then(r=>r.json()).then(r=>{ 
+            if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
+            else {showToast('失敗',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);} 
+        }).catch(e=>{showToast('錯誤',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);}); 
+     });
+  } else { 
+     html2pdf().set(opt).from(wrapper).save().then(()=>showToast('✅ 完成！')); 
+  }
 }
 
 function uploadTablePDF(tid, t, cid, isC, isS=false) {
@@ -319,11 +345,52 @@ function generateStatementPDF(isC = false) {
   const up = attendData.filter(x=>x.company===cb).reduce((s,i)=>s+getItemDeductPoints(i), 0), rp = tp-up;
   let ats = attendData.filter(x=>x.company===cb&&(yb==='all'||x.date.startsWith(yb))&&(mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let ah = '';
-  if(ats.length>0) { ats.forEach(i=>{ ah+=`<tr><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.date}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.staff}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${getItemClockHours(i).toFixed(1)}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:bold;">${getItemDeductPoints(i)}</td></tr>`; });
-  } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:15px;text-align:center;color:#666;">無紀錄</td></tr>`; }
+  if(ats.length>0) { ats.forEach(i=>{ ah+=`<tr><td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.date}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.staff}</td><td style="border:1px solid #ddd;padding:10px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;">${getItemClockHours(i).toFixed(1)}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;font-weight:bold;">${getItemDeductPoints(i)}</td></tr>`; });
+  } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;text-align:center;color:#666;">無紀錄</td></tr>`; }
   const pt = (yb==='all'&&mb==='all') ? '全部' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
   const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;border-radius:12px;margin-right:15px;">` : ``;
-  let c = `<div style="display:flex;align-items:center;justify-content:center;margin-bottom:30px;border-bottom:2px solid #2d9d5c;padding-bottom:15px;">${lh}<h2 style="font-size:28px;margin:0;color:#2d9d5c;">點籽響有限公司 - 服務對帳單</h2></div><table style="width:100%;table-layout:fixed;word-break:break-all;border:none;margin-bottom:20px;"><tr><td style="vertical-align:top;border:none;font-size:14px;line-height:1.8;padding:0;"><p style="margin:0 0 5px;"><strong>客戶：</strong>${cb}</p><p style="margin:0 0 5px;"><strong>期間：</strong>${pt}</p><p style="margin:0;"><strong>方案：</strong>${Array.from(ps).join('、')}</p></td><td style="vertical-align:top;border:none;text-align:right;padding:0;"><div style="display:inline-block;background:#f9f9f9;padding:10px 15px;border-radius:6px;border:1px solid #eee;text-align:left;min-width:200px;"><p style="font-weight:bold;color:#444;margin:0 0 8px;border-bottom:1px solid #ddd;padding-bottom:5px;">儲值紀錄</p><div style="color:#555;font-size:13px;">${ph}</div></div></td></tr></table><table style="width:100%;table-layout:fixed;word-break:break-all;background:#f0f8f4;border-radius:6px;margin-bottom:20px;text-align:center;font-size:15px;"><tr><td style="padding:15px;border:none;width:33%;">總儲值<br><strong style="font-size:20px;">${tp} 點</strong></td><td style="padding:15px;border:none;width:33%;">總扣除<br><strong style="font-size:20px;color:#555;">${up} 點</strong></td><td style="padding:15px;border:none;width:33%;">剩餘點數<br><strong style="font-size:20px;color:${rp<0?'#dc2626':'#2d9d5c'};">${rp} 點</strong></td></tr></table><table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:13px;margin-bottom:20px;"><thead><tr style="background:#f9f9f9;color:#555;"><th style="border:1px solid #ddd;padding:10px;">日期</th><th style="border:1px solid #ddd;padding:10px;">人員</th><th style="border:1px solid #ddd;padding:10px;">服務項目</th><th style="border:1px solid #ddd;padding:10px;">現場工時</th><th style="border:1px solid #ddd;padding:10px;">扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div style="text-align:right;font-size:12px;color:#888;">列印：${new Date().toLocaleDateString('zh-TW')}</div>`;
+  
+  let c = `
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:30px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
+        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司 - 服務對帳單</h2>
+    </div>
+    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:25px;">
+        <tr>
+            <td style="vertical-align:top;border:none;font-size:15px;line-height:1.8;padding:0;">
+                <p style="margin:0 0 6px;"><strong>客戶名稱：</strong>${cb}</p>
+                <p style="margin:0 0 6px;"><strong>結算期間：</strong>${pt}</p>
+                <p style="margin:0;"><strong>使用方案：</strong>${Array.from(ps).join('、')}</p>
+            </td>
+            <td style="vertical-align:top;border:none;text-align:right;padding:0;width:40%;">
+                <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;min-width:220px;">
+                    <p style="font-weight:bold;color:#475569;margin:0 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;">儲值紀錄</p>
+                    <div style="color:#334155;font-size:14px;">${ph}</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <table style="width:100%;table-layout:fixed;background:#ecfdf5;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #a7f3d0;">
+        <tr>
+            <td style="padding:18px;border:none;width:33%;border-right:1px solid #d1fae5;">總儲值<br><strong style="font-size:24px;color:#1e293b;display:inline-block;margin-top:5px;">${tp} 點</strong></td>
+            <td style="padding:18px;border:none;width:33%;border-right:1px solid #d1fae5;">總扣除<br><strong style="font-size:24px;color:#64748b;display:inline-block;margin-top:5px;">${up} 點</strong></td>
+            <td style="padding:18px;border:none;width:33%;">剩餘點數<br><strong style="font-size:24px;color:${rp<0?'#ef4444':'#059669'};display:inline-block;margin-top:5px;">${rp} 點</strong></td>
+        </tr>
+    </table>
+    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
+        <thead>
+            <tr style="background:#f1f5f9;color:#334155;">
+                <th style="border:1px solid #cbd5e1;padding:12px;width:18%;">日期</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:20%;">人員</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:32%;">服務項目</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">現場工時</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">扣除點數</th>
+            </tr>
+        </thead>
+        <tbody>${ah}</tbody>
+    </table>
+    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
+  </div>`;
   exportPDF('對帳單', cb, isC, ci.drive, c);
 }
 
@@ -333,13 +400,51 @@ function generatePayslipPDF(isC = false) {
   const si = staffData.find(x=>x.name===s); if(!si) return; if(isC && !si.drive) return showToast('無資料夾', true);
   let ats = attendData.filter(x=>x.staff===s&&isDispatchPayrollPeriod(x.date, ys, ms)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let thr=0, tpay=0, trs='', hly=+si.hourly||getStaffTieredHourly(s);
-  ats.forEach(i=>{ const ph=getItemSalaryHours(i), amt=Math.round(ph*hly); thr+=ph; tpay+=amt; trs+=`<tr><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.date}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${ph.toFixed(1)}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${hly}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${amt}</td></tr>`; });
-  if(ats.length===0) trs=`<tr><td colspan="5" style="border:1px solid #ddd;padding:15px;text-align:center;color:#666;">無紀錄</td></tr>`;
+  ats.forEach(i=>{ const ph=getItemSalaryHours(i), amt=Math.round(ph*hly); thr+=ph; tpay+=amt; trs+=`<tr><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${ph.toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${hly}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${amt}</td></tr>`; });
+  if(ats.length===0) trs=`<tr><td colspan="5" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#64748b;">無紀錄</td></tr>`;
   const l = +si.labor||0, h = +si.health||0, n = tpay - l - h;
-  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:50px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
+  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
   let pm=parseInt(ms)-1, py=parseInt(ys); if(pm===0){pm=12;py-=1;} let ptxt=`${py}/${String(pm).padStart(2,'0')}/26 ~ ${ys}/${String(ms).padStart(2,'0')}/25`;
-  let c = `<div style="text-align:center;margin-bottom:30px;border-bottom:2px solid #2d9d5c;padding-bottom:15px;">${lh}<h2 style="font-size:28px;margin:0;color:#2d9d5c;">點籽響有限公司</h2><h3 style="font-size:20px;margin:5px 0 0;color:#555;">派遣員工薪資單</h3></div><table style="width:100%;table-layout:fixed;word-break:break-all;border:none;margin-bottom:15px;"><tr><td style="text-align:left;border:none;padding:0;font-size:15px;"><strong>姓名：</strong>${s}</td><td style="text-align:right;border:none;padding:0;font-size:15px;"><strong>計薪：</strong>${ptxt}</td></tr></table><table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;"><thead><tr style="background:#f9f9f9;color:#555;"><th style="border:1px solid #ddd;padding:10px;">日期</th><th style="border:1px solid #ddd;padding:10px;">服務</th><th style="border:1px solid #ddd;padding:10px;">工時</th><th style="border:1px solid #ddd;padding:10px;">時薪</th><th style="border:1px solid #ddd;padding:10px;">日結</th></tr></thead><tbody>${trs}</tbody></table><table style="width:100%;table-layout:fixed;word-break:break-all;background:#f9f9f9;border-radius:8px;border:1px solid #eee;border-collapse:separate;"><tr><td style="width:50%;padding:20px;vertical-align:middle;font-size:15px;border:none;"><p style="margin:5px 0;">應付：<strong>${tpay} 元</strong></p><p style="margin:5px 0;color:#dc2626;">勞保：<strong>- ${l} 元</strong></p><p style="margin:5px 0;color:#dc2626;">健保：<strong>- ${h} 元</strong></p></td><td style="width:50%;padding:20px;text-align:center;vertical-align:middle;background:#f0fdf4;border-radius:8px;border:2px solid #2d9d5c;"><span style="color:#2d9d5c;display:block;margin-bottom:8px;font-weight:bold;font-size:16px;">本期實付金額</span><strong style="font-size:32px;color:#2d9d5c;">$ ${n}</strong></td></tr></table>`;
-  exportPDF(`${ys}年${ms}月薪薪`, s, isC, si.drive, c);
+  
+  let c = `
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
+        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">派遣員工薪資單</h3>
+    </div>
+    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:20px;">
+        <tr>
+            <td style="text-align:left;border:none;padding:0;font-size:16px;"><strong>人員姓名：</strong>${s}</td>
+            <td style="text-align:right;border:none;padding:0;font-size:16px;"><strong>計薪區間：</strong>${ptxt}</td>
+        </tr>
+    </table>
+    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;">
+        <thead>
+            <tr style="background:#f1f5f9;color:#334155;">
+                <th style="border:1px solid #cbd5e1;padding:12px;width:20%;">日期</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:40%;">服務內容</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">工時</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:10%;">時薪</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">日結</th>
+            </tr>
+        </thead>
+        <tbody>${trs}</tbody>
+    </table>
+    <table style="width:100%;table-layout:fixed;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;border-collapse:separate;overflow:hidden;">
+        <tr>
+            <td style="width:50%;padding:25px;vertical-align:middle;font-size:16px;border:none;border-right:1px dashed #cbd5e1;">
+                <p style="margin:6px 0;">本期應付：<strong style="font-size:18px;">${tpay} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">代扣勞保：<strong>- ${l} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">代扣健保：<strong>- ${h} 元</strong></p>
+            </td>
+            <td style="width:50%;padding:25px;text-align:center;vertical-align:middle;background:#ecfdf5;border:none;">
+                <span style="color:#059669;display:block;margin-bottom:10px;font-weight:bold;font-size:16px;letter-spacing:1px;">本期實付金額</span>
+                <strong style="font-size:38px;color:#059669;">$ ${n}</strong>
+            </td>
+        </tr>
+    </table>
+    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
+  </div>`;
+  exportPDF(`${ys}年${ms}月薪資`, s, isC, si.drive, c);
 }
 
 function generateFtPayslipPDF(isC = false) {
@@ -348,11 +453,50 @@ function generateFtPayslipPDF(isC = false) {
   const si = ftStaffData.find(x=>x.name===s); if (!si) return; if (isC && !si.drive) return showToast('無資料夾', true);
   let bs = Number(si.salary)||30000, hr = (bs/30)/8, ats = ftAttendData.filter(x=>x.staff===s&&x.date.startsWith(m)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let tw=0, dd=0, ov=0, trs='';
-  ats.forEach(a=>{ let h=Number(a.hours)||0, pc='-'; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班') tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){let ded=(a.leave_type==='事假')?h*hr:(h*hr*0.5); dd+=ded; pc=`扣薪 $${Math.round(ded)}`;} else if(a.record_type==='加班') {let op=h*hr*1.34; ov+=op; pc=`加班 +$${Math.round(op)}`;} trs+=`<tr><td style="border:1px solid #ddd;padding:8px;text-align:center;">${a.date}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${h} h</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${pc}</td></tr>`; });
-  if(ats.length===0) trs=`<tr><td colspan="4" style="border:1px solid #ddd;padding:15px;text-align:center;color:#666;">無紀錄</td></tr>`;
+  ats.forEach(a=>{ let h=Number(a.hours)||0, pc='-'; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班') tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){let ded=(a.leave_type==='事假')?h*hr:(h*hr*0.5); dd+=ded; pc=`<span style="color:#ef4444">扣薪 $${Math.round(ded)}</span>`;} else if(a.record_type==='加班') {let op=h*hr*1.34; ov+=op; pc=`<span style="color:#059669">加班 +$${Math.round(op)}</span>`;} trs+=`<tr><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${a.date}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${h} h</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${pc}</td></tr>`; });
+  if(ats.length===0) trs=`<tr><td colspan="4" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#64748b;">無紀錄</td></tr>`;
   let net = bs - dd + ov - (Number(si.labor)||0) - (Number(si.health)||0);
-  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:50px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
-  let c = `<div style="text-align:center;margin-bottom:30px;border-bottom:2px solid #2d9d5c;padding-bottom:15px;">${lh}<h2 style="font-size:28px;margin:0;color:#2d9d5c;">點籽響有限公司</h2><h3 style="font-size:20px;margin:5px 0 0;color:#555;">正職員工薪資單</h3></div><table style="width:100%;table-layout:fixed;word-break:break-all;border:none;margin-bottom:15px;"><tr><td style="text-align:left;border:none;padding:0;font-size:15px;"><strong>姓名：</strong>${s}</td><td style="text-align:right;border:none;padding:0;font-size:15px;"><strong>月份：</strong>${m.replace('-',' 年 ')} 月</td></tr></table><table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;"><thead><tr style="background:#f9f9f9;color:#555;"><th style="border:1px solid #ddd;padding:10px;">日期</th><th style="border:1px solid #ddd;padding:10px;">類型</th><th style="border:1px solid #ddd;padding:10px;">時數</th><th style="border:1px solid #ddd;padding:10px;">異動</th></tr></thead><tbody>${trs}</tbody></table><table style="width:100%;table-layout:fixed;word-break:break-all;background:#f9f9f9;border-radius:8px;border:1px solid #eee;border-collapse:separate;"><tr><td style="width:50%;padding:20px;vertical-align:middle;font-size:15px;border:none;"><p style="margin:5px 0;">底薪：<strong>${bs} 元</strong></p><p style="margin:5px 0;color:#10b981;">加班：<strong>+ ${Math.round(ov)} 元</strong></p><p style="margin:5px 0;color:#dc2626;">請假：<strong>- ${Math.round(dd)} 元</strong></p><p style="margin:5px 0;color:#dc2626;">勞保：<strong>- ${Number(si.labor)||0} 元</strong></p><p style="margin:5px 0;color:#dc2626;">健保：<strong>- ${Number(si.health)||0} 元</strong></p></td><td style="width:50%;padding:20px;text-align:center;vertical-align:middle;background:#f0fdf4;border-radius:8px;border:2px solid #2d9d5c;"><span style="color:#2d9d5c;display:block;margin-bottom:8px;font-weight:bold;font-size:16px;">本月實發金額</span><strong style="font-size:32px;color:#2d9d5c;">$ ${Math.round(net)}</strong></td></tr></table>`;
+  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
+  
+  let c = `
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
+        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">正職員工薪資單</h3>
+    </div>
+    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:20px;">
+        <tr>
+            <td style="text-align:left;border:none;padding:0;font-size:16px;"><strong>人員姓名：</strong>${s}</td>
+            <td style="text-align:right;border:none;padding:0;font-size:16px;"><strong>結算月份：</strong>${m.replace('-',' 年 ')} 月</td>
+        </tr>
+    </table>
+    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;">
+        <thead>
+            <tr style="background:#f1f5f9;color:#334155;">
+                <th style="border:1px solid #cbd5e1;padding:12px;width:25%;">日期</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:35%;">出勤類型</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">時數</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:25%;">異動金額</th>
+            </tr>
+        </thead>
+        <tbody>${trs}</tbody>
+    </table>
+    <table style="width:100%;table-layout:fixed;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;border-collapse:separate;overflow:hidden;">
+        <tr>
+            <td style="width:50%;padding:25px;vertical-align:middle;font-size:16px;border:none;border-right:1px dashed #cbd5e1;">
+                <p style="margin:6px 0;">約定底薪：<strong style="font-size:18px;">${bs} 元</strong></p>
+                <p style="margin:6px 0;color:#059669;">加班加給：<strong>+ ${Math.round(ov)} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">請假扣薪：<strong>- ${Math.round(dd)} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">代扣勞保：<strong>- ${Number(si.labor)||0} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">代扣健保：<strong>- ${Number(si.health)||0} 元</strong></p>
+            </td>
+            <td style="width:50%;padding:25px;text-align:center;vertical-align:middle;background:#ecfdf5;border:none;">
+                <span style="color:#059669;display:block;margin-bottom:10px;font-weight:bold;font-size:16px;letter-spacing:1px;">本月實發金額</span>
+                <strong style="font-size:38px;color:#059669;">$ ${Math.round(net)}</strong>
+            </td>
+        </tr>
+    </table>
+    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
+  </div>`;
   exportPDF(`${m.replace('-','年')}月薪資`, s, isC, si.drive, c);
 }
 
@@ -452,7 +596,7 @@ function renderFtStaffTable(){ const fs=el('ft_staff_filter_status').value, fn=e
 function addFtStaff(){ const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; if(!o.name)return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm();
   showToast('✅ 成功'); }
 function editFtStaff(i){ const d=ftStaffData[i]; el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_drive').value=d.drive;
-  el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('ft_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; el('btnUpdateFtStaff').style.display='inline-block'; const b=el('btnAddFtStaff'); if(b) b.style.display='none'; }
+  el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('staff_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; el('btnUpdateFtStaff').style.display='inline-block'; const b=el('btnAddFtStaff'); if(b) b.style.display='none'; }
 function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked};
   ftStaffData[editFtStaffIndex]={...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
 function delFtStaff(i){ if(!confirm('刪除？'))return; ftStaffData.splice(i,1); saveAll(); renderFtStaffTable(); showToast('刪除'); }
@@ -606,6 +750,217 @@ function renderStaffMyPay() { if(!el('staffMyPayTable')||!currentLoginStaff)retu
 function staffDownloadPayslip() { if(!currentLoginStaff)return;
   const iF=ftStaffData.some(x=>x.name===currentLoginStaff.name); if(iF){el('fts_filter_staff').value=currentLoginStaff.name; const y=el('staff_my_year').value, m=el('staff_my_month').value; el('fts_filter_month').value=`${y}-${String(m).padStart(2,'0')}`; generateFtPayslipPDF(false);} else{el('sal_filter_staff').value=currentLoginStaff.name; el('sal_filter_year').value=el('staff_my_year').value; el('sal_filter_month').value=el('staff_my_month').value; generatePayslipPDF(false);} }
 function openStaffDrive() { if(currentLoginStaff&&currentLoginStaff.drive) window.open(currentLoginStaff.drive,'_blank'); else showToast('無資料夾',true); }
+
+// 🚀 終極 PDF 產出引擎：實體 DOM 渲染，強制鎖定座標與 A4 寬度，徹底解決左側裁切問題
+function exportPDF(title, tgt, isC, fUrl, cHtml) {
+  showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
+  
+  // 建立隱藏的實體 DOM 元素，確保排版錨定在最左上角 (0,0) 避免偏移裁切
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = cHtml;
+  wrapper.style.width = '210mm'; // 強制 A4 寬度
+  wrapper.style.padding = '12mm 15mm'; // 以內部 padding 取代外部 margin
+  wrapper.style.background = '#fff';
+  wrapper.style.color = '#333';
+  wrapper.style.fontFamily = "'Microsoft JhengHei', sans-serif";
+  wrapper.style.boxSizing = 'border-box';
+
+  const opt = { 
+    margin: 0, // 外部邊距設為 0，完全依賴 wrapper 的 padding，防止截圖引擎算錯座標
+    filename: `${tgt}_${title}_${new Date().getTime()}.pdf`, 
+    image: {type:'jpeg', quality:0.98}, 
+    html2canvas: {
+        scale: 2, 
+        useCORS: true, 
+        letterRendering: true, 
+        scrollX: 0, // 強制鎖定捲動位置 X 軸
+        scrollY: 0, // 強制鎖定捲動位置 Y 軸
+        windowWidth: 794 // 對應標準 A4 像素寬度
+    }, 
+    jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  if(isC) {
+     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
+     html2pdf().set(opt).from(wrapper).outputPdf('datauristring').then(b64 => { 
+        fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
+        .then(r=>r.json()).then(r=>{ 
+            if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
+            else {showToast('失敗',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);} 
+        }).catch(e=>{showToast('錯誤',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);}); 
+     });
+  } else { 
+     html2pdf().set(opt).from(wrapper).save().then(()=>showToast('✅ 完成！')); 
+  }
+}
+
+function generateStatementPDF(isC = false) {
+  const cb=el('bill_filter_company').value, yb=el('bill_filter_year').value, mb=el('bill_filter_month').value;
+  if(!cb) return showToast('請選公司', true);
+  const ci = custData.find(x=>x.name===cb); if(isC && (!ci||!ci.drive)) return showToast('無資料夾', true);
+  const cs = contractData.filter(x=>x.customer===cb).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let tp=0, ph='', ps=new Set();
+  if(cs.length>0) { cs.forEach(c=>{ tp+=Number(c.point)||0; if(c.price_plan) ps.add(c.price_plan); ph+=`<div style="margin-bottom:4px;">📅 ${c.date?c.date.replace(/-/g,'/'):'無'}&nbsp;&nbsp;<b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`; });
+  } else { ph='<div style="color:#999;">無</div>'; ps.add('無'); }
+  const up = attendData.filter(x=>x.company===cb).reduce((s,i)=>s+getItemDeductPoints(i), 0), rp = tp-up;
+  let ats = attendData.filter(x=>x.company===cb&&(yb==='all'||x.date.startsWith(yb))&&(mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let ah = '';
+  if(ats.length>0) { ats.forEach(i=>{ ah+=`<tr><td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.date}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.staff}</td><td style="border:1px solid #ddd;padding:10px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;">${getItemClockHours(i).toFixed(1)}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;font-weight:bold;">${getItemDeductPoints(i)}</td></tr>`; });
+  } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;text-align:center;color:#666;">無紀錄</td></tr>`; }
+  const pt = (yb==='all'&&mb==='all') ? '全部' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
+  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;border-radius:12px;margin-right:15px;">` : ``;
+  
+  let c = `
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:30px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
+        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司 - 服務對帳單</h2>
+    </div>
+    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:25px;">
+        <tr>
+            <td style="vertical-align:top;border:none;font-size:15px;line-height:1.8;padding:0;">
+                <p style="margin:0 0 6px;"><strong>客戶名稱：</strong>${cb}</p>
+                <p style="margin:0 0 6px;"><strong>結算期間：</strong>${pt}</p>
+                <p style="margin:0;"><strong>使用方案：</strong>${Array.from(ps).join('、')}</p>
+            </td>
+            <td style="vertical-align:top;border:none;text-align:right;padding:0;width:40%;">
+                <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;min-width:220px;">
+                    <p style="font-weight:bold;color:#475569;margin:0 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;">儲值紀錄</p>
+                    <div style="color:#334155;font-size:14px;">${ph}</div>
+                </div>
+            </td>
+        </tr>
+    </table>
+    <table style="width:100%;table-layout:fixed;background:#ecfdf5;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #a7f3d0;">
+        <tr>
+            <td style="padding:18px;border:none;width:33%;border-right:1px solid #d1fae5;">總儲值<br><strong style="font-size:24px;color:#1e293b;display:inline-block;margin-top:5px;">${tp} 點</strong></td>
+            <td style="padding:18px;border:none;width:33%;border-right:1px solid #d1fae5;">總扣除<br><strong style="font-size:24px;color:#64748b;display:inline-block;margin-top:5px;">${up} 點</strong></td>
+            <td style="padding:18px;border:none;width:33%;">剩餘點數<br><strong style="font-size:24px;color:${rp<0?'#ef4444':'#059669'};display:inline-block;margin-top:5px;">${rp} 點</strong></td>
+        </tr>
+    </table>
+    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
+        <thead>
+            <tr style="background:#f1f5f9;color:#334155;">
+                <th style="border:1px solid #cbd5e1;padding:12px;width:18%;">日期</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:20%;">人員</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:32%;">服務項目</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">現場工時</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">扣除點數</th>
+            </tr>
+        </thead>
+        <tbody>${ah}</tbody>
+    </table>
+    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
+  </div>`;
+  exportPDF('對帳單', cb, isC, ci.drive, c);
+}
+
+function generatePayslipPDF(isC = false) {
+  const s=el('sal_filter_staff').value, ys=el('sal_filter_year').value, ms=el('sal_filter_month').value;
+  if(s==='all'||ys==='all'||ms==='all') return showToast('請選人員與年月！', true);
+  const si = staffData.find(x=>x.name===s); if(!si) return; if(isC && !si.drive) return showToast('無資料夾', true);
+  let ats = attendData.filter(x=>x.staff===s&&isDispatchPayrollPeriod(x.date, ys, ms)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let thr=0, tpay=0, trs='', hly=+si.hourly||getStaffTieredHourly(s);
+  ats.forEach(i=>{ const ph=getItemSalaryHours(i), amt=Math.round(ph*hly); thr+=ph; tpay+=amt; trs+=`<tr><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${ph.toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${hly}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${amt}</td></tr>`; });
+  if(ats.length===0) trs=`<tr><td colspan="5" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#64748b;">無紀錄</td></tr>`;
+  const l = +si.labor||0, h = +si.health||0, n = tpay - l - h;
+  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
+  let pm=parseInt(ms)-1, py=parseInt(ys); if(pm===0){pm=12;py-=1;} let ptxt=`${py}/${String(pm).padStart(2,'0')}/26 ~ ${ys}/${String(ms).padStart(2,'0')}/25`;
+  
+  let c = `
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
+        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">派遣員工薪資單</h3>
+    </div>
+    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:20px;">
+        <tr>
+            <td style="text-align:left;border:none;padding:0;font-size:16px;"><strong>人員姓名：</strong>${s}</td>
+            <td style="text-align:right;border:none;padding:0;font-size:16px;"><strong>計薪區間：</strong>${ptxt}</td>
+        </tr>
+    </table>
+    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;">
+        <thead>
+            <tr style="background:#f1f5f9;color:#334155;">
+                <th style="border:1px solid #cbd5e1;padding:12px;width:20%;">日期</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:40%;">服務內容</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">工時</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:10%;">時薪</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">日結</th>
+            </tr>
+        </thead>
+        <tbody>${trs}</tbody>
+    </table>
+    <table style="width:100%;table-layout:fixed;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;border-collapse:separate;overflow:hidden;">
+        <tr>
+            <td style="width:50%;padding:25px;vertical-align:middle;font-size:16px;border:none;border-right:1px dashed #cbd5e1;">
+                <p style="margin:6px 0;">本期應付：<strong style="font-size:18px;">${tpay} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">代扣勞保：<strong>- ${l} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">代扣健保：<strong>- ${h} 元</strong></p>
+            </td>
+            <td style="width:50%;padding:25px;text-align:center;vertical-align:middle;background:#ecfdf5;border:none;">
+                <span style="color:#059669;display:block;margin-bottom:10px;font-weight:bold;font-size:16px;letter-spacing:1px;">本期實付金額</span>
+                <strong style="font-size:38px;color:#059669;">$ ${n}</strong>
+            </td>
+        </tr>
+    </table>
+    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
+  </div>`;
+  exportPDF(`${ys}年${ms}月薪資`, s, isC, si.drive, c);
+}
+
+function generateFtPayslipPDF(isC = false) {
+  const s=el('fts_filter_staff').value, m=el('fts_filter_month').value;
+  if (s==='all'||!m) return showToast('請選員工與年月！', true);
+  const si = ftStaffData.find(x=>x.name===s); if (!si) return; if (isC && !si.drive) return showToast('無資料夾', true);
+  let bs = Number(si.salary)||30000, hr = (bs/30)/8, ats = ftAttendData.filter(x=>x.staff===s&&x.date.startsWith(m)).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  let tw=0, dd=0, ov=0, trs='';
+  ats.forEach(a=>{ let h=Number(a.hours)||0, pc='-'; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班') tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){let ded=(a.leave_type==='事假')?h*hr:(h*hr*0.5); dd+=ded; pc=`<span style="color:#ef4444">扣薪 $${Math.round(ded)}</span>`;} else if(a.record_type==='加班') {let op=h*hr*1.34; ov+=op; pc=`<span style="color:#059669">加班 +$${Math.round(op)}</span>`;} trs+=`<tr><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${a.date}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${h} h</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${pc}</td></tr>`; });
+  if(ats.length===0) trs=`<tr><td colspan="4" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#64748b;">無紀錄</td></tr>`;
+  let net = bs - dd + ov - (Number(si.labor)||0) - (Number(si.health)||0);
+  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
+  
+  let c = `
+  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
+        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">正職員工薪資單</h3>
+    </div>
+    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:20px;">
+        <tr>
+            <td style="text-align:left;border:none;padding:0;font-size:16px;"><strong>人員姓名：</strong>${s}</td>
+            <td style="text-align:right;border:none;padding:0;font-size:16px;"><strong>結算月份：</strong>${m.replace('-',' 年 ')} 月</td>
+        </tr>
+    </table>
+    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;">
+        <thead>
+            <tr style="background:#f1f5f9;color:#334155;">
+                <th style="border:1px solid #cbd5e1;padding:12px;width:25%;">日期</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:35%;">出勤類型</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">時數</th>
+                <th style="border:1px solid #cbd5e1;padding:12px;width:25%;">異動金額</th>
+            </tr>
+        </thead>
+        <tbody>${trs}</tbody>
+    </table>
+    <table style="width:100%;table-layout:fixed;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;border-collapse:separate;overflow:hidden;">
+        <tr>
+            <td style="width:50%;padding:25px;vertical-align:middle;font-size:16px;border:none;border-right:1px dashed #cbd5e1;">
+                <p style="margin:6px 0;">約定底薪：<strong style="font-size:18px;">${bs} 元</strong></p>
+                <p style="margin:6px 0;color:#059669;">加班加給：<strong>+ ${Math.round(ov)} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">請假扣薪：<strong>- ${Math.round(dd)} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">代扣勞保：<strong>- ${Number(si.labor)||0} 元</strong></p>
+                <p style="margin:6px 0;color:#ef4444;">代扣健保：<strong>- ${Number(si.health)||0} 元</strong></p>
+            </td>
+            <td style="width:50%;padding:25px;text-align:center;vertical-align:middle;background:#ecfdf5;border:none;">
+                <span style="color:#059669;display:block;margin-bottom:10px;font-weight:bold;font-size:16px;letter-spacing:1px;">本月實發金額</span>
+                <strong style="font-size:38px;color:#059669;">$ ${Math.round(net)}</strong>
+            </td>
+        </tr>
+    </table>
+    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
+  </div>`;
+  exportPDF(`${m.replace('-','年')}月薪資`, s, isC, si.drive, c);
+}
+
 </script>
 </body>
 </html>
