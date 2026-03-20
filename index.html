@@ -279,35 +279,49 @@ function restoreData(i) { if(!i.files||!i.files[0])return; const rd=new FileRead
 function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
-// 🚀 終極 PDF 產出引擎：純 HTML 字串渲染，強制鎖定座標與 800px 畫布寬度，徹底解決左側裁切問題
+// 🚀 終極暴力 PDF 產出引擎：實體掛載 + 強制歸零，100% 解決左側切邊 Bug
 function exportPDF(title, tgt, isC, fUrl, cHtml) {
   showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
   
-  // 放棄實體 DOM，改用純字串，html2pdf 會自動在背景 iframe 完美渲染，不會受當前視窗捲動影響
-  const htmlString = `
-    <div style="width: 794px; padding: 40px; background: #fff; color: #333; font-family: 'Microsoft JhengHei', sans-serif; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0 auto;">
-      ${cHtml}
-    </div>
-  `;
+  const container = document.createElement('div');
+  container.style.position = 'absolute';
+  container.style.left = '0px';
+  container.style.top = '0px';
+  container.style.width = '794px';
+  container.style.padding = '40px'; 
+  container.style.backgroundColor = '#ffffff';
+  container.style.color = '#333333';
+  container.style.fontFamily = "'Microsoft JhengHei', sans-serif";
+  container.style.zIndex = '-9999';
+  container.innerHTML = cHtml;
+
+  document.body.appendChild(container);
+
+  const origX = window.scrollX;
+  const origY = window.scrollY;
+  window.scrollTo(0, 0);
 
   const opt = { 
-    margin: [5, 0, 5, 0], // 上下留一點邊界，左右設定為 0 (由內部 padding 處理防裁切)
+    margin: 0, 
     filename: `${tgt}_${title}_${new Date().getTime()}.pdf`, 
     image: {type:'jpeg', quality:1}, 
     html2canvas: {
         scale: 2, 
         useCORS: true, 
-        letterRendering: true, 
-        windowWidth: 794, // 強制以 794px 寬度渲染，避免手機版或縮放導致排版跑掉或裁切
+        scrollX: 0, 
         scrollY: 0,
-        scrollX: 0
+        windowWidth: 794
     }, 
     jsPDF: {unit:'mm', format:'a4', orientation:'portrait'}
   };
 
+  const process = html2pdf().set(opt).from(container);
+
   if(isC) {
      if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
-     html2pdf().set(opt).from(htmlString).outputPdf('datauristring').then(b64 => { 
+     process.outputPdf('datauristring').then(b64 => { 
+        document.body.removeChild(container); 
+        window.scrollTo(origX, origY); 
         fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
         .then(r=>r.json()).then(r=>{ 
             if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
@@ -315,7 +329,15 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
         }).catch(e=>{showToast('錯誤',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);}); 
      });
   } else { 
-     html2pdf().set(opt).from(htmlString).save().then(()=>showToast('✅ 完成！')); 
+     process.save().then(() => {
+        document.body.removeChild(container); 
+        window.scrollTo(origX, origY); 
+        showToast('✅ 完成！'); 
+     }).catch(err => {
+        document.body.removeChild(container); 
+        window.scrollTo(origX, origY); 
+        showToast('❌ 下載失敗', true);
+     }); 
   }
 }
 
@@ -341,51 +363,11 @@ function generateStatementPDF(isC = false) {
   const up = attendData.filter(x=>x.company===cb).reduce((s,i)=>s+getItemDeductPoints(i), 0), rp = tp-up;
   let ats = attendData.filter(x=>x.company===cb&&(yb==='all'||x.date.startsWith(yb))&&(mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let ah = '';
-  if(ats.length>0) { ats.forEach(i=>{ ah+=`<tr><td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.date}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.staff}</td><td style="border:1px solid #ddd;padding:10px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;">${getItemClockHours(i).toFixed(1)}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;font-weight:bold;">${getItemDeductPoints(i)}</td></tr>`; });
-  } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;text-align:center;color:#666;">無紀錄</td></tr>`; }
+  if(ats.length>0) { ats.forEach(i=>{ ah+=`<tr><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.date}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.staff}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${getItemClockHours(i).toFixed(1)}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:bold;">${getItemDeductPoints(i)}</td></tr>`; });
+  } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:15px;text-align:center;color:#666;">無紀錄</td></tr>`; }
   const pt = (yb==='all'&&mb==='all') ? '全部' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
   const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;border-radius:12px;margin-right:15px;">` : ``;
-  
-  let c = `
-    <div style="display:flex;align-items:center;justify-content:center;margin-bottom:30px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
-        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司 - 服務對帳單</h2>
-    </div>
-    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:25px;">
-        <tr>
-            <td style="vertical-align:top;border:none;font-size:15px;line-height:1.8;padding:0;">
-                <p style="margin:0 0 6px;"><strong>客戶名稱：</strong>${cb}</p>
-                <p style="margin:0 0 6px;"><strong>結算期間：</strong>${pt}</p>
-                <p style="margin:0;"><strong>使用方案：</strong>${Array.from(ps).join('、')}</p>
-            </td>
-            <td style="vertical-align:top;border:none;text-align:right;padding:0;width:40%;">
-                <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;min-width:220px;">
-                    <p style="font-weight:bold;color:#475569;margin:0 0 10px;border-bottom:1px solid #cbd5e1;padding-bottom:6px;">儲值紀錄</p>
-                    <div style="color:#334155;font-size:14px;">${ph}</div>
-                </div>
-            </td>
-        </tr>
-    </table>
-    <table style="width:100%;table-layout:fixed;background:#ecfdf5;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #a7f3d0;">
-        <tr>
-            <td style="padding:18px;border:none;width:33%;border-right:1px solid #d1fae5;">總儲值<br><strong style="font-size:24px;color:#1e293b;display:inline-block;margin-top:5px;">${tp} 點</strong></td>
-            <td style="padding:18px;border:none;width:33%;border-right:1px solid #d1fae5;">總扣除<br><strong style="font-size:24px;color:#64748b;display:inline-block;margin-top:5px;">${up} 點</strong></td>
-            <td style="padding:18px;border:none;width:33%;">剩餘點數<br><strong style="font-size:24px;color:${rp<0?'#ef4444':'#059669'};display:inline-block;margin-top:5px;">${rp} 點</strong></td>
-        </tr>
-    </table>
-    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
-        <thead>
-            <tr style="background:#f1f5f9;color:#334155;">
-                <th style="border:1px solid #cbd5e1;padding:12px;width:18%;">日期</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:20%;">人員</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:32%;">服務項目</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">現場工時</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">扣除點數</th>
-            </tr>
-        </thead>
-        <tbody>${ah}</tbody>
-    </table>
-    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
-  `;
+  let c = `<div style="display:flex;align-items:center;justify-content:center;margin-bottom:30px;border-bottom:2px solid #2d9d5c;padding-bottom:15px;">${lh}<h2 style="font-size:28px;margin:0;color:#2d9d5c;">點籽響有限公司 - 服務對帳單</h2></div><table style="width:100%;table-layout:fixed;word-break:break-all;border:none;margin-bottom:20px;"><tr><td style="vertical-align:top;border:none;font-size:14px;line-height:1.8;padding:0;"><p style="margin:0 0 5px;"><strong>客戶：</strong>${cb}</p><p style="margin:0 0 5px;"><strong>期間：</strong>${pt}</p><p style="margin:0;"><strong>方案：</strong>${Array.from(ps).join('、')}</p></td><td style="vertical-align:top;border:none;text-align:right;padding:0;"><div style="display:inline-block;background:#f9f9f9;padding:10px 15px;border-radius:6px;border:1px solid #eee;text-align:left;min-width:200px;"><p style="font-weight:bold;color:#444;margin:0 0 8px;border-bottom:1px solid #ddd;padding-bottom:5px;">儲值紀錄</p><div style="color:#555;font-size:13px;">${ph}</div></div></td></tr></table><table style="width:100%;table-layout:fixed;word-break:break-all;background:#f0f8f4;border-radius:6px;margin-bottom:20px;text-align:center;font-size:15px;"><tr><td style="padding:15px;border:none;width:33%;">總儲值<br><strong style="font-size:20px;">${tp} 點</strong></td><td style="padding:15px;border:none;width:33%;">總扣除<br><strong style="font-size:20px;color:#555;">${up} 點</strong></td><td style="padding:15px;border:none;width:33%;">剩餘點數<br><strong style="font-size:20px;color:${rp<0?'#dc2626':'#2d9d5c'};">${rp} 點</strong></td></tr></table><table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:13px;margin-bottom:20px;"><thead><tr style="background:#f9f9f9;color:#555;"><th style="border:1px solid #ddd;padding:10px;">日期</th><th style="border:1px solid #ddd;padding:10px;">人員</th><th style="border:1px solid #ddd;padding:10px;">服務項目</th><th style="border:1px solid #ddd;padding:10px;">現場工時</th><th style="border:1px solid #ddd;padding:10px;">扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div style="text-align:right;font-size:12px;color:#888;">列印：${new Date().toLocaleDateString('zh-TW')}</div>`;
   exportPDF('對帳單', cb, isC, ci.drive, c);
 }
 
@@ -395,49 +377,12 @@ function generatePayslipPDF(isC = false) {
   const si = staffData.find(x=>x.name===s); if(!si) return; if(isC && !si.drive) return showToast('無資料夾', true);
   let ats = attendData.filter(x=>x.staff===s&&isDispatchPayrollPeriod(x.date, ys, ms)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let thr=0, tpay=0, trs='', hly=+si.hourly||getStaffTieredHourly(s);
-  ats.forEach(i=>{ const ph=getItemSalaryHours(i), amt=Math.round(ph*hly); thr+=ph; tpay+=amt; trs+=`<tr><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${ph.toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${hly}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${amt}</td></tr>`; });
-  if(ats.length===0) trs=`<tr><td colspan="5" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#64748b;">無紀錄</td></tr>`;
+  ats.forEach(i=>{ const ph=getItemSalaryHours(i), amt=Math.round(ph*hly); thr+=ph; tpay+=amt; trs+=`<tr><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.date}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${ph.toFixed(1)}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${hly}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${amt}</td></tr>`; });
+  if(ats.length===0) trs=`<tr><td colspan="5" style="border:1px solid #ddd;padding:15px;text-align:center;color:#666;">無紀錄</td></tr>`;
   const l = +si.labor||0, h = +si.health||0, n = tpay - l - h;
-  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
+  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:50px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
   let pm=parseInt(ms)-1, py=parseInt(ys); if(pm===0){pm=12;py-=1;} let ptxt=`${py}/${String(pm).padStart(2,'0')}/26 ~ ${ys}/${String(ms).padStart(2,'0')}/25`;
-  
-  let c = `
-    <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
-        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">派遣員工薪資單</h3>
-    </div>
-    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:20px;">
-        <tr>
-            <td style="text-align:left;border:none;padding:0;font-size:16px;"><strong>人員姓名：</strong>${s}</td>
-            <td style="text-align:right;border:none;padding:0;font-size:16px;"><strong>計薪區間：</strong>${ptxt}</td>
-        </tr>
-    </table>
-    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;">
-        <thead>
-            <tr style="background:#f1f5f9;color:#334155;">
-                <th style="border:1px solid #cbd5e1;padding:12px;width:20%;">日期</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:40%;">服務內容</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">工時</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:10%;">時薪</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">日結</th>
-            </tr>
-        </thead>
-        <tbody>${trs}</tbody>
-    </table>
-    <table style="width:100%;table-layout:fixed;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;border-collapse:separate;overflow:hidden;">
-        <tr>
-            <td style="width:50%;padding:25px;vertical-align:middle;font-size:16px;border:none;border-right:1px dashed #cbd5e1;">
-                <p style="margin:6px 0;">本期應付：<strong style="font-size:18px;">${tpay} 元</strong></p>
-                <p style="margin:6px 0;color:#ef4444;">代扣勞保：<strong>- ${l} 元</strong></p>
-                <p style="margin:6px 0;color:#ef4444;">代扣健保：<strong>- ${h} 元</strong></p>
-            </td>
-            <td style="width:50%;padding:25px;text-align:center;vertical-align:middle;background:#ecfdf5;border:none;">
-                <span style="color:#059669;display:block;margin-bottom:10px;font-weight:bold;font-size:16px;letter-spacing:1px;">本期實付金額</span>
-                <strong style="font-size:38px;color:#059669;">$ ${n}</strong>
-            </td>
-        </tr>
-    </table>
-    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
-  `;
+  let c = `<div style="text-align:center;margin-bottom:30px;border-bottom:2px solid #2d9d5c;padding-bottom:15px;">${lh}<h2 style="font-size:28px;margin:0;color:#2d9d5c;">點籽響有限公司</h2><h3 style="font-size:20px;margin:5px 0 0;color:#555;">派遣員工薪資單</h3></div><table style="width:100%;table-layout:fixed;word-break:break-all;border:none;margin-bottom:15px;"><tr><td style="text-align:left;border:none;padding:0;font-size:15px;"><strong>姓名：</strong>${s}</td><td style="text-align:right;border:none;padding:0;font-size:15px;"><strong>計薪：</strong>${ptxt}</td></tr></table><table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;"><thead><tr style="background:#f9f9f9;color:#555;"><th style="border:1px solid #ddd;padding:10px;">日期</th><th style="border:1px solid #ddd;padding:10px;">服務</th><th style="border:1px solid #ddd;padding:10px;">工時</th><th style="border:1px solid #ddd;padding:10px;">時薪</th><th style="border:1px solid #ddd;padding:10px;">日結</th></tr></thead><tbody>${trs}</tbody></table><table style="width:100%;table-layout:fixed;word-break:break-all;background:#f9f9f9;border-radius:8px;border:1px solid #eee;border-collapse:separate;"><tr><td style="width:50%;padding:20px;vertical-align:middle;font-size:15px;border:none;"><p style="margin:5px 0;">應付：<strong>${tpay} 元</strong></p><p style="margin:5px 0;color:#dc2626;">勞保：<strong>- ${l} 元</strong></p><p style="margin:5px 0;color:#dc2626;">健保：<strong>- ${h} 元</strong></p></td><td style="width:50%;padding:20px;text-align:center;vertical-align:middle;background:#f0fdf4;border-radius:8px;border:2px solid #2d9d5c;"><span style="color:#2d9d5c;display:block;margin-bottom:8px;font-weight:bold;font-size:16px;">本期實付金額</span><strong style="font-size:32px;color:#2d9d5c;">$ ${n}</strong></td></tr></table>`;
   exportPDF(`${ys}年${ms}月薪資`, s, isC, si.drive, c);
 }
 
@@ -447,49 +392,11 @@ function generateFtPayslipPDF(isC = false) {
   const si = ftStaffData.find(x=>x.name===s); if (!si) return; if (isC && !si.drive) return showToast('無資料夾', true);
   let bs = Number(si.salary)||30000, hr = (bs/30)/8, ats = ftAttendData.filter(x=>x.staff===s&&x.date.startsWith(m)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let tw=0, dd=0, ov=0, trs='';
-  ats.forEach(a=>{ let h=Number(a.hours)||0, pc='-'; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班') tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){let ded=(a.leave_type==='事假')?h*hr:(h*hr*0.5); dd+=ded; pc=`<span style="color:#ef4444">扣薪 $${Math.round(ded)}</span>`;} else if(a.record_type==='加班') {let op=h*hr*1.34; ov+=op; pc=`<span style="color:#059669">加班 +$${Math.round(op)}</span>`;} trs+=`<tr><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${a.date}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${h} h</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${pc}</td></tr>`; });
-  if(ats.length===0) trs=`<tr><td colspan="4" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#64748b;">無紀錄</td></tr>`;
+  ats.forEach(a=>{ let h=Number(a.hours)||0, pc='-'; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班') tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){let ded=(a.leave_type==='事假')?h*hr:(h*hr*0.5); dd+=ded; pc=`扣薪 $${Math.round(ded)}`;} else if(a.record_type==='加班') {let op=h*hr*1.34; ov+=op; pc=`加班 +$${Math.round(op)}`;} trs+=`<tr><td style="border:1px solid #ddd;padding:8px;text-align:center;">${a.date}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${h} h</td><td style="border:1px solid #ddd;padding:8px;text-align:center;">${pc}</td></tr>`; });
+  if(ats.length===0) trs=`<tr><td colspan="4" style="border:1px solid #ddd;padding:15px;text-align:center;color:#666;">無紀錄</td></tr>`;
   let net = bs - dd + ov - (Number(si.labor)||0) - (Number(si.health)||0);
-  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
-  
-  let c = `
-    <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
-        ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">正職員工薪資單</h3>
-    </div>
-    <table style="width:100%;table-layout:fixed;border:none;margin-bottom:20px;">
-        <tr>
-            <td style="text-align:left;border:none;padding:0;font-size:16px;"><strong>人員姓名：</strong>${s}</td>
-            <td style="text-align:right;border:none;padding:0;font-size:16px;"><strong>結算月份：</strong>${m.replace('-',' 年 ')} 月</td>
-        </tr>
-    </table>
-    <table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;">
-        <thead>
-            <tr style="background:#f1f5f9;color:#334155;">
-                <th style="border:1px solid #cbd5e1;padding:12px;width:25%;">日期</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:35%;">出勤類型</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:15%;">時數</th>
-                <th style="border:1px solid #cbd5e1;padding:12px;width:25%;">異動金額</th>
-            </tr>
-        </thead>
-        <tbody>${trs}</tbody>
-    </table>
-    <table style="width:100%;table-layout:fixed;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;border-collapse:separate;overflow:hidden;">
-        <tr>
-            <td style="width:50%;padding:25px;vertical-align:middle;font-size:16px;border:none;border-right:1px dashed #cbd5e1;">
-                <p style="margin:6px 0;">約定底薪：<strong style="font-size:18px;">${bs} 元</strong></p>
-                <p style="margin:6px 0;color:#059669;">加班加給：<strong>+ ${Math.round(ov)} 元</strong></p>
-                <p style="margin:6px 0;color:#ef4444;">請假扣薪：<strong>- ${Math.round(dd)} 元</strong></p>
-                <p style="margin:6px 0;color:#ef4444;">代扣勞保：<strong>- ${Number(si.labor)||0} 元</strong></p>
-                <p style="margin:6px 0;color:#ef4444;">代扣健保：<strong>- ${Number(si.health)||0} 元</strong></p>
-            </td>
-            <td style="width:50%;padding:25px;text-align:center;vertical-align:middle;background:#ecfdf5;border:none;">
-                <span style="color:#059669;display:block;margin-bottom:10px;font-weight:bold;font-size:16px;letter-spacing:1px;">本月實發金額</span>
-                <strong style="font-size:38px;color:#059669;">$ ${Math.round(net)}</strong>
-            </td>
-        </tr>
-    </table>
-    <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
-  `;
+  const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:50px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
+  let c = `<div style="text-align:center;margin-bottom:30px;border-bottom:2px solid #2d9d5c;padding-bottom:15px;">${lh}<h2 style="font-size:28px;margin:0;color:#2d9d5c;">點籽響有限公司</h2><h3 style="font-size:20px;margin:5px 0 0;color:#555;">正職員工薪資單</h3></div><table style="width:100%;table-layout:fixed;word-break:break-all;border:none;margin-bottom:15px;"><tr><td style="text-align:left;border:none;padding:0;font-size:15px;"><strong>姓名：</strong>${s}</td><td style="text-align:right;border:none;padding:0;font-size:15px;"><strong>月份：</strong>${m.replace('-',' 年 ')} 月</td></tr></table><table style="width:100%;table-layout:fixed;word-break:break-all;border-collapse:collapse;font-size:14px;margin-bottom:30px;"><thead><tr style="background:#f9f9f9;color:#555;"><th style="border:1px solid #ddd;padding:10px;">日期</th><th style="border:1px solid #ddd;padding:10px;">類型</th><th style="border:1px solid #ddd;padding:10px;">時數</th><th style="border:1px solid #ddd;padding:10px;">異動</th></tr></thead><tbody>${trs}</tbody></table><table style="width:100%;table-layout:fixed;word-break:break-all;background:#f9f9f9;border-radius:8px;border:1px solid #eee;border-collapse:separate;"><tr><td style="width:50%;padding:20px;vertical-align:middle;font-size:15px;border:none;"><p style="margin:5px 0;">底薪：<strong>${bs} 元</strong></p><p style="margin:5px 0;color:#10b981;">加班：<strong>+ ${Math.round(ov)} 元</strong></p><p style="margin:5px 0;color:#dc2626;">請假：<strong>- ${Math.round(dd)} 元</strong></p><p style="margin:5px 0;color:#dc2626;">勞保：<strong>- ${Number(si.labor)||0} 元</strong></p><p style="margin:5px 0;color:#dc2626;">健保：<strong>- ${Number(si.health)||0} 元</strong></p></td><td style="width:50%;padding:20px;text-align:center;vertical-align:middle;background:#f0fdf4;border-radius:8px;border:2px solid #2d9d5c;"><span style="color:#2d9d5c;display:block;margin-bottom:8px;font-weight:bold;font-size:16px;">本月實發金額</span><strong style="font-size:32px;color:#2d9d5c;">$ ${Math.round(net)}</strong></td></tr></table>`;
   exportPDF(`${m.replace('-','年')}月薪資`, s, isC, si.drive, c);
 }
 
@@ -589,7 +496,7 @@ function renderFtStaffTable(){ const fs=el('ft_staff_filter_status').value, fn=e
 function addFtStaff(){ const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; if(!o.name)return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm();
   showToast('✅ 成功'); }
 function editFtStaff(i){ const d=ftStaffData[i]; el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_drive').value=d.drive;
-  el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('ft_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; el('btnUpdateFtStaff').style.display='inline-block'; const b=el('btnAddFtStaff'); if(b) b.style.display='none'; }
+  el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('staff_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; el('btnUpdateFtStaff').style.display='inline-block'; const b=el('btnAddFtStaff'); if(b) b.style.display='none'; }
 function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked};
   ftStaffData[editFtStaffIndex]={...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
 function delFtStaff(i){ if(!confirm('刪除？'))return; ftStaffData.splice(i,1); saveAll(); renderFtStaffTable(); showToast('刪除'); }
