@@ -279,39 +279,35 @@ function restoreData(i) { if(!i.files||!i.files[0])return; const rd=new FileRead
 function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
-// 🚀 終極 PDF 產出引擎：實體 DOM 渲染，強制鎖定座標與 A4 寬度，徹底解決左側裁切問題
+// 🚀 終極 PDF 產出引擎：純 HTML 字串渲染，強制鎖定座標與 800px 畫布寬度，徹底解決左側裁切問題
 function exportPDF(title, tgt, isC, fUrl, cHtml) {
   showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
   
-  // 建立隱藏的實體 DOM 元素，確保排版錨定在最左上角 (0,0) 避免偏移裁切
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = cHtml;
-  wrapper.style.width = '210mm'; // 強制 A4 寬度
-  wrapper.style.padding = '12mm 15mm'; // 以內部 padding 取代外部 margin
-  wrapper.style.background = '#fff';
-  wrapper.style.color = '#333';
-  wrapper.style.fontFamily = "'Microsoft JhengHei', sans-serif";
-  wrapper.style.boxSizing = 'border-box';
+  // 放棄實體 DOM，改用純字串，html2pdf 會自動在背景 iframe 完美渲染，不會受當前視窗捲動影響
+  const htmlString = `
+    <div style="width: 794px; padding: 40px; background: #fff; color: #333; font-family: 'Microsoft JhengHei', sans-serif; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0 auto;">
+      ${cHtml}
+    </div>
+  `;
 
   const opt = { 
-    margin: 0, // 外部邊距設為 0，完全依賴 wrapper 的 padding，防止截圖引擎算錯座標
+    margin: [5, 0, 5, 0], // 上下留一點邊界，左右設定為 0 (由內部 padding 處理防裁切)
     filename: `${tgt}_${title}_${new Date().getTime()}.pdf`, 
-    image: {type:'jpeg', quality:0.98}, 
+    image: {type:'jpeg', quality:1}, 
     html2canvas: {
         scale: 2, 
         useCORS: true, 
         letterRendering: true, 
-        scrollX: 0, // 強制鎖定捲動位置 X 軸
-        scrollY: 0, // 強制鎖定捲動位置 Y 軸
-        windowWidth: 794 // 對應標準 A4 像素寬度
+        windowWidth: 794, // 強制以 794px 寬度渲染，避免手機版或縮放導致排版跑掉或裁切
+        scrollY: 0,
+        scrollX: 0
     }, 
-    jsPDF: {unit:'mm', format:'a4', orientation:'portrait'},
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    jsPDF: {unit:'mm', format:'a4', orientation:'portrait'}
   };
 
   if(isC) {
      if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
-     html2pdf().set(opt).from(wrapper).outputPdf('datauristring').then(b64 => { 
+     html2pdf().set(opt).from(htmlString).outputPdf('datauristring').then(b64 => { 
         fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
         .then(r=>r.json()).then(r=>{ 
             if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
@@ -319,7 +315,7 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
         }).catch(e=>{showToast('錯誤',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);}); 
      });
   } else { 
-     html2pdf().set(opt).from(wrapper).save().then(()=>showToast('✅ 完成！')); 
+     html2pdf().set(opt).from(htmlString).save().then(()=>showToast('✅ 完成！')); 
   }
 }
 
@@ -345,13 +341,12 @@ function generateStatementPDF(isC = false) {
   const up = attendData.filter(x=>x.company===cb).reduce((s,i)=>s+getItemDeductPoints(i), 0), rp = tp-up;
   let ats = attendData.filter(x=>x.company===cb&&(yb==='all'||x.date.startsWith(yb))&&(mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let ah = '';
-  if(ats.length>0) { ats.forEach(i=>{ ah+=`<tr><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${i.staff}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${getItemClockHours(i).toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;font-weight:bold;">${getItemDeductPoints(i)}</td></tr>`; });
-  } else { ah=`<tr><td colspan="5" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#666;">無紀錄</td></tr>`; }
+  if(ats.length>0) { ats.forEach(i=>{ ah+=`<tr><td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.date}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;">${i.staff}</td><td style="border:1px solid #ddd;padding:10px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;">${getItemClockHours(i).toFixed(1)}</td><td style="border:1px solid #ddd;padding:10px;text-align:center;font-weight:bold;">${getItemDeductPoints(i)}</td></tr>`; });
+  } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;text-align:center;color:#666;">無紀錄</td></tr>`; }
   const pt = (yb==='all'&&mb==='all') ? '全部' : `${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
   const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;border-radius:12px;margin-right:15px;">` : ``;
   
   let c = `
-  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
     <div style="display:flex;align-items:center;justify-content:center;margin-bottom:30px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
         ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司 - 服務對帳單</h2>
     </div>
@@ -390,7 +385,7 @@ function generateStatementPDF(isC = false) {
         <tbody>${ah}</tbody>
     </table>
     <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
-  </div>`;
+  `;
   exportPDF('對帳單', cb, isC, ci.drive, c);
 }
 
@@ -400,14 +395,13 @@ function generatePayslipPDF(isC = false) {
   const si = staffData.find(x=>x.name===s); if(!si) return; if(isC && !si.drive) return showToast('無資料夾', true);
   let ats = attendData.filter(x=>x.staff===s&&isDispatchPayrollPeriod(x.date, ys, ms)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let thr=0, tpay=0, trs='', hly=+si.hourly||getStaffTieredHourly(s);
-  ats.forEach(i=>{ const ph=getItemSalaryHours(i), amt=Math.round(ph*hly); thr+=ph; tpay+=amt; trs+=`<tr><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${ph.toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${hly}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${amt}</td></tr>`; });
+  ats.forEach(i=>{ const ph=getItemSalaryHours(i), amt=Math.round(ph*hly); thr+=ph; tpay+=amt; trs+=`<tr><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:left;">${i.service?(i.remark?i.service+' ('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${ph.toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${hly}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${amt}</td></tr>`; });
   if(ats.length===0) trs=`<tr><td colspan="5" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#64748b;">無紀錄</td></tr>`;
   const l = +si.labor||0, h = +si.health||0, n = tpay - l - h;
   const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
   let pm=parseInt(ms)-1, py=parseInt(ys); if(pm===0){pm=12;py-=1;} let ptxt=`${py}/${String(pm).padStart(2,'0')}/26 ~ ${ys}/${String(ms).padStart(2,'0')}/25`;
   
   let c = `
-  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
     <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
         ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">派遣員工薪資單</h3>
     </div>
@@ -443,7 +437,7 @@ function generatePayslipPDF(isC = false) {
         </tr>
     </table>
     <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
-  </div>`;
+  `;
   exportPDF(`${ys}年${ms}月薪資`, s, isC, si.drive, c);
 }
 
@@ -453,13 +447,12 @@ function generateFtPayslipPDF(isC = false) {
   const si = ftStaffData.find(x=>x.name===s); if (!si) return; if (isC && !si.drive) return showToast('無資料夾', true);
   let bs = Number(si.salary)||30000, hr = (bs/30)/8, ats = ftAttendData.filter(x=>x.staff===s&&x.date.startsWith(m)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let tw=0, dd=0, ov=0, trs='';
-  ats.forEach(a=>{ let h=Number(a.hours)||0, pc='-'; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班') tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){let ded=(a.leave_type==='事假')?h*hr:(h*hr*0.5); dd+=ded; pc=`<span style="color:#ef4444">扣薪 $${Math.round(ded)}</span>`;} else if(a.record_type==='加班') {let op=h*hr*1.34; ov+=op; pc=`<span style="color:#059669">加班 +$${Math.round(op)}</span>`;} trs+=`<tr><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${a.date}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${h} h</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;">${pc}</td></tr>`; });
+  ats.forEach(a=>{ let h=Number(a.hours)||0, pc='-'; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班') tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){let ded=(a.leave_type==='事假')?h*hr:(h*hr*0.5); dd+=ded; pc=`<span style="color:#ef4444">扣薪 $${Math.round(ded)}</span>`;} else if(a.record_type==='加班') {let op=h*hr*1.34; ov+=op; pc=`<span style="color:#059669">加班 +$${Math.round(op)}</span>`;} trs+=`<tr><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${a.date}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${h} h</td><td style="border:1px solid #cbd5e1;padding:10px;text-align:center;">${pc}</td></tr>`; });
   if(ats.length===0) trs=`<tr><td colspan="4" style="border:1px solid #cbd5e1;padding:20px;text-align:center;color:#64748b;">無紀錄</td></tr>`;
   let net = bs - dd + ov - (Number(si.labor)||0) - (Number(si.health)||0);
   const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:55px;border-radius:8px;margin-bottom:10px;"><br>` : ``;
   
   let c = `
-  <div style="-webkit-print-color-adjust: exact; print-color-adjust: exact;">
     <div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">
         ${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;letter-spacing:1px;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;letter-spacing:2px;">正職員工薪資單</h3>
     </div>
@@ -496,7 +489,7 @@ function generateFtPayslipPDF(isC = false) {
         </tr>
     </table>
     <div style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
-  </div>`;
+  `;
   exportPDF(`${m.replace('-','年')}月薪資`, s, isC, si.drive, c);
 }
 
