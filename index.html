@@ -279,29 +279,34 @@ function restoreData(i) { if(!i.files||!i.files[0])return; const rd=new FileRead
 function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
-// 🚀 終極修復 PDF 產出引擎：完全放棄置中，強制靠左對齊，實體 DOM 掛載
+// 🚀 終極 PDF 產出引擎：純字串渲染 + 絕對強制尺寸 (永不切邊、不留白)
 function exportPDF(title, tgt, isC, fUrl, cHtml) {
-  showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產出中...');
+  showToast(isC ? '📄 雲端上傳中...' : '📄 PDF 產生中...');
   
+  // 記錄視窗位置
   const origX = window.scrollX || window.pageXOffset;
   const origY = window.scrollY || window.pageYOffset;
-  window.scrollTo(0, 0);
+  window.scrollTo(0, 0); // 強制捲動到最左上角，消除任何偏移
 
   const container = document.createElement('div');
-  // 關鍵修復：絕對定位在左上角，去除所有 margin auto，強制寬度 794px
-  container.style.cssText = 'position:absolute; top:0; left:0; width:794px; margin:0; padding:20px; background-color:#ffffff; color:#333333; font-family:"Microsoft JhengHei", sans-serif; box-sizing:border-box; z-index:999999; text-align:left; -webkit-print-color-adjust:exact; print-color-adjust:exact;';
+  // 把這個容器放置在最左上角，並指定絕對尺寸 800px 寬，避免因為視窗較小導致 html2canvas 截斷右側
+  container.style.cssText = 'position:absolute; top:0; left:0; width:800px; padding:30px; background-color:#ffffff; color:#333333; font-family:"Microsoft JhengHei", sans-serif; box-sizing:border-box; z-index:999999; text-align:left; -webkit-print-color-adjust:exact; print-color-adjust:exact;';
   container.innerHTML = cHtml;
 
+  // 將容器塞入畫面，讓 html2canvas 有真的東西可以拍
   document.body.appendChild(container);
 
   const opt = { 
-    margin: [10, 0, 10, 0], 
+    margin: 0, 
     filename: `${tgt}_${title}_${new Date().getTime()}.pdf`, 
     image: {type:'jpeg', quality: 1}, 
     html2canvas: {
         scale: 2, 
         useCORS: true, 
-        windowWidth: 794 // 限制截圖引擎的視窗寬度，避免受到大螢幕影響
+        windowWidth: 800, // 非常關鍵：告訴套件「這台電腦螢幕寬度有800px」，不要自作主張切圖
+        width: 800,       // 非常關鍵：畫布寬度強制設定為 800px
+        scrollX: 0,
+        scrollY: 0
     }, 
     jsPDF: {unit:'mm', format:'a4', orientation:'portrait'}
   };
@@ -313,28 +318,33 @@ function exportPDF(title, tgt, isC, fUrl, cHtml) {
      window.scrollTo(origX, origY);
   };
 
-  if(isC) {
-     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
-     html2pdf().set(opt).from(container).outputPdf('datauristring').then(b64 => { 
-        cleanup();
-        fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
-        .then(r=>r.json()).then(r=>{ 
-            if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
-            else {showToast('失敗',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);} 
-        }).catch(e=>{showToast('錯誤',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);}); 
-     }).catch(err => {
-        cleanup();
-        showToast('❌ 產出失敗', true);
-     });
-  } else { 
-     html2pdf().set(opt).from(container).save().then(() => {
-        cleanup();
-        showToast('✅ 完成！'); 
-     }).catch(err => {
-        cleanup();
-        showToast('❌ 下載失敗', true);
-     }); 
-  }
+  // 稍微延遲 300 毫秒，等瀏覽器將字體、顏色、圖片完全畫在螢幕上後再拍照 (解決空白問題)
+  setTimeout(() => {
+      const worker = html2pdf().set(opt).from(container);
+      
+      if(isC) {
+         if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
+         worker.outputPdf('datauristring').then(b64 => { 
+            cleanup();
+            fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:fUrl,fileName:opt.filename,base64Data:b64}) })
+            .then(r=>r.json()).then(r=>{ 
+                if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
+                else {showToast('失敗',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);} 
+            }).catch(e=>{showToast('錯誤',true); if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);}); 
+         }).catch(err => {
+            cleanup();
+            showToast('❌ 產出失敗', true);
+         });
+      } else { 
+         worker.save().then(() => {
+            cleanup();
+            showToast('✅ 完成！'); 
+         }).catch(err => {
+            cleanup();
+            showToast('❌ 下載失敗', true);
+         }); 
+      }
+  }, 300);
 }
 
 function uploadTablePDF(tid, t, cid, isC, isS=false) {
