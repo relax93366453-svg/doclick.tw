@@ -6,249 +6,244 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei',sans-serif}body{background:#f4f7fb;color:#334155;line-height:1.6}
-  .app-container,.staff-container{display:none;min-height:100vh}
-  .sidebar{width:240px;background:#fff;box-shadow:2px 0 15px rgba(0,0,0,.05);position:fixed;height:100vh;z-index:10}
-  .main-content{margin-left:240px;padding:25px;width:calc(100% - 240px)}
-  .page{display:none;background:#fff;border-radius:12px;padding:25px;box-shadow:0 4px 6px rgba(0,0,0,.05);margin-bottom:20px}
-  .page.active{display:block}.sidebar-nav{list-style:none;padding:10px}.sidebar-nav a{display:flex;align-items:center;gap:10px;padding:12px;color:#64748b;text-decoration:none;border-radius:8px;cursor:pointer}
-  .sidebar-nav a:hover,.sidebar-nav a.active{background:#ecfdf5;color:#2d9d5c}
-  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}
-  .filter-bar{background:#f8fafc;padding:15px;border-radius:8px;margin-bottom:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:left}th{background:#f8fafc}
-  .btn{padding:10px 15px;border:none;border-radius:6px;cursor:pointer;font-weight:600;color:#fff;margin-right:5px}.btn-success{background:#10b981}.btn-warning{background:#f59e0b}.btn-pdf{background:#ef4444}.btn-excel{background:#3b82f6}
-  .badge{padding:3px 8px;border-radius:10px;font-size:11px}.badge-green{background:#dcfce7;color:#166534}.badge-red{background:#fee2e2;color:#991b1b}
-  #login-screen{position:fixed;inset:0;background:#1e293b;display:flex;justify-content:center;align-items:center;z-index:9999}
-  .login-box{background:#fff;padding:40px;border-radius:16px;width:100%;max-width:400px;text-align:center}
-  .pagination{margin-top:15px;display:flex;gap:5px;justify-content:flex-end}
-  #toast{display:none;position:fixed;top:20px;right:20px;padding:15px 25px;border-radius:8px;color:#fff;z-index:10000;font-weight:bold}
-  .ws-business, .ws-hr { display: none; } .workspace-business .ws-business { display: block; } .workspace-hr .ws-hr { display: block; }
-  #preview-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;padding:20px;overflow-y:auto}
-  .pdf-box{background:#fff;width:794px;margin:0 auto;padding:40px;min-height:1122px}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei',sans-serif}body{background:#f4f7fb;color:#334155;line-height:1.6}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+#login-screen{display:flex;justify-content:center;align-items:center;height:100vh;background:url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;background-color:#1e293b;position:fixed;top:0;left:0;width:100%;z-index:9998}#login-screen::before{content:'';position:absolute;inset:0;background:rgba(15,23,42,.65)}
+.login-box{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.5);padding:45px 40px;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);width:100%;max-width:420px;text-align:center;position:relative;z-index:1;border-top:6px solid #2d9d5c}
+.login-logo-container{margin-bottom:20px;height:80px;display:flex;justify-content:center;align-items:center}.login-logo-container img{max-width:100%;max-height:100%;object-fit:contain;display:none}#login-logo-icon{font-size:50px;color:#2d9d5c}.login-box h1{color:#1e293b;margin-bottom:5px;font-size:24px;font-weight:900}.pro-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:bold;margin-bottom:25px}
+.login-field{margin-bottom:18px;text-align:left}.login-field label{display:block;margin-bottom:6px;font-weight:700;color:#475569;font-size:13px}.login-field input,.login-field select{width:100%;padding:14px 16px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;outline:none}.btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#2d9d5c,#15803d);color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px}
+.app-container,.staff-container{display:none;min-height:100vh}.sidebar{width:240px;background-color:#fff;box-shadow:2px 0 15px rgba(0,0,0,.03);padding:20px 0;position:fixed;height:100vh;overflow-y:auto;z-index:10;border-right:1px solid #e2e8f0}.sidebar-header{padding:0 20px 20px;border-bottom:1px solid #f1f5f9;margin-bottom:15px;display:flex;align-items:center;justify-content:center;flex-direction:column}.sidebar-header img{max-height:40px;margin-bottom:10px;display:none}.sidebar-header h1{font-size:16px;color:#2d9d5c;font-weight:800;display:flex;align-items:center;gap:8px;margin:0}.sidebar-nav{list-style:none;padding:0 10px}.sidebar-nav li{margin:4px 0}.sidebar-nav a{display:flex;align-items:center;gap:12px;padding:12px 15px;color:#64748b;text-decoration:none;border-radius:8px;cursor:pointer;font-weight:600}.sidebar-nav a:hover,.sidebar-nav a.active{background-color:#ecfdf5;color:#2d9d5c}
+.main-content{flex:1;margin-left:240px;padding:25px 35px;width:calc(100% - 240px);overflow-x:auto}.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.header-actions{display:flex;align-items:center;gap:15px}.sys-time{font-size:14px;font-weight:700;color:#334155;background:#fff;padding:8px 16px;border-radius:8px;border:1px solid #cbd5e1}#sync-status{font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0}.switch-role-btn{background:#fff;color:#3b82f6;border:1px solid #e2e8f0;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+.page{display:none;background:#fff;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.05);padding:30px;margin-bottom:20px;border:1px solid #f1f5f9}.page.active{display:block}.page-title{font-size:18px;font-weight:700;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px}.filter-bar{background:#f8fafc;padding:15px 20px;border-radius:8px;margin-bottom:20px;display:flex;gap:15px;align-items:center;border:1px solid #e2e8f0}.filter-bar label{font-size:14px;font-weight:600}.filter-bar select,.filter-bar input{padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:25px}.grid div{display:flex;flex-direction:column}.grid label{margin-bottom:6px;font-weight:600;font-size:13px;color:#475569}.grid input,.grid select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px}
+.checkbox-group{display:flex;gap:15px;align-items:center;background:#fff;padding:10px 15px;border:1px solid #cbd5e1;border-radius:6px}button.btn{padding:10px 18px;border:none;border-radius:6px;cursor:pointer;margin-right:10px;margin-bottom:10px;font-size:13px;font-weight:600;color:#fff}.btn-success{background:#10b981}.btn-warning{background:#f59e0b}.btn-excel{background:#3b82f6}.btn-pdf{background:#ef4444}.btn-backup{background:#8b5cf6}.btn-restore{background:#06b6d4}.btn-sync{background:#0ea5e9}.btn-sm{padding:6px 12px;font-size:12px;margin-bottom:0}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;background:#fff}table th{padding:14px 12px;background:#f8fafc;font-weight:700;text-align:left;border-bottom:2px solid #e2e8f0}table td{padding:12px 12px;border-bottom:1px solid #e2e8f0}.badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}.badge-green{background:#dcfce7;color:#166534}.badge-red{background:#fee2e2;color:#991b1b}.badge-blue{background:#dbeafe;color:#075985}.badge-yellow{background:#fef3c7;color:#92400e}.pagination{margin-top:20px;display:flex;gap:8px;justify-content:flex-end}.pagination button{padding:8px 14px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;border-radius:6px}
+.dashboard-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:30px}.dash-card{background:#fff;border-radius:12px;padding:25px 20px;border:1px solid #f1f5f9;position:relative}.dash-card.primary{border-top:4px solid #3b82f6}.dash-card.success{border-top:4px solid #10b981}.dash-card.danger{border-top:4px solid #ef4444}.dash-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:45px;opacity:.08}.dash-card .label{font-size:14px;font-weight:700;color:#64748b;margin-bottom:8px}.dash-card .num{font-size:36px;font-weight:800;color:#1e293b}
+.workspace-hr .ws-business{display:none !important}.workspace-business .ws-hr{display:none !important}#admin-screen.mode-hr .admin-only{display:none !important}
+#toast{display:none;position:fixed;top:30px;right:30px;background:#10b981;color:#fff;padding:15px 25px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,.5);z-index:1000000;font-weight:bold;font-size:16px}
+#preview-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;overflow-y:auto;padding:20px}
+#preview-header-bar{background:#fff;padding:15px 25px;border-radius:8px;margin:0 auto 20px auto;max-width:850px;display:flex;justify-content:space-between;align-items:center}
+#preview-body{max-width:850px;margin:0 auto;padding-bottom:40px}
+.pdf-box{width:100%;max-width:794px;margin:0 auto;background:#fff;padding:35px;color:#333;font-family:'Microsoft JhengHei',sans-serif;text-align:left;box-shadow:0 5px 15px rgba(0,0,0,0.3);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pdf-box table{min-width:0 !important;}
 </style>
 </head>
-<body class="workspace-business">
+<body>
 <div id="toast"></div>
-<datalist id="list_cust"></datalist><datalist id="list_staff"></datalist><datalist id="list_ft_staff"></datalist><datalist id="list_supplier"></datalist>
 
-<div id="login-screen">
-  <div class="login-box">
-    <h1>點籽響管理系統</h1><br>
-    <select id="login_role" style="width:100%;padding:10px;margin-bottom:10px;"><option value="admin">系統管理員</option><option value="staff">員工專區</option></select>
-    <input type="text" id="login_acc" placeholder="帳號" style="width:100%;padding:10px;margin-bottom:10px;">
-    <input type="password" id="login_pwd" placeholder="密碼" style="width:100%;padding:10px;margin-bottom:10px;">
-    <button class="btn btn-success" style="width:100%" onclick="handleLogin()">登入</button>
+<datalist id="list_cust"></datalist>
+<datalist id="list_staff"></datalist>
+<datalist id="list_ft_staff"></datalist>
+<datalist id="list_supplier"></datalist>
+
+<div id="preview-overlay">
+  <div id="preview-header-bar">
+    <h3 id="preview-title" style="margin:0; color:#1e293b;"><i class="fas fa-file-pdf" style="color:#ef4444;"></i> 報表預覽</h3>
+    <div style="display:flex;gap:8px;">
+      <button onclick="doNativePrint()" class="btn btn-warning" style="margin:0;"><i class="fas fa-print"></i> 瀏覽器列印</button>
+      <button onclick="doDownloadPdf(false)" class="btn btn-success" style="margin:0;"><i class="fas fa-download"></i> 確認下載 PDF</button>
+      <button onclick="doDownloadPdf(true)" class="btn btn-excel" style="margin:0;"><i class="fas fa-cloud-upload-alt"></i> 歸檔雲端</button>
+      <button onclick="closePreview()" class="btn" style="background:#64748b;margin:0;"><i class="fas fa-times"></i> 取消</button>
+    </div>
   </div>
+  <div id="preview-body"></div>
 </div>
 
-<div class="app-container" id="admin-screen">
+<div id="login-screen"><div class="login-box"><div class="login-logo-container"><img id="login-logo-img" src=""><i class="fas fa-leaf" id="login-logo-icon"></i></div><h1 style="margin-top:10px;">點籽響管理系統</h1><div class="pro-badge">專業企業版</div><div class="login-field"><label>登入身分</label><select id="login_role"><option value="admin" style="color:#dc2626; font-weight:bold;">👑 系統管理員</option><option value="staff" style="color:#2563eb; font-weight:bold;">💼 員工專區</option></select></div><div class="login-field auth-input"><label>登入帳號</label><input type="text" id="login_acc" placeholder="請輸入帳號"></div><div class="login-field auth-input"><label>登入密碼</label><input type="password" id="login_pwd" placeholder="請輸入密碼"></div><button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登 入 系 統</button></div></div>
+
+<div class="app-container workspace-business" id="admin-screen">
   <div class="sidebar">
-    <div style="padding:20px;text-align:center;font-weight:bold;color:#2d9d5c;border-bottom:1px solid #eee;">點籽響系統</div>
+    <div class="sidebar-header"><img id="sidebar-logo-img" src=""><h1 class="ws-business" id="admin-sidebar-title-business"><i class="fas fa-chart-pie"></i> 營業管理區</h1><h1 class="ws-hr" id="admin-sidebar-title-hr"><i class="fas fa-users-cog"></i> 人事員工區</h1></div>
     <ul class="sidebar-nav">
-      <li class="ws-business"><a onclick="showAdminPage('dashboard')">總覽儀表板</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('customer')">客戶資料</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('attend')">派遣記錄</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('salary')">派遣薪資</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('bill')">對帳單生成</a></li>
-      <li class="ws-business"><a onclick="showAdminPage('boss')">老闆專區</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('ft_staff')">正職員工</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('ft_attend')">正職出勤</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('ft_salary')">正職薪資</a></li>
-      <li><a onclick="toggleWorkspace()" style="color:#3b82f6;">切換區域</a></li>
-      <li><a onclick="logout()" style="color:#ef4444;">登出系統</a></li>
+      <li class="ws-business"><a onclick="showAdminPage('dashboard')" class="active"><i class="fas fa-border-all"></i> 總覽儀表板</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('customer')"><i class="fas fa-building"></i> 客戶資料</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('contract')"><i class="fas fa-file-contract"></i> 合約方案</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('supplier')"><i class="fas fa-truck"></i> 供應商及帳款</a></li>
+      <li class="ws-business"><a onclick="showAdminPage('attend')"><i class="fas fa-clock"></i> 派遣記錄</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('point')"><i class="fas fa-calculator"></i> 點數統計</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('bill')"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</a></li>
+      <li class="ws-business"><a onclick="showAdminPage('salary')"><i class="fas fa-wallet"></i> 派遣薪資計算</a></li>
+      <li class="ws-business admin-only"><a onclick="showAdminPage('boss')"><i class="fas fa-cogs"></i> 系統進階設定</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 人事儀表板</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('staff')"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('ft_salary')"><i class="fas fa-money-check-alt"></i> 正職薪資結算</a></li>
+      <li class="ws-hr"><a onclick="showAdminPage('talent')"><i class="fas fa-address-card"></i> 人才招募庫</a></li>
     </ul>
   </div>
   <div class="main-content">
-    <div id="sync-status" style="float:right;font-size:12px;color:#888;"></div>
-    <div class="page" id="page-customer">
-      <h2>客戶資料管理</h2><br>
-      <div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="cust_filter_company" oninput="resetPage('customer'); renderCustTable()"></div>
-      <div class="grid">
-        <input id="c_name" placeholder="*客戶名稱"><input id="c_tel" placeholder="電話"><input id="c_addr" placeholder="地址">
-        <select id="c_coop"><option>正合作</option><option>無合作</option></select>
-      </div>
-      <button class="btn btn-success" onclick="addCust()">新增客戶</button>
-      <div style="overflow-x:auto;margin-top:20px;"><table id="customerTableBox"><thead><tr><th>狀態</th><th>公司名稱</th><th>電話</th><th>地址</th><th>操作</th></tr></thead><tbody id="custTable"></tbody></table></div>
-    </div>
-    <div class="page" id="page-attend">
-      <h2>派遣記錄登記</h2><br>
-      <div class="filter-bar">
-        <input list="list_cust" id="filter_company" placeholder="搜尋公司" oninput="renderAttend()">
-        <input list="list_staff" id="filter_staff" placeholder="搜尋人員" oninput="renderAttend()">
-        <select id="filter_year" onchange="renderAttend()"></select><select id="filter_month" onchange="renderAttend()"></select>
-      </div>
-      <div class="grid">
-        <input list="list_cust" id="attend_company" placeholder="*客戶公司">
-        <input list="list_staff" id="attend_staff" placeholder="*派遣人員">
-        <input type="date" id="attend_date">
-        <input type="text" id="attend_service" placeholder="服務類型">
-      </div>
-      <div class="grid">
-        <input type="text" id="am_s" placeholder="上午上班(0830)" onblur="formatTimeInput(this);calcAttendTemp()">
-        <input type="text" id="am_e" placeholder="上午下班(1200)" onblur="formatTimeInput(this);calcAttendTemp()">
-        <input type="text" id="pm_s" placeholder="下午上班(1300)" onblur="formatTimeInput(this);calcAttendTemp()">
-        <input type="text" id="pm_e" placeholder="下午下班(1700)" onblur="formatTimeInput(this);calcAttendTemp()">
-        <input type="number" id="attend_salary_hours" placeholder="發薪工時">
-        <input type="number" id="attend_deduct_points" placeholder="扣除點數">
-      </div>
-      <button class="btn btn-success" onclick="addAttend()">儲存記錄</button>
-      <div style="overflow-x:auto;margin-top:20px;"><table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>工時</th><th>扣點</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table></div>
-    </div>
-    <div class="page" id="page-boss">
-      <h2>老闆專區 - 客戶工時統計</h2><br>
-      <div class="filter-bar">
-        <select id="boss_year" onchange="showBoss()"></select><select id="boss_month" onchange="showBoss()"></select>
-        <input list="list_cust" id="boss_cust_filter" placeholder="搜尋客戶" oninput="showBoss()">
-      </div>
-      <table><thead><tr><th>客戶</th><th>合約點數</th><th>本月工時</th><th>剩餘點數</th><th>狀態</th></tr></thead><tbody id="bossTable"></tbody></table>
-    </div>
-    <div class="page" id="page-dashboard"><h2>儀表板</h2><div id="dash_content">載入中...</div></div>
-    <div class="page" id="page-salary"><h2>派遣薪資計算</h2><div class="filter-bar"><input list="list_staff" id="sal_filter_staff" oninput="renderSalary()"><select id="sal_filter_year" onchange="renderSalary()"></select><select id="sal_filter_month" onchange="renderSalary()"></select></div><div id="salResult"></div><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>工時</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div>
-    <div class="page" id="page-bill"><h2>對帳單生成</h2><div class="filter-bar"><input list="list_cust" id="bill_filter_company" oninput="renderBill()"><select id="bill_filter_year" onchange="renderBill()"></select><select id="bill_filter_month" onchange="renderBill()"></select></div><table id="billTableBox"><thead><tr><th>日期</th><th>人員</th><th>工時</th><th>扣點</th></tr></thead><tbody id="billTable"></tbody></table></div>
-    <div class="page" id="page-ft_staff"><h2>正職員工管理</h2><button class="btn btn-success" onclick="showAdminPage('ft_staff')">更新名單</button><tbody id="ftStaffTable"></tbody></div>
-    <div class="page" id="page-ft_attend"><h2>正職出勤紀錄</h2><div class="filter-bar"><input list="list_ft_staff" id="fta_filter_staff" oninput="renderFtAttendTable()"></div><tbody id="ftAttendTable"></tbody></div>
-    <div class="page" id="page-ft_salary"><h2>正職薪資結算</h2><div class="filter-bar"><input list="list_ft_staff" id="fts_filter_staff" oninput="renderFtSalaryTable()"></div><tbody id="ftSalaryTable"></tbody></div>
+    <div class="page-header"><div></div><div class="header-actions"><button onclick="window.location.reload();" class="switch-role-btn" style="color:#059669;background:#ecfdf5;"><i class="fas fa-sync-alt"></i> 重新整理</button><button id="workspace-toggle-btn" onclick="toggleWorkspace()" class="switch-role-btn"><i class="fas fa-exchange-alt"></i> 切換區域</button><span id="sync-status"><i class="fas fa-cloud"></i> 系統就緒</span><span id="current-time" class="sys-time"><i class="far fa-clock" style="color:#2d9d5c;"></i> 載入中...</span><button onclick="logout()" class="btn" style="background:#64748b; margin:0;"><i class="fas fa-sign-out-alt"></i> 登出</button></div></div>
+    
+    <div class="page active" id="page-dashboard" style="background:transparent; border:none; padding:0; box-shadow:none;"><h2 class="ws-business" style="font-size:22px; font-weight:800; color:#1e293b; margin-bottom:20px;"><i class="fas fa-chart-line" style="color:#f59e0b;"></i> 營運摘要總覽</h2><h2 class="ws-hr" style="font-size:22px; font-weight:800; color:#1e293b; margin-bottom:20px;"><i class="fas fa-users" style="color:#3b82f6;"></i> 人事動態總覽</h2><div style="background:#eff6ff; border:1px solid #bfdbfe; border-left:5px solid #3b82f6; padding:20px 25px; border-radius:10px; margin-bottom:25px; box-shadow:0 4px 6px rgba(0,0,0,0.02);"><h3 id="dash_notice_title" style="color:#1e3a8a; font-size:18px; font-weight:800; margin-bottom:12px;"></h3><div id="dash_notice_content" style="color:#334155; font-size:15px; line-height:1.8; white-space:pre-wrap;"></div></div><div class="ws-business admin-only"><div class="dashboard-grid"><div class="dash-card primary"><i class="fas fa-building dash-icon"></i><div class="label">客戶總數</div><div class="num blue" id="dash_total_cust">0</div></div><div class="dash-card success"><i class="fas fa-battery-full dash-icon"></i><div class="label">點數充足 (≥50)</div><div class="num green" id="dash_point_ge50">0</div></div><div class="dash-card danger"><i class="fas fa-battery-quarter dash-icon"></i><div class="label">點數偏低 (&lt;50)</div><div class="num red" id="dash_point_lt50">0</div></div></div></div><div class="ws-hr"><div class="dashboard-grid"><div class="dash-card primary"><i class="fas fa-user-check dash-icon"></i><div class="label">全公司在職人數</div><div class="num blue" id="dash_staff_active">0</div></div><div class="dash-card danger"><i class="fas fa-id-card dash-icon"></i><div class="label">缺交 身分證</div><div class="num red" id="dash_miss_id">0</div></div><div class="dash-card danger"><i class="fas fa-money-check dash-icon"></i><div class="label">缺交 存摺/帳戶</div><div class="num red" id="dash_miss_bank">0</div></div></div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;"><div class="panel ws-hr" style="grid-column:1/-1;"><h3 style="margin-bottom:10px;"><i class="fas fa-user-clock" style="color:#f59e0b;"></i> 待補交資料名單</h3><div class="table-responsive"><table id="dash_missing_docs_table"></table></div></div><div class="panel ws-business admin-only" style="border-top:3px solid #ef4444;"><h3 style="margin-bottom:10px;"><i class="fas fa-exclamation-triangle red"></i> 點數不足警示</h3><div class="table-responsive"><table id="dash_alert_table"></table></div></div></div></div>
+
+    <div class="page admin-only" id="page-customer"><div class="page-title"><i class="fas fa-building"></i> 客戶資料管理</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="cust_filter_company" placeholder="手打搜尋" oninput="resetPage('customer'); renderCustTable()"><label>狀態：</label><select id="cust_filter_coop" onchange="resetPage('customer'); renderCustTable()"><option value="all">全部</option><option value="正合作">正合作</option><option value="無合作">無合作</option></select></div><div class="grid"><div><label>客戶名稱 *</label><input id="c_name" required></div><div><label>聯絡人</label><input id="c_user"></div><div><label>電話</label><input id="c_tel"></div><div><label>地址</label><input id="c_addr"></div><div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div></div><button class="btn btn-success" onclick="addCust()">新增</button><button class="btn btn-warning" onclick="updateCust()" id="btnUpdateCust" style="display:none">修改</button><div class="table-responsive" style="margin-top:20px;"><table id="customerTableBox"><thead><tr><th>狀態</th><th>公司名稱</th><th>聯絡人</th><th>電話</th><th>操作</th></tr></thead><tbody id="custTable"></tbody></table></div></div>
+    
+    <div class="page admin-only" id="page-supplier"><div class="page-title"><i class="fas fa-truck"></i> 供應商及帳款管理</div><div class="filter-bar"><label>搜尋供應商：</label><input list="list_supplier" id="sup_filter_name" placeholder="手打關鍵字" oninput="resetPage('supplier'); renderSupplierTable()"></div><div class="grid"><div><label>公司名稱 *</label><input id="sup_name" required></div><div><label>聯絡人</label><input id="sup_contact"></div><div><label>電話</label><input id="sup_tel"></div><div><label>應付帳款日</label><input type="date" id="sup_pay_date"></div></div><button class="btn btn-success" onclick="addSupplier()">儲存</button><div class="table-responsive" style="margin-top:20px;"><table id="supplierTable"><thead><tr><th>名稱</th><th>聯絡人</th><th>電話</th><th>應付日</th><th>操作</th></tr></thead><tbody id="supTableBody"></tbody></table></div></div>
+
+    <div class="page" id="page-attend"><div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div><div class="filter-bar"><label>公司搜尋：</label><input list="list_cust" id="filter_company" placeholder="手打搜尋" oninput="resetPage('attend'); renderAttend()"><label>年</label><select id="filter_year" onchange="renderAttend()"></select><label>月</label><select id="filter_month" onchange="renderAttend()"></select><label>人員搜尋：</label><input list="list_staff" id="filter_staff" placeholder="手打搜尋" oninput="resetPage('attend'); renderAttend()"></div><div class="grid"><div><label>公司 *</label><input list="list_cust" id="attend_company" placeholder="手打關鍵字" required></div><div><label>人員 *</label><input list="list_staff" id="attend_staff" placeholder="手打關鍵字" required></div><div><label>日期 *</label><input type="date" id="attend_date" required></div><div><label>服務類型</label><input type="text" id="attend_service"></div></div><div class="grid"><div><label>上午上班</label><input type="text" id="am_s" placeholder="0830" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>上午下班</label><input type="text" id="am_e" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午上班</label><input type="text" id="pm_s" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午下班</label><input type="text" id="pm_e" placeholder="1700" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>發薪工時</label><input type="number" id="attend_salary_hours" step="0.1"></div><div><label>扣除點數</label><input type="number" id="attend_deduct_points" step="0.1"></div></div><button class="btn btn-success" id="btnAddAttend" onclick="addAttend()">儲存記錄</button><div class="table-responsive" style="margin-top:20px;"><table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>工時</th><th>扣點</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table></div></div>
+    
+    <div class="page admin-only" id="page-boss"><div class="page-title"><i class="fas fa-cogs"></i> 老闆專區</div><div class="filter-bar"><label>結算年月：</label><select id="boss_year" onchange="showBoss()"></select><select id="boss_month" onchange="showBoss()"></select><label>公司搜尋：</label><input list="list_cust" id="boss_cust_filter" placeholder="手打搜尋" oninput="showBoss()"></div><table><thead><tr><th>客戶名稱</th><th>合約總點數</th><th>本月工時</th><th>剩餘點數</th><th>狀態</th></tr></thead><tbody id="bossTable"></tbody></table></div>
+
+    <div class="page" id="page-salary"><div class="page-title">派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打關鍵字" oninput="renderSalary()"><select id="sal_filter_year" onchange="renderSalary()"></select><select id="sal_filter_month" onchange="renderSalary()"></select></div><div id="salResult" style="font-weight:bold;margin:10px 0;background:#fff8e1;padding:15px;border-radius:8px;border:1px solid #ffe082;"></div><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>工時</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div>
+
+    <div class="page admin-only" id="page-bill"><div class="page-title">對帳單生成</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="bill_filter_company" placeholder="手打公司名" oninput="renderBill()"><select id="bill_filter_year" onchange="renderBill()"></select><select id="bill_filter_month" onchange="renderBill()"></select></div><button class="btn btn-success" onclick="generateStatementPDF()">預覽對帳單</button><table id="billTableBox" style="margin-top:15px;"><thead><tr><th>日期</th><th>人員</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody id="billTable"></tbody></table></div>
+
+    <div class="page" id="page-ft_staff"><div class="page-title">正職員工資料庫</div><div class="filter-bar"><input list="list_ft_staff" id="ft_staff_filter_name" placeholder="搜尋正職" oninput="renderFtStaffTable()"></div><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>到職日</th><th>薪資</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div>
+    
+    <div class="page" id="page-ft_attend"><div class="page-title">正職出勤紀錄</div><div class="filter-bar"><input list="list_ft_staff" id="fta_filter_staff" placeholder="手寫搜尋姓名" oninput="renderFtAttendTable()"></div><table id="ftAttendTableBox"><thead><tr><th>員工</th><th>日期</th><th>類型</th><th>時數</th><th>備註</th><th>操作</th></tr></thead><tbody id="ftAttendTable"></tbody></table></div>
+
+    <div class="page" id="page-ft_salary"><div class="page-title">正職薪資結算</div><div class="filter-bar"><input list="list_ft_staff" id="fts_filter_staff" placeholder="搜尋員工" oninput="renderFtSalaryTable()"><input type="month" id="fts_filter_month" onchange="renderFtSalaryTable()"></div><table id="ftSalaryTableBox"><thead><tr><th>員工</th><th>底薪</th><th>總工時</th><th>實發</th><th>操作</th></tr></thead><tbody id="ftSalaryTable"></tbody></table></div>
+
+    <div class="page" id="page-talent"><div class="page-title">人才招募庫</div><div class="filter-bar"><input type="text" id="tp_filter_role" placeholder="職務搜尋" oninput="renderTalentTable()"></div><table id="talentTableBox"><thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>職務</th><th>狀態</th><th>操作</th></tr></thead><tbody id="talentTable"></tbody></table></div>
   </div>
 </div>
-
-<div id="preview-overlay"><div id="preview-header-bar" style="background:#fff;padding:10px;text-align:center;"><button onclick="closePreview()" class="btn btn-warning">關閉預覽</button></div><div id="preview-body"></div></div>
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 const el = id => document.getElementById(id);
-let custData=[], contractData=[], staffData=[], attendData=[], ftStaffData=[], ftAttendData=[], talentData=[], supplierData=[];
-const pageConfig = { pageSize: 10, currentPage: { customer:1, attend:1 } };
+function showToast(m, err = false) { const t=el('toast'); t.style.background=err?'#ef4444':'#10b981'; t.innerHTML=m; t.style.display='block'; setTimeout(()=>t.style.display='none', 2500); }
+function updateSyncStatus(m) { if(el('sync-status')) el('sync-status').innerHTML=m; }
+function safeJSONParse(k, f) { try { const v=localStorage.getItem(k); return v?JSON.parse(v):f; } catch(e) { return f; } }
 
-// 🚀 核心邏輯：扣點等於工時
-function calcAttendTemp(){
-  const hs = (+getHours(el('am_s').value, el('am_e').value)) + (+getHours(el('pm_s').value, el('pm_e').value));
-  if(hs > 0){
-    el('attend_salary_hours').value = hs.toFixed(1);
-    el('attend_deduct_points').value = hs.toFixed(1); // 4.5 還是 4.5
-  }
+// 🚀 核心：時間區間判定 (26號~隔月25號)
+function isDispatchPayrollPeriod(d, y, m) { 
+  if(y==='all'||m==='all'||!y||!m) return true; 
+  if(!d) return false; 
+  let p=d.split('-'); if(p.length!==3) return false; 
+  let rY=parseInt(p[0]), rM=parseInt(p[1]), rD=parseInt(p[2]); 
+  let tY=parseInt(y), tM=parseInt(m); 
+  let pY=tY, pM=tM-1; if(pM===0){pM=12; pY-=1;} 
+  if(rY===pY && rM===pM && rD>=26) return true; 
+  if(rY===tY && rM===tM && rD<=25) return true; 
+  return false; 
 }
 
-function getHours(s,e){if(!s||!e)return 0;let[sh,sm]=s.split(':').map(Number);let[eh,em]=e.split(':').map(Number);return ((eh*60+em)-(sh*60+sm))/60;}
+function formatTimeInput(e) { 
+  let v=e.value.replace(/\D/g,''); if(v.length>=3) e.value=v.slice(0,2)+':'+v.slice(2,4); 
+}
+
+let custData=safeJSONParse('custData',[]), contractData=safeJSONParse('contractData',[]), staffData=safeJSONParse('staffData',[]), attendData=safeJSONParse('attendData',[]), ftStaffData=safeJSONParse('ftStaffData',[]), ftAttendData=safeJSONParse('ftAttendData',[]), talentData=safeJSONParse('talentData',[]), supplierData=safeJSONParse('supplierData',[]); 
+let currentLoginStaff=null, currentWorkspace='business', editCustIndex=-1, editAttendIndex=-1;
+const pageConfig = { pageSize: 10, currentPage: { customer:1, attend:1 } };
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadDataFromCloud();
+    const y=new Date().getFullYear(); 
+    let yr='<option value="all">全部</option>'; for(let i=y-1;i<=y;i++) yr+=`<option value="${i}">${i}</option>`;
+    document.querySelectorAll('#filter_year, #sal_filter_year, #boss_year').forEach(e=>e.innerHTML=yr);
+    let mh='<option value="all">全部</option>'; for(let i=1;i<=12;i++) mh+=`<option value="${i}">${i}月</option>`;
+    document.querySelectorAll('#filter_month, #sal_filter_month, #boss_month').forEach(e=>e.innerHTML=mh);
+});
+
+function standardizeData() {
+  attendData=(attendData||[]).filter(x=>x).map(x=>({company:x.company||'',staff:x.staff||'',date:x.date||'',am_s:x.am_s||'',am_e:x.am_e||'',pm_s:x.pm_s||'',pm_e:x.pm_e||'',salary_hours:x.salary_hours||'',deduct_points:x.deduct_points||''}));
+  staffData=(staffData||[]).map(x=>({...x,status:x.status||'在職'}));
+}
+
+function getHours(s,e){if(!s||!e)return 0; let[sh,sm]=s.split(':').map(Number); let[eh,em]=e.split(':').map(Number); return ((eh*60+em)-(sh*60+sm))/60;}
 function getItemSalaryHours(i){ return i.salary_hours ? Number(i.salary_hours) : 0; }
 function getItemDeductPoints(i){ return i.deduct_points ? Number(i.deduct_points) : 0; }
 
-// 🚀 時間區間判定 (老闆專區用)
-function isDispatchPayrollPeriod(d, y, m) {
-  if(y==='all'||m==='all'||!y||!m) return true;
-  if(!d) return false;
-  let p=d.split('-'); 
-  let rY=parseInt(p[0]), rM=parseInt(p[1]), rD=parseInt(p[2]);
-  let tY=parseInt(y), tM=parseInt(m);
-  let pY=tY, pM=tM-1; if(pM===0){pM=12; pY-=1;}
-  if(rY===pY && rM===pM && rD>=26) return true;
-  if(rY===tY && rM===tM && rD<=25) return true;
-  return false;
+// 🚀 關鍵：工時等於點數，絕不進位
+function calcAttendTemp(){ 
+  const amH = getHours(el('am_s').value, el('am_e').value);
+  const pmH = getHours(el('pm_s').value, el('pm_e').value);
+  const totalH = amH + pmH;
+  if(totalH > 0){
+    el('attend_salary_hours').value = totalH.toFixed(1);
+    el('attend_deduct_points').value = totalH.toFixed(1); 
+  }
 }
 
-// 🚀 搜尋名單更新 (Datalist)
+// 🚀 更新 Datalist 搜尋名單
 function fillFilters() {
-  let custH = '<option value="全部公司">'; custData.forEach(c=>custH+=`<option value="${c.name}">`);
-  el('list_cust').innerHTML = custH;
-  let staffH = '<option value="全部人員">'; staffData.forEach(s=>staffH+=`<option value="${s.name}">`);
-  el('list_staff').innerHTML = staffH;
-  let ftH = '<option value="全部員工">'; ftStaffData.forEach(s=>ftH+=`<option value="${s.name}">`);
-  el('list_ft_staff').innerHTML = ftH;
-  
-  const y = new Date().getFullYear();
-  let yr = '<option value="all">全部</option>'; for(let i=y-1;i<=y;i++) yr+=`<option value="${i}">${i}</option>`;
-  document.querySelectorAll('#filter_year,#sal_filter_year,#bill_filter_year,#boss_year').forEach(e=>e.innerHTML=yr);
-  let mh = '<option value="all">全部</option>'; for(let i=1;i<=12;i++) mh+=`<option value="${i}">${i}月</option>`;
-  document.querySelectorAll('#filter_month,#sal_filter_month,#bill_filter_month,#boss_month').forEach(e=>e.innerHTML=mh);
+  let custH = '<option value="全部公司">'; custData.forEach(c=>custH+=`<option value="${c.name}">`); el('list_cust').innerHTML = custH;
+  let staffH = '<option value="全部人員">'; staffData.filter(s=>s.status==='在職').forEach(s=>staffH+=`<option value="${s.name}">`); el('list_staff').innerHTML = staffH;
+  let ftH = '<option value="全部員工">'; ftStaffData.filter(s=>s.status==='在職').forEach(s=>ftH+=`<option value="${s.name}">`); el('list_ft_staff').innerHTML = ftH;
+  let supH = '<option value="全部">'; supplierData.forEach(s=>supH+=`<option value="${s.name}">`); el('list_supplier').innerHTML = supH;
 }
 
-// 🚀 頁面渲染：派遣記錄 (手打過濾)
-function renderAttend() {
-  const y=el('filter_year').value, m=el('filter_month').value, c=el('filter_company').value.trim(), s=el('filter_staff').value.trim();
-  let l = attendData.filter(x => (y==='all'||x.date.startsWith(y)) && (m==='all'||x.date.slice(5,7)===String(m).padStart(2,'0')) && (!c||c==='全部公司'||x.company===c) && (!s||s==='全部人員'||x.staff===s));
-  let h = '';
-  l.forEach((item, idx) => {
-    h += `<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${getItemSalaryHours(item)}</td><td>${getItemDeductPoints(item)}</td><td><button onclick="delAttend(${idx})">刪</button></td></tr>`;
-  });
-  el('attendTable').innerHTML = h || '<tr><td colspan="6">無資料</td></tr>';
+// 派遣記錄渲染
+function renderAttend(){ 
+    const y=el('filter_year').value, m=el('filter_month').value, c=el('filter_company').value.trim(), s=el('filter_staff').value.trim(); 
+    let l=attendData.filter(x=>(y==='all'||x.date.startsWith(y)) && (m==='all'||x.date.slice(5,7)===String(m).padStart(2,'0')) && (!c || c==='全部公司' || x.company===c) && (!s || s==='全部人員' || x.staff===s)); 
+    let h='';
+    l.forEach((item,idx)=>{ 
+      h+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${getItemSalaryHours(item).toFixed(1)}</td><td><b class="red">${getItemDeductPoints(item).toFixed(1)}</b></td><td>${item.remark||'-'}</td><td><button onclick="delAttend(${idx})" class="btn-sm btn-pdf">刪</button></td></tr>`; 
+    });
+    el('attendTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; 
 }
 
-// 🚀 老闆專區：修復函數名與過濾
+// 老闆專區渲染
 function showBoss() {
-  const y=el('boss_year').value, m=el('boss_month').value, c=el('boss_cust_filter').value.trim();
-  let h = '';
+  const y=el('boss_year').value, m=el('boss_month').value, c=el('boss_cust_filter').value.trim(); 
+  let h='';
   custData.forEach(ct => {
     if(c && c!=='全部公司' && ct.name!==c) return;
     const cs = contractData.filter(x=>x.customer===ct.name);
     const totalP = cs.reduce((s,i)=>s+(+i.point||0),0);
     const usedH = attendData.filter(x=>x.company===ct.name && isDispatchPayrollPeriod(x.date,y,m)).reduce((s,i)=>s+getItemSalaryHours(i),0);
     const totalUsedP = attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0);
-    h += `<tr><td>${ct.name}</td><td>${totalP}</td><td>${usedH.toFixed(1)}</td><td>${(totalP-totalUsedP).toFixed(1)}</td><td>${ct.coop}</td></tr>`;
+    h+=`<tr><td>${ct.name}</td><td>${totalP}</td><td>${usedH.toFixed(1)}</td><td>${(totalP-totalUsedP).toFixed(1)}</td><td>${ct.coop}</td></tr>`;
   });
-  el('bossTable').innerHTML = h;
+  el('bossTable').innerHTML = h || '<tr><td colspan="5">無匹配客戶</td></tr>';
 }
 
-// 🚀 客戶分頁修正 ID
-function renderCustTable() {
+// 客戶資料渲染 (修正 ID: customerTableBox)
+function renderCustTable(){ 
   const f=el('cust_filter_company').value.trim();
-  let l = custData.filter(x => !f || f==='全部公司' || x.name===f);
-  const {pagedList, total, totalPages} = getPagedData(l, 'customer');
-  let h = '';
-  pagedList.forEach((item, idx) => {
-    h += `<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.tel}</td><td>${item.addr}</td><td><button onclick="editCust(${idx})">改</button></td></tr>`;
+  let l=custData.filter(x=>(!f || f==='全部公司' || x.name===f)); 
+  const {pagedList, totalPages}=getPagedData(l,'customer'); 
+  let h='';
+  pagedList.forEach((item,i)=>{ 
+    h+=`<tr><td>${item.coop}</td><td>${item.name}</td><td>${item.user||'-'}</td><td>${item.tel||'-'}</td><td><button onclick="editCust(${i})" class="btn-sm btn-warning">改</button></td></tr>`; 
   });
-  el('custTable').innerHTML = h;
-  renderPagination('customer', total, totalPages);
-}
-
-function renderPagination(m, t, tp) {
-  const box = el(m === 'customer' ? 'customerTableBox' : 'attendTableBox');
-  const old = box.parentNode.querySelector('.pagination'); if(old) old.remove();
-  box.insertAdjacentHTML('afterend', `<div class="pagination"><span>第 ${pageConfig.currentPage[m]}/${tp} 頁</span><button onclick="changePage('${m}',${pageConfig.currentPage[m]+1})" ${pageConfig.currentPage[m]>=tp?'disabled':''}>下頁</button></div>`);
+  el('custTable').innerHTML=h;
+  renderPagination('customer', l.length, totalPages); 
 }
 
 function handleLogin() {
   const acc=el('login_acc').value, pwd=el('login_pwd').value;
-  if(acc==='admin' && pwd==='doclick888') { localStorage.setItem('loginRole','admin'); location.reload(); }
-  else { showToast('登入失敗', true); }
+  if((acc==='admin' && pwd==='doclick888')||(acc==='hr'&&pwd==='doclick888')) { localStorage.setItem('loginRole','admin'); location.reload(); } 
+  else showToast('帳密錯誤', true);
 }
 function restoreLoginState() {
-  const r=localStorage.getItem('loginRole'); if(!r) return;
-  el('login-screen').style.display='none'; el('admin-screen').style.display='flex';
+    const r=localStorage.getItem('loginRole'); if(!r) return;
+    el('login-screen').style.display='none'; el('admin-screen').style.display='flex';
 }
 function logout() { localStorage.removeItem('loginRole'); location.reload(); }
 function toggleWorkspace() { 
-  const b = document.body;
-  if(b.classList.contains('workspace-business')) { b.classList.replace('workspace-business','workspace-hr'); }
-  else { b.classList.replace('workspace-hr','workspace-business'); }
+    const b=document.body; b.classList.contains('workspace-business') ? b.classList.replace('workspace-business','workspace-hr') : b.classList.replace('workspace-hr','workspace-business');
 }
-function showAdminPage(p) { 
-  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); el('page-'+p).classList.add('active');
-  if(p==='customer') renderCustTable(); if(p==='attend') renderAttend(); if(p==='boss') showBoss();
+function showAdminPage(p) {
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('active')); el('page-'+p).classList.add('active');
+    if(p==='customer') renderCustTable(); if(p==='attend') renderAttend(); if(p==='boss') showBoss();
 }
-function showToast(m,e){ const t=el('toast'); t.innerHTML=m; t.style.background=e?'#ef4444':'#10b981'; t.style.display='block'; setTimeout(()=>t.style.display='none',2000); }
-function updateSyncStatus(m){ el('sync-status').innerHTML=m; }
-function formatTimeInput(e){ let v=e.value.replace(/\D/g,''); if(v.length>=3) e.value=v.slice(0,2)+':'+v.slice(2,4); }
-function resetPage(m){ pageConfig.currentPage[m]=1; }
-function changePage(m,p){ pageConfig.currentPage[m]=p; showAdminPage(m); }
-function getPagedData(l,m){ let tp=Math.ceil(l.length/pageConfig.pageSize)||1; return {pagedList:l.slice((pageConfig.currentPage[m]-1)*10, pageConfig.currentPage[m]*10), totalPages:tp}; }
-
 function loadDataFromCloud(){
-  updateSyncStatus('同步中...');
-  fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{
-    custData=r.custData||[]; staffData=r.staffData||[]; attendData=r.attendData||[]; contractData=r.contractData||[]; ftStaffData=r.ftStaffData||[];
-    fillFilters(); showAdminPage('dashboard'); updateSyncStatus('已就緒');
-  });
+    updateSyncStatus('同步中...');
+    fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{
+        custData=r.custData||[]; attendData=r.attendData||[]; staffData=r.staffData||[]; contractData=r.contractData||[]; ftStaffData=r.ftStaffData||[];
+        standardizeData(); fillFilters(); updateSyncStatus('就緒');
+    });
 }
 function saveAll(){
-  updateSyncStatus('儲存中...');
-  fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,staffData,attendData,contractData,ftStaffData}),headers:{'Content-Type':'text/plain;charset=utf-8'}})
-  .then(()=>updateSyncStatus('已存檔'));
+    updateSyncStatus('存檔中...');
+    fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,attendData,staffData,contractData,ftStaffData}),headers:{'Content-Type':'text/plain;charset=utf-8'}}).then(()=>updateSyncStatus('已儲存'));
 }
 function addCust(){ custData.push({name:el('c_name').value, tel:el('c_tel').value, addr:el('c_addr').value, coop:el('c_coop').value}); saveAll(); renderCustTable(); }
-function addAttend(){ attendData.push({company:el('attend_company').value, staff:el('attend_staff').value, date:el('attend_date').value, salary_hours:el('attend_salary_hours').value, deduct_points:el('attend_deduct_points').value, am_s:el('am_s').value, am_e:el('am_e').value, pm_s:el('pm_s').value, pm_e:el('pm_e').value}); saveAll(); renderAttend(); }
-function delAttend(i){ attendData.splice(i,1); saveAll(); renderAttend(); }
-function closePreview(){ el('preview-overlay').style.display='none'; }
-function updateSystemClock(){ el('sync-status').title = new Date().toLocaleString(); }
+function addAttend(){ 
+    attendData.push({company:el('attend_company').value.trim(), staff:el('attend_staff').value.trim(), date:el('attend_date').value, salary_hours:el('attend_salary_hours').value, deduct_points:el('attend_deduct_points').value, am_s:el('am_s').value, am_e:el('am_e').value, pm_s:el('pm_s').value, pm_e:el('pm_e').value}); 
+    saveAll(); renderAttend(); el('am_s').value=''; el('am_e').value=''; el('pm_s').value=''; el('pm_e').value='';
+}
+function delAttend(i){ if(confirm('刪除記錄？')){ attendData.splice(i,1); saveAll(); renderAttend(); } }
+function getPagedData(l,m) { let tp=Math.ceil(l.length/10)||1; return {pagedList:l.slice((pageConfig.currentPage[m]-1)*10, pageConfig.currentPage[m]*10), totalPages:tp}; }
+function renderPagination(m, t, tp) { 
+    const box = el('customerTableBox'); const old = box.parentNode.querySelector('.pagination'); if(old) old.remove();
+    box.insertAdjacentHTML('afterend', `<div class="pagination"><span>第 ${pageConfig.currentPage[m]}/${tp} 頁 </span><button onclick="changePage('${m}',${pageConfig.currentPage[m]+1})" ${pageConfig.currentPage[m]>=tp?'disabled':''}>下一頁</button></div>`); 
+}
+function changePage(m,p) { pageConfig.currentPage[m]=p; renderCustTable(); }
+function updateSystemClock(){ const s=new Date().toLocaleString(); if(el('current-time')) el('current-time').innerHTML=s; }
+function resetPage(m) { pageConfig.currentPage[m]=1; }
 </script>
 </body>
 </html>
