@@ -6,91 +6,96 @@
 <title>點籽響 / 愜易居 - 企業專屬服務中心</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; font-family:'Microsoft JhengHei', sans-serif; }
-  body { background:#f4f7fb; color:#334155; line-height:1.6; }
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Noto Sans TC', sans-serif; }
+  body { background:#f8fafc; color:#334155; line-height:1.6; }
   
-  /* 登入畫面樣式 - 尊榮藍金風格 */
-  #login-screen { display:flex; justify-content:center; align-items:center; height:100vh; background:url('https://images.unsplash.com/photo-1556761175-4b46a572b786?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat; background-color:#0f172a; position:fixed; top:0; left:0; width:100%; z-index:9998; }
-  #login-screen::before { content:''; position:absolute; inset:0; background:rgba(15, 23, 42, 0.85); }
-  .login-box { background:rgba(255,255,255,1); padding:50px 40px; border-radius:16px; box-shadow:0 25px 50px -12px rgba(0,0,0,.5); width:100%; max-width:420px; text-align:center; position:relative; z-index:1; border-top:6px solid #1e40af; }
-  .login-box h1 { color:#1e293b; margin-bottom:8px; font-size:26px; font-weight:900; }
-  .pro-badge { display:inline-block; background:linear-gradient(135deg,#f59e0b,#d97706); color:white; padding:6px 16px; border-radius:20px; font-size:13px; font-weight:bold; margin-bottom:30px; letter-spacing: 1px;}
+  /* ================= 登入畫面 - 清新毛玻璃風格 ================= */
+  #login-screen { display:flex; justify-content:center; align-items:center; height:100vh; background:url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat; position:fixed; top:0; left:0; width:100%; z-index:9998; }
+  #login-screen::before { content:''; position:absolute; inset:0; background:rgba(248, 250, 252, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  .login-box { background:rgba(255,255,255,0.85); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:50px 40px; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.08); border: 1px solid rgba(255,255,255,0.5); width:100%; max-width:420px; text-align:center; position:relative; z-index:1; }
+  .login-box h1 { color:#0f172a; margin-bottom:8px; font-size:26px; font-weight:900; letter-spacing: 1px; }
+  .pro-badge { display:inline-block; background:#0d9488; color:white; padding:6px 16px; border-radius:20px; font-size:13px; font-weight:700; margin-bottom:30px; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);}
   .login-field { margin-bottom:20px; text-align:left; }
-  .login-field label { display:block; margin-bottom:8px; font-weight:700; color:#475569; font-size:14px; }
-  .login-field input { width:100%; padding:15px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px; outline:none; transition: border 0.3s; }
-  .login-field input:focus { border: 2px solid #1e40af; }
-  .btn-login { width:100%; padding:16px; background:linear-gradient(135deg,#1e40af,#1e3a8a); color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:10px; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);}
-  .btn-login:hover { transform: translateY(-2px); }
+  .login-field label { display:block; margin-bottom:8px; font-weight:700; color:#64748b; font-size:14px; }
+  .login-field input { width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:15px; outline:none; transition: all 0.3s; background: rgba(255,255,255,0.9); }
+  .login-field input:focus { border-color: #0d9488; box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.1); }
+  .btn-login { width:100%; padding:16px; background:#0f172a; color:white; border:none; border-radius:12px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:10px; transition: all 0.3s; }
+  .btn-login:hover { background:#0d9488; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(13, 148, 136, 0.2); }
   
-  /* 上方導覽列 (Top Navigation) */
-  .top-nav { background:#0f172a; color:white; display:flex; justify-content:space-between; align-items:center; padding:0 50px; height:75px; position:sticky; top:0; z-index:100; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
-  .nav-brand { font-size:20px; font-weight:800; display:flex; align-items:center; gap:12px; }
-  .nav-brand i { color:#3b82f6; font-size:24px; }
-  .nav-menu { display:flex; gap:15px; }
-  .nav-menu a { color:#94a3b8; text-decoration:none; padding:10px 18px; border-radius:8px; font-weight:600; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:8px;}
-  .nav-menu a:hover { color:#fff; background:rgba(255,255,255,0.1); }
-  .nav-menu a.active { color:#fff; background:#1e40af; }
-  .nav-actions { display:flex; align-items:center; gap:20px; }
-  .nav-actions .logout-btn { color:#ef4444; text-decoration:none; font-weight:600; cursor:pointer; padding:8px 15px; border:1px solid rgba(239,68,68,0.3); border-radius:6px; transition: 0.3s;}
-  .nav-actions .logout-btn:hover { background:#ef4444; color:white; }
+  /* ================= 頂部導覽列 - 極簡白 ================= */
+  .top-nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); display:flex; justify-content:space-between; align-items:center; padding:0 50px; height:75px; position:sticky; top:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,0.03); border-bottom: 1px solid #f1f5f9; }
+  .nav-brand { font-size:20px; font-weight:900; display:flex; align-items:center; gap:12px; color: #0f172a; }
+  .nav-brand i { color:#0d9488; font-size:26px; }
+  .nav-menu { display:flex; gap:10px; }
+  .nav-menu a { color:#64748b; text-decoration:none; padding:10px 20px; border-radius:12px; font-weight:700; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:8px;}
+  .nav-menu a:hover { color:#0f172a; background:#f1f5f9; }
+  .nav-menu a.active { color:#0d9488; background:#f0fdfa; }
+  .nav-actions { display:flex; align-items:center; gap:25px; }
+  .nav-actions .user-name { color:#475569; font-size:14px; font-weight: 700; background: #f8fafc; padding: 6px 15px; border-radius: 20px; border: 1px solid #e2e8f0; }
+  .nav-actions .logout-btn { color:#ef4444; text-decoration:none; font-weight:700; cursor:pointer; transition: 0.3s; }
+  .nav-actions .logout-btn:hover { color:#b91c1c; }
 
-  /* 主內容區塊 */
+  /* ================= 主內容區塊 ================= */
   .main-container { max-width:1200px; margin:40px auto; padding:0 20px; display:none; min-height: calc(100vh - 155px);}
   
-  /* 歡迎橫幅 (Hero Banner) */
-  .welcome-banner { background:linear-gradient(135deg, #1e40af, #3b82f6); color:white; padding:40px 50px; border-radius:16px; margin-bottom:30px; box-shadow:0 10px 25px -5px rgba(59,130,246,0.3); display:flex; justify-content:space-between; align-items:center; }
-  .welcome-banner h2 { font-size:28px; font-weight:800; margin-bottom:8px; }
-  .welcome-banner p { color:#bfdbfe; font-size:16px; }
+  /* 歡迎橫幅 */
+  .welcome-banner { background:linear-gradient(135deg, #0d9488, #14b8a6); color:white; padding:45px 50px; border-radius:24px; margin-bottom:35px; box-shadow:0 15px 30px -10px rgba(13, 148, 136, 0.4); display:flex; justify-content:space-between; align-items:center; position: relative; overflow: hidden; }
+  .welcome-banner::after { content: ''; position: absolute; right: -50px; top: -100px; width: 300px; height: 300px; background: rgba(255,255,255,0.1); border-radius: 50%; pointer-events: none; }
+  .welcome-banner h2 { font-size:30px; font-weight:900; margin-bottom:10px; position: relative; z-index: 2; }
+  .welcome-banner p { color:#ccfbf1; font-size:16px; position: relative; z-index: 2; }
   
   /* 頁面切換 */
-  .page { display:none; animation: fadeIn 0.4s ease-in-out;}
+  .page { display:none; animation: fadeIn 0.4s ease-out;}
   .page.active { display:block; }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(15px); } to { opacity:1; transform:translateY(0); } }
   
   /* 數據卡片與表格 */
   .dashboard-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:25px; margin-bottom:35px; }
-  .dash-card { background:#fff; border-radius:16px; padding:30px 25px; border:1px solid #e2e8f0; position:relative; box-shadow:0 4px 6px -1px rgba(0,0,0,.02); transition:transform 0.3s;}
-  .dash-card:hover { transform:translateY(-5px); box-shadow:0 10px 15px -3px rgba(0,0,0,.05); }
+  .dash-card { background:#fff; border-radius:20px; padding:35px 30px; border:1px solid #f1f5f9; position:relative; box-shadow:0 10px 25px rgba(0,0,0,.02); transition:transform 0.3s, box-shadow 0.3s;}
+  .dash-card:hover { transform:translateY(-5px); box-shadow:0 15px 35px rgba(0,0,0,.04); }
   .dash-card .label { font-size:15px; font-weight:700; color:#64748b; margin-bottom:10px; }
-  .dash-card .num { font-size:42px; font-weight:900; }
-  .num.blue { color:#1e40af; } .num.red { color:#e11d48; } .num.green { color:#059669; }
-  .dash-icon { position:absolute; right:25px; top:50%; transform:translateY(-50%); font-size:50px; opacity:0.1; }
+  .dash-card .num { font-size:48px; font-weight:900; letter-spacing: -1px; }
+  .num.blue { color:#0f172a; } .num.red { color:#e11d48; } .num.green { color:#0d9488; }
+  .dash-icon { position:absolute; right:30px; top:45px; font-size:40px; opacity:0.1; }
   
-  .panel-box { background:#fff; border-radius:16px; box-shadow:0 4px 6px -1px rgba(0,0,0,.02); padding:30px; border:1px solid #e2e8f0; margin-bottom:30px; }
-  .panel-title { font-size:18px; font-weight:800; color:#1e293b; margin-bottom:20px; display:flex; align-items:center; gap:10px; border-bottom:2px solid #f1f5f9; padding-bottom:15px;}
+  .panel-box { background:#fff; border-radius:24px; box-shadow:0 10px 30px rgba(0,0,0,.02); padding:35px; border:1px solid #f1f5f9; margin-bottom:30px; }
+  .panel-title { font-size:20px; font-weight:900; color:#0f172a; margin-bottom:25px; display:flex; align-items:center; gap:12px; }
   
-  table { width:100%; border-collapse:collapse; font-size:15px; text-align:center; }
-  table th { padding:16px 12px; background:#f8fafc; font-weight:800; border-bottom:2px solid #e2e8f0; color:#475569; }
-  table td { padding:16px 12px; border-bottom:1px solid #f1f5f9; color:#334155; }
+  table { width:100%; border-collapse:separate; border-spacing: 0; font-size:15px; text-align:center; }
+  table th { padding:18px 15px; background:#f8fafc; font-weight:800; color:#475569; border-bottom: 2px solid #e2e8f0; }
+  table th:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+  table th:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+  table td { padding:18px 15px; border-bottom:1px solid #f1f5f9; color:#334155; font-weight: 500; }
   table tr:hover td { background:#f8fafc; }
-  .badge { padding:6px 12px; border-radius:20px; font-size:12px; font-weight:700; }
-  .badge-green { background:#dcfce7; color:#166534; }
-  .badge-yellow { background:#fef3c7; color:#92400e; }
+  .badge { padding:6px 14px; border-radius:20px; font-size:13px; font-weight:700; }
+  .badge-green { background:#ccfbf1; color:#0f766e; }
+  .badge-yellow { background:#fef3c7; color:#b45309; }
   
-  .btn { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:bold; color:#fff; transition: 0.3s;}
-  .btn:hover { transform: translateY(-2px); }
+  .btn { padding:12px 24px; border:none; border-radius:12px; cursor:pointer; font-size:15px; font-weight:bold; color:#fff; transition: all 0.3s; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
   
-  #toast { display:none; position:fixed; top:30px; right:30px; background:#10b981; color:#fff; padding:15px 25px; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,.5); z-index:100000; font-weight:bold; }
-  .footer { text-align:center; padding:20px; color:#94a3b8; font-size:13px; margin-top:20px; }
+  #toast { display:none; position:fixed; top:30px; right:30px; background:#0f172a; color:#fff; padding:16px 30px; border-radius:12px; box-shadow:0 15px 30px rgba(0,0,0,.15); z-index:100000; font-weight:bold; }
+  .footer { text-align:center; padding:20px; color:#94a3b8; font-size:14px; margin-top:20px; }
 </style>
 </head>
 <body>
 
 <div id="toast"></div>
-<div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.85); z-index:99999; justify-content:center; align-items:center; flex-direction:column; font-size:18px; font-weight:bold; color:#1e40af;">
+<div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.9); z-index:99999; justify-content:center; align-items:center; flex-direction:column; font-size:18px; font-weight:bold; color:#0d9488;">
   <i class="fas fa-circle-notch fa-spin fa-3x" style="margin-bottom:15px;"></i> 資料同步中，請稍候...
 </div>
 
 <div id="login-screen">
   <div class="login-box">
-    <div style="margin-bottom: 20px;">
-      <i class="fas fa-building" style="font-size:45px; color:#1e40af;"></i>
+    <div style="margin-bottom: 25px;">
+      <i class="fas fa-leaf" style="font-size:50px; color:#0d9488;"></i>
     </div>
     <h1>企業專屬服務中心</h1>
     <div class="pro-badge">CLIENT PORTAL</div>
     <div class="login-field"><label>登入帳號</label><input type="text" id="login_acc" placeholder="請輸入企業帳號"></div>
     <div class="login-field"><label>登入密碼</label><input type="password" id="login_pwd" placeholder="請輸入登入密碼"></div>
-    <button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登入系統</button>
+    <button class="btn-login" onclick="handleLogin()">登 入 系 統 <i class="fas fa-arrow-right" style="margin-left:5px;"></i></button>
   </div>
 </div>
 
@@ -101,10 +106,10 @@
   <div class="nav-menu">
     <a onclick="showPage('dashboard', this)" class="active"><i class="fas fa-chart-pie"></i> 合約與點數</a>
     <a onclick="showPage('records', this)"><i class="fas fa-history"></i> 派遣紀錄</a>
-    <a onclick="showPage('info', this)"><i class="fas fa-info-circle"></i> 服務與價目</a>
+    <a onclick="showPage('info', this)"><i class="fas fa-info-circle"></i> 服務與社群</a>
   </div>
   <div class="nav-actions">
-    <span style="color:#cbd5e1; font-size:14px;"><i class="fas fa-user-circle"></i> <span id="nav-company-name"></span></span>
+    <div class="user-name"><i class="fas fa-building" style="margin-right:5px; color:#0d9488;"></i> <span id="nav-company-name"></span></div>
     <a onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 登出</a>
   </div>
 </div>
@@ -113,15 +118,15 @@
   
   <div class="welcome-banner">
     <div>
-      <h2>歡迎回來，<span id="welcome-name"></span></h2>
+      <h2>您好，<span id="welcome-name"></span></h2>
       <p>這裡是您的專屬企業服務中心，隨時掌握合約與人力調度狀況。</p>
     </div>
-    <div style="display:flex; gap:10px; align-items:center;">
-      <button onclick="window.open('https://forms.gle/tXoRrRvp7FnixFh49', '_blank')" class="btn" style="background:#10b981; border:none; box-shadow:0 4px 15px rgba(16,185,129,0.4); padding:12px 20px; font-size:15px;">
+    <div style="display:flex; gap:12px; align-items:center; position:relative; z-index:2;">
+      <button onclick="window.open('https://forms.gle/tXoRrRvp7FnixFh49', '_blank')" class="btn" style="background:#0f172a; color:#fff;">
         <i class="fas fa-file-signature"></i> 填寫派班需求單
       </button>
       
-      <button onclick="window.location.reload();" class="btn" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,0.5); padding:12px 20px; font-size:15px;">
+      <button onclick="window.location.reload();" class="btn" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,0.4); color:#fff;">
         <i class="fas fa-sync-alt"></i> 更新資料
       </button>
     </div>
@@ -129,13 +134,13 @@
   
   <div class="page active" id="page-dashboard">
     <div class="dashboard-grid">
-      <div class="dash-card"><i class="fas fa-coins dash-icon" style="color:#1e40af;"></i><div class="label">累積購買點數</div><div class="num blue" id="total_points">0</div></div>
+      <div class="dash-card"><i class="fas fa-coins dash-icon" style="color:#0f172a;"></i><div class="label">累積購買點數</div><div class="num blue" id="total_points">0</div></div>
       <div class="dash-card"><i class="fas fa-clipboard-check dash-icon" style="color:#e11d48;"></i><div class="label">已使用點數</div><div class="num red" id="used_points">0</div></div>
-      <div class="dash-card"><i class="fas fa-shield-alt dash-icon" style="color:#059669;"></i><div class="label">目前剩餘可用</div><div class="num green" id="remain_points">0</div></div>
+      <div class="dash-card"><i class="fas fa-shield-alt dash-icon" style="color:#0d9488;"></i><div class="label">目前剩餘可用</div><div class="num green" id="remain_points">0</div></div>
     </div>
     
     <div class="panel-box">
-      <h3 class="panel-title"><i class="fas fa-list-alt" style="color:#3b82f6;"></i> 歷史合約紀錄</h3>
+      <h3 class="panel-title"><i class="fas fa-list-alt" style="color:#0d9488;"></i> 歷史合約紀錄</h3>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>簽約日期</th><th>購買方案</th><th>合約點數</th><th>狀態</th></tr></thead>
@@ -147,7 +152,14 @@
 
   <div class="page" id="page-records">
     <div class="panel-box">
-      <h3 class="panel-title"><i class="fas fa-user-clock" style="color:#3b82f6;"></i> 歷史派遣服務紀錄</h3>
+      <h3 class="panel-title"><i class="fas fa-user-clock" style="color:#0d9488;"></i> 歷史派遣服務紀錄</h3>
+      
+      <div style="background:#f8fafc; padding:15px 25px; border-radius:16px; margin-bottom:25px; display:flex; gap:15px; align-items:center; border:1px solid #f1f5f9;">
+        <label style="font-weight:800; font-size:14px; color:#475569;"><i class="fas fa-filter" style="color:#94a3b8; margin-right:5px;"></i> 篩選時間：</label>
+        <select id="record_filter_year" onchange="renderRecords()" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:10px; font-size:14px; outline:none; color:#0f172a; font-weight:700; cursor:pointer; background:#fff; min-width:120px;"></select>
+        <select id="record_filter_month" onchange="renderRecords()" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:10px; font-size:14px; outline:none; color:#0f172a; font-weight:700; cursor:pointer; background:#fff; min-width:120px;"></select>
+      </div>
+
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>服務日期</th><th>派遣人員</th><th>服務項目 / 備註</th><th>服務工時</th><th>扣除點數</th></tr></thead>
@@ -159,59 +171,59 @@
 
   <div class="page" id="page-info">
     
-    <div class="panel-box" style="border-top:4px solid #3b82f6;">
-      <h3 class="panel-title" style="border:none; padding:0; margin-bottom:15px;"><i class="fas fa-building" style="color:#3b82f6;"></i> 關於 點籽響 / 愜易居</h3>
+    <div class="panel-box" style="border:1px solid #e2e8f0;">
+      <h3 class="panel-title" style="margin-bottom:15px;"><i class="fas fa-building" style="color:#0d9488;"></i> 關於 點籽響 / 愜易居</h3>
       <p style="color:#475569; line-height:2; font-size:15px;">我們致力於提供最專業的人才媒合與企業派遣服務，解決人力調度上的難題。<br>透過彈性的點數制與會員方案，協助您的企業高效運作。若有任何需求調整，歡迎隨時與我們專員聯繫！</p>
       
-      <div style="display:flex; gap:12px; margin-top:20px;">
-        <button onclick="window.open('https://www.instagram.com/doclick88/', '_blank')" class="btn" style="flex:1; background:linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 12px 10px;">
-          <i class="fab fa-instagram" style="font-size: 16px;"></i> 官方 Instagram
+      <div style="display:flex; gap:15px; margin-top:25px;">
+        <button onclick="window.open('https://www.instagram.com/doclick88/', '_blank')" class="btn" style="flex:1; background:linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);">
+          <i class="fab fa-instagram" style="font-size: 18px;"></i> 官方 Instagram
         </button>
-        <button onclick="window.open('https://www.facebook.com/doclick88/', '_blank')" class="btn" style="flex:1; background:linear-gradient(135deg, #1877F2 0%, #0C5EBF 100%); padding: 12px 10px;">
-          <i class="fab fa-facebook-f" style="font-size: 16px;"></i> 官方 Facebook
+        <button onclick="window.open('https://www.facebook.com/doclick88/', '_blank')" class="btn" style="flex:1; background:linear-gradient(135deg, #1877F2 0%, #0C5EBF 100%);">
+          <i class="fab fa-facebook-f" style="font-size: 18px;"></i> 官方 Facebook
         </button>
       </div>
     </div>
 
     <div class="panel-box">
-      <h3 class="panel-title"><i class="fas fa-bullhorn" style="color:#8b5cf6;"></i> 2026 年度人資運營模組公定價目與規範</h3>
+      <h3 class="panel-title"><i class="fas fa-bullhorn" style="color:#f59e0b;"></i> 2026 年度人資運營模組公定價目與規範</h3>
       
-      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:25px; margin-bottom: 25px;">
-        <div style="background:#fff; border-radius:12px; border:1px solid #e2e8f0; overflow:hidden;">
-          <h3 style="background:#f1f5f9; padding:15px 20px; color:#1e293b; font-size:15px; border-bottom:1px solid #e2e8f0; margin:0;"><i class="fas fa-coins" style="color:#0ea5e9;"></i> 儲值點數方案 (1小時=1點)</h3>
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:30px; margin-bottom: 30px;">
+        <div style="background:#fff; border-radius:16px; border:1px solid #f1f5f9; overflow:hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+          <h3 style="background:#f8fafc; padding:18px 25px; color:#0f172a; font-size:16px; font-weight:800; border-bottom:1px solid #f1f5f9; margin:0;"><i class="fas fa-coins" style="color:#0d9488; margin-right:8px;"></i> 儲值點數方案 (1小時=1點)</h3>
           <table style="width:100%; text-align:center; border-collapse: collapse;">
             <thead>
-              <tr style="color:#475569; font-size:13px;">
-                <th style="padding:12px; border-bottom:1px solid #e2e8f0; background:#fff;">購買點數</th>
-                <th style="padding:12px; border-bottom:1px solid #e2e8f0; background:#fff;">方案總價(含稅)</th>
-                <th style="padding:12px; border-bottom:1px solid #e2e8f0; background:#fff;">未入會均價</th>
+              <tr style="color:#64748b; font-size:13px;">
+                <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">購買點數</th>
+                <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">方案總價(含稅)</th>
+                <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">未入會均價</th>
               </tr>
             </thead>
-            <tbody style="font-size:14px; font-weight:bold; color:#334155;">
-              <tr><td style="padding:12px; border-bottom:1px solid #f8fafc;">50 點</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$17,000</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$340</td></tr>
-              <tr><td style="padding:12px; border-bottom:1px solid #f8fafc;">90 點</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$30,600</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$340</td></tr>
-              <tr><td style="padding:12px; border-bottom:1px solid #f8fafc;">120 點</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$40,800</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$340</td></tr>
-              <tr><td style="padding:12px; border-bottom:1px solid #f8fafc;">250 點</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$85,000</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$340</td></tr>
-              <tr><td style="padding:12px; border-bottom:1px solid #f8fafc;">370 點</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$122,100</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$330</td></tr>
-              <tr><td style="padding:12px; border-bottom:1px solid #f8fafc;">550 點</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$181,500</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$330</td></tr>
-              <tr><td style="padding:12px; border-bottom:1px solid #f8fafc;">750 點</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$247,500</td><td style="padding:12px; border-bottom:1px solid #f8fafc;">$330</td></tr>
-              <tr><td style="padding:12px;">1000 點</td><td style="padding:12px;">$330,000</td><td style="padding:12px;">$330</td></tr>
+            <tbody style="font-size:15px; font-weight:700; color:#334155;">
+              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">50 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$17,000</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
+              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">90 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$30,600</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
+              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">120 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$40,800</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
+              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">250 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$85,000</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
+              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">370 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$122,100</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
+              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">550 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$181,500</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
+              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">750 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$247,500</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
+              <tr><td style="padding:15px;">1000 點</td><td style="padding:15px;">$330,000</td><td style="padding:15px;">$330</td></tr>
             </tbody>
           </table>
         </div>
 
         <div>
-          <div style="background:#fffbeb; border:1px solid #fde68a; padding:20px; border-radius:12px; margin-bottom:20px;">
-            <h4 style="color:#d97706; margin-bottom:10px; font-size:16px;"><i class="fas fa-gem"></i> 標準會員</h4>
-            <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8;">
+          <div style="background:#fffbeb; border:1px solid #fde68a; padding:25px; border-radius:16px; margin-bottom:20px;">
+            <h4 style="color:#d97706; margin-bottom:12px; font-size:16px; font-weight:800;"><i class="fas fa-gem"></i> 標準會員</h4>
+            <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8; font-weight:500;">
               <li><strong>會員費：</strong>半年 $25,000 / 一年 $45,000</li>
               <li><strong>點數優惠：</strong>均降為 <span style="color:#ef4444; font-weight:bold;">$320 / 點</span></li>
               <li><strong>額外權益：</strong>可選擇「技術型」或「48H緊急」其一降為 1.1 點</li>
             </ul>
           </div>
-          <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:20px; border-radius:12px;">
-            <h4 style="color:#2563eb; margin-bottom:10px; font-size:16px;"><i class="fas fa-crown"></i> PRO企業會員</h4>
-            <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8;">
+          <div style="background:#f0fdfa; border:1px solid #99f6e4; padding:25px; border-radius:16px;">
+            <h4 style="color:#0f766e; margin-bottom:12px; font-size:16px; font-weight:800;"><i class="fas fa-crown"></i> PRO企業會員</h4>
+            <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8; font-weight:500;">
               <li><strong>會員費：</strong>半年 $38,000 / 一年 $70,000</li>
               <li><strong>點數優惠：</strong>均降為 <span style="color:#ef4444; font-weight:bold;">$310 / 點</span></li>
               <li><strong>額外權益：</strong>技術型與緊急調派均降為 1.1 點計算</li>
@@ -220,10 +232,10 @@
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:25px; background:#f8fafc; padding:25px; border-radius:12px; border-left:4px solid #8b5cf6;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; background:#f8fafc; padding:30px; border-radius:16px; border:1px solid #f1f5f9;">
         <div>
-          <h4 style="color:#6d28d9; margin-bottom:10px; font-size:15px;">📌 點數扣抵換算</h4>
-          <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8;">
+          <h4 style="color:#0f172a; margin-bottom:12px; font-size:16px; font-weight:800;">📌 點數扣抵換算</h4>
+          <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8; font-weight:500;">
             <li><strong>通用型人員：</strong>1 小時 = 1 點</li>
             <li><strong>技術型人員：</strong>1 小時 = 1.25 點</li>
             <li><strong>48小時內緊急調度：</strong>1 小時 = 1.25 點</li>
@@ -231,12 +243,12 @@
           </ul>
         </div>
         <div>
-          <h4 style="color:#6d28d9; margin-bottom:10px; font-size:15px;">🤝 轉正職規範 (需滿530小時)</h4>
-          <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8;">
+          <h4 style="color:#0f172a; margin-bottom:12px; font-size:16px; font-weight:800;">🤝 轉正職規範 (需滿530小時)</h4>
+          <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8; font-weight:500;">
             <li><strong>一般儲值戶：</strong>通用型(全薪*1.38)、技術型(全薪*3)</li>
             <li><strong>標準會員：</strong>通用型(全薪*1)、技術型(全薪*2.25)</li>
             <li><strong>PRO會員：</strong>通用型(全薪*0.8)、技術型(全薪*2)</li>
-            <li style="color:#ef4444; margin-top:5px; list-style:none;"><i class="fas fa-exclamation-circle"></i> 提供30日保固期，若私下挖角將保留法律追訴權。</li>
+            <li style="color:#ef4444; margin-top:8px; list-style:none;"><i class="fas fa-exclamation-circle"></i> 提供30日保固期，若私下挖角將保留法律追訴權。</li>
           </ul>
         </div>
       </div>
@@ -258,7 +270,7 @@ let currentCustomer = null;
 
 function showToast(m, err=false) { 
   const t = document.getElementById('toast'); 
-  t.style.background = err ? '#ef4444' : '#10b981'; 
+  t.style.background = err ? '#ef4444' : '#0f172a'; 
   t.innerHTML = m; t.style.display = 'block'; 
   setTimeout(() => t.style.display = 'none', 3000); 
 }
@@ -348,8 +360,30 @@ function initCustomerApp() {
   document.getElementById('welcome-name').textContent = currentCustomer.name;
   document.getElementById('nav-company-name').textContent = currentCustomer.name;
 
+  renderRecordFilters();
   renderDashboard();
   renderRecords();
+}
+
+function renderRecordFilters() {
+  const ySelect = document.getElementById('record_filter_year');
+  const mSelect = document.getElementById('record_filter_month');
+  if(!ySelect || !mSelect) return;
+
+  const currentYear = new Date().getFullYear();
+  let yHtml = '<option value="all">全部年份</option>';
+  for(let i = currentYear - 2; i <= currentYear + 1; i++) {
+    yHtml += `<option value="${i}">${i}年</option>`;
+  }
+  ySelect.innerHTML = yHtml;
+  ySelect.value = 'all'; 
+
+  let mHtml = '<option value="all">全部月份</option>';
+  for(let i = 1; i <= 12; i++) {
+    mHtml += `<option value="${String(i).padStart(2, '0')}">${i}月</option>`;
+  }
+  mSelect.innerHTML = mHtml;
+  mSelect.value = 'all'; 
 }
 
 function renderDashboard() {
@@ -368,8 +402,8 @@ function renderDashboard() {
   myContracts.forEach(i => {
     h += `<tr>
             <td>${i.date || '-'}</td>
-            <td style="font-weight:bold; color:#1e40af;">${i.price_plan || '-'} ${i.member_type ? `(${i.member_type})` : ''}</td>
-            <td style="color:#059669; font-weight:bold;">${i.point || 0} 點</td>
+            <td style="font-weight:900; color:#0f172a;">${i.price_plan || '-'} ${i.member_type ? `(${i.member_type})` : ''}</td>
+            <td style="color:#0d9488; font-weight:900;">${i.point || 0} 點</td>
             <td><span class="badge ${i.status==='正常'?'badge-green':'badge-yellow'}">${i.status}</span></td>
           </tr>`;
   });
@@ -377,20 +411,28 @@ function renderDashboard() {
 }
 
 function renderRecords() {
-  const myAttends = attendData.filter(x => x.company === currentCustomer.name).sort((a,b) => new Date(b.date) - new Date(a.date));
+  const y = document.getElementById('record_filter_year') ? document.getElementById('record_filter_year').value : 'all';
+  const m = document.getElementById('record_filter_month') ? document.getElementById('record_filter_month').value : 'all';
+
+  const myAttends = attendData.filter(x => {
+    if (x.company !== currentCustomer.name) return false;
+    if (y !== 'all' && !x.date.startsWith(y)) return false;
+    if (m !== 'all' && x.date.slice(5, 7) !== m) return false;
+    return true;
+  }).sort((a,b) => new Date(b.date) - new Date(a.date));
   
   let h = '';
   myAttends.forEach(i => {
-    const remarkStr = i.remark ? `<br><span style="font-size:12px; color:#94a3b8;">(${i.remark})</span>` : '';
+    const remarkStr = i.remark ? `<br><span style="font-size:12px; color:#94a3b8; font-weight:400;">(${i.remark})</span>` : '';
     h += `<tr>
             <td>${i.date}</td>
-            <td style="font-weight:bold;">${i.staff}</td>
-            <td>${i.service || '-'}${remarkStr}</td>
-            <td>${getItemSalaryHours(i)} 小時</td>
-            <td style="color:#e11d48; font-weight:bold;">- ${getItemDeductPoints(i)} 點</td>
+            <td style="font-weight:900; color:#0f172a;">${i.staff}</td>
+            <td style="font-weight:700;">${i.service || '-'}${remarkStr}</td>
+            <td style="font-weight:700;">${getItemSalaryHours(i)} 小時</td>
+            <td style="color:#e11d48; font-weight:900;">- ${getItemDeductPoints(i)} 點</td>
           </tr>`;
   });
-  document.getElementById('recordsTable').innerHTML = h || '<tr><td colspan="5" style="padding:30px; color:#94a3b8;">尚無派遣紀錄</td></tr>';
+  document.getElementById('recordsTable').innerHTML = h || '<tr><td colspan="5" style="padding:30px; color:#94a3b8; text-align:center;">尚無符合的派遣紀錄</td></tr>';
 }
 </script>
 </body>
