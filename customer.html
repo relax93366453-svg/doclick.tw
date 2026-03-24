@@ -2,15 +2,15 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>點籽響 / 愜易居 - 企業專屬服務中心</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
   * { margin:0; padding:0; box-sizing:border-box; font-family:'Noto Sans TC', sans-serif; }
-  body { background:#f8fafc; color:#334155; line-height:1.6; }
+  body { background:#f8fafc; color:#334155; line-height:1.6; -webkit-font-smoothing: antialiased; }
   
-  /* ================= 登入畫面 - 清新毛玻璃風格 ================= */
+  /* ================= 登入畫面 ================= */
   #login-screen { display:flex; justify-content:center; align-items:center; height:100vh; background:url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat; position:fixed; top:0; left:0; width:100%; z-index:9998; }
   #login-screen::before { content:''; position:absolute; inset:0; background:rgba(248, 250, 252, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
   .login-box { background:rgba(255,255,255,0.85); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:50px 40px; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.08); border: 1px solid rgba(255,255,255,0.5); width:100%; max-width:420px; text-align:center; position:relative; z-index:1; }
@@ -23,7 +23,7 @@
   .btn-login { width:100%; padding:16px; background:#0f172a; color:white; border:none; border-radius:12px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:10px; transition: all 0.3s; }
   .btn-login:hover { background:#0d9488; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(13, 148, 136, 0.2); }
   
-  /* ================= 左側導覽列 - 極簡白玻璃 ================= */
+  /* ================= 桌面版：左側導覽列 ================= */
   .sidebar { background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); width:260px; height:100vh; position:fixed; left:0; top:0; z-index:100; box-shadow:4px 0 20px rgba(0,0,0,0.03); border-right: 1px solid #f1f5f9; display:flex; flex-direction:column; padding: 30px 20px; }
   .nav-brand { font-size:20px; font-weight:900; display:flex; align-items:center; gap:12px; color: #0f172a; margin-bottom: 40px; padding: 0 10px;}
   .nav-brand i { color:#0d9488; font-size:26px; }
@@ -77,6 +77,64 @@
   
   #toast { display:none; position:fixed; top:30px; right:30px; background:#0f172a; color:#fff; padding:16px 30px; border-radius:12px; box-shadow:0 15px 30px rgba(0,0,0,.15); z-index:100000; font-weight:bold; }
   .footer { text-align:center; padding:20px; color:#94a3b8; font-size:14px; margin-top:20px; margin-left: 260px;}
+
+  /* ================= 手機版：響應式 RWD 佈局 ================= */
+  .mobile-header { display: none; }
+  
+  @media (max-width: 768px) {
+    /* 啟動手機版頂部標頭 */
+    body.is-logged-in .mobile-header { 
+      display: flex; justify-content: space-between; align-items: center; 
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); 
+      padding: 15px 20px; border-bottom: 1px solid #e2e8f0; 
+      position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    }
+    .mobile-header .brand { font-weight: 900; color: #0f172a; font-size: 18px; }
+    .mobile-header .brand i { color: #0d9488; margin-right: 5px;}
+    .mobile-header .logout-btn { color: #ef4444; font-weight: 700; font-size: 14px; background: #fef2f2; padding: 8px 15px; border-radius: 8px; text-decoration: none; cursor:pointer;}
+
+    /* 將左側選單轉化為 APP 底部導覽列 */
+    .sidebar { 
+      width: 100%; height: auto; bottom: 0; top: auto; flex-direction: row; 
+      padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); 
+      border-right: none; border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
+    }
+    .sidebar .nav-brand, .sidebar .nav-actions { display: none !important; }
+    .sidebar .nav-menu { flex-direction: row; justify-content: space-around; width: 100%; gap: 5px; }
+    .sidebar .nav-menu a { flex-direction: column; padding: 10px 5px; font-size: 12px; flex: 1; text-align: center; gap: 4px; border-radius: 12px; }
+    .sidebar .nav-menu a i { font-size: 22px; }
+    .sidebar .nav-menu a:hover { transform: none; }
+
+    /* 主內容區塊調整 */
+    .main-container { margin-left: 0; padding: 20px 15px 100px 15px; }
+    .footer { margin-left: 0; padding-bottom: 30px;}
+    
+    /* 歡迎橫幅垂直排列 */
+    .welcome-banner { flex-direction: column; text-align: center; padding: 35px 25px; gap: 20px; border-radius: 20px; }
+    .welcome-banner h2 { font-size: 24px; }
+    .welcome-banner p { font-size: 14px; line-height: 1.8; }
+    .welcome-banner > div:last-child { flex-direction: column; width: 100%; }
+    .welcome-banner button { width: 100%; justify-content: center; }
+    
+    /* 卡片與容器自動堆疊 */
+    .dashboard-grid { grid-template-columns: 1fr; gap: 15px; }
+    .dash-card { padding: 25px 20px; border-radius: 16px; }
+    .dash-card .num { font-size: 36px; }
+    .panel-box { padding: 25px 20px; border-radius: 16px; }
+    .panel-title { font-size: 18px; margin-bottom: 20px; }
+    
+    /* 網格自動折行 */
+    .grid-mobile-stack { grid-template-columns: 1fr !important; gap: 20px !important; }
+    .flex-mobile-stack { flex-direction: column !important; align-items: stretch !important;}
+    .flex-mobile-stack select { width: 100%; }
+    
+    /* 表格防跑版 (左右滑動) */
+    table th, table td { padding: 12px 10px; font-size: 13px; white-space: nowrap; }
+    
+    /* 登入畫面縮放 */
+    .login-box { padding: 40px 25px; margin: 0 20px; width: auto; }
+    .login-box h1 { font-size: 22px; }
+  }
 </style>
 </head>
 <body>
@@ -99,6 +157,11 @@
   </div>
 </div>
 
+<div class="mobile-header">
+  <div class="brand"><i class="fas fa-leaf"></i> 點籽響 人資運營</div>
+  <a onclick="logout()" class="logout-btn">登出系統</a>
+</div>
+
 <div class="sidebar" id="sidebar" style="display:none;">
   <div class="nav-brand">
     <i class="fas fa-leaf"></i> <span>點籽響 人資運營</span>
@@ -110,7 +173,7 @@
   </div>
   <div class="nav-actions">
     <div class="user-name"><i class="fas fa-building" style="color:#0d9488;"></i> <span id="nav-company-name"></span></div>
-    <a onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 登出帳號</a>
+    <a onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 登出系統</a>
   </div>
 </div>
 
@@ -154,8 +217,8 @@
     <div class="panel-box">
       <h3 class="panel-title"><i class="fas fa-user-clock" style="color:#0d9488;"></i> 歷史派遣服務紀錄</h3>
       
-      <div style="background:#f8fafc; padding:15px 25px; border-radius:16px; margin-bottom:25px; display:flex; gap:15px; align-items:center; border:1px solid #f1f5f9;">
-        <label style="font-weight:800; font-size:14px; color:#475569;"><i class="fas fa-filter" style="color:#94a3b8; margin-right:5px;"></i> 篩選時間：</label>
+      <div style="background:#f8fafc; padding:15px 25px; border-radius:16px; margin-bottom:25px; display:flex; gap:15px; align-items:center; border:1px solid #f1f5f9;" class="flex-mobile-stack">
+        <label style="font-weight:800; font-size:14px; color:#475569; width:100%;"><i class="fas fa-filter" style="color:#94a3b8; margin-right:5px;"></i> 篩選時間：</label>
         <select id="record_filter_year" onchange="renderRecords()" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:10px; font-size:14px; outline:none; color:#0f172a; font-weight:700; cursor:pointer; background:#fff; min-width:120px;"></select>
         <select id="record_filter_month" onchange="renderRecords()" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:10px; font-size:14px; outline:none; color:#0f172a; font-weight:700; cursor:pointer; background:#fff; min-width:120px;"></select>
       </div>
@@ -175,7 +238,7 @@
       <h3 class="panel-title" style="margin-bottom:15px;"><i class="fas fa-building" style="color:#0d9488;"></i> 關於 點籽響 / 愜易居</h3>
       <p style="color:#475569; line-height:2; font-size:15px;">我們致力於提供最專業的人才媒合與企業派遣服務，解決人力調度上的難題。<br>透過彈性的點數制與會員方案，協助您的企業高效運作。若有任何需求調整，歡迎隨時與我們專員聯繫！</p>
       
-      <div style="display:flex; gap:15px; margin-top:25px;">
+      <div style="display:flex; gap:15px; margin-top:25px;" class="flex-mobile-stack">
         <button onclick="window.open('https://www.instagram.com/doclick88/', '_blank')" class="btn" style="flex:1; background:linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);">
           <i class="fab fa-instagram" style="font-size: 18px;"></i> 官方 Instagram
         </button>
@@ -188,28 +251,30 @@
     <div class="panel-box">
       <h3 class="panel-title"><i class="fas fa-bullhorn" style="color:#f59e0b;"></i> 2026 年度人資運營模組公定價目與規範</h3>
       
-      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:30px; margin-bottom: 30px;">
+      <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:30px; margin-bottom: 30px;" class="grid-mobile-stack">
         <div style="background:#fff; border-radius:16px; border:1px solid #f1f5f9; overflow:hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
           <h3 style="background:#f8fafc; padding:18px 25px; color:#0f172a; font-size:16px; font-weight:800; border-bottom:1px solid #f1f5f9; margin:0;"><i class="fas fa-coins" style="color:#0d9488; margin-right:8px;"></i> 儲值點數方案 (1小時=1點)</h3>
-          <table style="width:100%; text-align:center; border-collapse: collapse;">
-            <thead>
-              <tr style="color:#64748b; font-size:13px;">
-                <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">購買點數</th>
-                <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">方案總價(含稅)</th>
-                <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">未入會均價</th>
-              </tr>
-            </thead>
-            <tbody style="font-size:15px; font-weight:700; color:#334155;">
-              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">50 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$17,000</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
-              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">90 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$30,600</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
-              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">120 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$40,800</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
-              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">250 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$85,000</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
-              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">370 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$122,100</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
-              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">550 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$181,500</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
-              <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">750 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$247,500</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
-              <tr><td style="padding:15px;">1000 點</td><td style="padding:15px;">$330,000</td><td style="padding:15px;">$330</td></tr>
-            </tbody>
-          </table>
+          <div style="overflow-x:auto;">
+            <table style="width:100%; text-align:center; border-collapse: collapse;">
+              <thead>
+                <tr style="color:#64748b; font-size:13px;">
+                  <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">購買點數</th>
+                  <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">方案總價(含稅)</th>
+                  <th style="padding:15px; border-bottom:1px solid #f1f5f9; background:#fff; font-weight:700;">未入會均價</th>
+                </tr>
+              </thead>
+              <tbody style="font-size:15px; font-weight:700; color:#334155;">
+                <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">50 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$17,000</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">90 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$30,600</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">120 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$40,800</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">250 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$85,000</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$340</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">370 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$122,100</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">550 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$181,500</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
+                <tr><td style="padding:15px; border-bottom:1px solid #f8fafc;">750 點</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$247,500</td><td style="padding:15px; border-bottom:1px solid #f8fafc;">$330</td></tr>
+                <tr><td style="padding:15px;">1000 點</td><td style="padding:15px;">$330,000</td><td style="padding:15px;">$330</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div>
@@ -232,7 +297,7 @@
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; background:#f8fafc; padding:30px; border-radius:16px; border:1px solid #f1f5f9;">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:30px; background:#f8fafc; padding:30px; border-radius:16px; border:1px solid #f1f5f9;" class="grid-mobile-stack">
         <div>
           <h4 style="color:#0f172a; margin-bottom:12px; font-size:16px; font-weight:800;">📌 點數扣抵換算</h4>
           <ul style="font-size:14px; color:#475569; padding-left:20px; line-height:1.8; font-weight:500;">
@@ -353,7 +418,10 @@ function getItemDeductPoints(item){if(item.deduct_points!==undefined&&item.deduc
 
 function initCustomerApp() {
   document.getElementById('login-screen').style.display = 'none';
-  // 將原本的 top-nav 改為顯示 sidebar
+  
+  // 加入 logged-in 標籤，讓 CSS 接管顯示邏輯
+  document.body.classList.add('is-logged-in');
+  
   document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('app-footer').style.display = 'block';
