@@ -11,7 +11,7 @@
   body { background:#f8fafc; color:#334155; line-height:1.6; -webkit-font-smoothing: antialiased; }
   
   /* ================= 登入畫面 ================= */
-  #login-screen { display:flex; justify-content:center; align-items:center; height:100vh; background:url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat; position:fixed; top:0; left:0; width:100%; z-index:9998; }
+  #login-screen { display:none; justify-content:center; align-items:center; height:100vh; background:url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop') center/cover no-repeat; position:fixed; top:0; left:0; width:100%; z-index:9998; }
   #login-screen::before { content:''; position:absolute; inset:0; background:rgba(248, 250, 252, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
   .login-box { background:rgba(255,255,255,0.85); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:50px 40px; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.08); border: 1px solid rgba(255,255,255,0.5); width:100%; max-width:420px; text-align:center; position:relative; z-index:1; }
   .login-box h1 { color:#0f172a; margin-bottom:8px; font-size:26px; font-weight:900; letter-spacing: 1px; }
@@ -82,13 +82,12 @@
   #mobile-header { display: none; }
   
   @media screen and (max-width: 992px) {
-    /* 強制將左側選單變成底部導覽列 */
     #sidebar { 
       width: 100% !important; height: 75px !important; bottom: 0 !important; top: auto !important; left: 0 !important;
       flex-direction: row !important; justify-content: space-around !important; align-items: center !important; 
       padding: 0 !important; border-right: none !important; border-top: 1px solid #e2e8f0 !important; 
       background: rgba(255,255,255,0.98) !important; z-index: 9999 !important; box-shadow: 0 -4px 20px rgba(0,0,0,0.05) !important;
-      padding-bottom: env(safe-area-inset-bottom) !important; /* 避開 iPhone 底部橫條 */
+      padding-bottom: env(safe-area-inset-bottom) !important;
     }
     #sidebar .nav-brand, #sidebar .nav-actions { display: none !important; }
     #sidebar .nav-menu { flex-direction: row !important; width: 100% !important; justify-content: space-around !important; padding: 0 10px !important; margin: 0 !important;}
@@ -96,11 +95,9 @@
     #sidebar .nav-menu a i { font-size: 22px !important; margin: 0 !important; }
     #sidebar .nav-menu a.active { color: #0d9488 !important; background: transparent !important; }
 
-    /* 強制主內容區塊佔滿全寬度 */
     .main-container { margin-left: 0 !important; width: 100% !important; padding: 20px 15px 120px 15px !important; box-sizing: border-box !important;}
     .footer { margin-left: 0 !important; padding-bottom: 30px !important; }
     
-    /* 啟用手機專屬頂部標頭 */
     body.is-logged-in #mobile-header { 
       display: flex !important; justify-content: space-between !important; align-items: center !important; 
       background: rgba(255,255,255,0.95) !important; backdrop-filter: blur(10px) !important; 
@@ -111,7 +108,6 @@
     #mobile-header .brand i { color: #0d9488 !important; }
     #mobile-header .logout-btn { color: #ef4444 !important; font-weight: 700 !important; font-size: 14px !important; background: #fef2f2 !important; padding: 8px 15px !important; border-radius: 8px !important; text-decoration: none !important; cursor:pointer !important;}
 
-    /* 解決橫幅、卡片與輸入框擠在一起的問題 */
     .welcome-banner { flex-direction: column !important; text-align: left !important; align-items: flex-start !important; padding: 30px 20px !important; border-radius: 20px !important; gap: 15px !important; }
     .welcome-banner h2 { font-size: 24px !important; line-height: 1.4 !important; }
     .welcome-banner > div:last-child { width: 100% !important; flex-direction: column !important; margin-top: 10px !important; gap: 12px !important; }
@@ -127,10 +123,8 @@
     .flex-mobile-stack { flex-direction: column !important; align-items: stretch !important; gap: 12px !important;}
     .flex-mobile-stack select { width: 100% !important; }
     
-    /* 讓表格可以用手指左右滑動，絕對不會跑版 */
     table th, table td { padding: 12px 10px !important; font-size: 14px !important; white-space: nowrap !important; }
     
-    /* 登入畫面縮放 */
     .login-box { padding: 40px 25px !important; margin: 0 20px !important; width: calc(100% - 40px) !important; max-width: 100% !important; }
     .login-box h1 { font-size: 22px !important; }
   }
@@ -141,7 +135,7 @@
 <div id="toast"></div>
 
 <div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.85); backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; flex-direction:column; font-size:18px; font-weight:bold; color:#2dd4bf;">
-  <i class="fas fa-circle-notch fa-spin fa-3x" style="margin-bottom:15px;"></i> 資料同步中，請稍候...
+  <i class="fas fa-circle-notch fa-spin fa-3x" style="margin-bottom:15px;"></i> 系統準備中，請稍候...
 </div>
 
 <div id="login-screen">
@@ -330,13 +324,14 @@
 // 共用原本後台的資料庫連結
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 
-// 加入本地快取機制，讓網頁秒開
+// 加入本地快取機制
 function safeJSONParse(k, f) { try { const v=localStorage.getItem(k); return v?JSON.parse(v):f; } catch(e) { return f; } }
 
 let custData = safeJSONParse('cus_custData', []), 
     contractData = safeJSONParse('cus_contractData', []), 
     attendData = safeJSONParse('cus_attendData', []);
 let currentCustomer = null;
+let isFetching = false;
 
 function showToast(m, err=false) { 
   const t = document.getElementById('toast'); 
@@ -348,19 +343,37 @@ function showToast(m, err=false) {
 document.getElementById('login_pwd').addEventListener('keypress', e => { if(e.key==='Enter') handleLogin(); });
 
 window.onload = () => {
-  if(custData.length > 0) {
-    document.getElementById('loading-overlay').style.display = 'none';
-    if(localStorage.getItem('customerLoginAcc')) {
+  const savedAcc = localStorage.getItem('customerLoginAcc');
+  
+  if (savedAcc) {
+    // 情況 A：已經登入過
+    if (custData.length > 0) {
+      // A1: 有快取 -> 秒開進入系統，背景更新
+      document.getElementById('loading-overlay').style.display = 'none';
       restoreSession();
+      backgroundSync(false);
+    } else {
+      // A2: 無快取 (可能快取被清除了) -> 顯示載入中，抓完再進系統
+      document.getElementById('loading-overlay').style.display = 'flex';
+      backgroundSync(true);
     }
-    backgroundSync();
   } else {
-    document.getElementById('loading-overlay').style.display = 'flex';
-    backgroundSync(true);
+    // 情況 B：還沒登入 (第一次來)
+    // B1: 秒開登入畫面，絕對不卡轉圈圈
+    document.getElementById('loading-overlay').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    
+    // B2: 在背景偷偷去抓資料，客戶不會有感覺
+    if (custData.length === 0) {
+       backgroundSync(false);
+    }
   }
 };
 
-function backgroundSync(isFirstTime = false) {
+function backgroundSync(isRestoreSession = false) {
+  if(isFetching) return;
+  isFetching = true;
+  
   fetch(SCRIPT_URL)
     .then(res => res.json())
     .then(r => {
@@ -368,10 +381,13 @@ function backgroundSync(isFirstTime = false) {
       if(r.contractData) { contractData = r.contractData; localStorage.setItem('cus_contractData', JSON.stringify(contractData)); }
       if(r.attendData) { attendData = r.attendData; localStorage.setItem('cus_attendData', JSON.stringify(attendData)); }
       
-      if(isFirstTime) {
+      isFetching = false;
+      
+      if(isRestoreSession) {
         document.getElementById('loading-overlay').style.display = 'none';
         if(localStorage.getItem('customerLoginAcc')) restoreSession();
       } else {
+        // 如果客戶已經登入且在系統內，偷偷更新畫面數字
         if(currentCustomer) {
            const found = custData.find(x => x && String(x.account).trim() === currentCustomer.account);
            if(found) currentCustomer = found;
@@ -381,9 +397,10 @@ function backgroundSync(isFirstTime = false) {
       }
     })
     .catch(e => {
-      if(isFirstTime) {
+      isFetching = false;
+      if(isRestoreSession) {
          document.getElementById('loading-overlay').style.display = 'none';
-         showToast('資料庫連線失敗，請稍後再試', true);
+         showToast('資料庫連線失敗，請重新整理網頁', true);
       }
     });
 }
@@ -424,7 +441,15 @@ function handleLogin() {
   const pwd = document.getElementById('login_pwd').value.trim();
   if(!acc || !pwd) return showToast('請輸入帳號與密碼', true);
   
-  if(custData.length === 0) return showToast('系統第一次載入中，請稍候片刻再試', true);
+  // 防呆機制：如果客戶點太快，資料還沒抓回來
+  if(custData.length === 0) {
+    if(isFetching) {
+      return showToast('系統安全連線中，請稍候 3 秒再試一次', true);
+    } else {
+      backgroundSync(false);
+      return showToast('系統正在準備中，請稍候...', true);
+    }
+  }
 
   const found = custData.find(x => x && String(x.account).trim() === acc && String(x.pwd).trim() === pwd);
   if(found) {
