@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>點籽響 - 企業專屬服務中心</title>
+<title>點籽響 / 愜易居 - 企業專屬服務中心</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; font-family:'Microsoft JhengHei', sans-serif; }
@@ -22,7 +22,7 @@
   .btn-login { width:100%; padding:16px; background:linear-gradient(135deg,#1e40af,#1e3a8a); color:white; border:none; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:10px; transition: transform 0.2s; box-shadow: 0 4px 15px rgba(30, 64, 175, 0.3);}
   .btn-login:hover { transform: translateY(-2px); }
   
-  /* 上方導覽列 (Top Navigation) - 區隔後台感 */
+  /* 上方導覽列 (Top Navigation) */
   .top-nav { background:#0f172a; color:white; display:flex; justify-content:space-between; align-items:center; padding:0 50px; height:75px; position:sticky; top:0; z-index:100; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
   .nav-brand { font-size:20px; font-weight:800; display:flex; align-items:center; gap:12px; }
   .nav-brand i { color:#3b82f6; font-size:24px; }
@@ -34,7 +34,7 @@
   .nav-actions .logout-btn { color:#ef4444; text-decoration:none; font-weight:600; cursor:pointer; padding:8px 15px; border:1px solid rgba(239,68,68,0.3); border-radius:6px; transition: 0.3s;}
   .nav-actions .logout-btn:hover { background:#ef4444; color:white; }
 
-  /* 主內容區塊 (置中對齊，像一般網站) */
+  /* 主內容區塊 */
   .main-container { max-width:1200px; margin:40px auto; padding:0 20px; display:none; min-height: calc(100vh - 155px);}
   
   /* 歡迎橫幅 (Hero Banner) */
@@ -47,7 +47,7 @@
   .page.active { display:block; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
   
-  /* 數據卡片與表格 (客戶端專屬圓潤風格) */
+  /* 數據卡片與表格 */
   .dashboard-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:25px; margin-bottom:35px; }
   .dash-card { background:#fff; border-radius:16px; padding:30px 25px; border:1px solid #e2e8f0; position:relative; box-shadow:0 4px 6px -1px rgba(0,0,0,.02); transition:transform 0.3s;}
   .dash-card:hover { transform:translateY(-5px); box-shadow:0 10px 15px -3px rgba(0,0,0,.05); }
@@ -68,6 +68,7 @@
   .badge-yellow { background:#fef3c7; color:#92400e; }
   
   .btn { padding:10px 20px; border:none; border-radius:8px; cursor:pointer; font-size:14px; font-weight:bold; color:#fff; transition: 0.3s;}
+  .btn:hover { transform: translateY(-2px); }
   
   #toast { display:none; position:fixed; top:30px; right:30px; background:#10b981; color:#fff; padding:15px 25px; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,.5); z-index:100000; font-weight:bold; }
   .footer { text-align:center; padding:20px; color:#94a3b8; font-size:13px; margin-top:20px; }
@@ -115,9 +116,15 @@
       <h2>歡迎回來，<span id="welcome-name"></span></h2>
       <p>這裡是您的專屬企業服務中心，隨時掌握合約與人力調度狀況。</p>
     </div>
-    <button onclick="window.location.reload();" class="btn" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,0.5);">
-      <i class="fas fa-sync-alt"></i> 重新同步資料
-    </button>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <button onclick="window.open('https://forms.gle/tXoRrRvp7FnixFh49', '_blank')" class="btn" style="background:#10b981; border:none; box-shadow:0 4px 15px rgba(16,185,129,0.4); padding:12px 20px; font-size:15px;">
+        <i class="fas fa-file-signature"></i> 填寫派班需求單
+      </button>
+      
+      <button onclick="window.location.reload();" class="btn" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,0.5); padding:12px 20px; font-size:15px;">
+        <i class="fas fa-sync-alt"></i> 更新資料
+      </button>
+    </div>
   </div>
   
   <div class="page active" id="page-dashboard">
@@ -151,19 +158,18 @@
   </div>
 
   <div class="page" id="page-info">
-    <div class="panel-box">
-      <h3 class="panel-title"><i class="fas fa-star" style="color:#f59e0b;"></i> 您的專屬服務價目</h3>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:25px;">
-        <div style="background:#f8fafc; padding:25px; border-radius:12px; border:1px solid #e2e8f0;">
-          <h4 style="margin-bottom:15px; color:#1e293b; font-size:16px;">關於 點籽響 / 愜易居</h4>
-          <p style="color:#475569; line-height:2;">我們致力於提供最專業的人才媒合與企業派遣服務，解決人力調度上的難題。<br><br>若有任何需求調整，歡迎隨時與我們專員聯繫！</p>
-          <button onclick="window.open('https://instagram.com', '_blank')" id="ig-btn" class="btn" style="margin-top:20px; background:linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); width:100%;">
-            <i class="fab fa-instagram"></i> 關注官方社群
-          </button>
-        </div>
-        <div>
-          <pre id="price-table-view" style="background:#1e293b; color:#cbd5e1; padding:20px; border-radius:12px; font-family:monospace; font-size:14px; white-space:pre-wrap; height:100%; border-left:4px solid #3b82f6;"></pre>
-        </div>
+    
+    <div class="panel-box" style="border-top:4px solid #3b82f6;">
+      <h3 class="panel-title" style="border:none; padding:0; margin-bottom:15px;"><i class="fas fa-building" style="color:#3b82f6;"></i> 關於 點籽響 / 愜易居</h3>
+      <p style="color:#475569; line-height:2; font-size:15px;">我們致力於提供最專業的人才媒合與企業派遣服務，解決人力調度上的難題。<br>透過彈性的點數制與會員方案，協助您的企業高效運作。若有任何需求調整，歡迎隨時與我們專員聯繫！</p>
+      
+      <div style="display:flex; gap:12px; margin-top:20px;">
+        <button onclick="window.open('https://www.instagram.com/doclick88/', '_blank')" class="btn" style="flex:1; background:linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 12px 10px;">
+          <i class="fab fa-instagram" style="font-size: 16px;"></i> 官方 Instagram
+        </button>
+        <button onclick="window.open('https://www.facebook.com/doclick88/', '_blank')" class="btn" style="flex:1; background:linear-gradient(135deg, #1877F2 0%, #0C5EBF 100%); padding: 12px 10px;">
+          <i class="fab fa-facebook-f" style="font-size: 16px;"></i> 官方 Facebook
+        </button>
       </div>
     </div>
 
@@ -247,7 +253,7 @@
 // 共用原本後台的資料庫連結
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 
-let custData = [], contractData = [], attendData = [], priceTable = {}, portalConf = {};
+let custData = [], contractData = [], attendData = [];
 let currentCustomer = null;
 
 function showToast(m, err=false) { 
@@ -276,8 +282,6 @@ function loadData(autoLogin) {
       if(r.custData) custData = r.custData;
       if(r.contractData) contractData = r.contractData;
       if(r.attendData) attendData = r.attendData;
-      if(r.sysConfig && r.sysConfig.priceTable) priceTable = JSON.parse(r.sysConfig.priceTable);
-      if(r.sysConfig && r.sysConfig.portalConf) portalConf = JSON.parse(r.sysConfig.portalConf);
       
       document.getElementById('loading-overlay').style.display = 'none';
       if(autoLogin) restoreSession();
@@ -343,18 +347,6 @@ function initCustomerApp() {
   
   document.getElementById('welcome-name').textContent = currentCustomer.name;
   document.getElementById('nav-company-name').textContent = currentCustomer.name;
-
-  if(portalConf.l2Url) document.getElementById('ig-btn').setAttribute('onclick', `window.open('${portalConf.l2Url}', '_blank')`);
-
-  let priceHtml = '';
-  for (let plan in priceTable) {
-      if(plan === "無購買時數") continue;
-      priceHtml += `✨ 方案：${plan}\n`;
-      if (priceTable[plan].packagePrice) priceHtml += `   包裝費用：$${priceTable[plan].packagePrice}\n`;
-      if (priceTable[plan].points) priceHtml += `   包含點數：${priceTable[plan].points} 點\n`;
-      priceHtml += `------------------------------\n`;
-  }
-  document.getElementById('price-table-view').textContent = priceHtml || '目前無專屬價目，請洽詢專員。';
 
   renderDashboard();
   renderRecords();
