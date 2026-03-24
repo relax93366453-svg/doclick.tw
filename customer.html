@@ -24,17 +24,17 @@
   .btn-login:hover { background:#0d9488; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(13, 148, 136, 0.2); }
   
   /* ================= 桌面版：左側導覽列 ================= */
-  .sidebar { background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); width:260px; height:100vh; position:fixed; left:0; top:0; z-index:100; box-shadow:4px 0 20px rgba(0,0,0,0.03); border-right: 1px solid #f1f5f9; display:flex; flex-direction:column; padding: 30px 20px; }
-  .nav-brand { font-size:20px; font-weight:900; display:flex; align-items:center; gap:12px; color: #0f172a; margin-bottom: 40px; padding: 0 10px;}
-  .nav-brand i { color:#0d9488; font-size:26px; }
-  .nav-menu { display:flex; flex-direction:column; gap:10px; flex: 1;}
-  .nav-menu a { color:#64748b; text-decoration:none; padding:15px 20px; border-radius:12px; font-weight:700; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:12px; font-size:15px;}
-  .nav-menu a:hover { color:#0f172a; background:#f1f5f9; transform: translateX(5px); }
-  .nav-menu a.active { color:#0d9488; background:#f0fdfa; }
-  .nav-actions { display:flex; flex-direction:column; gap:15px; border-top:1px solid #e2e8f0; padding-top:20px;}
-  .nav-actions .user-name { color:#0f172a; font-size:14px; font-weight: 800; background: #f8fafc; padding: 12px 15px; border-radius: 12px; border: 1px solid #e2e8f0; display:flex; align-items:center; gap:8px;}
-  .nav-actions .logout-btn { color:#ef4444; text-decoration:none; font-weight:700; cursor:pointer; transition: 0.3s; padding: 12px 15px; border-radius: 12px; display:flex; align-items:center; gap:8px; border: 1px solid transparent;}
-  .nav-actions .logout-btn:hover { background: #fef2f2; border: 1px solid #fecaca; }
+  #sidebar { background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); width:260px; height:100vh; position:fixed; left:0; top:0; z-index:100; box-shadow:4px 0 20px rgba(0,0,0,0.03); border-right: 1px solid #f1f5f9; display:flex; flex-direction:column; padding: 30px 20px; }
+  #sidebar .nav-brand { font-size:20px; font-weight:900; display:flex; align-items:center; gap:12px; color: #0f172a; margin-bottom: 40px; padding: 0 10px;}
+  #sidebar .nav-brand i { color:#0d9488; font-size:26px; }
+  #sidebar .nav-menu { display:flex; flex-direction:column; gap:10px; flex: 1;}
+  #sidebar .nav-menu a { color:#64748b; text-decoration:none; padding:15px 20px; border-radius:12px; font-weight:700; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:12px; font-size:15px;}
+  #sidebar .nav-menu a:hover { color:#0f172a; background:#f1f5f9; transform: translateX(5px); }
+  #sidebar .nav-menu a.active { color:#0d9488; background:#f0fdfa; }
+  #sidebar .nav-actions { display:flex; flex-direction:column; gap:15px; border-top:1px solid #e2e8f0; padding-top:20px;}
+  #sidebar .nav-actions .user-name { color:#0f172a; font-size:14px; font-weight: 800; background: #f8fafc; padding: 12px 15px; border-radius: 12px; border: 1px solid #e2e8f0; display:flex; align-items:center; gap:8px;}
+  #sidebar .nav-actions .logout-btn { color:#ef4444; text-decoration:none; font-weight:700; cursor:pointer; transition: 0.3s; padding: 12px 15px; border-radius: 12px; display:flex; align-items:center; gap:8px; border: 1px solid transparent;}
+  #sidebar .nav-actions .logout-btn:hover { background: #fef2f2; border: 1px solid #fecaca; }
 
   /* ================= 主內容區塊 ================= */
   .main-container { margin-left:260px; padding:40px 50px; display:none; min-height: calc(100vh - 80px); max-width: 1400px;}
@@ -78,69 +78,69 @@
   #toast { display:none; position:fixed; top:30px; right:30px; background:#0f172a; color:#fff; padding:16px 30px; border-radius:12px; box-shadow:0 15px 30px rgba(0,0,0,.15); z-index:100000; font-weight:bold; }
   .footer { text-align:center; padding:20px; color:#94a3b8; font-size:14px; margin-top:20px; margin-left: 260px;}
 
-  /* ================= 手機版：響應式 RWD 佈局 ================= */
-  .mobile-header { display: none; }
+  /* ================= 手機版與平板：強制響應式防跑版佈局 ================= */
+  #mobile-header { display: none; }
   
-  @media (max-width: 768px) {
-    /* 啟動手機版頂部標頭 */
-    body.is-logged-in .mobile-header { 
-      display: flex; justify-content: space-between; align-items: center; 
-      background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); 
-      padding: 15px 20px; border-bottom: 1px solid #e2e8f0; 
-      position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  @media screen and (max-width: 992px) {
+    /* 強制將左側選單變成底部導覽列 */
+    #sidebar { 
+      width: 100% !important; height: 75px !important; bottom: 0 !important; top: auto !important; left: 0 !important;
+      flex-direction: row !important; justify-content: space-around !important; align-items: center !important; 
+      padding: 0 !important; border-right: none !important; border-top: 1px solid #e2e8f0 !important; 
+      background: rgba(255,255,255,0.98) !important; z-index: 9999 !important; box-shadow: 0 -4px 20px rgba(0,0,0,0.05) !important;
+      padding-bottom: env(safe-area-inset-bottom) !important; /* 避開 iPhone 底部橫條 */
     }
-    .mobile-header .brand { font-weight: 900; color: #0f172a; font-size: 18px; }
-    .mobile-header .brand i { color: #0d9488; margin-right: 5px;}
-    .mobile-header .logout-btn { color: #ef4444; font-weight: 700; font-size: 14px; background: #fef2f2; padding: 8px 15px; border-radius: 8px; text-decoration: none; cursor:pointer;}
+    #sidebar .nav-brand, #sidebar .nav-actions { display: none !important; }
+    #sidebar .nav-menu { flex-direction: row !important; width: 100% !important; justify-content: space-around !important; padding: 0 10px !important; margin: 0 !important;}
+    #sidebar .nav-menu a { flex-direction: column !important; padding: 10px 0 !important; gap: 6px !important; font-size: 12px !important; background: transparent !important; flex: 1 !important; text-align: center !important;}
+    #sidebar .nav-menu a i { font-size: 22px !important; margin: 0 !important; }
+    #sidebar .nav-menu a.active { color: #0d9488 !important; background: transparent !important; }
 
-    /* 將左側選單轉化為 APP 底部導覽列 */
-    .sidebar { 
-      width: 100%; height: auto; bottom: 0; top: auto; flex-direction: row; 
-      padding: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); 
-      border-right: none; border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
+    /* 強制主內容區塊佔滿全寬度 */
+    .main-container { margin-left: 0 !important; width: 100% !important; padding: 20px 15px 120px 15px !important; box-sizing: border-box !important;}
+    .footer { margin-left: 0 !important; padding-bottom: 30px !important; }
+    
+    /* 啟用手機專屬頂部標頭 */
+    body.is-logged-in #mobile-header { 
+      display: flex !important; justify-content: space-between !important; align-items: center !important; 
+      background: rgba(255,255,255,0.95) !important; backdrop-filter: blur(10px) !important; 
+      padding: 15px 20px !important; border-bottom: 1px solid #e2e8f0 !important; 
+      position: sticky !important; top: 0 !important; z-index: 100 !important; box-shadow: 0 4px 15px rgba(0,0,0,0.03) !important;
     }
-    .sidebar .nav-brand, .sidebar .nav-actions { display: none !important; }
-    .sidebar .nav-menu { flex-direction: row; justify-content: space-around; width: 100%; gap: 5px; }
-    .sidebar .nav-menu a { flex-direction: column; padding: 10px 5px; font-size: 12px; flex: 1; text-align: center; gap: 4px; border-radius: 12px; }
-    .sidebar .nav-menu a i { font-size: 22px; }
-    .sidebar .nav-menu a:hover { transform: none; }
+    #mobile-header .brand { font-weight: 900 !important; color: #0f172a !important; font-size: 18px !important; display: flex !important; align-items: center !important; gap: 8px !important;}
+    #mobile-header .brand i { color: #0d9488 !important; }
+    #mobile-header .logout-btn { color: #ef4444 !important; font-weight: 700 !important; font-size: 14px !important; background: #fef2f2 !important; padding: 8px 15px !important; border-radius: 8px !important; text-decoration: none !important; cursor:pointer !important;}
 
-    /* 主內容區塊調整 */
-    .main-container { margin-left: 0; padding: 20px 15px 100px 15px; }
-    .footer { margin-left: 0; padding-bottom: 30px;}
+    /* 解決橫幅、卡片與輸入框擠在一起的問題 */
+    .welcome-banner { flex-direction: column !important; text-align: left !important; align-items: flex-start !important; padding: 30px 20px !important; border-radius: 20px !important; gap: 15px !important; }
+    .welcome-banner h2 { font-size: 24px !important; line-height: 1.4 !important; }
+    .welcome-banner > div:last-child { width: 100% !important; flex-direction: column !important; margin-top: 10px !important; gap: 12px !important; }
+    .welcome-banner button { width: 100% !important; justify-content: center !important; }
     
-    /* 歡迎橫幅垂直排列 */
-    .welcome-banner { flex-direction: column; text-align: center; padding: 35px 25px; gap: 20px; border-radius: 20px; }
-    .welcome-banner h2 { font-size: 24px; }
-    .welcome-banner p { font-size: 14px; line-height: 1.8; }
-    .welcome-banner > div:last-child { flex-direction: column; width: 100%; }
-    .welcome-banner button { width: 100%; justify-content: center; }
+    .dashboard-grid { grid-template-columns: 1fr !important; gap: 15px !important; }
+    .dash-card { padding: 25px 20px !important; border-radius: 16px !important; }
+    .dash-card .num { font-size: 36px !important; }
+    .panel-box { padding: 20px 15px !important; border-radius: 16px !important; }
+    .panel-title { font-size: 18px !important; margin-bottom: 20px !important; }
     
-    /* 卡片與容器自動堆疊 */
-    .dashboard-grid { grid-template-columns: 1fr; gap: 15px; }
-    .dash-card { padding: 25px 20px; border-radius: 16px; }
-    .dash-card .num { font-size: 36px; }
-    .panel-box { padding: 25px 20px; border-radius: 16px; }
-    .panel-title { font-size: 18px; margin-bottom: 20px; }
-    
-    /* 網格自動折行 */
     .grid-mobile-stack { grid-template-columns: 1fr !important; gap: 20px !important; }
-    .flex-mobile-stack { flex-direction: column !important; align-items: stretch !important;}
-    .flex-mobile-stack select { width: 100%; }
+    .flex-mobile-stack { flex-direction: column !important; align-items: stretch !important; gap: 12px !important;}
+    .flex-mobile-stack select { width: 100% !important; }
     
-    /* 表格防跑版 (左右滑動) */
-    table th, table td { padding: 12px 10px; font-size: 13px; white-space: nowrap; }
+    /* 讓表格可以用手指左右滑動，絕對不會跑版 */
+    table th, table td { padding: 12px 10px !important; font-size: 14px !important; white-space: nowrap !important; }
     
     /* 登入畫面縮放 */
-    .login-box { padding: 40px 25px; margin: 0 20px; width: auto; }
-    .login-box h1 { font-size: 22px; }
+    .login-box { padding: 40px 25px !important; margin: 0 20px !important; width: calc(100% - 40px) !important; max-width: 100% !important; }
+    .login-box h1 { font-size: 22px !important; }
   }
 </style>
 </head>
 <body>
 
 <div id="toast"></div>
-<div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(255,255,255,0.9); z-index:99999; justify-content:center; align-items:center; flex-direction:column; font-size:18px; font-weight:bold; color:#0d9488;">
+
+<div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.85); backdrop-filter:blur(8px); z-index:99999; justify-content:center; align-items:center; flex-direction:column; font-size:18px; font-weight:bold; color:#2dd4bf;">
   <i class="fas fa-circle-notch fa-spin fa-3x" style="margin-bottom:15px;"></i> 資料同步中，請稍候...
 </div>
 
@@ -157,19 +157,19 @@
   </div>
 </div>
 
-<div class="mobile-header">
+<div id="mobile-header">
   <div class="brand"><i class="fas fa-leaf"></i> 點籽響 人資運營</div>
-  <a onclick="logout()" class="logout-btn">登出系統</a>
+  <a onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 登出</a>
 </div>
 
-<div class="sidebar" id="sidebar" style="display:none;">
+<div id="sidebar" style="display:none;">
   <div class="nav-brand">
     <i class="fas fa-leaf"></i> <span>點籽響 人資運營</span>
   </div>
   <div class="nav-menu">
-    <a onclick="showPage('dashboard', this)" class="active"><i class="fas fa-chart-pie"></i> 合約與點數</a>
-    <a onclick="showPage('records', this)"><i class="fas fa-history"></i> 派遣紀錄</a>
-    <a onclick="showPage('info', this)"><i class="fas fa-info-circle"></i> 服務與社群</a>
+    <a onclick="showPage('dashboard', this)" class="active"><i class="fas fa-chart-pie"></i> <span>合約與點數</span></a>
+    <a onclick="showPage('records', this)"><i class="fas fa-history"></i> <span>派遣紀錄</span></a>
+    <a onclick="showPage('info', this)"><i class="fas fa-info-circle"></i> <span>服務與社群</span></a>
   </div>
   <div class="nav-actions">
     <div class="user-name"><i class="fas fa-building" style="color:#0d9488;"></i> <span id="nav-company-name"></span></div>
@@ -189,8 +189,8 @@
         <i class="fas fa-file-signature"></i> 填寫派班需求單
       </button>
       
-      <button onclick="window.location.reload();" class="btn" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,0.4); color:#fff;">
-        <i class="fas fa-sync-alt"></i> 更新資料
+      <button onclick="forceSync(this)" class="btn" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,0.4); color:#fff;">
+        <i class="fas fa-sync-alt"></i> <span>更新資料</span>
       </button>
     </div>
   </div>
@@ -204,7 +204,7 @@
     
     <div class="panel-box">
       <h3 class="panel-title"><i class="fas fa-list-alt" style="color:#0d9488;"></i> 歷史合約紀錄</h3>
-      <div style="overflow-x:auto;">
+      <div style="overflow-x:auto; width:100%;">
         <table>
           <thead><tr><th>簽約日期</th><th>購買方案</th><th>合約點數</th><th>狀態</th></tr></thead>
           <tbody id="contractTable"></tbody>
@@ -218,12 +218,12 @@
       <h3 class="panel-title"><i class="fas fa-user-clock" style="color:#0d9488;"></i> 歷史派遣服務紀錄</h3>
       
       <div style="background:#f8fafc; padding:15px 25px; border-radius:16px; margin-bottom:25px; display:flex; gap:15px; align-items:center; border:1px solid #f1f5f9;" class="flex-mobile-stack">
-        <label style="font-weight:800; font-size:14px; color:#475569; width:100%;"><i class="fas fa-filter" style="color:#94a3b8; margin-right:5px;"></i> 篩選時間：</label>
+        <label style="font-weight:800; font-size:14px; color:#475569;"><i class="fas fa-filter" style="color:#94a3b8; margin-right:5px;"></i> 篩選時間：</label>
         <select id="record_filter_year" onchange="renderRecords()" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:10px; font-size:14px; outline:none; color:#0f172a; font-weight:700; cursor:pointer; background:#fff; min-width:120px;"></select>
         <select id="record_filter_month" onchange="renderRecords()" style="padding:10px 15px; border:1px solid #e2e8f0; border-radius:10px; font-size:14px; outline:none; color:#0f172a; font-weight:700; cursor:pointer; background:#fff; min-width:120px;"></select>
       </div>
 
-      <div style="overflow-x:auto;">
+      <div style="overflow-x:auto; width:100%;">
         <table>
           <thead><tr><th>服務日期</th><th>派遣人員</th><th>服務項目 / 備註</th><th>服務工時</th><th>扣除點數</th></tr></thead>
           <tbody id="recordsTable"></tbody>
@@ -254,7 +254,7 @@
       <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:30px; margin-bottom: 30px;" class="grid-mobile-stack">
         <div style="background:#fff; border-radius:16px; border:1px solid #f1f5f9; overflow:hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
           <h3 style="background:#f8fafc; padding:18px 25px; color:#0f172a; font-size:16px; font-weight:800; border-bottom:1px solid #f1f5f9; margin:0;"><i class="fas fa-coins" style="color:#0d9488; margin-right:8px;"></i> 儲值點數方案 (1小時=1點)</h3>
-          <div style="overflow-x:auto;">
+          <div style="overflow-x:auto; width:100%;">
             <table style="width:100%; text-align:center; border-collapse: collapse;">
               <thead>
                 <tr style="color:#64748b; font-size:13px;">
@@ -330,7 +330,12 @@
 // 共用原本後台的資料庫連結
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwTtT9kLu7OFl2zfxYhyWb94tVp6p-v3KIQYthcnwNE5mszbUDj7lm7Q7XS6LubWCjjXQ/exec';
 
-let custData = [], contractData = [], attendData = [];
+// 加入本地快取機制，讓網頁秒開
+function safeJSONParse(k, f) { try { const v=localStorage.getItem(k); return v?JSON.parse(v):f; } catch(e) { return f; } }
+
+let custData = safeJSONParse('cus_custData', []), 
+    contractData = safeJSONParse('cus_contractData', []), 
+    attendData = safeJSONParse('cus_attendData', []);
 let currentCustomer = null;
 
 function showToast(m, err=false) { 
@@ -340,32 +345,77 @@ function showToast(m, err=false) {
   setTimeout(() => t.style.display = 'none', 3000); 
 }
 
-// 監聽 Enter 登入
 document.getElementById('login_pwd').addEventListener('keypress', e => { if(e.key==='Enter') handleLogin(); });
 
 window.onload = () => {
-  if(localStorage.getItem('customerLoginAcc')) {
-    loadData(true); 
+  if(custData.length > 0) {
+    document.getElementById('loading-overlay').style.display = 'none';
+    if(localStorage.getItem('customerLoginAcc')) {
+      restoreSession();
+    }
+    backgroundSync();
   } else {
-    loadData(false); 
+    document.getElementById('loading-overlay').style.display = 'flex';
+    backgroundSync(true);
   }
 };
 
-function loadData(autoLogin) {
-  document.getElementById('loading-overlay').style.display = 'flex';
+function backgroundSync(isFirstTime = false) {
   fetch(SCRIPT_URL)
     .then(res => res.json())
     .then(r => {
-      if(r.custData) custData = r.custData;
-      if(r.contractData) contractData = r.contractData;
-      if(r.attendData) attendData = r.attendData;
+      if(r.custData) { custData = r.custData; localStorage.setItem('cus_custData', JSON.stringify(custData)); }
+      if(r.contractData) { contractData = r.contractData; localStorage.setItem('cus_contractData', JSON.stringify(contractData)); }
+      if(r.attendData) { attendData = r.attendData; localStorage.setItem('cus_attendData', JSON.stringify(attendData)); }
       
-      document.getElementById('loading-overlay').style.display = 'none';
-      if(autoLogin) restoreSession();
+      if(isFirstTime) {
+        document.getElementById('loading-overlay').style.display = 'none';
+        if(localStorage.getItem('customerLoginAcc')) restoreSession();
+      } else {
+        if(currentCustomer) {
+           const found = custData.find(x => x && String(x.account).trim() === currentCustomer.account);
+           if(found) currentCustomer = found;
+           renderDashboard();
+           renderRecords();
+        }
+      }
     })
     .catch(e => {
-      document.getElementById('loading-overlay').style.display = 'none';
-      showToast('資料庫連線失敗，請稍後再試', true);
+      if(isFirstTime) {
+         document.getElementById('loading-overlay').style.display = 'none';
+         showToast('資料庫連線失敗，請稍後再試', true);
+      }
+    });
+}
+
+function forceSync(btn) {
+  const span = btn.querySelector('span');
+  const icon = btn.querySelector('i');
+  
+  span.textContent = '同步中...';
+  icon.classList.add('fa-spin');
+  btn.style.pointerEvents = 'none';
+  
+  fetch(SCRIPT_URL)
+    .then(res => res.json())
+    .then(r => {
+      if(r.custData) { custData = r.custData; localStorage.setItem('cus_custData', JSON.stringify(custData)); }
+      if(r.contractData) { contractData = r.contractData; localStorage.setItem('cus_contractData', JSON.stringify(contractData)); }
+      if(r.attendData) { attendData = r.attendData; localStorage.setItem('cus_attendData', JSON.stringify(attendData)); }
+      
+      showToast('✅ 資料已更新至最新');
+      if(currentCustomer) {
+         const found = custData.find(x => x && String(x.account).trim() === currentCustomer.account);
+         if(found) currentCustomer = found;
+         renderDashboard();
+         renderRecords();
+      }
+    })
+    .catch(e => showToast('❌ 同步失敗，請檢查網路連線', true))
+    .finally(() => {
+      span.textContent = '更新資料';
+      icon.classList.remove('fa-spin');
+      btn.style.pointerEvents = 'auto';
     });
 }
 
@@ -374,7 +424,7 @@ function handleLogin() {
   const pwd = document.getElementById('login_pwd').value.trim();
   if(!acc || !pwd) return showToast('請輸入帳號與密碼', true);
   
-  if(custData.length === 0) return showToast('系統載入中，請稍候片刻再試', true);
+  if(custData.length === 0) return showToast('系統第一次載入中，請稍候片刻再試', true);
 
   const found = custData.find(x => x && String(x.account).trim() === acc && String(x.pwd).trim() === pwd);
   if(found) {
@@ -407,7 +457,7 @@ function logout() {
 function showPage(p, el) {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
   document.getElementById('page-' + p).classList.add('active');
-  document.querySelectorAll('.nav-menu a').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('#sidebar .nav-menu a').forEach(x => x.classList.remove('active'));
   if(el) el.classList.add('active');
 }
 
@@ -419,7 +469,7 @@ function getItemDeductPoints(item){if(item.deduct_points!==undefined&&item.deduc
 function initCustomerApp() {
   document.getElementById('login-screen').style.display = 'none';
   
-  // 加入 logged-in 標籤，讓 CSS 接管顯示邏輯
+  // 加上這個標籤，手機版介面才會正式啟動
   document.body.classList.add('is-logged-in');
   
   document.getElementById('sidebar').style.display = 'flex';
