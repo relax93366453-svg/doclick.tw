@@ -23,21 +23,21 @@
   .btn-login { width:100%; padding:16px; background:#0f172a; color:white; border:none; border-radius:12px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:10px; transition: all 0.3s; }
   .btn-login:hover { background:#0d9488; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(13, 148, 136, 0.2); }
   
-  /* ================= 頂部導覽列 - 極簡白 ================= */
-  .top-nav { background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); display:flex; justify-content:space-between; align-items:center; padding:0 50px; height:75px; position:sticky; top:0; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,0.03); border-bottom: 1px solid #f1f5f9; }
-  .nav-brand { font-size:20px; font-weight:900; display:flex; align-items:center; gap:12px; color: #0f172a; }
+  /* ================= 左側導覽列 - 極簡白玻璃 ================= */
+  .sidebar { background:rgba(255,255,255,0.95); backdrop-filter:blur(10px); width:260px; height:100vh; position:fixed; left:0; top:0; z-index:100; box-shadow:4px 0 20px rgba(0,0,0,0.03); border-right: 1px solid #f1f5f9; display:flex; flex-direction:column; padding: 30px 20px; }
+  .nav-brand { font-size:20px; font-weight:900; display:flex; align-items:center; gap:12px; color: #0f172a; margin-bottom: 40px; padding: 0 10px;}
   .nav-brand i { color:#0d9488; font-size:26px; }
-  .nav-menu { display:flex; gap:10px; }
-  .nav-menu a { color:#64748b; text-decoration:none; padding:10px 20px; border-radius:12px; font-weight:700; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:8px;}
-  .nav-menu a:hover { color:#0f172a; background:#f1f5f9; }
+  .nav-menu { display:flex; flex-direction:column; gap:10px; flex: 1;}
+  .nav-menu a { color:#64748b; text-decoration:none; padding:15px 20px; border-radius:12px; font-weight:700; cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:12px; font-size:15px;}
+  .nav-menu a:hover { color:#0f172a; background:#f1f5f9; transform: translateX(5px); }
   .nav-menu a.active { color:#0d9488; background:#f0fdfa; }
-  .nav-actions { display:flex; align-items:center; gap:25px; }
-  .nav-actions .user-name { color:#475569; font-size:14px; font-weight: 700; background: #f8fafc; padding: 6px 15px; border-radius: 20px; border: 1px solid #e2e8f0; }
-  .nav-actions .logout-btn { color:#ef4444; text-decoration:none; font-weight:700; cursor:pointer; transition: 0.3s; }
-  .nav-actions .logout-btn:hover { color:#b91c1c; }
+  .nav-actions { display:flex; flex-direction:column; gap:15px; border-top:1px solid #e2e8f0; padding-top:20px;}
+  .nav-actions .user-name { color:#0f172a; font-size:14px; font-weight: 800; background: #f8fafc; padding: 12px 15px; border-radius: 12px; border: 1px solid #e2e8f0; display:flex; align-items:center; gap:8px;}
+  .nav-actions .logout-btn { color:#ef4444; text-decoration:none; font-weight:700; cursor:pointer; transition: 0.3s; padding: 12px 15px; border-radius: 12px; display:flex; align-items:center; gap:8px; border: 1px solid transparent;}
+  .nav-actions .logout-btn:hover { background: #fef2f2; border: 1px solid #fecaca; }
 
   /* ================= 主內容區塊 ================= */
-  .main-container { max-width:1200px; margin:40px auto; padding:0 20px; display:none; min-height: calc(100vh - 155px);}
+  .main-container { margin-left:260px; padding:40px 50px; display:none; min-height: calc(100vh - 80px); max-width: 1400px;}
   
   /* 歡迎橫幅 */
   .welcome-banner { background:linear-gradient(135deg, #0d9488, #14b8a6); color:white; padding:45px 50px; border-radius:24px; margin-bottom:35px; box-shadow:0 15px 30px -10px rgba(13, 148, 136, 0.4); display:flex; justify-content:space-between; align-items:center; position: relative; overflow: hidden; }
@@ -76,7 +76,7 @@
   .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
   
   #toast { display:none; position:fixed; top:30px; right:30px; background:#0f172a; color:#fff; padding:16px 30px; border-radius:12px; box-shadow:0 15px 30px rgba(0,0,0,.15); z-index:100000; font-weight:bold; }
-  .footer { text-align:center; padding:20px; color:#94a3b8; font-size:14px; margin-top:20px; }
+  .footer { text-align:center; padding:20px; color:#94a3b8; font-size:14px; margin-top:20px; margin-left: 260px;}
 </style>
 </head>
 <body>
@@ -99,9 +99,9 @@
   </div>
 </div>
 
-<div class="top-nav" id="top-nav" style="display:none;">
+<div class="sidebar" id="sidebar" style="display:none;">
   <div class="nav-brand">
-    <i class="fas fa-leaf"></i> 點籽響 人資運營
+    <i class="fas fa-leaf"></i> <span>點籽響 人資運營</span>
   </div>
   <div class="nav-menu">
     <a onclick="showPage('dashboard', this)" class="active"><i class="fas fa-chart-pie"></i> 合約與點數</a>
@@ -109,8 +109,8 @@
     <a onclick="showPage('info', this)"><i class="fas fa-info-circle"></i> 服務與社群</a>
   </div>
   <div class="nav-actions">
-    <div class="user-name"><i class="fas fa-building" style="margin-right:5px; color:#0d9488;"></i> <span id="nav-company-name"></span></div>
-    <a onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 登出</a>
+    <div class="user-name"><i class="fas fa-building" style="color:#0d9488;"></i> <span id="nav-company-name"></span></div>
+    <a onclick="logout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> 登出帳號</a>
   </div>
 </div>
 
@@ -353,7 +353,8 @@ function getItemDeductPoints(item){if(item.deduct_points!==undefined&&item.deduc
 
 function initCustomerApp() {
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('top-nav').style.display = 'flex';
+  // 將原本的 top-nav 改為顯示 sidebar
+  document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('app-footer').style.display = 'block';
   
