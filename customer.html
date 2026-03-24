@@ -15,7 +15,7 @@
   #login-screen::before { content:''; position:absolute; inset:0; background:rgba(248, 250, 252, 0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
   .login-box { background:rgba(255,255,255,0.85); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); padding:50px 40px; border-radius:24px; box-shadow:0 20px 40px rgba(0,0,0,0.08); border: 1px solid rgba(255,255,255,0.5); width:100%; max-width:420px; text-align:center; position:relative; z-index:1; }
   .login-box h1 { color:#0f172a; margin-bottom:8px; font-size:26px; font-weight:900; letter-spacing: 1px; }
-  .pro-badge { display:inline-block; background:#0d9488; color:white; padding:6px 16px; border-radius:20px; font-size:13px; font-weight:700; margin-bottom:30px; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);}
+  .pro-badge { display:inline-block; background:#0d9488; color:white; padding:6px 16px; border-radius:20px; font-size:13px; font-weight:700; margin-bottom:20px; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(13, 148, 136, 0.3);}
   .login-field { margin-bottom:20px; text-align:left; }
   .login-field label { display:block; margin-bottom:8px; font-weight:700; color:#64748b; font-size:14px; }
   .login-field input { width:100%; padding:15px; border:2px solid #e2e8f0; border-radius:12px; font-size:15px; outline:none; transition: all 0.3s; background: rgba(255,255,255,0.9); }
@@ -140,14 +140,23 @@
 
 <div id="login-screen">
   <div class="login-box">
-    <div style="margin-bottom: 25px;">
+    <div style="margin-bottom: 20px;">
       <i class="fas fa-leaf" style="font-size:50px; color:#0d9488;"></i>
     </div>
     <h1>企業專屬服務中心</h1>
     <div class="pro-badge">CLIENT PORTAL</div>
+    
+    <div id="login-sync-status" style="font-size: 13px; font-weight: bold; color: #0d9488; margin-bottom: 15px; height: 20px;">
+      <i class="fas fa-spinner fa-spin"></i> 正在確保資料庫連線...
+    </div>
+
     <div class="login-field"><label>登入帳號</label><input type="text" id="login_acc" placeholder="請輸入企業帳號"></div>
     <div class="login-field"><label>登入密碼</label><input type="password" id="login_pwd" placeholder="請輸入登入密碼"></div>
     <button class="btn-login" onclick="handleLogin()">登 入 系 統 <i class="fas fa-arrow-right" style="margin-left:5px;"></i></button>
+
+    <div style="margin-top: 25px;">
+      <a href="#" onclick="clearCacheAndReload()" style="color: #94a3b8; font-size: 13px; text-decoration: underline;"><i class="fas fa-broom"></i> 無法登入？點此強制刷新系統</a>
+    </div>
   </div>
 </div>
 
@@ -182,7 +191,6 @@
       <button onclick="window.open('https://forms.gle/tXoRrRvp7FnixFh49', '_blank')" class="btn" style="background:#0f172a; color:#fff;">
         <i class="fas fa-file-signature"></i> 填寫派班需求單
       </button>
-      
       <button onclick="forceSync(this)" class="btn" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,0.4); color:#fff;">
         <i class="fas fa-sync-alt"></i> <span>更新資料</span>
       </button>
@@ -340,41 +348,52 @@ function showToast(m, err=false) {
   setTimeout(() => t.style.display = 'none', 3000); 
 }
 
+function updateLoginStatus(msg, isErr=false) {
+   const el = document.getElementById('login-sync-status');
+   if(el) {
+       el.innerHTML = msg;
+       el.style.color = isErr ? '#ef4444' : '#0d9488';
+   }
+}
+
+// 🟢 緊急清除所有快取的按鈕功能
+function clearCacheAndReload() {
+    localStorage.removeItem('cus_custData');
+    localStorage.removeItem('cus_contractData');
+    localStorage.removeItem('cus_attendData');
+    localStorage.removeItem('customerLoginAcc');
+    alert('已清除瀏覽器暫存！系統將重新連線取得最新密碼。');
+    window.location.reload(true);
+}
+
 document.getElementById('login_pwd').addEventListener('keypress', e => { if(e.key==='Enter') handleLogin(); });
 
 window.onload = () => {
   const savedAcc = localStorage.getItem('customerLoginAcc');
   
-  if (savedAcc) {
-    // 情況 A：已經登入過
-    if (custData.length > 0) {
-      // A1: 有快取 -> 秒開進入系統，背景更新
+  // 🟢 進入網頁的第一件事：絕對強制去 Google 抓最新資料 (不依賴快取)
+  backgroundSync(!savedAcc && custData.length === 0);
+  
+  if (savedAcc && custData.length > 0) {
       document.getElementById('loading-overlay').style.display = 'none';
       restoreSession();
-      backgroundSync(false);
-    } else {
-      // A2: 無快取 -> 顯示載入中，抓完再進系統
-      document.getElementById('loading-overlay').style.display = 'flex';
-      backgroundSync(true);
-    }
   } else {
-    // 情況 B：還沒登入 (第一次來或被登出)
-    // B1: 秒開登入畫面
-    document.getElementById('loading-overlay').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-    
-    // B2: 在背景偷偷去抓資料
-    if (custData.length === 0) {
-       backgroundSync(false);
-    }
+      document.getElementById('loading-overlay').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'flex';
   }
 };
 
-function backgroundSync(isRestoreSession = false) {
+function backgroundSync(showLoadingUI = false) {
   if(isFetching) return;
   isFetching = true;
   
-  fetch(SCRIPT_URL)
+  if(showLoadingUI) document.getElementById('loading-overlay').style.display = 'flex';
+  updateLoginStatus('<i class="fas fa-spinner fa-spin"></i> 正在與資料庫連線同步中...', false);
+  
+  // 🟢 終極破除快取機制：加上 timestamp，逼瀏覽器絕對不能拿舊的給你！
+  const fetchUrl = SCRIPT_URL + '?t=' + new Date().getTime();
+  
+  fetch(fetchUrl, { cache: 'no-store' })
     .then(res => res.json())
     .then(r => {
       if(r.custData) { custData = r.custData; localStorage.setItem('cus_custData', JSON.stringify(custData)); }
@@ -382,12 +401,12 @@ function backgroundSync(isRestoreSession = false) {
       if(r.attendData) { attendData = r.attendData; localStorage.setItem('cus_attendData', JSON.stringify(attendData)); }
       
       isFetching = false;
+      updateLoginStatus('<i class="fas fa-check-circle"></i> 資料已同步至最新版，請登入', false);
       
-      if(isRestoreSession) {
+      if(showLoadingUI) {
         document.getElementById('loading-overlay').style.display = 'none';
         if(localStorage.getItem('customerLoginAcc')) restoreSession();
       } else {
-        // 如果客戶已經在系統內，更新畫面數字
         if(currentCustomer) {
            const found = custData.find(x => x && String(x.account).trim() === currentCustomer.account);
            if(found) currentCustomer = found;
@@ -398,7 +417,8 @@ function backgroundSync(isRestoreSession = false) {
     })
     .catch(e => {
       isFetching = false;
-      if(isRestoreSession) {
+      updateLoginStatus('<i class="fas fa-exclamation-triangle"></i> 連線異常，請檢查網路', true);
+      if(showLoadingUI) {
          document.getElementById('loading-overlay').style.display = 'none';
          showToast('資料庫連線失敗，請重新整理網頁', true);
       }
@@ -413,7 +433,8 @@ function forceSync(btn) {
   icon.classList.add('fa-spin');
   btn.style.pointerEvents = 'none';
   
-  fetch(SCRIPT_URL)
+  const fetchUrl = SCRIPT_URL + '?t=' + new Date().getTime();
+  fetch(fetchUrl, { cache: 'no-store' })
     .then(res => res.json())
     .then(r => {
       if(r.custData) { custData = r.custData; localStorage.setItem('cus_custData', JSON.stringify(custData)); }
@@ -441,7 +462,6 @@ function handleLogin() {
   const pwd = document.getElementById('login_pwd').value.trim();
   if(!acc || !pwd) return showToast('請輸入帳號與密碼', true);
   
-  // 防呆機制：如果資料還沒抓回來，溫柔提示客戶等一下
   if(custData.length === 0) {
     if(isFetching) {
       return showToast('系統安全連線中，請稍候 3 秒再試一次', true);
@@ -458,7 +478,12 @@ function handleLogin() {
     showToast('登入成功！');
     initCustomerApp();
   } else {
-    showToast('帳號或密碼錯誤', true);
+    // 🟢 如果密碼錯誤，但系統還在抓取中，提醒客戶稍等
+    if(isFetching) {
+        showToast('密碼驗證中... 若剛剛有修改密碼，請等綠字顯示同步完成再按', true);
+    } else {
+        showToast('帳號或密碼錯誤', true);
+    }
   }
 }
 
@@ -493,17 +518,12 @@ function getItemDeductPoints(item){if(item.deduct_points!==undefined&&item.deduc
 
 function initCustomerApp() {
   document.getElementById('login-screen').style.display = 'none';
-  
-  // 加上這個標籤，手機版介面才會正式啟動
   document.body.classList.add('is-logged-in');
-  
   document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('app-screen').style.display = 'block';
   document.getElementById('app-footer').style.display = 'block';
-  
   document.getElementById('welcome-name').textContent = currentCustomer.name;
   document.getElementById('nav-company-name').textContent = currentCustomer.name;
-
   renderRecordFilters();
   renderDashboard();
   renderRecords();
