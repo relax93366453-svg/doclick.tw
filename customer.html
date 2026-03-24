@@ -353,17 +353,17 @@ window.onload = () => {
       restoreSession();
       backgroundSync(false);
     } else {
-      // A2: 無快取 (可能快取被清除了) -> 顯示載入中，抓完再進系統
+      // A2: 無快取 -> 顯示載入中，抓完再進系統
       document.getElementById('loading-overlay').style.display = 'flex';
       backgroundSync(true);
     }
   } else {
-    // 情況 B：還沒登入 (第一次來)
-    // B1: 秒開登入畫面，絕對不卡轉圈圈
+    // 情況 B：還沒登入 (第一次來或被登出)
+    // B1: 秒開登入畫面
     document.getElementById('loading-overlay').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
     
-    // B2: 在背景偷偷去抓資料，客戶不會有感覺
+    // B2: 在背景偷偷去抓資料
     if (custData.length === 0) {
        backgroundSync(false);
     }
@@ -387,7 +387,7 @@ function backgroundSync(isRestoreSession = false) {
         document.getElementById('loading-overlay').style.display = 'none';
         if(localStorage.getItem('customerLoginAcc')) restoreSession();
       } else {
-        // 如果客戶已經登入且在系統內，偷偷更新畫面數字
+        // 如果客戶已經在系統內，更新畫面數字
         if(currentCustomer) {
            const found = custData.find(x => x && String(x.account).trim() === currentCustomer.account);
            if(found) currentCustomer = found;
@@ -441,7 +441,7 @@ function handleLogin() {
   const pwd = document.getElementById('login_pwd').value.trim();
   if(!acc || !pwd) return showToast('請輸入帳號與密碼', true);
   
-  // 防呆機制：如果客戶點太快，資料還沒抓回來
+  // 防呆機制：如果資料還沒抓回來，溫柔提示客戶等一下
   if(custData.length === 0) {
     if(isFetching) {
       return showToast('系統安全連線中，請稍候 3 秒再試一次', true);
