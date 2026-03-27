@@ -308,7 +308,8 @@ function exportBossSalaryExcel() {
         tAmt: 0, 
         l: Number(si.labor)||0, 
         h: Number(si.health)||0, 
-        b: `${si.bank||''}${si.bank_branch||''}${si.bank_acc||''}` 
+        b: `${si.bank||''}${si.bank_branch||''}${si.bank_acc||''}`,
+        id: si.id || ''
       };
     }
     let pH = getItemSalaryHours(i);
@@ -325,8 +326,8 @@ function exportBossSalaryExcel() {
 
   let tb = document.createElement('table');
   let head = `<thead>
-    <tr><th colspan="11" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 ${y}年${m}月 兼職人員薪資表</th></tr>
-    <tr><th>姓名</th><th></th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th></tr>
+    <tr><th colspan="12" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 ${y}年${m}月 兼職人員薪資表</th></tr>
+    <tr><th>姓名</th><th>服務項目</th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th><th>身分證</th></tr>
   </thead><tbody>`;
   
   let body = '';
@@ -344,14 +345,14 @@ function exportBossSalaryExcel() {
        if(idx===0) tr += `<td rowspan="${rs}">${s.name}</td>`;
        tr += `<td>${it.name}(${it.hrs.toFixed(1)}H)</td><td>${it.hrs.toFixed(1)}</td><td>${it.rate}</td><td>${it.amt}</td>`;
        if(idx===0) {
-         tr += `<td rowspan="${rs}">${s.tAmt}</td><td rowspan="${rs}">${s.l}</td><td rowspan="${rs}">${s.h}</td><td rowspan="${rs}">0</td><td rowspan="${rs}">${net}</td><td rowspan="${rs}">${s.b}</td>`;
+         tr += `<td rowspan="${rs}">${s.tAmt}</td><td rowspan="${rs}">${s.l}</td><td rowspan="${rs}">${s.h}</td><td rowspan="${rs}">0</td><td rowspan="${rs}">${net}</td><td rowspan="${rs}">${s.b}</td><td rowspan="${rs}">${s.id}</td>`;
        }
        tr += '</tr>';
        body += tr;
      });
   });
   
-  body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td></tr></tbody>`;
+  body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td><td></td></tr></tbody>`;
   tb.innerHTML = head + body;
   
   let wb = XLSX.utils.table_to_book(tb, {sheet: "薪資表"});
@@ -642,7 +643,8 @@ function exportBossSalaryExcel() {
         tAmt: 0, 
         l: Number(si.labor)||0, 
         h: Number(si.health)||0, 
-        b: `${si.bank||''}${si.bank_branch||''}${si.bank_acc||''}` 
+        b: `${si.bank||''}${si.bank_branch||''}${si.bank_acc||''}`,
+        id: si.id || ''
       };
     }
     let pH = getItemSalaryHours(i);
@@ -659,8 +661,8 @@ function exportBossSalaryExcel() {
 
   let tb = document.createElement('table');
   let head = `<thead>
-    <tr><th colspan="11" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 ${y}年${m}月 兼職人員薪資表</th></tr>
-    <tr><th>姓名</th><th>服務項目</th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th></tr>
+    <tr><th colspan="12" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 ${y}年${m}月 兼職人員薪資表</th></tr>
+    <tr><th>姓名</th><th>服務項目</th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th><th>身分證</th></tr>
   </thead><tbody>`;
   
   let body = '';
@@ -678,14 +680,14 @@ function exportBossSalaryExcel() {
        if(idx===0) tr += `<td rowspan="${rs}">${s.name}</td>`;
        tr += `<td>${it.name}(${it.hrs.toFixed(1)}H)</td><td>${it.hrs.toFixed(1)}</td><td>${it.rate}</td><td>${it.amt}</td>`;
        if(idx===0) {
-         tr += `<td rowspan="${rs}">${s.tAmt}</td><td rowspan="${rs}">${s.l}</td><td rowspan="${rs}">${s.h}</td><td rowspan="${rs}">0</td><td rowspan="${rs}">${net}</td><td rowspan="${rs}">${s.b}</td>`;
+         tr += `<td rowspan="${rs}">${s.tAmt}</td><td rowspan="${rs}">${s.l}</td><td rowspan="${rs}">${s.h}</td><td rowspan="${rs}">0</td><td rowspan="${rs}">${net}</td><td rowspan="${rs}">${s.b}</td><td rowspan="${rs}">${s.id}</td>`;
        }
        tr += '</tr>';
        body += tr;
      });
   });
   
-  body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td></tr></tbody>`;
+  body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td><td></td></tr></tbody>`;
   tb.innerHTML = head + body;
   
   let wb = XLSX.utils.table_to_book(tb, {sheet: "薪資表"});
