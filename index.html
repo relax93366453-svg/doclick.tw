@@ -72,7 +72,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     <div><label>生日 (請輸入文字, 例:80/01/01)</label><input type="text" id="ft_birthday" placeholder="例: 80/01/01"></div>
     <div><label>地址</label><input id="ft_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號</label><input id="ft_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼</label><input id="ft_pwd" type="text" value="1234"></div><div><label>狀態</label><select id="ft_status"><option>在職</option><option>離職</option></select></div><div><label>到職日 (特休計算)</label><input type="date" id="ft_hire_date"></div><div><label>離職日</label><input type="date" id="ft_leave_date"></div><div><label>月薪</label><input type="number" id="ft_salary" value="30000"></div><div><label>備註</label><input id="ft_remark"></div><div class="section-divider"><i class="fas fa-university"></i> 銀行帳戶資料</div><div><label>銀行名稱</label><input id="ft_bank" placeholder="例: 國泰世華"></div><div><label>分行名稱</label><input id="ft_bank_branch" placeholder="例: 林口分行"></div><div style="grid-column: span 2;"><label>銀行帳號</label><input id="ft_bank_acc" placeholder="請輸入完整帳號"></div><div><label>代扣勞保</label><input id="ft_labor" type="number" value="0"></div><div><label>代扣健保</label><input id="ft_health" type="number" value="0"></div><div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="ft_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('ft_name', 'ft_drive', '[正職]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 資料繳交</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="ft_doc_id"> 身分證</label>
     <label><input type="checkbox" id="ft_doc_bank"> 存摺</label> 
-    <label><input type="checkbox" id="ft_doc_contract"> 契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddFtStaff" onclick="addFtStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateFtStaff()" id="btnUpdateFtStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearFtStaffForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('ftStaffTableBox','正職員工')"><i class="fas fa-file-excel"></i> 匯出</button><div class="table-responsive"><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>生日</th><th>到職日</th><th>銀行帳戶</th><th>帳/密</th><th>月薪</th><th>勞/健保</th><th>雲端</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div></div>
+    <label><input type="checkbox" id="ft_doc_contract"> 契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddFtStaff" onclick="addFtStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateFtStaff()" id="btnUpdateFtStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearFtStaffForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('ftStaffTableBox','正職員工')"><i class="fas fa-file-excel"></i> 匯出</button><div class="table-responsive"><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>到職日</th><th>生日</th><th>銀行帳戶</th><th>帳/密</th><th>月薪</th><th>勞/健保</th><th>雲端</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div></div>
     
     <div class="page" id="page-attend"><div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="filter_company" placeholder="手打搜尋公司" oninput="resetPage('attend'); renderAttend()"><label>年</label><select id="filter_year" onchange="resetPage('attend'); renderAttend()"></select><label>月</label><select id="filter_month" onchange="resetPage('attend'); renderAttend()"></select><label>搜尋人員：</label><input list="list_staff" id="filter_staff" placeholder="手打搜尋人員" oninput="resetPage('attend'); renderAttend()"></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr 1.5fr;"><div><label>公司 *</label><input list="list_cust" id="attend_company" placeholder="搜尋客戶名稱" required></div><div><label>人員 *</label><input list="list_staff" id="attend_staff" placeholder="搜尋人員姓名" required></div><div><label>日期 *</label><input type="date" id="attend_date" required></div><div><label>服務類型</label><select id="attend_service"><option value="">請選擇</option></select></div><div><label>備註</label><input type="text" id="attend_remark"></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr;"><div><label>上午上班</label><input type="text" id="am_s" placeholder="0830" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>上午下班</label><input type="text" id="am_e" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午上班</label><input type="text" id="pm_s" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午下班</label><input type="text" id="pm_e" placeholder="1700" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>發薪工時</label><input type="number" id="attend_salary_hours" step="0.1"></div><div><label>扣除點數</label><input type="number" id="attend_deduct_points" step="0.1"></div><div><label>單次特殊時薪</label><input type="number" id="attend_special_hourly" placeholder="留空帶預設"></div></div><button class="btn btn-success" id="btnAddAttend" onclick="addAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" id="btnClearAttend" style="background:#64748b;" onclick="clearAttendForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table></div></div>
     
@@ -89,7 +89,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     
     <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDetailResult"><span style="color:red;margin-right:10px;">代扣勞保: <span id="salLabor">0</span></span><span style="color:red;margin-right:10px;">代扣健保: <span id="salHealth">0</span></span><b>實付: <span id="salNet">0</span></b></div><br>
     <button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 薪資單</button>
-    <button class="btn btn-excel" onclick="exportExcel('salaryTableBox','派遣薪資')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
+    <button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆版 Excel</button>
     <div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
     
     <div class="page" id="page-talent"><div class="page-title"><i class="fas fa-address-card"></i> 人才招募庫</div><div class="filter-bar"><label>搜尋：</label><input type="text" id="tp_filter_role" oninput="resetPage('talent'); renderTalentTable()"><label>狀態：</label><select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select><button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button></div><div class="grid"><div><label>姓名 *</label><input id="tp_name"></div><div><label>電話</label><input id="tp_tel"></div><div><label>來源</label><input id="tp_source"></div><div><label>地區</label><input id="tp_location"></div><div><label>班別</label><input id="tp_shift"></div><div><label>職務</label><input id="tp_role"></div><div><label>狀態</label><select id="tp_status"><option>待聯絡</option><option>已聯絡</option><option>已錄取</option><option>淘汰</option></select></div><div><label>評價</label><input id="tp_eval"></div><div style="grid-column:span 2;"><label>履歷連結</label><input id="tp_resume"></div><div style="grid-column:span 2;"><label>備註</label><input id="tp_exp"></div></div><button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" id="btnUpdateTalent" onclick="updateTalent()" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空</button><button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')">匯出</button><div class="table-responsive"><table id="talentTableBox"><thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>地區</th><th>班別</th><th>職務</th><th>狀態</th><th>評價</th><th>履歷</th><th>建檔日</th><th>操作</th></tr></thead><tbody id="talentTable"></tbody></table></div></div>
@@ -287,6 +287,76 @@ function exportExcel(tableId,filename){
   pageConfig.pageSize = oldSize;
   refresh();
   showToast('✅ 匯出成功');
+}
+
+function exportBossSalaryExcel() {
+  const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
+  if(y === 'all' || m === 'all') return showToast('請先選擇匯出年份與月份！', true);
+  
+  let fData = attendData.filter(x => isDispatchPayrollPeriod(x.date, y, m));
+  if(fData.length === 0) return showToast('該月份無任何派遣紀錄', true);
+  
+  let sm = {};
+  fData.forEach(i => {
+    let n = i.staff;
+    if(!sm[n]) {
+      const si = staffData.find(x => x.name === n) || {};
+      sm[n] = { 
+        name: n, 
+        items: {}, 
+        tHrs: 0, 
+        tAmt: 0, 
+        l: Number(si.labor)||0, 
+        h: Number(si.health)||0, 
+        b: `${si.bank||''}${si.bank_branch||''}${si.bank_acc||''}` 
+      };
+    }
+    let pH = getItemSalaryHours(i);
+    let hy = i.special_hourly ? Number(i.special_hourly) : getStaffTieredHourly(n);
+    let pk = `${i.company}${i.service||''}_${hy}`;
+    let pn = `${i.company}${i.service||''}`;
+    
+    if(!sm[n].items[pk]) sm[n].items[pk] = { name: pn, hrs: 0, rate: hy, amt: 0 };
+    sm[n].items[pk].hrs += pH;
+    sm[n].items[pk].amt += Math.round(pH * hy);
+    sm[n].tHrs += pH;
+    sm[n].tAmt += Math.round(pH * hy);
+  });
+
+  let tb = document.createElement('table');
+  let head = `<thead>
+    <tr><th colspan="11" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 ${y}年${m}月 兼職人員薪資表</th></tr>
+    <tr><th>姓名</th><th></th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th></tr>
+  </thead><tbody>`;
+  
+  let body = '';
+  let gHrs=0, gAmt=0, gL=0, gH=0, gNet=0;
+  
+  Object.values(sm).forEach(s => {
+     let keys = Object.keys(s.items);
+     let rs = keys.length;
+     let net = s.tAmt - s.l - s.h;
+     gHrs+=s.tHrs; gAmt+=s.tAmt; gL+=s.l; gH+=s.h; gNet+=net;
+     
+     keys.forEach((k, idx) => {
+       let it = s.items[k];
+       let tr = '<tr>';
+       if(idx===0) tr += `<td rowspan="${rs}">${s.name}</td>`;
+       tr += `<td>${it.name}(${it.hrs.toFixed(1)}H)</td><td>${it.hrs.toFixed(1)}</td><td>${it.rate}</td><td>${it.amt}</td>`;
+       if(idx===0) {
+         tr += `<td rowspan="${rs}">${s.tAmt}</td><td rowspan="${rs}">${s.l}</td><td rowspan="${rs}">${s.h}</td><td rowspan="${rs}">0</td><td rowspan="${rs}">${net}</td><td rowspan="${rs}">${s.b}</td>`;
+       }
+       tr += '</tr>';
+       body += tr;
+     });
+  });
+  
+  body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td></tr></tbody>`;
+  tb.innerHTML = head + body;
+  
+  let wb = XLSX.utils.table_to_book(tb, {sheet: "薪資表"});
+  XLSX.writeFile(wb, `點籽響_${y}年${m}月_老闆專用薪資彙整表.xlsx`);
+  showToast('✅ 老闆專用薪資表 匯出成功');
 }
 
 function clearLoginBg(){if(confirm('刪除？')){loginBgBase64='';localStorage.removeItem('loginBg');updateLogoPreview();saveAllSilently();}}
@@ -551,6 +621,76 @@ function renderSalary(){
     el('salaryTable').innerHTML=h||'<tr><td colspan="6" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('salary',total,totalPages);
     el('salResult').innerHTML=`工時: ${tH.toFixed(1)} <br> 應付: ${tA} 元`; let lb=0, hl=0; if(s && s!=='全部人員'){ const si=staffData.find(x=>x.name===s); if(si){ lb=Number(si.labor)||0; hl=Number(si.health)||0; } } el('salLabor').textContent=lb; el('salHealth').textContent=hl; el('salNet').textContent=tA-lb-hl;
+}
+
+function exportBossSalaryExcel() {
+  const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
+  if(y === 'all' || m === 'all') return showToast('請先選擇匯出年份與月份！', true);
+  
+  let fData = attendData.filter(x => isDispatchPayrollPeriod(x.date, y, m));
+  if(fData.length === 0) return showToast('該月份無任何派遣紀錄', true);
+  
+  let sm = {};
+  fData.forEach(i => {
+    let n = i.staff;
+    if(!sm[n]) {
+      const si = staffData.find(x => x.name === n) || {};
+      sm[n] = { 
+        name: n, 
+        items: {}, 
+        tHrs: 0, 
+        tAmt: 0, 
+        l: Number(si.labor)||0, 
+        h: Number(si.health)||0, 
+        b: `${si.bank||''}${si.bank_branch||''}${si.bank_acc||''}` 
+      };
+    }
+    let pH = getItemSalaryHours(i);
+    let hy = i.special_hourly ? Number(i.special_hourly) : getStaffTieredHourly(n);
+    let pk = `${i.company}${i.service||''}_${hy}`;
+    let pn = `${i.company}${i.service||''}`;
+    
+    if(!sm[n].items[pk]) sm[n].items[pk] = { name: pn, hrs: 0, rate: hy, amt: 0 };
+    sm[n].items[pk].hrs += pH;
+    sm[n].items[pk].amt += Math.round(pH * hy);
+    sm[n].tHrs += pH;
+    sm[n].tAmt += Math.round(pH * hy);
+  });
+
+  let tb = document.createElement('table');
+  let head = `<thead>
+    <tr><th colspan="11" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 ${y}年${m}月 兼職人員薪資表</th></tr>
+    <tr><th>姓名</th><th>服務項目</th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th></tr>
+  </thead><tbody>`;
+  
+  let body = '';
+  let gHrs=0, gAmt=0, gL=0, gH=0, gNet=0;
+  
+  Object.values(sm).forEach(s => {
+     let keys = Object.keys(s.items);
+     let rs = keys.length;
+     let net = s.tAmt - s.l - s.h;
+     gHrs+=s.tHrs; gAmt+=s.tAmt; gL+=s.l; gH+=s.h; gNet+=net;
+     
+     keys.forEach((k, idx) => {
+       let it = s.items[k];
+       let tr = '<tr>';
+       if(idx===0) tr += `<td rowspan="${rs}">${s.name}</td>`;
+       tr += `<td>${it.name}(${it.hrs.toFixed(1)}H)</td><td>${it.hrs.toFixed(1)}</td><td>${it.rate}</td><td>${it.amt}</td>`;
+       if(idx===0) {
+         tr += `<td rowspan="${rs}">${s.tAmt}</td><td rowspan="${rs}">${s.l}</td><td rowspan="${rs}">${s.h}</td><td rowspan="${rs}">0</td><td rowspan="${rs}">${net}</td><td rowspan="${rs}">${s.b}</td>`;
+       }
+       tr += '</tr>';
+       body += tr;
+     });
+  });
+  
+  body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td></tr></tbody>`;
+  tb.innerHTML = head + body;
+  
+  let wb = XLSX.utils.table_to_book(tb, {sheet: "薪資表"});
+  XLSX.writeFile(wb, `點籽響_${y}年${m}月_老闆專用薪資彙整表.xlsx`);
+  showToast('✅ 老闆專用薪資表 匯出成功');
 }
 
 function showBoss() {
