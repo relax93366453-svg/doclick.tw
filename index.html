@@ -1,283 +1,497 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>點籽響客戶及派遣管理系統</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei',sans-serif}body{background:#f4f7fb;color:#334155;line-height:1.6}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
-#login-screen{display:flex;justify-content:center;align-items:center;height:100vh;background:url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;background-color:#1e293b;position:fixed;top:0;left:0;width:100%;z-index:9998}#login-screen::before{content:'';position:absolute;inset:0;background:rgba(15,23,42,.65)}
-.login-box{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.5);padding:45px 40px;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);width:100%;max-width:420px;text-align:center;position:relative;z-index:1;border-top:6px solid #2d9d5c}
-.login-logo-container{margin-bottom:20px;height:80px;display:flex;justify-content:center;align-items:center}.login-logo-container img{max-width:100%;max-height:100%;object-fit:contain;display:none}#login-logo-icon{font-size:50px;color:#2d9d5c}.login-box h1{color:#1e293b;margin-bottom:5px;font-size:24px;font-weight:900}.pro-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:bold;margin-bottom:25px}
-.login-field{margin-bottom:18px;text-align:left}.login-field label{display:block;margin-bottom:6px;font-weight:700;color:#475569;font-size:13px}.login-field input,.login-field select{width:100%;padding:14px 16px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;outline:none}.btn-login{width:100%;padding:16px;background:linear-gradient(135deg,#2d9d5c,#15803d);color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:10px}
-.app-container,.staff-container{display:none;min-height:100vh}.sidebar{width:240px;background-color:#fff;box-shadow:2px 0 15px rgba(0,0,0,.03);padding:20px 0;position:fixed;height:100vh;overflow-y:auto;z-index:10;border-right:1px solid #e2e8f0}.sidebar-header{padding:0 20px 20px;border-bottom:1px solid #f1f5f9;margin-bottom:15px;display:flex;align-items:center;justify-content:center;flex-direction:column}.sidebar-header img{max-height:40px;margin-bottom:10px;display:none}.sidebar-header h1{font-size:16px;color:#2d9d5c;font-weight:800;display:flex;align-items:center;gap:8px;margin:0}.sidebar-nav{list-style:none;padding:0 10px}.sidebar-nav li{margin:4px 0}.sidebar-nav a{display:flex;align-items:center;gap:12px;padding:12px 15px;color:#64748b;text-decoration:none;border-radius:8px;cursor:pointer;font-weight:600}.sidebar-nav a:hover,.sidebar-nav a.active{background-color:#ecfdf5;color:#2d9d5c}
-.main-content{flex:1;margin-left:240px;padding:25px 35px;width:calc(100% - 240px);overflow-x:auto}.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px}.header-actions{display:flex;align-items:center;gap:15px}.sys-time{font-size:14px;font-weight:700;color:#334155;background:#fff;padding:8px 16px;border-radius:8px;border:1px solid #cbd5e1}#sync-status{font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0}.switch-role-btn{background:#fff;color:#3b82f6;border:1px solid #e2e8f0;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
-.page{display:none;background:#fff;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.05);padding:30px;margin-bottom:20px;border:1px solid #f1f5f9}.page.active{display:block}.page-title{font-size:18px;font-weight:700;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px}.filter-bar{background:#f8fafc;padding:15px 20px;border-radius:8px;margin-bottom:20px;display:flex;gap:15px;align-items:center;border:1px solid #e2e8f0}.filter-bar label{font-size:14px;font-weight:600}.filter-bar select,.filter-bar input{padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:25px}.grid div{display:flex;flex-direction:column}.grid label{margin-bottom:6px;font-weight:600;font-size:13px;color:#475569}.grid input,.grid select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px}
-.checkbox-group{display:flex;gap:15px;align-items:center;background:#fff;padding:10px 15px;border:1px solid #cbd5e1;border-radius:6px}button.btn{padding:10px 18px;border:none;border-radius:6px;cursor:pointer;margin-right:10px;margin-bottom:10px;font-size:13px;font-weight:600;color:#fff}.btn-success{background:#10b981}.btn-warning{background:#f59e0b}.btn-excel{background:#3b82f6}.btn-pdf{background:#ef4444}.btn-backup{background:#8b5cf6}.btn-restore{background:#06b6d4}.btn-sync{background:#0ea5e9}.btn-sm{padding:6px 12px;font-size:12px;margin-bottom:0}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;background:#fff}table th{padding:14px 12px;background:#f8fafc;font-weight:700;text-align:left;border-bottom:2px solid #e2e8f0}table td{padding:12px 12px;border-bottom:1px solid #e2e8f0}.badge{padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700}.badge-green{background:#dcfce7;color:#166534}.badge-red{background:#fee2e2;color:#991b1b}.badge-blue{background:#dbeafe;color:#075985}.badge-yellow{background:#fef3c7;color:#92400e}.pagination{margin-top:20px;display:flex;gap:8px;justify-content:flex-end}.pagination button{padding:8px 14px;border:1px solid #cbd5e1;background:#fff;cursor:pointer;border-radius:6px}
-#toast{display:none;position:fixed;top:30px;right:30px;background:#10b981;color:#fff;padding:15px 25px;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,.5);z-index:1000000;font-weight:bold;font-size:16px}
-#preview-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:99999;overflow-y:auto;padding:20px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>點籽響客戶及派遣管理系統</title>
+    <!-- 外部函式庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- 完整 CSS 樣式 --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Microsoft JhengHei', sans-serif; }
+        body { background: #f4f7fb; color: #334155; line-height: 1.6; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        #login-screen { 
+            display: flex; justify-content: center; align-items: center; height: 100vh; 
+            background: url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat; 
+            background-color: #1e293b; position: fixed; top: 0; left: 0; width: 100%; z-index: 9998; 
+        }
+        #login-screen::before { content: ''; position: absolute; inset: 0; background: rgba(15, 23, 42, .65); }
+
+        .login-box { 
+            background: rgba(255, 255, 255, .85); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, .5); 
+            padding: 45px 40px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,.5); 
+            width: 100%; max-width: 420px; text-align: center; position: relative; z-index: 1; border-top: 6px solid #2d9d5c; 
+        }
+        .pro-badge { display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: bold; margin-bottom: 25px; }
+        .login-field { margin-bottom: 18px; text-align: left; }
+        .login-field label { display: block; margin-bottom: 6px; font-weight: 700; color: #475569; font-size: 13px; }
+        .login-field input, .login-field select { width: 100%; padding: 14px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; outline: none; }
+        .btn-login { width: 100%; padding: 16px; background: linear-gradient(135deg, #2d9d5c, #15803d); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        .app-container { display: none; min-height: 100vh; }
+        .sidebar { width: 240px; background-color: #fff; box-shadow: 2px 0 15px rgba(0,0,0,.03); padding: 20px 0; position: fixed; height: 100vh; overflow-y: auto; z-index: 10; border-right: 1px solid #e2e8f0; }
+        .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid #f1f5f9; margin-bottom: 15px; text-align: center; }
+        .sidebar-header h1 { font-size: 16px; color: #2d9d5c; font-weight: 800; display: flex; align-items: center; gap: 8px; justify-content: center; }
+        .sidebar-nav { list-style: none; padding: 0 10px; }
+        .sidebar-nav li { margin: 4px 0; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 12px 15px; color: #64748b; text-decoration: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .sidebar-nav a:hover, .sidebar-nav a.active { background-color: #ecfdf5; color: #2d9d5c; }
+
+        .main-content { flex: 1; margin-left: 240px; padding: 25px 35px; width: calc(100% - 240px); overflow-x: auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .sys-time { font-size: 14px; font-weight: 700; color: #334155; background: #fff; padding: 8px 16px; border-radius: 8px; border: 1px solid #cbd5e1; }
+        #sync-status { font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; }
+
+        .page { display: none; background: #fff; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,.05); padding: 30px; margin-bottom: 20px; border: 1px solid #f1f5f9; }
+        .page.active { display: block; }
+        .page-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 25px; }
+        .grid div { display: flex; flex-direction: column; }
+        .grid label { margin-bottom: 6px; font-weight: 600; font-size: 13px; color: #475569; }
+        .grid input, .grid select { padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+        
+        button.btn { padding: 10px 18px; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px; margin-bottom: 10px; font-size: 13px; font-weight: 600; color: #fff; transition: 0.2s; }
+        .btn-success { background: #10b981; }
+        .btn-warning { background: #f59e0b; }
+        .btn-excel { background: #3b82f6; }
+        .btn-pdf { background: #ef4444; }
+        .btn-backup { background: #8b5cf6; }
+        .btn-restore { background: #06b6d4; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 800px; background: #fff; }
+        table th { padding: 14px 12px; background: #f8fafc; font-weight: 700; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        table td { padding: 12px 12px; border-bottom: 1px solid #e2e8f0; }
+        
+        #toast { display: none; position: fixed; top: 30px; right: 30px; background: #10b981; color: #fff; padding: 15px 25px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,.5); z-index: 1000000; font-weight: bold; font-size: 16px; }
+        .filter-bar { background: #f8fafc; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: center; border: 1px solid #e2e8f0; }
+    </style>
 </head>
 <body>
-<div id="toast"></div>
+    <div id="toast"></div>
 
-<!-- 所有資料表所需的 datalist -->
-<datalist id="list_cust"></datalist>
-<datalist id="list_staff"></datalist>
-<datalist id="list_ft_staff"></datalist>
-<datalist id="list_supplier"></datalist>
+    <datalist id="list_cust"></datalist>
+    <datalist id="list_staff"></datalist>
 
-<div id="login-screen"><div class="login-box"><div class="login-logo-container"><i class="fas fa-leaf" id="login-logo-icon"></i></div><h1 style="margin-top:10px;">點籽響管理系統</h1><div class="pro-badge">專業企業版</div><div class="login-field"><label>登入身分</label><select id="login_role"><option value="admin">👑 系統管理員</option><option value="staff">💼 員工專區</option></select></div><div class="login-field auth-input"><label>登入帳號</label><input type="text" id="login_acc" placeholder="請輸入帳號"></div><div class="login-field auth-input"><label>登入密碼</label><input type="password" id="login_pwd" placeholder="請輸入密碼"></div><button class="btn-login" onclick="handleLogin()">登 入 系 統</button></div></div>
-
-<div class="app-container" id="admin-screen">
-  <div class="sidebar">
-    <div class="sidebar-header"><h1 id="admin-sidebar-title-business">點籽響管理系統</h1></div>
-    <ul class="sidebar-nav">
-      <li><a onclick="showAdminPage('dashboard')" class="active">總覽儀表板</a></li>
-      <li><a onclick="showAdminPage('customer')">客戶資料</a></li>
-      <li><a onclick="showAdminPage('contract')">合約方案</a></li>
-      <li><a onclick="showAdminPage('supplier')">供應商管理</a></li>
-      <li><a onclick="showAdminPage('attend')">派遣記錄</a></li>
-      <li><a onclick="showAdminPage('point')">點數統計</a></li>
-      <li><a onclick="showAdminPage('bill')">對帳單生成</a></li>
-      <li><a onclick="showAdminPage('salary')">派遣薪資計算</a></li>
-      <li><a onclick="showAdminPage('ft_staff')">正職員工資料</a></li>
-      <li><a onclick="showAdminPage('talent')">人才招募庫</a></li>
-      <li><a onclick="showAdminPage('boss')">系統進階設定</a></li>
-    </ul>
-  </div>
-
-  <div class="main-content">
-    <div class="page-header">
-      <div></div>
-      <div class="header-actions">
-        <button onclick="window.location.reload();" class="switch-role-btn">重新整理</button>
-        <span id="sync-status"><i class="fas fa-cloud"></i> 就緒</span>
-        <span id="current-time" class="sys-time">載入中...</span>
-        <button onclick="logout()" class="btn" style="background:#64748b;">登出</button>
-      </div>
+    <!-- 登入介面 -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>點籽響管理系統</h1>
+            <div class="pro-badge">專業企業版</div>
+            <div class="login-field">
+                <label>登入身分</label>
+                <select id="login_role"><option value="admin">👑 系統管理員</option></select>
+            </div>
+            <div class="login-field">
+                <label>帳號</label>
+                <input type="text" id="login_acc" value="admin">
+            </div>
+            <div class="login-field">
+                <label>密碼</label>
+                <input type="password" id="login_pwd">
+            </div>
+            <button class="btn-login" onclick="handleLogin()">登入系統</button>
+        </div>
     </div>
 
-    <!-- 派遣記錄 (核心頁面) -->
-    <div class="page" id="page-attend">
-      <div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div>
-      <div class="grid">
-        <div><label>公司 *</label><input list="list_cust" id="attend_company" class="nav-input" required></div>
-        <div><label>人員 *</label><input list="list_staff" id="attend_staff" class="nav-input" required></div>
-        <div><label>日期 *</label><input type="date" id="attend_date" class="nav-input" required></div>
-        <div><label>服務類型</label><select id="attend_service" class="nav-input"><option value="">請選擇</option><option value="行政">行政</option><option value="美編">美編</option><option value="活動">活動</option></select></div>
-        <div><label>備註</label><input type="text" id="attend_remark" class="nav-input"></div>
-      </div>
-      <div class="grid">
-        <div><label>上午上班</label><input type="text" id="am_s" class="nav-input" placeholder="0900" onblur="formatTimeInput(this); calcAttendTemp()"></div>
-        <div><label>上午下班</label><input type="text" id="am_e" class="nav-input" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div>
-        <div><label>下午上班</label><input type="text" id="pm_s" class="nav-input" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div>
-        <div><label>下午下班</label><input type="text" id="pm_e" class="nav-input" placeholder="1800" onblur="formatTimeInput(this); calcAttendTemp()"></div>
-        <div><label>發薪工時</label><input type="number" id="attend_salary_hours" class="nav-input" step="0.1"></div>
-        <div><label>扣除點數</label><input type="number" id="attend_deduct_points" class="nav-input" step="0.1"></div>
-        <div><label>單次特殊時薪</label><input type="number" id="attend_special_hourly" class="nav-input" placeholder="留空帶預設"></div>
-      </div>
-      <button class="btn btn-success" id="btnAddAttend" onclick="addAttend()"><i class="fas fa-save"></i> 儲存</button>
-      <button class="btn" style="background:#64748b;" onclick="clearAttendForm()">清空</button>
+    <!-- 主程式介面 -->
+    <div class="app-container" id="admin-screen">
+        <div class="sidebar">
+            <div class="sidebar-header"><h1><i class="fas fa-leaf"></i> 點籽響管理</h1></div>
+            <ul class="sidebar-nav">
+                <li><a onclick="showAdminPage('dashboard')" id="nav-dashboard">總覽儀表板</a></li>
+                <li><a onclick="showAdminPage('customer')" id="nav-customer">客戶資料</a></li>
+                <li><a onclick="showAdminPage('contract')" id="nav-contract">合約方案</a></li>
+                <li><a onclick="showAdminPage('attend')" id="nav-attend" class="active">派遣記錄</a></li>
+                <li><a onclick="showAdminPage('salary')" id="nav-salary">派遣薪資</a></li>
+                <li><a onclick="showAdminPage('ft_staff')" id="nav-ft_staff">正職員工</a></li>
+                <li><a onclick="showAdminPage('boss')" id="nav-boss">系統進階設定</a></li>
+            </ul>
+        </div>
 
-      <div class="filter-bar" style="margin-top:20px;">
-        <label>年份</label><select id="filter_year" onchange="renderAttend()"></select>
-        <label>月份</label><select id="filter_month" onchange="renderAttend()"></select>
-        <button class="btn btn-excel" onclick="exportExcel('attendTableBox','派遣紀錄')">匯出 Excel</button>
-      </div>
-      <div class="table-responsive">
-        <table id="attendTableBox">
-          <thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead>
-          <tbody id="attendTable"></tbody>
-        </table>
-      </div>
+        <div class="main-content">
+            <div class="page-header">
+                <div></div>
+                <div class="header-actions">
+                    <button onclick="window.location.reload();" class="btn btn-sm" style="color:#059669;background:#ecfdf5; padding: 5px 10px; border-radius: 5px;">重新整理</button>
+                    <span id="sync-status"><i class="fas fa-cloud"></i> 就緒</span>
+                    <span id="current-time" class="sys-time"></span>
+                    <button onclick="logout()" class="btn" style="background:#64748b; margin:0; padding: 5px 10px;">登出</button>
+                </div>
+            </div>
+
+            <!-- 派遣記錄登記 (核心功能) -->
+            <div class="page active" id="page-attend">
+                <div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div>
+                <div class="grid">
+                    <div><label>公司 *</label><input list="list_cust" id="attend_company" class="nav-input" required></div>
+                    <div><label>人員 *</label><input list="list_staff" id="attend_staff" class="nav-input" required></div>
+                    <div><label>日期 *</label><input type="date" id="attend_date" class="nav-input" required></div>
+                    <div><label>服務類型</label><select id="attend_service" class="nav-input"><option value="">請選擇</option><option value="行政">行政</option><option value="美編">美編</option><option value="理貨">理貨</option></select></div>
+                    <div><label>備註</label><input type="text" id="attend_remark" class="nav-input"></div>
+                </div>
+                <div class="grid" style="grid-template-columns: repeat(7, 1fr);">
+                    <div><label>上午上班</label><input type="text" id="am_s" class="nav-input" placeholder="0900" onblur="formatTimeInput(this); calcHours();"></div>
+                    <div><label>上午下班</label><input type="text" id="am_e" class="nav-input" placeholder="1200" onblur="formatTimeInput(this); calcHours();"></div>
+                    <div><label>下午上班</label><input type="text" id="pm_s" class="nav-input" placeholder="1300" onblur="formatTimeInput(this); calcHours();"></div>
+                    <div><label>下午下班</label><input type="text" id="pm_e" class="nav-input" placeholder="1800" onblur="formatTimeInput(this); calcHours();"></div>
+                    <div><label>工時</label><input type="number" id="attend_salary_hours" class="nav-input" step="0.1"></div>
+                    <div><label>扣點</label><input type="number" id="attend_deduct_points" class="nav-input" step="0.1"></div>
+                    <div><label>特殊時薪</label><input type="number" id="attend_special_hourly" class="nav-input" placeholder="選填"></div>
+                </div>
+                <button class="btn btn-success" id="btnAddAttend" onclick="addAttend()"><i class="fas fa-save"></i> 儲存資料</button>
+                <button class="btn" style="background:#64748b;" onclick="clearAttendForm()">清空表格</button>
+
+                <div class="filter-bar" style="margin-top:20px;">
+                    <label>搜尋年份：</label><select id="filter_year" onchange="renderAttend()"></select>
+                    <label>搜尋月份：</label><select id="filter_month" onchange="renderAttend()"></select>
+                    <button class="btn btn-excel" onclick="exportExcel('attendTableBox','派遣紀錄')">匯出 Excel</button>
+                </div>
+                <div class="table-responsive">
+                    <table id="attendTableBox">
+                        <thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead>
+                        <tbody id="attendTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 其他頁面區塊 (保留 ID 以供 JavaScript 切換) -->
+            <div class="page" id="page-dashboard"><div class="page-title">總覽儀表板</div></div>
+            <div class="page" id="page-customer"><div class="page-title">客戶資料管理</div></div>
+            <div class="page" id="page-contract"><div class="page-title">合約方案管理</div></div>
+            <div class="page" id="page-salary"><div class="page-title">派遣薪資計算</div></div>
+            <div class="page" id="page-ft_staff"><div class="page-title">正職員工管理</div></div>
+            <div class="page" id="page-boss">
+                <div class="page-title">系統進階設定</div>
+                <div class="grid">
+                    <div>
+                        <label>資料備份與還原</label>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-backup" onclick="backupAllData()">下載備份 (JSON)</button>
+                            <button class="btn btn-restore" onclick="document.getElementById('restoreFile').click()">還原備份 (JSON)</button>
+                            <input type="file" id="restoreFile" style="display:none" onchange="restoreData(this)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 其餘頁面 確保存在 -->
-    <div class="page" id="page-dashboard"><div class="page-title">總覽儀表板</div><p>請點選左側功能進入。</p></div>
-    <div class="page" id="page-customer"><div class="page-title">客戶資料</div><div id="custTable"></div></div>
-    <div class="page" id="page-contract"><div class="page-title">合約方案</div></div>
-    <div class="page" id="page-supplier"><div class="page-title">供應商管理</div></div>
-    <div class="page" id="page-point"><div class="page-title">點數統計</div></div>
-    <div class="page" id="page-bill"><div class="page-title">對帳單生成</div></div>
-    <div class="page" id="page-salary"><div class="page-title">派遣薪資計算</div></div>
-    <div class="page" id="page-ft_staff"><div class="page-title">正職員工資料</div></div>
-    <div class="page" id="page-talent"><div class="page-title">人才招募庫</div></div>
-    <div class="page" id="page-boss">
-        <div class="page-title">系統進階設定</div>
-        <button class="btn btn-backup" onclick="backupAllData()">系統備份 (JSON)</button>
-        <button class="btn btn-restore" onclick="el('restoreFile').click()">還原備份 (JSON)</button>
-        <input type="file" id="restoreFile" style="display:none" onchange="restoreData(this)">
-    </div>
-  </div>
-</div>
+    <script>
+        // --- 核心連線網址 ---
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz76zGUDgMLDHAxsTuyRulmsSDfZwg1AACJDwyPVOZDfKUIB1d7dXG-0RQcHN27mgK37Q/exec';
 
-<script>
-// --- 核心連線網址 (已更新為最新版) ---
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz76zGUDgMLDHAxsTuyRulmsSDfZwg1AACJDwyPVOZDfKUIB1d7dXG-0RQcHN27mgK37Q/exec';
+        // --- 全域變數 ---
+        let attendData = JSON.parse(localStorage.getItem('attendData') || '[]');
+        let editAttendIndex = -1;
 
-// --- 全域變數 ---
-let attendData = JSON.parse(localStorage.getItem('attendData') || '[]');
-let custData = JSON.parse(localStorage.getItem('custData') || '[]');
-let staffData = JSON.parse(localStorage.getItem('staffData') || '[]');
-let editAttendIndex = -1;
-
-const el = id => document.getElementById(id);
-
-// --- 初始化 ---
-document.addEventListener('DOMContentLoaded', () => {
-    fillFilters();
-    renderAttend();
-    setupNavigation();
-    loadDataFromCloud();
-    setInterval(() => el('current-time').innerHTML = new Date().toLocaleString(), 1000);
-});
-
-// --- 無死角快捷鍵導航 ---
-function setupNavigation() {
-    const inputs = Array.from(document.querySelectorAll('.nav-input'));
-    inputs.forEach((input, index) => {
-        input.addEventListener('keydown', (e) => {
-            const nextIdx = index + 1;
-            const prevIdx = index - 1;
-            const isDate = input.type === 'date';
-
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (index === inputs.length - 1) {
-                    addAttend(); // 最後一格自動存
-                } else {
-                    inputs[nextIdx].focus(); if(inputs[nextIdx].select) inputs[nextIdx].select();
-                }
-            }
-            if (e.key === 'ArrowDown' && !isDate) {
-                e.preventDefault(); if(nextIdx < inputs.length) inputs[nextIdx].focus();
-            }
-            if (e.key === 'ArrowUp' && !isDate) {
-                e.preventDefault(); if(prevIdx >= 0) inputs[prevIdx].focus();
-            }
+        // --- 初始化 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initFilters();
+            renderAttend(); // 優先從本地快取渲染
+            setupKeyboardNav();
+            loadCloudData();
+            setInterval(updateClock, 1000);
         });
-    });
-}
 
-// --- 雲端資料同步邏輯 (防丟失核心) ---
-function loadDataFromCloud() {
-    updateSyncStatus('☁️ 同步中...');
-    fetch(SCRIPT_URL).then(res => res.json()).then(r => {
-        if(r.attendData) {
-            attendData = r.attendData;
+        function updateClock() {
+            document.getElementById('current-time').innerHTML = new Date().toLocaleString();
+        }
+
+        // --- 核心同步：從雲端抓取 ---
+        function loadCloudData() {
+            updateSyncStatus('☁️ 同步中...');
+            fetch(SCRIPT_URL)
+                .then(res => res.json())
+                .then(r => {
+                    // 重要：只有雲端有資料時才覆蓋本地，防止空雲端洗掉本地
+                    if (r.attendData && r.attendData.length > 0) {
+                        attendData = r.attendData;
+                        localStorage.setItem('attendData', JSON.stringify(attendData));
+                    }
+                    renderAttend();
+                    updateSyncStatus('☁️ 就緒');
+                })
+                .catch(e => {
+                    updateSyncStatus('⚠️ 離線模式', true);
+                    console.log('連線雲端失敗，使用本地資料');
+                });
+        }
+
+        // --- 核心同步：推送到雲端 ---
+        function saveAll() {
+            // 第一步：先存在本地瀏覽器防止遺失
             localStorage.setItem('attendData', JSON.stringify(attendData));
+            updateSyncStatus('存...');
+
+            const payload = {
+                action: 'saveAll',
+                attendData: attendData
+            };
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            })
+            .then(res => res.json())
+            .then(r => {
+                if (r.status === 'success') {
+                    updateSyncStatus('☁️ 就緒');
+                    showToast('✅ 雲端同步完成');
+                } else {
+                    updateSyncStatus('❌ 同步失敗', true);
+                }
+            })
+            .catch(e => {
+                updateSyncStatus('❌ 連線錯誤', true);
+                showToast('雲端儲存失敗，資料暫存於本機', true);
+            });
         }
-        renderAttend();
-        updateSyncStatus('☁️ 就緒');
-    }).catch(e => updateSyncStatus('⚠️ 連線中斷', true));
-}
 
-function saveAll() {
-    localStorage.setItem('attendData', JSON.stringify(attendData)); // 雙重保險：先存本地
-    updateSyncStatus('存...');
-    fetch(SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify({ attendData: attendData, action: 'saveAll' }),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    })
-    .then(res => res.json())
-    .then(r => {
-        if(r.status === 'success') {
-            updateSyncStatus('☁️ 就緒');
-            showToast('✅ 雲端同步成功');
-        } else {
-            updateSyncStatus('❌ 存檔失敗', true);
-            alert('雲端存檔失敗！資料已暫存於瀏覽器，請檢查網路後重新部署。');
+        // --- 派遣紀錄：新增與儲存 ---
+        function addAttend() {
+            const el = id => document.getElementById(id);
+            const o = {
+                company: el('attend_company').value.trim(),
+                staff: el('attend_staff').value.trim(),
+                date: el('attend_date').value,
+                service: el('attend_service').value,
+                am_s: el('am_s').value,
+                am_e: el('am_e').value,
+                pm_s: el('pm_s').value,
+                pm_e: el('pm_e').value,
+                salary_hours: el('attend_salary_hours').value,
+                deduct_points: el('attend_deduct_points').value,
+                remark: el('attend_remark').value,
+                special_hourly: el('attend_special_hourly').value
+            };
+
+            if (!o.company || !o.staff || !o.date) {
+                showToast('請填寫必填欄位 (*)', true);
+                return;
+            }
+
+            if (editAttendIndex > -1) {
+                attendData[editAttendIndex] = o;
+                editAttendIndex = -1;
+            } else {
+                attendData.push(o);
+            }
+
+            renderAttend();
+            saveAll();
+
+            // 歸位自動全選邏輯
+            const navInputs = document.querySelectorAll('.nav-input');
+            navInputs.forEach(input => {
+                if (input.id !== 'attend_company' && input.id !== 'attend_date') input.value = '';
+            });
+            const first = document.getElementById('attend_company');
+            first.focus();
+            if (first.select) first.select();
+            
+            showToast('儲存成功');
         }
-    })
-    .catch(e => updateSyncStatus('⚠️ 網路異常', true));
-}
 
-// --- 派遣紀錄操作 ---
-function addAttend() {
-    const o = {
-        company: el('attend_company').value.trim(),
-        staff: el('attend_staff').value.trim(),
-        date: el('attend_date').value,
-        service: el('attend_service').value,
-        am_s: el('am_s').value, am_e: el('am_e').value,
-        pm_s: el('pm_s').value, pm_e: el('pm_e').value,
-        salary_hours: el('attend_salary_hours').value,
-        deduct_points: el('attend_deduct_points').value,
-        remark: el('attend_remark').value
-    };
-    if(!o.company || !o.staff || !o.date) return showToast('請填寫必填欄位', true);
+        // --- 列表渲染 ---
+        function renderAttend() {
+            const y = document.getElementById('filter_year').value;
+            const m = document.getElementById('filter_month').value;
+            
+            let filtered = attendData.filter(x => {
+                const matchY = (y === 'all' || x.date.startsWith(y));
+                const matchM = (m === 'all' || x.date.slice(5, 7) === m.padStart(2, '0'));
+                return matchY && matchM;
+            });
 
-    if (editAttendIndex > -1) {
-        attendData[editAttendIndex] = o;
-        editAttendIndex = -1;
-    } else {
-        attendData.push(o);
-    }
+            filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    renderAttend();
-    saveAll();
-    
-    // 儲存後歸位與全選
-    document.querySelectorAll('#page-attend .nav-input').forEach(i => { if(i.id !== 'attend_company' && i.id !== 'attend_date') i.value = ''; });
-    const first = el('attend_company');
-    first.focus(); if(first.select) first.select();
-}
+            let html = '';
+            filtered.forEach((item, idx) => {
+                html += `<tr>
+                    <td>${item.company}</td>
+                    <td>${item.staff}</td>
+                    <td>${item.date}</td>
+                    <td>${item.service || '-'}</td>
+                    <td>${item.am_s || ''}-${item.am_e || ''}</td>
+                    <td>${item.pm_s || ''}-${item.pm_e || ''}</td>
+                    <td>${item.salary_hours || 0}</td>
+                    <td>${item.deduct_points || 0}</td>
+                    <td>${item.remark || ''}</td>
+                    <td>
+                        <button class="btn btn-warning" style="padding: 2px 8px; margin:0;" onclick="editAttend(${idx})">改</button>
+                        <button class="btn btn-pdf" style="padding: 2px 8px; margin:0;" onclick="deleteAttend(${idx})">刪</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('attendTable').innerHTML = html || '<tr><td colspan="10" style="text-align:center;">無資料</td></tr>';
+        }
 
-function renderAttend() {
-    const y = el('filter_year').value, m = el('filter_month').value;
-    let l = attendData.filter(x => (y==='all' || x.date.startsWith(y)) && (m==='all' || x.date.slice(5,7) === m.padStart(2,'0')));
-    l.sort((a,b) => new Date(b.date) - new Date(a.date));
-    let h = '';
-    l.forEach((item, idx) => {
-        h += `<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service || ''}</td><td>${item.am_s}-${item.am_e}</td><td>${item.pm_s}-${item.pm_e}</td><td>${item.salary_hours}</td><td>${item.deduct_points}</td><td>${item.remark || ''}</td><td><button class="btn-sm btn-warning" onclick="editAttend(${idx})">改</button></td></tr>`;
-    });
-    el('attendTable').innerHTML = h || '<tr><td colspan="10">無資料</td></tr>';
-}
+        function editAttend(i) {
+            const d = attendData[i];
+            const el = id => document.getElementById(id);
+            el('attend_company').value = d.company;
+            el('attend_staff').value = d.staff;
+            el('attend_date').value = d.date;
+            el('attend_service').value = d.service;
+            el('attend_remark').value = d.remark;
+            el('am_s').value = d.am_s;
+            el('am_e').value = d.am_e;
+            el('pm_s').value = d.pm_s;
+            el('pm_e').value = d.pm_e;
+            el('attend_salary_hours').value = d.salary_hours;
+            el('attend_deduct_points').value = d.deduct_points;
+            el('attend_special_hourly').value = d.special_hourly;
+            editAttendIndex = i;
+            showToast('已載入編輯模式');
+        }
 
-function showAdminPage(p) {
-    document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
-    el('page-' + p).classList.add('active');
-    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
-}
+        function deleteAttend(i) {
+            if (confirm('確定要刪除這筆紀錄嗎？')) {
+                attendData.splice(i, 1);
+                renderAttend();
+                saveAll();
+                showToast('已刪除');
+            }
+        }
 
-function fillFilters() {
-    let yr = '<option value="all">全部</option>';
-    for(let i=2024; i<=2026; i++) yr += `<option value="${i}">${i}</option>`;
-    el('filter_year').innerHTML = yr; el('filter_year').value = 'all';
-    let mh = '<option value="all">全部</option>';
-    for(let i=1; i<=12; i++) mh += `<option value="${i}">${i}月</option>`;
-    el('filter_month').innerHTML = mh; el('filter_month').value = 'all';
-}
+        // --- 快捷鍵系統 ---
+        function setupKeyboardNav() {
+            const inputs = Array.from(document.querySelectorAll('.nav-input'));
+            inputs.forEach((input, index) => {
+                input.addEventListener('keydown', (e) => {
+                    const isDate = input.type === 'date';
+                    const next = inputs[index + 1];
+                    const prev = inputs[index - 1];
 
-function backupAllData() {
-    const blob = new Blob([JSON.stringify({attendData})], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download=`備份_${new Date().getTime()}.json`; a.click();
-}
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (index === inputs.length - 1) {
+                            addAttend();
+                        } else if (next) {
+                            next.focus();
+                            if (next.tagName === 'INPUT') next.select();
+                        }
+                    }
+                    if ((e.key === 'ArrowDown' || e.key === 'ArrowRight') && !isDate) {
+                        if (next) next.focus();
+                    }
+                    if ((e.key === 'ArrowUp' || e.key === 'ArrowLeft') && !isDate) {
+                        if (prev) prev.focus();
+                    }
+                });
+            });
+        }
 
-function restoreData(input) {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const r = JSON.parse(e.target.result);
-        if(r.attendData) attendData = r.attendData;
-        renderAttend();
-        saveAll();
-        showToast('還原成功！並已同步雲端');
-    };
-    reader.readAsText(input.files[0]);
-}
+        // --- 通用工具 ---
+        function formatTimeInput(e) {
+            let v = e.value.replace(/[^0-9]/g, '');
+            if (!v) return;
+            if (v.length === 2) v += '00';
+            else if (v.length === 3) v = '0' + v;
+            if (v.length === 4) {
+                e.value = v.substring(0, 2) + ':' + v.substring(2, 4);
+            }
+        }
 
-function formatTimeInput(e) { /* 同上略 */ }
-function calcAttendTemp() { /* 同上略 */ }
-function handleLogin() { el('login-screen').style.display='none'; el('admin-screen').style.display='flex'; }
-function logout() { window.location.reload(); }
-function showToast(m, err=false) { const t=el('toast'); t.innerHTML=m; t.style.background=err?'red':'green'; t.style.display='block'; setTimeout(()=>t.style.display='none',3000); }
-function updateSyncStatus(m, err=false) { const s=el('sync-status'); s.innerHTML=m; s.style.color=err?'red':'#475569'; }
-</script>
+        function calcHours() {
+            const getT = id => {
+                const val = document.getElementById(id).value;
+                if (!val || !val.includes(':')) return null;
+                const [h, m] = val.split(':').map(Number);
+                return h + m / 60;
+            };
+            const amS = getT('am_s'), amE = getT('am_e');
+            const pmS = getT('pm_s'), pmE = getT('pm_e');
+            let total = 0;
+            if (amS !== null && amE !== null) total += (amE - amS);
+            if (pmS !== null && pmE !== null) total += (pmE - pmS);
+            if (total > 0) {
+                document.getElementById('attend_salary_hours').value = total.toFixed(1);
+                document.getElementById('attend_deduct_points').value = total.toFixed(1);
+            }
+        }
+
+        function initFilters() {
+            let yr = '<option value="all">全部年份</option>';
+            for (let i = 2024; i <= 2026; i++) yr += `<option value="${i}">${i}</option>`;
+            document.getElementById('filter_year').innerHTML = yr;
+            let mh = '<option value="all">全部月份</option>';
+            for (let i = 1; i <= 12; i++) mh += `<option value="${i}">${i}月</option>`;
+            document.getElementById('filter_month').innerHTML = mh;
+        }
+
+        function backupAllData() {
+            const blob = new Blob([JSON.stringify({ attendData })], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `備份_${new Date().getTime()}.json`;
+            a.click();
+        }
+
+        function restoreData(input) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const r = JSON.parse(e.target.result);
+                    if (r.attendData) {
+                        attendData = r.attendData;
+                        localStorage.setItem('attendData', JSON.stringify(attendData));
+                        renderAttend();
+                        saveAll();
+                        showToast('✅ 還原成功並同步雲端');
+                    }
+                } catch (err) { showToast('❌ 檔案格式錯誤', true); }
+            };
+            reader.readAsText(input.files[0]);
+        }
+
+        function handleLogin() {
+            const pwd = document.getElementById('login_pwd').value;
+            if (pwd === '1234' || pwd === 'doclick888') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('admin-screen').style.display = 'flex';
+                showToast('登入成功');
+            } else {
+                showToast('密碼錯誤', true);
+            }
+        }
+
+        function logout() { window.location.reload(); }
+        function showAdminPage(p) {
+            document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+            document.getElementById('page-' + p).classList.add('active');
+            document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+            document.getElementById('nav-' + p).classList.add('active');
+        }
+        function showToast(m, err = false) {
+            const t = document.getElementById('toast');
+            t.innerHTML = m;
+            t.style.background = err ? '#ef4444' : '#10b981';
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 3000);
+        }
+        function updateSyncStatus(m, err = false) {
+            const s = document.getElementById('sync-status');
+            s.innerHTML = m;
+            s.style.color = err ? 'red' : '#475569';
+        }
+        function exportExcel(id, name) {
+            XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById(id)), name + ".xlsx");
+        }
+        function clearAttendForm() {
+            document.querySelectorAll('.nav-input').forEach(i => i.value = '');
+            editAttendIndex = -1;
+        }
+    </script>
 </body>
 </html>
