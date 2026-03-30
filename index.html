@@ -74,7 +74,24 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     <label><input type="checkbox" id="ft_doc_bank"> 存摺</label> 
     <label><input type="checkbox" id="ft_doc_contract"> 契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddFtStaff" onclick="addFtStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateFtStaff()" id="btnUpdateFtStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearFtStaffForm()"><i class="fas fa-eraser"></i> 清空</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋姓名：</label><input list="list_ft_staff" id="ft_staff_filter_name" placeholder="手打搜尋正職" oninput="resetPage('ft_staff'); renderFtStaffTable()"><label>狀態：</label><select id="ft_staff_filter_status" onchange="resetPage('ft_staff'); renderFtStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('ftStaffTableBox','正職員工')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>到職日</th><th>生日</th><th>銀行帳戶</th><th>帳/密</th><th>月薪</th><th>勞/健保</th><th>雲端</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div></div>
     
-    <div class="page" id="page-attend"><div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div><div class="grid attend-entry-grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr 1.5fr;"><div><label>公司 *</label><input list="list_cust" id="attend_company" placeholder="搜尋客戶名稱" required></div><div><label>人員 *</label><input list="list_staff" id="attend_staff" placeholder="搜尋人員姓名" required></div><div><label>日期 *</label><input type="date" id="attend_date" required></div><div><label>服務類型</label><select id="attend_service"><option value="">請選擇</option></select></div><div><label>備註</label><input type="text" id="attend_remark"></div></div><div class="grid attend-entry-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr;"><div><label>上午上班</label><input type="text" id="am_s" placeholder="0830" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>上午下班</label><input type="text" id="am_e" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午上班</label><input type="text" id="pm_s" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午下班</label><input type="text" id="pm_e" placeholder="1700" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>發薪工時</label><input type="number" id="attend_salary_hours" step="0.1"></div><div><label>扣除點數</label><input type="number" id="attend_deduct_points" step="0.1"></div><div><label>單次特殊時薪</label><input type="number" id="attend_special_hourly" placeholder="留空帶預設"></div></div><button class="btn btn-success" id="btnAddAttend" onclick="addAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" id="btnClearAttend" style="background:#64748b;" onclick="clearAttendForm()"><i class="fas fa-eraser"></i> 清空</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋公司：</label><input list="list_cust" id="filter_company" placeholder="手打搜尋公司" oninput="resetPage('attend'); renderAttend()"><label>年</label><select id="filter_year" onchange="resetPage('attend'); renderAttend()"></select><label>月</label><select id="filter_month" onchange="resetPage('attend'); renderAttend()"></select><label>搜尋人員：</label><input list="list_staff" id="filter_staff" placeholder="手打搜尋人員" oninput="resetPage('attend'); renderAttend()"><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table></div></div>
+    <div class="page" id="page-attend"><div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div>
+    <div class="grid attend-grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr 1.5fr;">
+      <div><label>公司 *</label><input list="list_cust" id="attend_company" class="attend-entry" placeholder="搜尋客戶名稱" required></div>
+      <div><label>人員 *</label><input list="list_staff" id="attend_staff" class="attend-entry" placeholder="搜尋人員姓名" required></div>
+      <div><label>日期 *</label><input type="date" id="attend_date" class="attend-entry" required></div>
+      <div><label>服務類型</label><select id="attend_service" class="attend-entry"><option value="">請選擇</option></select></div>
+      <div><label>備註</label><input type="text" id="attend_remark" class="attend-entry"></div>
+    </div>
+    <div class="grid attend-grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr;">
+      <div><label>上午上班</label><input type="text" id="am_s" class="attend-entry" placeholder="0830" onblur="formatTimeInput(this); calcAttendTemp()"></div>
+      <div><label>上午下班</label><input type="text" id="am_e" class="attend-entry" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div>
+      <div><label>下午上班</label><input type="text" id="pm_s" class="attend-entry" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div>
+      <div><label>下午下班</label><input type="text" id="pm_e" class="attend-entry" placeholder="1700" onblur="formatTimeInput(this); calcAttendTemp()"></div>
+      <div><label>發薪工時</label><input type="number" id="attend_salary_hours" class="attend-entry" step="0.1"></div>
+      <div><label>扣除點數</label><input type="number" id="attend_deduct_points" class="attend-entry" step="0.1"></div>
+      <div><label>單次特殊時薪</label><input type="number" id="attend_special_hourly" class="attend-entry" placeholder="留空帶預設"></div>
+    </div>
+    <button class="btn btn-success" id="btnAddAttend" onclick="addAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" id="btnClearAttend" style="background:#64748b;" onclick="clearAttendForm()"><i class="fas fa-eraser"></i> 清空</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋公司：</label><input list="list_cust" id="filter_company" placeholder="手打搜尋公司" oninput="resetPage('attend'); renderAttend()"><label>年</label><select id="filter_year" onchange="resetPage('attend'); renderAttend()"></select><label>月</label><select id="filter_month" onchange="resetPage('attend'); renderAttend()"></select><label>搜尋人員：</label><input list="list_staff" id="filter_staff" placeholder="手打搜尋人員" oninput="resetPage('attend'); renderAttend()"><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table></div></div>
     
     <div class="page" id="page-ft_attend"><div class="page-title"><i class="fas fa-calendar-check"></i> 正職出勤紀錄</div><div id="leave-info-panel" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;padding:15px 20px;border-radius:8px;margin-bottom:20px;"><h4 style="color:#1e3a8a;"><i class="fas fa-plane-departure"></i> <span id="leave-info-name"></span> 特休資訊</h4><div style="display:flex;gap:25px;font-size:14px;flex-wrap:wrap;margin-top:10px;"><div>年資：<b id="leave-info-tenure" style="color:#0369a1;">-</b></div><div>依法享有：<b id="leave-info-total" style="color:#10b981;">- 天</b></div><div>已用：<b id="leave-info-used" style="color:#ef4444;">- 天</b></div><div style="padding:2px 10px;background:#dcfce7;border-radius:4px;border:1px solid #bbf7d0;">剩餘：<b id="leave-info-remain" style="color:#166534;">- 天</b></div><div>下階段：<span id="leave-info-next"></span></div></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr;"><div><label>員工 *</label><input list="list_ft_staff" id="fta_staff" placeholder="搜尋員工姓名" required oninput="showLeaveInfo()"></div><div><label>日期 *</label><input type="date" id="fta_date" required></div><div><label>類型 *</label><select id="fta_record_type" onchange="toggleFtaFields()"><option value="正常出勤">正常出勤</option><option value="異常">異常</option><option value="請假">請假</option><option value="加班">加班</option><option value="換班">換班</option></select></div><div><label>原因</label><input type="text" id="fta_reason"></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1.5fr 1fr;" id="fta_time_block"><div><label>上班打卡</label><input type="text" id="fta_time_in" placeholder="0900" onblur="formatTimeInput(this); calcFtaHours()"></div><div><label>下班打卡</label><input type="text" id="fta_time_out" placeholder="1800" onblur="formatTimeInput(this); calcFtaHours()"></div><div><label>合計時數</label><div style="display:flex;align-items:center;gap:10px;"><input type="number" id="fta_hours" step="0.1" style="width:90px;padding:8px;"><label style="font-size:13px;cursor:pointer;display:flex;align-items:center;color:#0369a1;font-weight:bold;margin:0;"><input type="checkbox" id="fta_deduct_break" checked onchange="calcFtaHours()" style="margin-right:5px;"> 扣除休息1h</label></div></div><div id="fta_leave_type_block" style="display:none;"><label>請假假別</label><select id="fta_leave_type"><option value="事假">事假</option><option value="病假">病假</option><option value="特休假">特休假</option><option value="喪假">喪假</option></select></div><div id="fta_approval_block" style="display:none;"><label>核准狀態</label><select id="fta_approval"><option value="已核准">已核准</option><option value="待審核">待審核</option></select></div></div><button class="btn btn-success" id="btnAddFtAttend" onclick="addFtAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" style="background:#64748b;" onclick="clearFtAttendForm()"><i class="fas fa-eraser"></i> 清空</button><div class="filter-bar" style="margin-top: 20px;"><label>年月</label><input type="month" id="fta_filter_month" onchange="resetPage('ft_attend'); renderFtAttendTable()"><label>搜尋員工：</label><input list="list_ft_staff" id="fta_filter_staff" placeholder="手打搜尋正職" oninput="resetPage('ft_attend'); renderFtAttendTable()"><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('ftAttendTableBox','出勤紀錄')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="ftAttendTableBox"><thead><tr><th>員工</th><th>日期</th><th>類型</th><th>時間/假別</th><th>時數</th><th>狀態/原因</th><th>操作</th></tr></thead><tbody id="ftAttendTable"></tbody></table></div></div>
     
@@ -142,6 +159,52 @@ let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packa
 const defaultPortalConf = { adminNoticeTitle: "🚀 系統上線", adminNoticeContent: "請先按右上角重新整理。", serviceTypes: "行政,會計,服務員,理貨包裝,其他", r1Title: "管理規範", r1Content: "嚴禁私下聯繫", r2Title: "注意事項", r2Content: "保持微笑", l1Title: "平台", l1Desc: "點擊", l1Url: "https://google.com", l2Title: "IG", l2Desc: "追蹤", l2Url: "https://instagram.com" };
 let portalConf = safeJSONParse('portalConf', defaultPortalConf);
 
+// --- 無死角快捷鍵核心邏輯 ---
+function setupAttendNavigation() {
+    const inputs = Array.from(document.querySelectorAll('.attend-entry'));
+    inputs.forEach((input, index) => {
+        input.addEventListener('keydown', (e) => {
+            const isDate = input.type === 'date';
+            
+            // 處理 Enter 與 下鍵 (↓) -> 跳下一格
+            if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                // 如果是最後一格且按 Enter，直接儲存
+                if (e.key === 'Enter' && index === inputs.length - 1) {
+                    addAttend();
+                    return;
+                }
+                const next = inputs[index + 1];
+                if (next) {
+                    next.focus();
+                    if (next.tagName === 'INPUT') next.select();
+                }
+            }
+            
+            // 處理 上鍵 (↑) -> 跳上一格
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = inputs[index - 1];
+                if (prev) {
+                    prev.focus();
+                    if (prev.tagName === 'INPUT') prev.select();
+                }
+            }
+            
+            // 處理 左右鍵 -> 欄位穿梭
+            // 日期欄位保留左右鍵切換年月日，只有在最左或最右才跳格（防呆）
+            if (e.key === 'ArrowRight' && !isDate) {
+                const next = inputs[index + 1];
+                if (next) next.focus();
+            }
+            if (e.key === 'ArrowLeft' && !isDate) {
+                const prev = inputs[index - 1];
+                if (prev) prev.focus();
+            }
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   try {
       standardizeData();
@@ -151,60 +214,10 @@ document.addEventListener('DOMContentLoaded', () => {
       renderPricePlanOptions(); updateLogoPreview(); renderPortalConfigUI(); applyPortalConfigToStaff(); renderServiceTypes();
       updateSystemClock(); setInterval(updateSystemClock, 1000);
       const pi=el('login_pwd'); if(pi) pi.addEventListener('keypress', e => { if(e.key==='Enter') handleLogin(); });
-      
-      // 新增：派遣記錄頁面的快捷鍵邏輯
-      initAttendShortcutLogic();
-
       loadDataFromCloud();
+      setupAttendNavigation(); // 啟動快捷鍵
   } catch (err) { el('login-screen').style.display='flex'; } finally { restoreLoginState(); }
 });
-
-// --- 新增：派遣記錄快捷鍵核心邏輯 ---
-function initAttendShortcutLogic() {
-    const entryIds = [
-        'attend_company', 'attend_staff', 'attend_date', 'attend_service', 'attend_remark',
-        'am_s', 'am_e', 'pm_s', 'pm_e', 'attend_salary_hours', 'attend_deduct_points', 'attend_special_hourly'
-    ];
-
-    entryIds.forEach((id, index) => {
-        const input = el(id);
-        if (!input) return;
-
-        input.addEventListener('keydown', (e) => {
-            const nextIdx = index + 1;
-            const prevIdx = index - 1;
-
-            // Enter 智慧跳轉
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (index === entryIds.length - 1) {
-                    addAttend(); // 最後一格執行儲存
-                } else {
-                    const nextEl = el(entryIds[nextIdx]);
-                    if (nextEl) { nextEl.focus(); if(nextEl.select) nextEl.select(); }
-                }
-            }
-
-            // 方向鍵穿梭 (上下左右)
-            if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-                // 如果是文字輸入框且內有文字，左右鍵僅在游標於末端或起點時才跳格 (可選優化)
-                // 這裡採取直接跳格以達到最快速度
-                let targetEl = null;
-                if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                    if (nextIdx < entryIds.length) targetEl = el(entryIds[nextIdx]);
-                } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                    if (prevIdx >= 0) targetEl = el(entryIds[prevIdx]);
-                }
-
-                if (targetEl) {
-                    e.preventDefault();
-                    targetEl.focus();
-                    if(targetEl.select) targetEl.select();
-                }
-            }
-        });
-    });
-}
 
 function handleLogin() {
   const role=el('login_role').value, acc=el('login_acc').value.trim(), pwd=el('login_pwd').value.trim();
@@ -338,77 +351,6 @@ function exportExcel(tableId,filename){
   pageConfig.pageSize = oldSize;
   refresh();
   showToast('✅ 匯出成功');
-}
-
-function exportBossSalaryExcel() {
-  const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
-  if(y === 'all' || m === 'all') return showToast('請先選擇匯出年份與月份！', true);
-  
-  let fData = attendData.filter(x => isDispatchPayrollPeriod(x.date, y, m));
-  if(fData.length === 0) return showToast('該月份無任何派遣紀錄', true);
-  
-  let sm = {};
-  fData.forEach(i => {
-    let n = i.staff;
-    if(!sm[n]) {
-      const si = staffData.find(x => x.name === n) || {};
-      sm[n] = { 
-        name: n, 
-        items: {}, 
-        tHrs: 0, 
-        tAmt: 0, 
-        l: Number(si.labor)||0, 
-        h: Number(si.health)||0, 
-        b: `${si.bank||''}${si.bank_branch||''}${si.bank_acc||''}`,
-        id: si.id || ''
-      };
-    }
-    let pH = getItemSalaryHours(i);
-    let hy = i.special_hourly ? Number(i.special_hourly) : getStaffTieredHourly(n);
-    let pk = `${i.company}${i.service||''}_${hy}`;
-    let pn = `${i.company}${i.service||''}`;
-    
-    if(!sm[n].items[pk]) sm[n].items[pk] = { name: pn, hrs: 0, rate: hy, amt: 0 };
-    sm[n].items[pk].hrs += pH;
-    sm[n].items[pk].amt += Math.round(pH * hy);
-    sm[n].tHrs += pH;
-    sm[n].tAmt += Math.round(pH * hy);
-  });
-
-  let tb = document.createElement('table');
-  let head = `<thead>
-    <tr><th colspan="12" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 ${y}年${m}月 兼職人員薪資表</th></tr>
-    <tr><th>姓名</th><th>服務項目</th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th><th>身分證</th></tr>
-  </thead><tbody>`;
-  
-  let body = '';
-  let gHrs=0, gAmt=0, gL=0, gH=0, gNet=0;
-  
-  Object.values(sm).forEach(s => {
-     let keys = Object.keys(s.items);
-     let rs = keys.length;
-     let net = s.tAmt - s.l - s.h;
-     gHrs+=s.tHrs; gAmt+=s.tAmt; gL+=s.l; gH+=s.h; gNet+=net;
-     
-     keys.forEach((k, idx) => {
-       let it = s.items[k];
-       let tr = '<tr>';
-       if(idx===0) tr += `<td rowspan="${rs}">${s.name}</td>`;
-       tr += `<td>${it.name}(${it.hrs.toFixed(1)}H)</td><td>${it.hrs.toFixed(1)}</td><td>${it.rate}</td><td>${it.amt}</td>`;
-       if(idx===0) {
-         tr += `<td rowspan="${rs}">${s.tAmt}</td><td rowspan="${rs}">${s.l}</td><td rowspan="${rs}">${s.h}</td><td rowspan="${rs}">0</td><td rowspan="${rs}">${net}</td><td rowspan="${rs}">${s.b}</td><td rowspan="${rs}">${s.id}</td>`;
-       }
-       tr += '</tr>';
-       body += tr;
-     });
-  });
-  
-  body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td><td></td></tr></tbody>`;
-  tb.innerHTML = head + body;
-  
-  let wb = XLSX.utils.table_to_book(tb, {sheet: "薪資表"});
-  XLSX.writeFile(wb, `點籽響_${y}年${m}月_老闆專用薪資彙整表.xlsx`);
-  showToast('✅ 老闆專用薪資表 匯出成功');
 }
 
 function clearLoginBg(){if(confirm('刪除？')){loginBgBase64='';localStorage.removeItem('loginBg');updateLogoPreview();saveAllSilently();}}
@@ -608,7 +550,7 @@ function clearStaffForm(){ document.querySelectorAll('#page-staff .grid input').
 function renderFtStaffTable(){ const fs=el('ft_staff_filter_status').value, fn=el('ft_staff_filter_name').value.trim().toLowerCase(); let l=ftStaffData.filter(x=>(fs==='all'||x.status===fs)&&(!fn || fn==='全部員工' || x.name.toLowerCase().includes(fn))); const {pagedList,total,totalPages}=getPagedData(l,'ft_staff'); let h=''; pagedList.forEach(item=>{ const idx=ftStaffData.findIndex(x=>x.name===item.name); const btn=item.drive?`<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>`:'-'; let d=[]; if(item.doc_id)d.push('<span class="badge badge-green">身</span>');else d.push('<span class="badge badge-red">缺身</span>'); if(item.doc_bank)d.push('<span class="badge badge-green">存</span>');else d.push('<span class="badge badge-red">缺存</span>'); if(item.doc_contract)d.push('<span class="badge badge-green">契</span>');else d.push('<span class="badge badge-red">缺契</span>'); if(item.doc_resume)d.push('<span class="badge badge-green">歷</span>');else d.push('<span class="badge badge-red">缺歷</span>'); let bankStr = item.bank ? `${item.bank}${item.bank_branch ? '('+item.bank_branch+')' : ''}<br><span style="color:#64748b;font-size:11px;">${item.bank_acc||'-'}</span>` : '-'; let accStr = `${item.account||'-'}<br><span style="color:#94a3b8;font-size:11px;">${item.pwd||'-'}</span>`; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.hire_date||'-'}</td><td>${toRocDate(item.birthday)}</td><td>${bankStr}</td><td>${accStr}</td><td>${item.salary||0}</td><td>${item.labor||0}/${item.health||0}</td><td>${btn}</td><td><div style="display:flex;gap:4px;flex-wrap:wrap;">${d.join('')}</div></td><td>${item.status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtStaff(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtStaff(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('ftStaffTable').innerHTML=h||'<tr><td colspan="12" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_staff',total,totalPages); fillFilters(); }
 function addFtStaff(){ const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,bank:el('ft_bank').value.trim(),bank_branch:el('ft_bank_branch').value.trim(),bank_acc:el('ft_bank_acc').value.trim(),drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; if(!o.name)return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 成功'); }
 function editFtStaff(i){ const d=ftStaffData[i]; el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_bank').value=d.bank||''; el('ft_bank_branch').value=d.bank_branch||''; el('ft_bank_acc').value=d.bank_acc||''; el('ft_drive').value=d.drive; el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('ft_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; el('btnUpdateFtStaff').style.display='inline-block'; const b=el('btnAddFtStaff'); if(b) b.style.display='none'; }
-function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,bank:el('ft_bank').value.trim(),bank_branch:el('ft_bank_branch').value.trim(),bank_acc:el('ft_bank_acc').value.trim(),drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; ftStaffData[editFtStaffIndex]={...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
+function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,bank:el('ft_bank').value.trim(),bank_branch:el('ft_bank_branch').value.trim(),bank_acc:el('ft_bank_acc').value.trim(),drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; ftStaffData[editFtStaffIndex]={...ftStaffData[editStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
 function delFtStaff(i){ if(!confirm('刪除？'))return; ftStaffData.splice(i,1); saveAll(); renderFtStaffTable(); showToast('刪除'); }
 function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid input').forEach(i=>{if(i.type==='checkbox')i.checked=false;else i.value='';}); el('ft_salary').value='30000'; el('ft_labor').value='0'; el('ft_health').value='0'; el('ft_pwd').value='1234'; el('ft_bank').value=''; el('ft_bank_branch').value=''; el('ft_bank_acc').value=''; el('ft_status').value='在職'; editFtStaffIndex=-1; el('btnUpdateFtStaff').style.display='none'; const b=el('btnAddFtStaff'); if(b) b.style.display='inline-block'; }
 
@@ -622,57 +564,25 @@ function renderAttend(){
     el('attendTable').innerHTML=h||'<tr><td colspan="10" style="text-align:center;">無資料</td></tr>'; renderPagination('attend',total,totalPages); 
 }
 function calcAttendTemp(){ const h=(+getHours(el('am_s').value,el('am_e').value))+(+getHours(el('pm_s').value,el('pm_e').value)); if(h>0){el('attend_salary_hours').value=h.toFixed(1);el('attend_deduct_points').value=h.toFixed(1);}else{el('attend_salary_hours').value='';el('attend_deduct_points').value='';} }
-
 function addAttend(){ 
-    const o={
-        company:el('attend_company').value.trim(),
-        staff:el('attend_staff').value.trim(),
-        date:el('attend_date').value,
-        service:el('attend_service').value,
-        remark:el('attend_remark').value,
-        am_s:el('am_s').value,
-        am_e:el('am_e').value,
-        pm_s:el('pm_s').value,
-        pm_e:el('pm_e').value,
-        salary_hours:el('attend_salary_hours').value,
-        deduct_points:el('attend_deduct_points').value,
-        special_hourly:el('attend_special_hourly').value
-    }; 
+    const o={company:el('attend_company').value.trim(),staff:el('attend_staff').value.trim(),date:el('attend_date').value,service:el('attend_service').value,remark:el('attend_remark').value,am_s:el('am_s').value,am_e:el('am_e').value,pm_s:el('pm_s').value,pm_e:el('pm_e').value,salary_hours:el('attend_salary_hours').value,deduct_points:el('attend_deduct_points').value,special_hourly:el('attend_special_hourly').value}; 
     if(!o.company||!o.staff||!o.date)return; 
-
-    if(editAttendIndex > -1) { 
-        attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; 
-        editAttendIndex=-1; 
-    } else { 
-        // 檢查是否已存在同人同天同公司的紀錄 (避免重複新增)
-        const idx=attendData.findIndex(x=>x.company===o.company&&x.staff===o.staff&&x.date===o.date); 
-        if(idx>-1) attendData[idx]={...attendData[idx],...o}; 
-        else attendData.push(o); 
-    } 
-    saveAll(); 
-    renderAttend(); 
-    
-    // 儲存後清空表單
-    el('am_s').value=''; el('am_e').value=''; el('pm_s').value=''; el('pm_e').value=''; 
-    el('attend_salary_hours').value=''; el('attend_deduct_points').value=''; el('attend_special_hourly').value=''; 
-    el('attend_remark').value=''; 
-    
-    // 更新按鈕狀態
-    const b=el('btnAddAttend'); 
-    if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} 
-    const c=el('btnClearAttend'); 
-    if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空'; 
-    
+    if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } 
+    else { const idx=attendData.findIndex(x=>x.company===o.company&&x.staff===o.staff&&x.date===o.date); if(idx>-1) attendData[idx]={...attendData[idx],...o}; else attendData.push(o); } 
+    saveAll(); renderAttend(); 
+    el('am_s').value=''; el('am_e').value=''; el('pm_s').value=''; el('pm_e').value=''; el('attend_salary_hours').value=''; el('attend_deduct_points').value=''; el('attend_special_hourly').value=''; el('attend_remark').value=''; 
+    editAttendIndex=-1; 
+    const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} 
+    const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空'; 
     showToast('✅ 儲存'); 
-
-    // 重要：儲存後自動跳回「公司」欄位並全選，實現無縫連續輸入
+    
+    // 儲存後自動跳回並全選第一個欄位
     const firstInput = el('attend_company');
     if(firstInput) {
         firstInput.focus();
-        if(firstInput.select) firstInput.select();
+        firstInput.select();
     }
 }
-
 function editAttend(i){ const d=attendData[i]; el('attend_company').value=d.company; el('attend_staff').value=d.staff; el('attend_date').value=d.date; el('attend_service').value=d.service; el('attend_remark').value=d.remark; el('am_s').value=d.am_s; el('am_e').value=d.am_e; el('pm_s').value=d.pm_s; el('pm_e').value=d.pm_e; el('attend_salary_hours').value=d.salary_hours; el('attend_deduct_points').value=d.deduct_points; el('attend_special_hourly').value=d.special_hourly||''; editAttendIndex=i; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-edit"></i> 修改'; b.classList.replace('btn-success','btn-warning');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-times"></i> 取消'; }
 function delAttend(i){ if(!confirm('刪除記錄？'))return; attendData.splice(i,1); saveAll(); renderAttend(); showToast('刪除'); }
 function clearAttendForm(){ document.querySelectorAll('#page-attend .grid input').forEach(i=>i.value=''); el('attend_service').value=''; el('attend_special_hourly').value=''; editAttendIndex=-1; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空'; }
