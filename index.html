@@ -164,31 +164,27 @@ document.addEventListener('DOMContentLoaded', () => {
               const input = el(id);
               if (!input) return;
               input.addEventListener('keydown', function(e) {
-                  // Enter 鍵絕對儲存
-                  if (e.key === 'Enter') {
-                      e.preventDefault();
-                      this.blur();
-                      if (btnId && el(btnId)) el(btnId).click();
-                      return;
-                  }
+                  // 防呆：下拉選單保留原生上下鍵
+                  if (this.tagName === 'SELECT' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) return;
                   
-                  // 方向鍵保護
-                  if ((this.tagName === 'SELECT' || this.type === 'date') && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) return;
                   let atEnd = true, atStart = true;
-                  try { 
-                      if (this.selectionStart !== null && this.selectionStart !== undefined) { 
-                          atEnd = this.selectionStart === this.value.length; 
-                          atStart = this.selectionStart === 0; 
-                      } 
-                  } catch(err) {} 
+                  try { if (this.selectionStart !== null && this.selectionStart !== undefined) { atEnd = this.selectionStart === this.value.length; atStart = this.selectionStart === 0; } } catch(err) {} 
                   
-                  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-                      if (e.key === 'ArrowRight' && !atEnd) return;
+                  // 往下一格跳 (Enter、向下、向右)
+                  if (e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                      if (e.key === 'ArrowRight' && !atEnd && this.type !== 'date') return; // 文字未到最後則不跳
+                      if (e.key === 'ArrowRight' && this.type === 'date') return; // 日期保留原生右鍵(切換年月日)
+                      
                       e.preventDefault(); this.blur();
                       const nextInput = el(orderArray[idx + 1]);
                       if (nextInput) { nextInput.focus(); if(nextInput.select) nextInput.select(); } 
-                  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-                      if (e.key === 'ArrowLeft' && !atStart) return;
+                      else if (e.key === 'Enter' && btnId) { el(btnId).click(); } // 最後一格按 Enter 才觸發儲存
+                  } 
+                  // 往上一格跳 (向上、向左)
+                  else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                      if (e.key === 'ArrowLeft' && !atStart && this.type !== 'date') return;
+                      if (e.key === 'ArrowLeft' && this.type === 'date') return; // 日期保留原生左鍵
+                      
                       e.preventDefault(); this.blur();
                       const prevInput = el(orderArray[idx - 1]);
                       if (prevInput) { prevInput.focus(); if(prevInput.select) prevInput.select(); }
@@ -651,7 +647,7 @@ function renderAttend(){
     el('attendTable').innerHTML=h||'<tr><td colspan="10" style="text-align:center;">無資料</td></tr>'; renderPagination('attend',total,totalPages); 
 }
 function calcAttendTemp(){ const h=(+getHours(el('am_s').value,el('am_e').value))+(+getHours(el('pm_s').value,el('pm_e').value)); if(h>0){el('attend_salary_hours').value=h.toFixed(1);el('attend_deduct_points').value=h.toFixed(1);}else{el('attend_salary_hours').value='';el('attend_deduct_points').value='';} }
-function addAttend(){ const o={company:el('attend_company').value.trim(),staff:el('attend_staff').value.trim(),date:el('attend_date').value,service:el('attend_service').value,remark:el('attend_remark').value,am_s:el('am_s').value,am_e:el('am_e').value,pm_s:el('pm_s').value,pm_e:el('pm_e').value,salary_hours:el('attend_salary_hours').value,deduct_points:el('attend_deduct_points').value,special_hourly:el('attend_special_hourly').value}; if(!o.company||!o.staff||!o.date)return; if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } else { const idx=attendData.findIndex(x=>x.company===o.company&&x.staff===o.staff&&x.date===o.date); if(idx>-1) attendData[idx]={...attendData[idx],...o}; else attendData.push(o); } saveAll(); renderAttend(); el('am_s').value=''; el('am_e').value=''; el('pm_s').value=''; el('pm_e').value=''; el('attend_salary_hours').value=''; el('attend_deduct_points').value=''; el('attend_special_hourly').value=''; el('attend_remark').value=''; editAttendIndex=-1; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空'; showToast('✅ 儲存'); }
+function addAttend(){ const o={company:el('attend_company').value.trim(),staff:el('attend_staff').value.trim(),date:el('attend_date').value,service:el('attend_service').value,remark:el('attend_remark').value,am_s:el('am_s').value,am_e:el('am_e').value,pm_s:el('pm_s').value,pm_e:el('pm_e').value,salary_hours:el('attend_salary_hours').value,deduct_points:el('attend_deduct_points').value,special_hourly:el('attend_special_hourly').value}; if(!o.company||!o.staff||!o.date)return; if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } else { const idx=attendData.findIndex(x=>x.company===o.company&&x.staff===o.staff&&x.date===o.date); if(idx>-1) attendData[idx]={...attendData[idx],...o}; else attendData.push(o); } saveAll(); renderAttend(); el('am_s').value=''; el('am_e').value=''; el('pm_s').value=''; el('pm_e').value=''; el('attend_salary_hours').value=''; el('attend_deduct_points').value=''; el('attend_special_hourly').value=''; el('attend_remark').value=''; editAttendIndex=-1; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空'; showToast('✅ 儲存'); setTimeout(()=>{let f=el('attend_company');if(f){f.focus();f.select();}},100); }
 function editAttend(i){ const d=attendData[i]; el('attend_company').value=d.company; el('attend_staff').value=d.staff; el('attend_date').value=d.date; el('attend_service').value=d.service; el('attend_remark').value=d.remark; el('am_s').value=d.am_s; el('am_e').value=d.am_e; el('pm_s').value=d.pm_s; el('pm_e').value=d.pm_e; el('attend_salary_hours').value=d.salary_hours; el('attend_deduct_points').value=d.deduct_points; el('attend_special_hourly').value=d.special_hourly||''; editAttendIndex=i; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-edit"></i> 修改'; b.classList.replace('btn-success','btn-warning');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-times"></i> 取消'; }
 function delAttend(i){ if(!confirm('刪除記錄？'))return; attendData.splice(i,1); saveAll(); renderAttend(); showToast('刪除'); }
 function clearAttendForm(){ document.querySelectorAll('#page-attend .grid input').forEach(i=>i.value=''); el('attend_service').value=''; el('attend_special_hourly').value=''; editAttendIndex=-1; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空'; }
@@ -675,7 +671,7 @@ function showLeaveInfo() {
 function renderFtAttendTable(){ const m=el('fta_filter_month').value, s=el('fta_filter_staff').value.trim(); let l=ftAttendData.filter(x=>(!s || s==='全部員工' || x.staff===s)&&(!m||x.date.startsWith(m))); 
   l.sort((a, b) => new Date(b.date) - new Date(a.date));
   const {pagedList,total,totalPages}=getPagedData(l,'ft_attend'); let h=''; pagedList.forEach(item=>{ const idx=ftAttendData.indexOf(item); let ts=item.record_type==='正常出勤'||item.record_type==='異常'?`${item.time_in||'-'}~${item.time_out||'-'}`:(item.leave_type||item.record_type); let b=''; if(item.record_type==='異常')b=`<span class="badge badge-red">異常</span>`;else if(item.record_type==='請假')b=`<span class="badge ${item.approval==='已核准'?'badge-green':'badge-yellow'}">${item.approval||''}</span>`; h+=`<tr><td>${item.staff}</td><td>${item.date}</td><td>${item.record_type}</td><td>${ts}</td><td>${item.hours||0}</td><td>${b} ${item.reason||''}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('ftAttendTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_attend',total,totalPages); }
-function addFtAttend(){ const o={staff:el('fta_staff').value.trim(),date:el('fta_date').value,record_type:el('fta_record_type').value,reason:el('fta_reason').value,time_in:el('fta_time_in').value,time_out:el('fta_time_out').value,hours:el('fta_hours').value,leave_type:el('fta_leave_type').value,approval:el('fta_approval').value}; if(!o.staff||!o.date)return; if(editFtAttendIndex > -1) { ftAttendData[editFtAttendIndex]={...ftAttendData[editFtAttendIndex], ...o}; editFtAttendIndex = -1; } else { ftAttendData.push(o); } saveAll(); renderFtAttendTable(); showLeaveInfo(); el('fta_time_in').value=''; el('fta_time_out').value=''; el('fta_hours').value=''; el('fta_reason').value=''; editFtAttendIndex=-1; const b=el('btnAddFtAttend'); if(b) b.innerHTML='<i class="fas fa-save"></i> 儲存'; showToast('✅ 儲存'); }
+function addFtAttend(){ const o={staff:el('fta_staff').value.trim(),date:el('fta_date').value,record_type:el('fta_record_type').value,reason:el('fta_reason').value,time_in:el('fta_time_in').value,time_out:el('fta_time_out').value,hours:el('fta_hours').value,leave_type:el('fta_leave_type').value,approval:el('fta_approval').value}; if(!o.staff||!o.date)return; if(editFtAttendIndex > -1) { ftAttendData[editFtAttendIndex]={...ftAttendData[editFtAttendIndex], ...o}; editFtAttendIndex = -1; } else { ftAttendData.push(o); } saveAll(); renderFtAttendTable(); showLeaveInfo(); el('fta_time_in').value=''; el('fta_time_out').value=''; el('fta_hours').value=''; el('fta_reason').value=''; editFtAttendIndex=-1; const b=el('btnAddFtAttend'); if(b) b.innerHTML='<i class="fas fa-save"></i> 儲存'; showToast('✅ 儲存'); setTimeout(()=>{let f=el('fta_staff');if(f){f.focus();f.select();}},100); }
 function editFtAttend(i){ const d=ftAttendData[i]; el('fta_staff').value=d.staff; el('fta_date').value=d.date; el('fta_record_type').value=d.record_type; el('fta_reason').value=d.reason; el('fta_time_in').value=d.time_in; el('fta_time_out').value=d.time_out; el('fta_hours').value=d.hours; el('fta_leave_type').value=d.leave_type||'事假'; el('fta_approval').value=d.approval||'已核准'; toggleFtaFields(); editFtAttendIndex=i; showLeaveInfo(); const b=el('btnAddFtAttend'); if(b) b.innerHTML='<i class="fas fa-edit"></i> 修改'; }
 function delFtAttend(i){ if(!confirm('刪除？'))return; ftAttendData.splice(i,1); saveAll(); renderFtAttendTable(); showLeaveInfo(); showToast('刪除'); }
 function clearFtAttendForm(){ document.querySelectorAll('#page-ft_attend .grid input').forEach(i=>i.value=''); el('fta_record_type').value='正常出勤'; el('fta_approval').value='已核准'; el('fta_deduct_break').checked=true; toggleFtaFields(); editFtAttendIndex=-1; const b=el('btnAddFtAttend'); if(b) b.innerHTML='<i class="fas fa-save"></i> 儲存紀錄'; }
