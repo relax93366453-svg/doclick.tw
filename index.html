@@ -628,7 +628,7 @@ function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bil
 function renderSalary(){ 
     const s=el('sal_filter_staff').value.trim(), y=el('sal_filter_year').value, m=el('sal_filter_month').value;
     let l=attendData.filter(x=>(!s || s==='全部人員' || x.staff===s)&&isDispatchPayrollPeriod(x.date, y, m)); 
-    l.sort((a,b)=>new Date(a.date)-new Date(b.date));
+    l.sort((a,b)=>new Date(b.date)-new Date(a.date));
     const {pagedList,total,totalPages}=getPagedData(l,'salary'); 
     let h='', tH=0, tA=0;
     l.forEach(i=>{ const pH=getItemSalaryHours(i); let hy=0; if(i.special_hourly){hy=Number(i.special_hourly);}else{hy=getStaffTieredHourly(i.staff);} tH+=pH; tA+=Math.round(pH*hy); });
