@@ -283,6 +283,45 @@ function getStaffCurrentHourlyInfo(name){
 }
 function getStaffTieredHourly(name){ return getStaffCurrentHourlyInfo(name).wage; }
 
+// --- 全新加入：計算「歷史當下」的時薪 ---
+function getHistoricalRate(item) {
+  if(item.special_hourly) return Number(item.special_hourly);
+  const si=staffData.find(x=>x.name===item.staff);
+  if(!si) return 210;
+  
+  // 計算到「當下這筆記錄日期」為止的累積總工時
+  const pastRecords = attendData.filter(x=>x.staff===item.staff && new Date(x.date) <= new Date(item.date));
+  const h = pastRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+  
+  const rule=si.salary_rule||'標準階梯';
+  const agreed=(si.remark||'').includes('已同意調薪');
+  let w=Number(si.hourly)||0;
+  
+  if(rule==='標準階梯'){
+    if(h<=175) w=210;
+    else if(h<=350) w=220;
+    else if(h<=525) w=230;
+    else if(h<=700) w=240;
+    else w=agreed?250:240;
+  }else if(rule==='245起跳'){
+    if(h<=700) w=245;
+    else w=agreed?250:245;
+  }else if(rule==='固定205'){
+    if(h<=350) w=205;
+    else if(h<=700) w=220;
+    else w=agreed?245:220;
+  }else if(rule==='固定220'){
+    if(h<=350) w=220;
+    else if(h<=700) w=245;
+    else w=agreed?250:245;
+  }else if(rule==='自訂'){
+    w=Number(si.hourly)||0;
+  }
+  
+  if(w===0)w=210;
+  return w;
+}
+
 function updateSystemClock(){const d=new Date();const s=d.toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});if(el('current-time'))el('current-time').innerHTML=`<i class="far fa-clock" style="color:#2d9d5c;"></i> ${s}`;if(el('staff-current-time'))el('staff-current-time').innerHTML=`<i class="far fa-clock" style="color:#2d9d5c;"></i> ${s}`;}
 function exportExcel(tableId,filename){
   const oldSize = pageConfig.pageSize;
@@ -328,7 +367,7 @@ function exportBossSalaryExcel() {
       sm[n] = { name: n, items: {}, tHrs: 0, tAmt: 0, l: Number(si.labor)||0, h: Number(si.health)||0, b: `${si.bank||''}${si.bank_branch||''}${si.bank_acc||''}`, id: si.id || '' };
     }
     let pH = getItemSalaryHours(i);
-    let hy = i.special_hourly ? Number(i.special_hourly) : getStaffTieredHourly(n);
+    let hy = getHistoricalRate(i); // 改用歷史時薪
     let pk = `${i.company}${i.service||''}_${hy}`;
     let pn = `${i.company}${i.service||''}`;
     if(!sm[n].items[pk]) sm[n].items[pk] = { name: pn, hrs: 0, rate: hy, amt: 0 };
@@ -460,8 +499,12 @@ function generatePayslipPDF(){
   if(!s||s==='all'||s==='全部人員'||ys==='all'||ms==='all') return showToast('請選人員與年月！', true);
   const si=staffData.find(x=>x.name===s); if(!si) return;
   let ats=attendData.filter(x=>x.staff===s&&isDispatchPayrollPeriod(x.date,ys,ms)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  let tpay=0,trs='',defaultHly=getStaffTieredHourly(s);
-  ats.forEach(i=>{const ph=getItemSalaryHours(i),recHly=i.special_hourly?Number(i.special_hourly):defaultHly,amt=Math.round(ph*recHly);tpay+=amt;trs+=`<tr><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:left;color:#333;">${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${ph.toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${recHly}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${amt}</td></tr>`;});
+  let tpay=0,trs='';
+  ats.forEach(i=>{
+    const ph=getItemSalaryHours(i), recHly=getHistoricalRate(i), amt=Math.round(ph*recHly);
+    tpay+=amt;
+    trs+=`<tr><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:left;color:#333;">${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${ph.toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${recHly}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${amt}</td></tr>`;
+  });
   if(ats.length===0)trs=`<tr><td colspan="5" style="border:1px solid #cbd5e1;padding:20px;color:#64748b;text-align:center;">無紀錄</td></tr>`;
   const l=+si.labor||0, h=+si.health||0, n=tpay-l-h;
   const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:55px;margin-bottom:10px;"><br>`:'';
@@ -628,11 +671,11 @@ function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bil
 function renderSalary(){ 
     const s=el('sal_filter_staff').value.trim(), y=el('sal_filter_year').value, m=el('sal_filter_month').value;
     let l=attendData.filter(x=>(!s || s==='全部人員' || x.staff===s)&&isDispatchPayrollPeriod(x.date, y, m)); 
-    l.sort((a,b)=>new Date(b.date)-new Date(a.date));
+    l.sort((a,b)=>new Date(b.date)-new Date(a.date)); // 由新到舊
     const {pagedList,total,totalPages}=getPagedData(l,'salary'); 
     let h='', tH=0, tA=0;
-    l.forEach(i=>{ const pH=getItemSalaryHours(i); let hy=0; if(i.special_hourly){hy=Number(i.special_hourly);}else{hy=getStaffTieredHourly(i.staff);} tH+=pH; tA+=Math.round(pH*hy); });
-    pagedList.forEach(i=>{ const pH=getItemSalaryHours(i); let hy=0; if(i.special_hourly){hy=Number(i.special_hourly);}else{hy=getStaffTieredHourly(i.staff);} const a=Math.round(pH*hy); h+=`<tr><td>${i.staff}</td><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hy}</td><td>${a}</td></tr>`; });
+    l.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); tH+=pH; tA+=Math.round(pH*hy); });
+    pagedList.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); const a=Math.round(pH*hy); h+=`<tr><td>${i.staff}</td><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hy}</td><td>${a}</td></tr>`; });
     el('salaryTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('salary',total,totalPages);
     el('salResult').innerHTML=`工時: ${tH.toFixed(1)} <br> 應付: ${tA} 元`; let lb=0, hl=0; if(s && s!=='全部人員'){ const si=staffData.find(x=>x.name===s); if(si){ lb=Number(si.labor)||0; hl=Number(si.health)||0; } } el('salLabor').textContent=lb; el('salHealth').textContent=hl; el('salNet').textContent=tA-lb-hl;
@@ -652,6 +695,21 @@ function showBoss() {
 }
 
 function renderDashboard(){
+  el('dash_total_cust').textContent=custData.length; el('dash_active_cust').textContent=custData.filter(x=>x.coop==='正合作').length;
+  let pG=0, pL=0, aH='';
+  custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP} 點</td><td><button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
+  el('dash_point_ge50').textContent=pG; el('dash_point_lt50').textContent=pL; el('dash_alert_table').innerHTML=aH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">無</td></tr>';
+  let aS=staffData.filter(x=>x.status==='在職'), aF=ftStaffData.filter(x=>x.status==='在職'), aA=aS.concat(aF);
+  el('dash_staff_active').textContent=aA.length; el('dash_miss_id').textContent=aA.filter(x=>!x.doc_id).length; el('dash_miss_bank').textContent=aA.filter(x=>!x.doc_bank).length; el('dash_miss_contract').textContent=aA.filter(x=>!x.doc_contract).length;
+  let mH='';
+  aA.forEach(s=>{ let m=[]; if(!s.doc_id)m.push('<span class="badge badge-red">身分</span>'); if(!s.doc_bank)m.push('<span class="badge badge-red">存摺</span>'); if(!s.doc_contract)m.push('<span class="badge badge-red">合約</span>'); if(!s.doc_resume)m.push('<span class="badge badge-red">履歷</span>'); if(m.length>0){ const iF=ftStaffData.some(x=>x.name===s.name), tg=iF?'<span class="badge badge-blue">正職</span>':'<span class="badge badge-yellow">派遣</span>'; mH+=`<tr><td style="font-weight:bold;color:#444;">${s.name} ${tg}</td><td><div style="display:flex;flex-wrap:wrap;gap:5px;">${m.join('')}</div></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('${iF?'ft_staff':'staff'}'); setTimeout(()=>${iF?'editFtStaff':'editStaff'}(${iF?ftStaffData.findIndex(x=>x.name===s.name):staffData.findIndex(x=>x.name===s.name)}), 300);"><i class="fas fa-edit"></i></button></td></tr>`; } });
+  el('dash_missing_docs_table').innerHTML=mH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 20px;">資料已繳齊</td></tr>';
+  const td=new Date(), tS=td.getFullYear()+'-'+String(td.getMonth()+1).padStart(2,'0')+'-'+String(td.getDate()).padStart(2,'0');
+  let tH=''; attendData.filter(x=>x.date===tS).forEach(i=>{ const am=i.am_s&&i.am_e?`${i.am_s}-${i.am_e}`:'', pm=i.pm_s&&i.pm_e?`${i.pm_s}-${i.pm_e}`:''; tH+=`<tr><td>${i.staff}</td><td>${i.company}</td><td>${[am,pm].filter(x=>x).join('/')||'-'}</td></tr>`; });
+  el('dash_today_table').innerHTML=tH||'<tr><td colspan="3" style="text-align:center;color:#999;">本日無記錄</td></tr>';
+  let bH=''; const cm=td.getMonth()+1; 
+  let bList = aA.filter(x => { if(!x.birthday) return false; let p = x.birthday.split(/[-/]/); return p.length >= 2 && parseInt(p[1],10) === cm; }).sort((a,b) => { let pA = a.birthday.split(/[-/]/), pB = b.birthday.split(/[-/]/); let dA = pA.length>=3 ? parseInt(pA[2],10) : 0, dB = pB.length>=3 ? parseInt(pB[2],10) : 0; return dA - dB; });
+  bList.forEach(i=>{ const iF=ftStaffData.some(x=>x.name===i.name), tg=iF?'<span class="badge badge-blue">正</span>':'<span class="badge badge-yellow">派</span>'; bH+=`<tr><td style="font-weight:bold;">${i.name} ${tg}</td><td>${i.birthday}</td><td><span style="color:#e91e63;"><i class="fas fa-gift">function renderDashboard(){
   el('dash_total_cust').textContent=custData.length; el('dash_active_cust').textContent=custData.filter(x=>x.coop==='正合作').length;
   let pG=0, pL=0, aH='';
   custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP} 點</td><td><button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
