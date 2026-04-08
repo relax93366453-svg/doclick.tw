@@ -124,7 +124,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
         <button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出全部</button>
       </div>
       <div class="table-responsive">
-        <table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>累積總時數</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table>
+        <table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table>
       </div>
     </div>
     
@@ -528,18 +528,18 @@ function checkHourlyUpgradeAlert() {
   let th = 0, oW = 0, nW = 0, nWText='';
 
   if(rule==='標準階梯'){
-      if(cH<176 && cH+hInp>=176){th=175;oW=210;nW=220;}
-      else if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=230;}
-      else if(cH<526 && cH+hInp>=526){th=525;oW=230;nW=240;}
-      else if(cH<701 && cH+hInp>=701){th=700;oW=240;nW=agreed?250:240;nWText=agreed?'250':'240(需備註同意)';}
+      if(cH<176 && cH+hInp>=176){th=175;oW=210;nW=220;nWText='220';}
+      else if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=230;nWText='230';}
+      else if(cH<526 && cH+hInp>=526){th=525;oW=230;nW=240;nWText='240';}
+      else if(cH<701 && cH+hInp>=701){th=700;oW=240;nW=agreed?250:240;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅240)';}
   }else if(rule==='245起跳'){
-      if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'245(需備註同意)';}
+      if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅245)';}
   }else if(rule==='固定205'){
-      if(cH<351 && cH+hInp>=351){th=350;oW=205;nW=220;}
-      else if(cH<701 && cH+hInp>=701){th=700;oW=220;nW=agreed?245:220;nWText=agreed?'245':'220(需備註同意)';}
+      if(cH<351 && cH+hInp>=351){th=350;oW=205;nW=220;nWText='220';}
+      else if(cH<701 && cH+hInp>=701){th=700;oW=220;nW=agreed?245:220;nWText=agreed?'245':'245 (需補上「已同意調薪」備註，否則僅220)';}
   }else if(rule==='固定220'){
-      if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=245;}
-      else if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'245(需備註同意)';}
+      if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=245;nWText='245';}
+      else if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅245)';}
   }
 
   if(th > 0 && cH < th) { 
@@ -716,13 +716,27 @@ function generateStatementPDF() {
   cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;});
   if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
   const up=Number(attendData.filter(x=>x.company===cb).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rp=Number((tp-up).toFixed(1));
-  let ats=attendData.filter(x=>x.company===cb&&(yb==='all'||x.date.startsWith(yb))&&(mb==='all'||x.date.slice(5,7)===String(mb).padStart(2,'0'))).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  
+  // 修正：報表套用結算區間邏輯
+  let ats=attendData.filter(x=>x.company===cb&&isDispatchPayrollPeriod(x.date,yb,mb)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let ah='';
-  if(ats.length>0)ats.forEach(i=>{ah+=`<tr><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${i.date}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${i.staff}</td><td style="border:1px solid #ddd;padding:12px;text-align:left;color:#333;">${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${getItemClockHours(i).toFixed(1)}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;font-weight:bold;color:#333;">${getItemDeductPoints(i)}</td></tr>`;});
+  let periodHours = 0;
+  if(ats.length>0) ats.forEach(i=>{
+      const cH = getItemClockHours(i);
+      periodHours += cH;
+      ah+=`<tr><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${i.date}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${i.staff}</td><td style="border:1px solid #ddd;padding:12px;text-align:left;color:#333;">${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${cH.toFixed(1)}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;font-weight:bold;color:#333;">${getItemDeductPoints(i)}</td></tr>`;
+  });
   else ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`;
-  const pt=(yb==='all'&&mb==='all')?'全部':`${yb!=='all'?yb+'年':''}${mb!=='all'?mb+'月':''}`;
+  
+  let pt='全部';
+  if(yb!=='all'&&mb!=='all') {
+      let pm=parseInt(mb)-1, py=parseInt(yb);
+      if(pm===0){pm=12;py-=1;}
+      pt=`${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`;
+  }
+  
   const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">`:'';
-  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">點籽響有限公司 - 服務對帳單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td><td style="width:250px;text-align:right;"><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div></td></tr></table><table class="summary-table" style="width:100%;background:#ecfdf5;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #a7f3d0;"><tr><td style="padding:18px;border-right:1px solid #d1fae5;color:#333;">總儲值<br><strong style="font-size:24px;color:#1e293b;">${tp} 點</strong></td><td style="padding:18px;border-right:1px solid #d1fae5;color:#333;">總扣除<br><strong style="font-size:24px;color:#64748b;">${up} 點</strong></td><td style="padding:18px;color:#333;">剩餘點數<br><strong style="font-size:24px;color:${rp<0?'#ef4444':'#059669'};">${rp} 點</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">日期</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">人員</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">服務項目</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">現場工時</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">點籽響有限公司 - 服務對帳單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td><td style="width:250px;text-align:right;"><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div></td></tr></table><table class="summary-table" style="width:100%;background:#ecfdf5;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #a7f3d0;"><tr><td style="padding:15px;border-right:1px solid #d1fae5;color:#333;">總儲值<br><strong style="font-size:22px;color:#1e293b;">${tp} 點</strong></td><td style="padding:15px;border-right:1px solid #d1fae5;color:#333;">總扣除<br><strong style="font-size:22px;color:#64748b;">${up} 點</strong></td><td style="padding:15px;border-right:1px solid #d1fae5;color:#333;">剩餘點數<br><strong style="font-size:22px;color:${rp<0?'#ef4444':'#059669'};">${rp} 點</strong></td><td style="padding:15px;color:#333;background:#dbeafe;">本期結算時數<br><strong style="font-size:22px;color:#2563eb;">${periodHours.toFixed(1)} h</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">日期</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">人員</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">服務項目</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">現場工時</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
   openPreview('對帳單', c, ci?ci.drive:'', cb);
 }
 
@@ -840,10 +854,9 @@ function renderAttend(){
         const idx = attendData.indexOf(item); 
         const am = item.am_s&&item.am_e?`${item.am_s}-${item.am_e}`:'-'; 
         const pm = item.pm_s&&item.pm_e?`${item.pm_s}-${item.pm_e}`:'-';
-        const accTotal = getStaffTotalHours(item.staff);
-        h+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${accTotal.toFixed(1)} h</td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
+        h+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
     });
-    el('attendTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; 
+    el('attendTable').innerHTML=h||'<tr><td colspan="10" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('attend',total,totalPages); 
 }
 function calcAttendTemp(){ 
@@ -910,12 +923,18 @@ function delTalent(i){ if(!confirm('刪除？'))return; talentData.splice(i,1); 
 function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input').forEach(i=>i.value=''); el('tp_status').value='待聯絡'; editTalentIndex=-1; el('btnUpdateTalent').style.display='none'; const b=el('btnAddTalent'); if(b) b.style.display='inline-block'; }
 
 function renderPoint(){ const c=el('point_filter_company').value.trim(); let l=custData.filter(x=>(!c || c==='全部' || x.name===c)); const {pagedList,total,totalPages}=getPagedData(l,'point'); let h=''; pagedList.forEach(ct=>{ const cP=contractData.filter(x=>x.customer===ct.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); h+=`<tr><td>${ct.name}</td><td>${cP}</td><td>${uP}</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${rP<0?'不足':'充足'}</td></tr>`; }); el('pointTable').innerHTML=h||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
-function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value; if(!c || c==='全部')return; let l=attendData.filter(x=>x.company===c&&(y==='all'||x.date.startsWith(y))&&(m==='all'||x.date.slice(5,7)===String(m).padStart(2,'0'))); const {pagedList,total,totalPages}=getPagedData(l,'bill'); let h=''; pagedList.forEach(i=>{ h+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service||'-'}</td><td>${getItemClockHours(i).toFixed(1)}</td><td>${getItemDeductPoints(i)}</td></tr>`; }); el('billTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('bill',total,totalPages); }
+function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value; if(!c || c==='全部')return; 
+    let l=attendData.filter(x=>x.company===c&&isDispatchPayrollPeriod(x.date,y,m)); 
+    l.sort((a,b)=>new Date(a.date)-new Date(b.date)); 
+    const {pagedList,total,totalPages}=getPagedData(l,'bill'); let h=''; 
+    pagedList.forEach(i=>{ h+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service||'-'}</td><td>${getItemClockHours(i).toFixed(1)}</td><td>${getItemDeductPoints(i)}</td></tr>`; }); 
+    el('billTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('bill',total,totalPages); 
+}
 
 function renderSalary(){ 
     const s=el('sal_filter_staff').value.trim(), y=el('sal_filter_year').value, m=el('sal_filter_month').value;
     let l=attendData.filter(x=>(!s || s==='全部人員' || x.staff===s)&&isDispatchPayrollPeriod(x.date, y, m)); 
-    l.sort((a,b)=>new Date(b.date)-new Date(a.date)); // 由新到舊
+    l.sort((a,b)=>new Date(b.date)-new Date(a.date)); 
     const {pagedList,total,totalPages}=getPagedData(l,'salary'); 
     let h='', tH=0, tA=0;
     l.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); tH+=pH; tA+=Math.round(pH*hy); });
@@ -987,6 +1006,11 @@ function renderDashboard(){
 }
 
 function initStaffFrontend() {
+    if(!currentLoginStaff) return;
+    if(el('staff-welcome-name')) el('staff-welcome-name').textContent=currentLoginStaff.name||''; if(el('staff-profile-name')) el('staff-profile-name').textContent=currentLoginStaff.name||'-';
+    if(el('staff-profile-tel')) el('staff-profile-tel').textContent=currentLoginStaff.tel||'-';
+    if(el('staff-profile-id')) el('staff-profile-id').textContent=currentLoginStaff.id||'-'; if(el('staff-profile-acc')) el('staff-profile-acc').textContent=currentLoginStaff.account||'-';
+    if(el('staff_status_id')) el('staff_status_id').innerHTML=currentLoginStafffunction initStaffFrontend() {
     if(!currentLoginStaff) return;
     if(el('staff-welcome-name')) el('staff-welcome-name').textContent=currentLoginStaff.name||''; if(el('staff-profile-name')) el('staff-profile-name').textContent=currentLoginStaff.name||'-';
     if(el('staff-profile-tel')) el('staff-profile-tel').textContent=currentLoginStaff.tel||'-';
