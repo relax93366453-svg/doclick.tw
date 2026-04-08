@@ -717,7 +717,6 @@ function generateStatementPDF() {
   if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
   const up=Number(attendData.filter(x=>x.company===cb).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rp=Number((tp-up).toFixed(1));
   
-  // 修正：報表套用結算區間邏輯
   let ats=attendData.filter(x=>x.company===cb&&isDispatchPayrollPeriod(x.date,yb,mb)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let ah='';
   let periodHours = 0;
@@ -925,7 +924,7 @@ function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input'
 function renderPoint(){ const c=el('point_filter_company').value.trim(); let l=custData.filter(x=>(!c || c==='全部' || x.name===c)); const {pagedList,total,totalPages}=getPagedData(l,'point'); let h=''; pagedList.forEach(ct=>{ const cP=contractData.filter(x=>x.customer===ct.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); h+=`<tr><td>${ct.name}</td><td>${cP}</td><td>${uP}</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${rP<0?'不足':'充足'}</td></tr>`; }); el('pointTable').innerHTML=h||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
 function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value; if(!c || c==='全部')return; 
     let l=attendData.filter(x=>x.company===c&&isDispatchPayrollPeriod(x.date,y,m)); 
-    l.sort((a,b)=>new Date(a.date)-new Date(b.date)); 
+    l.sort((a,b)=>new Date(b.date)-new Date(a.date)); 
     const {pagedList,total,totalPages}=getPagedData(l,'bill'); let h=''; 
     pagedList.forEach(i=>{ h+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service||'-'}</td><td>${getItemClockHours(i).toFixed(1)}</td><td>${getItemDeductPoints(i)}</td></tr>`; }); 
     el('billTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('bill',total,totalPages); 
@@ -1006,11 +1005,6 @@ function renderDashboard(){
 }
 
 function initStaffFrontend() {
-    if(!currentLoginStaff) return;
-    if(el('staff-welcome-name')) el('staff-welcome-name').textContent=currentLoginStaff.name||''; if(el('staff-profile-name')) el('staff-profile-name').textContent=currentLoginStaff.name||'-';
-    if(el('staff-profile-tel')) el('staff-profile-tel').textContent=currentLoginStaff.tel||'-';
-    if(el('staff-profile-id')) el('staff-profile-id').textContent=currentLoginStaff.id||'-'; if(el('staff-profile-acc')) el('staff-profile-acc').textContent=currentLoginStaff.account||'-';
-    if(el('staff_status_id')) el('staff_status_id').innerHTML=currentLoginStafffunction initStaffFrontend() {
     if(!currentLoginStaff) return;
     if(el('staff-welcome-name')) el('staff-welcome-name').textContent=currentLoginStaff.name||''; if(el('staff-profile-name')) el('staff-profile-name').textContent=currentLoginStaff.name||'-';
     if(el('staff-profile-tel')) el('staff-profile-tel').textContent=currentLoginStaff.tel||'-';
