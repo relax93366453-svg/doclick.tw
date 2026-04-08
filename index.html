@@ -95,20 +95,20 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     <div class="page" id="page-attend">
       <div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div>
       <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr 1.5fr;">
-        <div><label>公司 *</label><input list="list_cust" id="attend_company" placeholder="搜尋客戶名稱" required></div>
-        <div><label>人員 *</label><input list="list_staff" id="attend_staff" placeholder="搜尋人員姓名" required oninput="checkHourlyUpgradeAlert()"></div>
-        <div><label>日期 *</label><input type="date" id="attend_date" required></div>
-        <div><label>服務類型</label><select id="attend_service"><option value="">請選擇</option></select></div>
-        <div><label>備註</label><input type="text" id="attend_remark"></div>
+        <div><label>公司 *</label><input list="list_cust" id="attend_company" class="attend-entry" placeholder="搜尋客戶名稱" required></div>
+        <div><label>人員 *</label><input list="list_staff" id="attend_staff" class="attend-entry" placeholder="搜尋人員姓名" required oninput="checkHourlyUpgradeAlert()"></div>
+        <div><label>日期 *</label><input type="date" id="attend_date" class="attend-entry" required></div>
+        <div><label>服務類型</label><select id="attend_service" class="attend-entry"><option value="">請選擇</option></select></div>
+        <div><label>備註</label><input type="text" id="attend_remark" class="attend-entry"></div>
       </div>
       <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr 1fr; margin-bottom: 10px;">
-        <div><label>上午上班</label><input type="text" id="am_s" placeholder="0830" onblur="formatTimeInput(this); calcAttendTemp()"></div>
-        <div><label>上午下班</label><input type="text" id="am_e" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div>
-        <div><label>下午上班</label><input type="text" id="pm_s" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div>
-        <div><label>下午下班</label><input type="text" id="pm_e" placeholder="1700" onblur="formatTimeInput(this); calcAttendTemp()"></div>
-        <div><label>發薪工時</label><input type="number" id="attend_salary_hours" step="0.1" oninput="checkHourlyUpgradeAlert()"></div>
-        <div><label>扣除點數</label><input type="number" id="attend_deduct_points" step="0.1"></div>
-        <div><label>單次特殊時薪</label><input type="number" id="attend_special_hourly" placeholder="留空帶預設"></div>
+        <div><label>上午上班</label><input type="text" id="am_s" class="attend-entry" placeholder="0830" onblur="formatTimeInput(this); calcAttendTemp()"></div>
+        <div><label>上午下班</label><input type="text" id="am_e" class="attend-entry" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div>
+        <div><label>下午上班</label><input type="text" id="pm_s" class="attend-entry" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div>
+        <div><label>下午下班</label><input type="text" id="pm_e" class="attend-entry" placeholder="1700" onblur="formatTimeInput(this); calcAttendTemp()"></div>
+        <div><label>發薪工時</label><input type="number" id="attend_salary_hours" class="attend-entry" step="0.1" oninput="checkHourlyUpgradeAlert()"></div>
+        <div><label>扣除點數</label><input type="number" id="attend_deduct_points" class="attend-entry" step="0.1"></div>
+        <div><label>單次特殊時薪</label><input type="number" id="attend_special_hourly" class="attend-entry" placeholder="留空帶預設"></div>
       </div>
       
       <div id="attend_upgrade_alert" style="display:none; background:#fffbeb; border-left:4px solid #f59e0b; padding:15px; border-radius:8px; color:#b45309; font-size:14px; margin-bottom:20px; line-height:1.8;"></div>
@@ -124,7 +124,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
         <button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出全部</button>
       </div>
       <div class="table-responsive">
-        <table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table>
+        <table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th>累積總時數</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table>
       </div>
     </div>
     
@@ -298,7 +298,6 @@ let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packa
 const defaultPortalConf = { adminNoticeTitle: "🚀 系統上線", adminNoticeContent: "請先按右上角重新整理。", serviceTypes: "行政,會計,服務員,理貨包裝,其他", r1Title: "管理規範", r1Content: "嚴禁私下聯繫", r2Title: "注意事項", r2Content: "保持微笑", l1Title: "平台", l1Desc: "點擊", l1Url: "https://google.com", l2Title: "IG", l2Desc: "追蹤", l2Url: "https://instagram.com" };
 let portalConf = safeJSONParse('portalConf', defaultPortalConf);
 
-// ---------------- 新增：全系統通用智慧鍵盤導航 ----------------
 function setupGlobalNavigation() {
     document.addEventListener('keydown', (e) => {
         const activePage = document.querySelector('.page.active');
@@ -838,12 +837,13 @@ function renderAttend(){
     const {pagedList,total,totalPages}=getPagedData(l,'attend'); 
     let h='';
     pagedList.forEach(item=>{ 
-        const idx=attendData.findIndex(x=>x.company===item.company&&x.staff===item.staff&&x.date===item.date);
+        const idx = attendData.indexOf(item); 
         const am = item.am_s&&item.am_e?`${item.am_s}-${item.am_e}`:'-'; 
         const pm = item.pm_s&&item.pm_e?`${item.pm_s}-${item.pm_e}`:'-';
-        h+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
+        const accTotal = getStaffTotalHours(item.staff);
+        h+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${accTotal.toFixed(1)} h</td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
     });
-    el('attendTable').innerHTML=h||'<tr><td colspan="10" style="text-align:center;">無資料</td></tr>'; 
+    el('attendTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('attend',total,totalPages); 
 }
 function calcAttendTemp(){ 
@@ -856,8 +856,14 @@ function calcAttendTemp(){
 function addAttend(){ 
     const o={ company:el('attend_company').value.trim(), staff:el('attend_staff').value.trim(), date:el('attend_date').value, service:el('attend_service').value, remark:el('attend_remark').value, am_s:el('am_s').value, am_e:el('am_e').value, pm_s:el('pm_s').value, pm_e:el('pm_e').value, salary_hours:el('attend_salary_hours').value, deduct_points:el('attend_deduct_points').value, special_hourly:el('attend_special_hourly').value };
     if(!o.company||!o.staff||!o.date)return;
-    if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } 
-    else { const idx=attendData.findIndex(x=>x.company===o.company&&x.staff===o.staff&&x.date===o.date); if(idx>-1) attendData[idx]={...attendData[idx],...o}; else attendData.push(o); } 
+    
+    if(editAttendIndex > -1) { 
+        attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; 
+        editAttendIndex=-1; 
+    } else { 
+        attendData.push(o); 
+    } 
+    
     saveAll(); renderAttend(); 
     el('am_s').value=''; el('am_e').value=''; el('pm_s').value=''; el('pm_e').value=''; el('attend_salary_hours').value=''; el('attend_deduct_points').value=''; el('attend_special_hourly').value=''; el('attend_remark').value='';
     editAttendIndex=-1; 
