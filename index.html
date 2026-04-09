@@ -302,14 +302,11 @@ function setupGlobalNavigation() {
     document.addEventListener('keydown', (e) => {
         const activePage = document.querySelector('.page.active');
         if (!activePage) return;
-
         const target = e.target;
         if (!target.matches('.grid input:not([readonly]):not([type="checkbox"]), .grid select, .grid textarea')) return;
-
         const inputs = Array.from(activePage.querySelectorAll('.grid input:not([readonly]):not([type="checkbox"]), .grid select, .grid textarea'));
         const idx = inputs.indexOf(target);
         if (idx === -1) return;
-
         const isDate = target.type === 'date';
         const isSelect = target.tagName === 'SELECT';
         const canSelect = ['text', 'password', 'search', 'tel', 'url'].includes(target.type) || !target.type;
@@ -437,11 +434,9 @@ function getStaffTotalHours(name){return attendData.filter(x=>x.staff===name).re
 function getStaffCurrentHourlyInfo(name){
   const si=staffData.find(x=>x.name===name);
   if(!si)return {wage:210, nextTier:null, nextWage:null, hours:0, rule:'未知'};
-  
   const h=getStaffTotalHours(name);
   const rule=si.salary_rule||'標準階梯';
   const agreed=(si.remark||'').includes('已同意調薪');
-  
   let w=Number(si.hourly)||0, nt=null, nw=null;
   
   if(rule==='標準階梯'){
@@ -464,7 +459,6 @@ function getStaffCurrentHourlyInfo(name){
   }else if(rule==='自訂'){
     w=Number(si.hourly)||0;
   }
-  
   if(w===0)w=210;
   return {wage:w, nextTier:nt, nextWage:nw, hours:h, rule:rule};
 }
@@ -474,10 +468,8 @@ function getHistoricalRate(item) {
   if(item.special_hourly) return Number(item.special_hourly);
   const si=staffData.find(x=>x.name===item.staff);
   if(!si) return 210;
-  
   const pastRecords = attendData.filter(x=>x.staff===item.staff && new Date(x.date) <= new Date(item.date));
   const h = pastRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
-  
   const rule=si.salary_rule||'標準階梯';
   const agreed=(si.remark||'').includes('已同意調薪');
   let w=Number(si.hourly)||0;
@@ -502,7 +494,6 @@ function getHistoricalRate(item) {
   }else if(rule==='自訂'){
     w=Number(si.hourly)||0;
   }
-  
   if(w===0)w=210;
   return w;
 }
@@ -730,7 +721,32 @@ function generateStatementPDF() {
   cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;});
   if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
   
-  const pastDeducted = Number(attendData.filter(x=>x.company===cb && x.date < periodStart).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1));
+  let pastRecords = attendData.filter(x=>x.company===cb && x.date < periodStart);
+  let pastDeducted = 0;
+  let pastBreakdown = {};
+  
+  pastRecords.forEach(i => {
+      let pts = getItemDeductPoints(i);
+      pastDeducted += pts;
+      let parts = i.date.split('-');
+      let rY = parseInt(parts[0], 10);
+      let rM = parseInt(parts[1], 10);
+      let rD = parseInt(parts[2], 10);
+      if (rD >= 26) { rM += 1; if (rM > 12) { rM = 1; rY += 1; } }
+      let pKey = `${rY}年${rM}月`;
+      if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0;
+      pastBreakdown[pKey] += pts;
+  });
+
+  let pastHtml = '';
+  let pKeys = Object.keys(pastBreakdown).sort((a,b) => {
+      let [y1, m1] = a.replace('月','').split('年');
+      let [y2, m2] = b.replace('月','').split('年');
+      return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2));
+  });
+  pKeys.forEach(k => { pastHtml += `<div style="font-size:13px; color:#64748b; line-height:1.6;">${k}：${pastBreakdown[k].toFixed(1)} 點</div>`; });
+  if(pKeys.length > 0) pastHtml = `<div style="margin-top:12px; border-top:1px dashed #cbd5e1; padding-top:10px; text-align:center;">${pastHtml}</div>`;
+  
   const startingPoints = Number((tp - pastDeducted).toFixed(1));
   
   let ats=attendData.filter(x=>x.company===cb && isDispatchPayrollPeriod(x.date,yb,mb)).sort((a,b)=>new Date(a.date)-new Date(b.date));
@@ -760,15 +776,35 @@ function generateStatementPDF() {
       <td style="width:250px;text-align:right;"><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div></td>
     </tr>
   </table>
-  <table class="summary-table" style="width:100%;background:#ecfdf5;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #a7f3d0;">
+  
+  <table class="summary-table" style="width:100%;background:#fff;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #cbd5e1;box-shadow:0 4px 6px rgba(0,0,0,0.05);">
     <tr>
-      <td style="padding:15px;border-right:1px solid #d1fae5;color:#333;width:25%;"><div style="font-size:13px;color:#64748b;margin-bottom:4px;">(累計儲值 - 歷史已扣)</div>期初可用點數<br><strong style="font-size:24px;color:#1e293b;">${startingPoints} 點</strong></td>
-      <td style="padding:15px;border-right:1px solid #d1fae5;color:#333;background:#fee2e2;width:25%;"><div style="font-size:13px;color:#ef4444;margin-bottom:4px;">(本期明細加總)</div>本期總扣除<br><strong style="font-size:24px;color:#dc2626;">${periodDeducted.toFixed(1)} 點</strong></td>
-      <td style="padding:15px;border-right:1px solid #d1fae5;color:#333;background:#dbeafe;width:25%;"><div style="font-size:13px;color:#3b82f6;margin-bottom:4px;">(期初 - 本期扣除)</div>期末剩餘點數<br><strong style="font-size:24px;color:${endingPoints<0?'#ef4444':'#059669'};">${endingPoints} 點</strong></td>
-      <td style="padding:15px;color:#333;width:25%;"><div style="font-size:13px;color:#64748b;margin-bottom:4px;">(本期現場總工時)</div>本期結算時數<br><strong style="font-size:24px;color:#475569;">${periodHours.toFixed(1)} h</strong></td>
+      <td style="padding:15px;border-right:1px solid #cbd5e1;color:#333;width:25%;vertical-align:top;background:#f8fafc;">
+        <div style="font-size:13px;color:#64748b;margin-bottom:4px;">(累計合約儲值)</div>
+        購買總點數<br><strong style="font-size:24px;color:#1e293b;">${tp} 點</strong>
+      </td>
+      <td style="padding:15px;border-right:1px solid #cbd5e1;color:#333;vertical-align:top;background:#f8fafc;width:25%;">
+        <div style="font-size:13px;color:#64748b;margin-bottom:4px;">(本期以前的扣除)</div>
+        歷史已扣點數<br><strong style="font-size:24px;color:#64748b;">${pastDeducted.toFixed(1)} 點</strong>
+        ${pastHtml}
+      </td>
+      <td style="padding:15px;border-right:1px solid #cbd5e1;color:#333;background:#fee2e2;vertical-align:top;width:25%;">
+        <div style="font-size:13px;color:#ef4444;margin-bottom:4px;">(下方明細加總)</div>
+        本期總扣除<br><strong style="font-size:24px;color:#dc2626;">${periodDeducted.toFixed(1)} 點</strong>
+      </td>
+      <td style="padding:15px;color:#333;background:#ecfdf5;vertical-align:top;width:25%;">
+        <div style="font-size:13px;color:#059669;margin-bottom:4px;">(總買 - 歷史 - 本期)</div>
+        最新剩餘點數<br><strong style="font-size:28px;color:${endingPoints<0?'#ef4444':'#059669'};">${endingPoints} 點</strong>
+      </td>
     </tr>
   </table>
-  <table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">日期</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">人員</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">服務項目</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">現場工時</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+  
+  <table style="width:100%;border-collapse:collapse;text-align:center;">
+    <thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">日期</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">人員</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">服務項目</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">現場工時</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">扣除點數</th></tr></thead>
+    <tbody>${ah}</tbody>
+  </table>
+  <div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+  
   openPreview('對帳單', c, ci?ci.drive:'', cb);
 }
 
@@ -955,6 +991,7 @@ function delTalent(i){ if(!confirm('刪除？'))return; talentData.splice(i,1); 
 function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input').forEach(i=>i.value=''); el('tp_status').value='待聯絡'; editTalentIndex=-1; el('btnUpdateTalent').style.display='none'; const b=el('btnAddTalent'); if(b) b.style.display='inline-block'; }
 
 function renderPoint(){ const c=el('point_filter_company').value.trim(); let l=custData.filter(x=>(!c || c==='全部' || x.name===c)); const {pagedList,total,totalPages}=getPagedData(l,'point'); let h=''; pagedList.forEach(ct=>{ const cP=contractData.filter(x=>x.customer===ct.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); h+=`<tr><td>${ct.name}</td><td>${cP}</td><td>${uP}</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${rP<0?'不足':'充足'}</td></tr>`; }); el('pointTable').innerHTML=h||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
+
 function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value; if(!c || c==='全部')return; 
     let l=attendData.filter(x=>x.company===c&&isDispatchPayrollPeriod(x.date,y,m)); 
     l.sort((a,b)=>new Date(b.date)-new Date(a.date)); 
