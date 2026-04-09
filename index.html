@@ -715,15 +715,20 @@ function generateStatementPDF() {
   let tp=0, ph='', ps=new Set();
   cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;});
   if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
+  
   const up=Number(attendData.filter(x=>x.company===cb).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rp=Number((tp-up).toFixed(1));
   
   let ats=attendData.filter(x=>x.company===cb&&isDispatchPayrollPeriod(x.date,yb,mb)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let ah='';
   let periodHours = 0;
+  let periodDeduct = 0;
+  
   if(ats.length>0) ats.forEach(i=>{
       const cH = getItemClockHours(i);
+      const cP = getItemDeductPoints(i);
       periodHours += cH;
-      ah+=`<tr><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${i.date}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${i.staff}</td><td style="border:1px solid #ddd;padding:12px;text-align:left;color:#333;">${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${cH.toFixed(1)}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;font-weight:bold;color:#333;">${getItemDeductPoints(i)}</td></tr>`;
+      periodDeduct += cP;
+      ah+=`<tr><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${i.date}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${i.staff}</td><td style="border:1px solid #ddd;padding:12px;text-align:left;color:#333;">${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;color:#333;">${cH.toFixed(1)}</td><td style="border:1px solid #ddd;padding:12px;text-align:center;font-weight:bold;color:#333;">${cP}</td></tr>`;
   });
   else ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`;
   
@@ -735,7 +740,30 @@ function generateStatementPDF() {
   }
   
   const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">`:'';
-  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">點籽響有限公司 - 服務對帳單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td><td style="width:250px;text-align:right;"><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div></td></tr></table><table class="summary-table" style="width:100%;background:#ecfdf5;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #a7f3d0;"><tr><td style="padding:15px;border-right:1px solid #d1fae5;color:#333;">總儲值<br><strong style="font-size:22px;color:#1e293b;">${tp} 點</strong></td><td style="padding:15px;border-right:1px solid #d1fae5;color:#333;">總扣除<br><strong style="font-size:22px;color:#64748b;">${up} 點</strong></td><td style="padding:15px;border-right:1px solid #d1fae5;color:#333;">剩餘點數<br><strong style="font-size:22px;color:${rp<0?'#ef4444':'#059669'};">${rp} 點</strong></td><td style="padding:15px;color:#333;background:#dbeafe;">本期結算時數<br><strong style="font-size:22px;color:#2563eb;">${periodHours.toFixed(1)} h</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">日期</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">人員</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">服務項目</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">現場工時</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+  
+  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">點籽響有限公司 - 服務對帳單</h2></div>
+  <table class="info-table" style="margin-bottom:20px;width:100%;">
+    <tr>
+      <td style="font-size:15px;line-height:1.8;color:#333;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td>
+      <td style="width:250px;text-align:right;"><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div></td>
+    </tr>
+  </table>
+  
+  <table class="summary-table" style="width:100%;background:#ecfdf5;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;border:1px solid #a7f3d0;">
+    <tr>
+      <td style="padding:15px;border-right:1px solid #d1fae5;color:#333;width:25%;">累計購買總點數<br><strong style="font-size:22px;color:#1e293b;">${tp} 點</strong></td>
+      <td style="padding:15px;border-right:1px solid #d1fae5;color:#333;width:25%;">歷史累計總扣除<br><strong style="font-size:22px;color:#64748b;">${up} 點</strong></td>
+      <td style="padding:15px;border-right:1px solid #d1fae5;color:#333;background:#dbeafe;width:25%;">本期明細扣點<br><strong style="font-size:22px;color:#2563eb;">${periodDeduct.toFixed(1)} 點</strong><div style="font-size:12px;color:#64748b;margin-top:4px;">(本期工時: ${periodHours.toFixed(1)} h)</div></td>
+      <td style="padding:15px;color:#333;width:25%;">最新剩餘點數<br><strong style="font-size:22px;color:${rp<0?'#ef4444':'#059669'};">${rp} 點</strong></td>
+    </tr>
+  </table>
+  
+  <table style="width:100%;border-collapse:collapse;text-align:center;">
+    <thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">日期</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">人員</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">服務項目</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">現場工時</th><th style="border:1px solid #cbd5e1;padding:12px;color:#333;">扣除點數</th></tr></thead>
+    <tbody>${ah}</tbody>
+  </table>
+  <div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+  
   openPreview('對帳單', c, ci?ci.drive:'', cb);
 }
 
