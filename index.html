@@ -302,14 +302,11 @@ function setupGlobalNavigation() {
     document.addEventListener('keydown', (e) => {
         const activePage = document.querySelector('.page.active');
         if (!activePage) return;
-
         const target = e.target;
         if (!target.matches('.grid input:not([readonly]):not([type="checkbox"]), .grid select, .grid textarea')) return;
-
         const inputs = Array.from(activePage.querySelectorAll('.grid input:not([readonly]):not([type="checkbox"]), .grid select, .grid textarea'));
         const idx = inputs.indexOf(target);
         if (idx === -1) return;
-
         const isDate = target.type === 'date';
         const isSelect = target.tagName === 'SELECT';
         const canSelect = ['text', 'password', 'search', 'tel', 'url'].includes(target.type) || !target.type;
@@ -437,13 +434,10 @@ function getStaffTotalHours(name){return attendData.filter(x=>x.staff===name).re
 function getStaffCurrentHourlyInfo(name){
   const si=staffData.find(x=>x.name===name);
   if(!si)return {wage:210, nextTier:null, nextWage:null, hours:0, rule:'未知'};
-  
   const h=getStaffTotalHours(name);
   const rule=si.salary_rule||'標準階梯';
   const agreed=(si.remark||'').includes('已同意調薪');
-  
   let w=Number(si.hourly)||0, nt=null, nw=null;
-  
   if(rule==='標準階梯'){
     if(h<=175){w=210;nt=176;nw=220;}
     else if(h<=350){w=220;nt=351;nw=230;}
@@ -464,7 +458,6 @@ function getStaffCurrentHourlyInfo(name){
   }else if(rule==='自訂'){
     w=Number(si.hourly)||0;
   }
-  
   if(w===0)w=210;
   return {wage:w, nextTier:nt, nextWage:nw, hours:h, rule:rule};
 }
@@ -474,14 +467,11 @@ function getHistoricalRate(item) {
   if(item.special_hourly) return Number(item.special_hourly);
   const si=staffData.find(x=>x.name===item.staff);
   if(!si) return 210;
-  
   const pastRecords = attendData.filter(x=>x.staff===item.staff && new Date(x.date) <= new Date(item.date));
   const h = pastRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
-  
   const rule=si.salary_rule||'標準階梯';
   const agreed=(si.remark||'').includes('已同意調薪');
   let w=Number(si.hourly)||0;
-  
   if(rule==='標準階梯'){
     if(h<=175) w=210;
     else if(h<=350) w=220;
@@ -502,7 +492,6 @@ function getHistoricalRate(item) {
   }else if(rule==='自訂'){
     w=Number(si.hourly)||0;
   }
-  
   if(w===0)w=210;
   return w;
 }
@@ -628,7 +617,7 @@ function exportBossSalaryExcel() {
   body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td><td></td></tr></tbody>`;
   tb.innerHTML = head + body;
   let wb = XLSX.utils.table_to_book(tb, {sheet: "薪資表"});
-  XLSX.writeFile(wb, `點籽響_${y}年${m}月_老闆專用薪資表.xlsx`);
+  XLSX.writeFile(wb, `點籽響_${y}年${m}月_老闆專用薪資彙整表.xlsx`);
   showToast('✅ 老闆專用薪資表 匯出成功');
 }
 
@@ -730,13 +719,11 @@ function generateStatementPDF() {
       pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`;
   }
 
-  // 1. 計算購買總點數
   const cs=contractData.filter(x=>x.customer===cb && (!x.date || x.date <= periodEnd)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let tp=0, ph='', ps=new Set();
   cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;});
   if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
   
-  // 2. 計算歷史已扣除點數與歷史月份明細 (本期開始之前的紀錄)
   let pastRecords = attendData.filter(x=>x.company===cb && x.date < periodStart);
   let pastDeducted = 0;
   let pastBreakdown = {};
@@ -744,7 +731,6 @@ function generateStatementPDF() {
   pastRecords.forEach(i => {
       let pts = getItemDeductPoints(i);
       pastDeducted += pts;
-      // 自動分類歷史月份
       let parts = i.date.split('-');
       let rY = parseInt(parts[0], 10);
       let rM = parseInt(parts[1], 10);
@@ -769,7 +755,6 @@ function generateStatementPDF() {
       pastHtml = `<div style="margin-top:10px; border-top:1px dashed #cbd5e1; padding-top:8px; text-align:center; font-size:12px; color:#94a3b8;">無歷史紀錄</div>`;
   }
   
-  // 3. 計算本期明細扣除
   let ats=attendData.filter(x=>x.company===cb && isDispatchPayrollPeriod(x.date,yb,mb)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let ah='';
   let periodDeducted = 0;
@@ -785,12 +770,10 @@ function generateStatementPDF() {
       ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`;
   }
   
-  // 4. 計算總扣除與最終剩餘點數
   const totalDeducted = pastDeducted + periodDeducted;
   const endingPoints = Number((tp - totalDeducted).toFixed(1));
   const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">`:'';
   
-  // 組合全新的 5 格 HTML 報表版面
   let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">點籽響有限公司 - 服務對帳單</h2></div>
   <table class="info-table" style="margin-bottom:20px;width:100%;">
     <tr>
