@@ -149,7 +149,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     
     <div class="page admin-only" id="page-bill"><div class="page-title"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="bill_filter_company" placeholder="手打搜尋公司" oninput="resetPage('bill'); renderBill()"><label>結算週期</label><select id="bill_cycle" onchange="renderBill()"><option value="26">26日至25日 (預設)</option><option value="1">1日至31日 (全日曆月)</option></select><label>年</label><select id="bill_filter_year" onchange="renderBill()"></select><label>月</label><select id="bill_filter_month" onchange="renderBill()"></select></div><button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button><button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="billTableBox"><thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody id="billTable"></tbody></table></div></div>
     
-    <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 人員工時累計表 (調薪進度)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
+    <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button><button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時矩陣總表</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
     
     <div class="page" id="page-talent"><div class="page-title"><i class="fas fa-address-card"></i> 人才招募庫</div><div class="grid"><div><label>姓名 *</label><input id="tp_name"></div><div><label>電話</label><input id="tp_tel"></div><div><label>來源</label><input id="tp_source"></div><div><label>地區</label><input id="tp_location"></div><div><label>班別</label><input id="tp_shift"></div><div><label>職務</label><input id="tp_role"></div><div><label>狀態</label><select id="tp_status"><option>待聯絡</option><option>已聯絡</option><option>已錄取</option><option>淘汰</option></select></div><div><label>評價</label><input id="tp_eval"></div><div style="grid-column:span 2;"><label>履歷連結</label><input id="tp_resume"></div><div style="grid-column:span 2;"><label>備註</label><input id="tp_exp"></div></div><button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" id="btnUpdateTalent" onclick="updateTalent()" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋：</label><input type="text" id="tp_filter_role" oninput="resetPage('talent'); renderTalentTable()"><label>狀態：</label><select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select><button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button><button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')">匯出全部</button></div><div class="table-responsive"><table id="talentTableBox"><thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>地區</th><th>班別</th><th>職務</th><th>狀態</th><th>評價</th><th>履歷</th><th>建檔日</th><th>操作</th></tr></thead><tbody id="talentTable"></tbody></table></div></div>
     
@@ -267,7 +267,6 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     <div class="page" id="staff-page-records"><div class="page-title"><i class="fas fa-history"></i> 歷史記錄</div><div class="table-responsive"><table style="background: white; width:100%;"><thead><tr><th>出勤日期</th><th>客戶/公司</th><th>服務項目</th><th>結算工時</th><th>備註</th></tr></thead><tbody id="staffRecordsTable"></tbody></table></div></div>
     <div class="page" id="staff-page-mypay"><div class="page-title"><i class="fas fa-wallet"></i> 薪資單下載</div><div class="filter-bar"><select id="staff_my_year" onchange="renderStaffMyPay()"></select><select id="staff_my_month" onchange="renderStaffMyPay()"></select><button class="btn btn-success" onclick="staffDownloadPayslip()">預覽/下載 薪資單</button></div><div class="table-responsive"><table style="background: white;"><thead><tr><th>日期</th><th>公司/類別</th><th>項目/假別</th><th>出勤工時</th></tr></thead><tbody id="staffMyPayTable"></tbody></table></div></div>
     <div class="page" id="staff-page-about"><div class="page-title"><i class="fas fa-building"></i> 關於公司</div><div class="rules-box" style="border-left:4px solid #10b981; background:#ecfdf5; padding:25px;"><h3 style="color:#047857;">企業精神</h3><p style="color:#334155; line-height:2;">致力於提供最專業的人才媒合與企業派遣服務。</p></div></div>
-    <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 人員工時累計表 (調薪進度)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
     <div class="page" id="staff-page-links"><div class="page-title"><i class="fas fa-link"></i> 常用連結</div><div class="grid" style="grid-template-columns:1fr 1fr; gap:30px;"><div id="btn_l1" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fas fa-globe" style="font-size:50px; color:#3b82f6;"></i><h3 id="staff_l1_title" style="margin-top:10px;"></h3><p id="staff_l1_desc" style="color:#64748b; font-size:13px;"></p></div><div id="btn_l2" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fab fa-instagram" style="font-size:50px; color:#e1306c;"></i><h3 id="staff_l2_title" style="margin-top:10px;"></h3><p id="staff_l2_desc" style="color:#64748b; font-size:13px;"></p></div></div></div>
   </div>
 </div>
@@ -278,7 +277,6 @@ function showToast(m, err = false) { const t=el('toast'); if(!t)return; t.style.
 function updateSyncStatus(m, err = false) { const e=el('sync-status'); if(!e)return; e.innerHTML=m; e.style.backgroundColor=err?'#fee2e2':'#f1f5f9'; e.style.color=err?'#dc2626':'#475569'; }
 function safeJSONParse(k, f) { try { const v=localStorage.getItem(k); return v?JSON.parse(v):f; } catch(e) { return f; } }
 
-// 週期邏輯支援 (1-31 或 26-25) [cite: 460, 461]
 function isDispatchPayrollPeriod(d, y, m, cycle = '26') { 
   if(y==='all'||m==='all'||!y||!m) return true; 
   if(!d) return false; 
@@ -305,27 +303,45 @@ let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packa
 const defaultPortalConf = { adminNoticeTitle: "🚀 系統上線", adminNoticeContent: "請先按右上角重新整理。", serviceTypes: "行政,會計,服務員,理貨包裝,其他", r1Title: "管理規範", r1Content: "嚴禁私下聯繫", r2Title: "注意事項", r2Content: "保持微笑", l1Title: "平台", l1Desc: "點擊", l1Url: "https://google.com", l2Title: "IG", l2Desc: "追蹤", l2Url: "https://instagram.com" };
 let portalConf = safeJSONParse('portalConf', defaultPortalConf);
 
-// 新增功能：匯出所有派遣人員的工時累計與調薪進度表 [cite: 508, 513, 527]
+// 人員工時累計明細
 function exportAllStaffHoursSummary() {
     const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(y === 'all' || m === 'all') return showToast('請選擇年份與月份', true);
-    
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">人員工時累計與薪資級距進度表 (${y}年${m}月)</th></tr><tr><th>姓名</th><th>薪資方案</th><th>本月工時</th><th>累計總工時</th><th>目前時薪</th><th>下一階門檻</th><th>下一階時薪</th></tr></thead><tbody>`;
+    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">調薪進度明細表 (${y}年${m}月)</th></tr><tr><th>姓名</th><th>方案</th><th>本月工時</th><th>歷史累計工時</th><th>目前時薪</th><th>下一階門檻</th><th>跳級金額</th></tr></thead><tbody>`;
     let body = '';
-    
     staffData.filter(s => s.status === '在職').forEach(s => {
         const monthlyRecords = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, y, m));
         const mHrs = monthlyRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
-        const info = getStaffCurrentHourlyInfo(s.name); // 取得級距與總累計資訊 
-        
+        const info = getStaffCurrentHourlyInfo(s.name);
         body += `<tr><td>${s.name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier || '無'}</td><td>${info.nextWage || '無'}</td></tr>`;
     });
-    
     tb.innerHTML = head + body + '</tbody>';
-    let wb = XLSX.utils.table_to_book(tb, {sheet: "累計進度"});
-    XLSX.writeFile(wb, `點籽響_${y}年${m}月_人員累計工時與級距報表.xlsx`);
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "進度明細"}), `點籽響_${y}年${m}月_派遣調薪進度明細.xlsx`);
     showToast('✅ 匯出成功');
+}
+
+// 人員年度工時矩陣總表 (仿手寫表格式)
+function exportStaffYearlyMatrix() {
+    const y = el('sal_filter_year').value;
+    if(y === 'all') return showToast('請先選擇年份', true);
+    let tb = document.createElement('table');
+    let head = `<thead><tr><th colspan="16" style="font-size:20px;font-weight:bold;text-align:center;">${y}年度 全員派遣工時累計矩陣總表</th></tr><tr><th>姓名</th>`;
+    for(let i=1; i<=12; i++) head += `<th>${i}月</th>`;
+    head += `<th>目前累計</th><th>時薪</th><th>跳級門檻</th></tr></thead><tbody>`;
+    let body = '';
+    staffData.filter(s => s.status === '在職').forEach(s => {
+        body += `<tr><td>${s.name}</td>`;
+        for(let m=1; m<=12; m++) {
+            const hrs = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, y, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+            body += `<td>${hrs > 0 ? hrs.toFixed(1) : '0'}</td>`;
+        }
+        const info = getStaffCurrentHourlyInfo(s.name);
+        body += `<td style="font-weight:bold; color:#2563eb;">${info.hours.toFixed(1)}</td><td style="color:#16a34a;">$${info.wage}</td><td>${info.nextTier ? info.nextTier + 'h (➔' + info.nextWage + ')' : '-'}</td></tr>`;
+    });
+    tb.innerHTML = head + body + '</tbody>';
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度矩陣總表"}), `點籽響_${y}年_人員年度工時矩陣總表.xlsx`);
+    showToast('✅ 年度總表匯出成功');
 }
 
 function setupGlobalNavigation() {
@@ -729,7 +745,6 @@ function generateStatementPDF() {
   let periodStart = '0000-00-00';
   let periodEnd = '9999-99-99';
   let pt = '全部';
-  
   if(yb !== 'all' && mb !== 'all') {
       if(cycle === '1') {
           periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`;
@@ -745,12 +760,10 @@ function generateStatementPDF() {
           pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`;
       }
   }
-  
   const cs=contractData.filter(x=>x.customer===cb && (!x.date || x.date <= periodEnd)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let tp=0, ph='', ps=new Set();
   cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;});
   if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
-  
   let pastRecords = attendData.filter(x=>x.company===cb && x.date < periodStart);
   let pastDeducted = 0;
   let pastBreakdown = {};
@@ -768,14 +781,12 @@ function generateStatementPDF() {
       if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0;
       pastBreakdown[pKey] += pts;
   });
-  
   let pKeys = Object.keys(pastBreakdown).sort((a,b) => {
       let [y1, m1] = a.replace('月','').split('年');
       let [y2, m2] = b.replace('月','').split('年');
       return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2));
   });
   let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px; color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
-
   let ats=attendData.filter(x=>x.company===cb && isDispatchPayrollPeriod(x.date,yb,mb,cycle)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let ah='';
   let periodDeducted = 0; if(ats.length>0) {
@@ -1051,7 +1062,7 @@ function addFtAttend(){ const o={staff:el('fta_staff').value.trim(),date:el('fta
 function editFtAttend(i){ const d=ftAttendData[i]; el('fta_staff').value=d.staff; el('fta_date').value=d.date; el('fta_record_type').value=d.record_type; el('fta_reason').value=d.reason; el('fta_time_in').value=d.time_in; el('fta_time_out').value=d.time_out; el('fta_hours').value=d.hours; el('fta_leave_type').value=d.leave_type||'事假'; el('fta_approval').value=d.approval||'已核准'; toggleFtaFields(); editFtAttendIndex=i; showLeaveInfo(); const b=el('btnAddFtAttend');
  if(b) b.innerHTML='<i class="fas fa-edit"></i> 修改'; }
 function delFtAttend(i){ if(!confirm('刪除？'))return; ftAttendData.splice(i,1); saveAll(); renderFtAttendTable(); showLeaveInfo(); showToast('刪除'); }
-function clearFtAttendForm(){ document.querySelectorAll('#page-ft_attend .grid input').forEach(i=>i.value=''); el('fta_record_type').value='正常出勤'; el('fta_approval').value='已核准';
+function clearFtAttendForm(){ document.querySelectorAll('#page-ft_attend .grid input').forEach(i=>i.value=''); el('fta_record_type').value='正常出勤'; el('fta_approval').value='聯合格';
  el('fta_deduct_break').checked=true; toggleFtaFields(); editFtAttendIndex=-1; const b=el('btnAddFtAttend'); if(b) b.innerHTML='<i class="fas fa-save"></i> 儲存紀錄'; }
 function renderFtSalaryTable(){ const m=el('fts_filter_month').value, s=el('fts_filter_staff').value.trim(); if(!m)return el('ftSalaryTable').innerHTML='<tr><td colspan="8" style="text-align:center;">請選擇年月</td></tr>';
  let l=ftStaffData.filter(x=>x.status==='在職' && (!s || s==='全部員工' || x.name===s)); const {pagedList,total,totalPages}=getPagedData(l,'ft_salary'); let h='';
@@ -1071,7 +1082,6 @@ function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input'
 function renderPoint(){ const c=el('point_filter_company').value.trim();
  let l=custData.filter(x=>(!c || c==='全部' || x.name===c)); const {pagedList,total,totalPages}=getPagedData(l,'point'); let h=''; pagedList.forEach(ct=>{ const cP=contractData.filter(x=>x.customer===ct.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); h+=`<tr><td>${ct.name}</td><td>${cP}</td><td>${uP}</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${rP<0?'不足':'充足'}</td></tr>`; });
  el('pointTable').innerHTML=h||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
-
 function renderBill(){ 
     const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value; 
     const cycle=el('bill_cycle').value; 
@@ -1157,7 +1167,8 @@ function renderDashboard(){
       let targetDate = new Date(stDate); targetDate.setMonth(targetDate.getMonth() + 3);
       let diffDays = Math.ceil((targetDate - td) / (1000 * 60 * 60 * 24));
       if (diffDays <= 15 && diffDays >= -15) {
-        let tag = diffDays < 0 ? `<span class="badge badge-red">已逾期 ${Math.abs(diffDays)} 天</span>` : `<span class="badge badge-yellow">剩 ${diffDays} 天</span>`;
+        let tag = diffDays < 0 ? `<span class="badge badge-red">已逾期 ${Math.abs(diffDays)} 天</span>` : `<span class="badge 
+ badge-yellow">剩 ${diffDays} 天</span>`;
         insH += `<tr><td style="font-weight:bold;">${s.name}</td><td>${s.ins_date}</td><td><b style="color:#db2777;">${targetDate.toLocaleDateString('zh-TW')}</b></td><td>${tag}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('staff'); setTimeout(()=>editStaff(staffData.findIndex(x=>x.name===s.name)), 300);"><i class="fas fa-edit"></i> 去調整</button></td></tr>`;
       }
     }
