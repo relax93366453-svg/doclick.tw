@@ -589,6 +589,11 @@ function exportExcel(tableId,filename){
 function exportBossSalaryExcel() {
   const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
   if(y === 'all' || m === 'all') return showToast('請先選擇匯出年份與月份！', true);
+  
+  let pm=parseInt(m)-1, py=parseInt(y);
+  if(pm===0){pm=12;py-=1;}
+  let ptxt=`${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25`;
+
   let fData = attendData.filter(x => isDispatchPayrollPeriod(x.date, y, m));
   if(fData.length === 0) return showToast('該月份無任何派遣紀錄', true);
   let sm = {};
@@ -606,7 +611,7 @@ function exportBossSalaryExcel() {
     sm[n].items[pk].hrs += pH; sm[n].items[pk].amt += Math.round(pH * hy); sm[n].tHrs += pH; sm[n].tAmt += Math.round(pH * hy);
   });
   let tb = document.createElement('table');
-  let head = `<thead><tr><th colspan="12" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 ${y}年${m}月 兼職人員薪資表</th></tr><tr><th>姓名</th><th>服務項目</th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th><th>身分證</th></tr></thead><tbody>`;
+  let head = `<thead><tr><th colspan="12" style="font-size:20px;font-weight:bold;text-align:center;">點籽響有限公司 兼職人員薪資表 (${ptxt})</th></tr><tr><th>姓名</th><th>服務項目</th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th><th>身分證</th></tr></thead><tbody>`;
   let body = '';
   let gHrs=0, gAmt=0, gL=0, gH=0, gNet=0;
   Object.values(sm).forEach(s => {
@@ -623,7 +628,7 @@ function exportBossSalaryExcel() {
   body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td><td></td></tr></tbody>`;
   tb.innerHTML = head + body;
   let wb = XLSX.utils.table_to_book(tb, {sheet: "薪資表"});
-  XLSX.writeFile(wb, `點籽響_${y}年${m}月_老闆專用薪資彙整表.xlsx`);
+  XLSX.writeFile(wb, `點籽響_${y}年${m}月_老闆專用薪資表.xlsx`);
   showToast('✅ 老闆專用薪資表 匯出成功');
 }
 
@@ -751,7 +756,6 @@ function generateStatementPDF() {
       pastBreakdown[pKey] += pts;
   });
 
-  // 產生歷史明細的 HTML
   let pastHtml = '';
   let pKeys = Object.keys(pastBreakdown).sort((a,b) => {
       let [y1, m1] = a.replace('月','').split('年');
@@ -815,7 +819,7 @@ function generateStatementPDF() {
         累計總扣除<br><strong style="font-size:24px;">${totalDeducted.toFixed(1)} 點</strong>
       </td>
       <td style="padding:12px 8px;color:#059669;background:#ecfdf5;vertical-align:top;width:20%;">
-        <div style="font-size:12px;color:#10b981;margin-bottom:4px;">(總買 - 累計總扣除)</div>
+        <div style="font-size:12px;color:#10b981;margin-bottom:4px;">(總買 - 歷史 - 本期)</div>
         最新剩餘點數<br><strong style="font-size:28px;color:${endingPoints<0?'#ef4444':'#059669'};">${endingPoints.toFixed(1)} 點</strong>
       </td>
     </tr>
@@ -828,40 +832,6 @@ function generateStatementPDF() {
   <div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
   
   openPreview('對帳單', c, ci?ci.drive:'', cb);
-}
-
-function generatePayslipPDF(){
-  const s=el('sal_filter_staff').value.trim(), ys=el('sal_filter_year').value, ms=el('sal_filter_month').value;
-  if(!s||s==='all'||s==='全部人員'||ys==='all'||ms==='all') return showToast('請選人員與年月！', true);
-  const si=staffData.find(x=>x.name===s); if(!si) return;
-  let ats=attendData.filter(x=>x.staff===s&&isDispatchPayrollPeriod(x.date,ys,ms)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  let tpay=0,trs='';
-  ats.forEach(i=>{
-    const ph=getItemSalaryHours(i), recHly=getHistoricalRate(i), amt=Math.round(ph*recHly);
-    tpay+=amt;
-    trs+=`<tr><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${i.date}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:left;color:#333;">${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${ph.toFixed(1)}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${recHly}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${amt}</td></tr>`;
-  });
-  if(ats.length===0)trs=`<tr><td colspan="5" style="border:1px solid #cbd5e1;padding:20px;color:#64748b;text-align:center;">無紀錄</td></tr>`;
-  const l=+si.labor||0, h=+si.health||0, n=tpay-l-h;
-  const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:55px;margin-bottom:10px;"><br>`:'';
-  let pm=parseInt(ms)-1, py=parseInt(ys);
-  if(pm===0){pm=12;py-=1;} let ptxt=`${py}/${String(pm).padStart(2,'0')}/26 ~ ${ys}/${String(ms).padStart(2,'0')}/25`;
-  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;">派遣員工薪資單</h3></div><table class="info-table" style="width:100%;margin-bottom:20px;"><tr><td style="font-size:16px;color:#333;"><strong>人員姓名：</strong> ${s}</td><td style="text-align:right;font-size:16px;color:#333;"><strong>計薪區間：</strong> ${ptxt}</td></tr></table><table style="width:100%;border-collapse:collapse;margin-bottom:30px;text-align:center;"><thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1;padding:12px;width:20%;color:#333;">日期</th><th style="border:1px solid #cbd5e1;padding:12px;width:40%;color:#333;">服務內容</th><th style="border:1px solid #cbd5e1;padding:12px;width:15%;color:#333;">工時</th><th style="border:1px solid #cbd5e1;padding:12px;width:10%;color:#333;">時薪</th><th style="border:1px solid #cbd5e1;padding:12px;width:15%;color:#333;">日結</th></tr></thead><tbody>${trs}</tbody></table><table style="width:100%;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;"><tr><td style="width:50%;padding:25px;text-align:left;border-right:1px dashed #cbd5e1;font-size:16px;color:#333;"><p style="margin:6px 0;">本期應付：<strong>${tpay} 元</strong></p><p style="margin:6px 0;color:#ef4444;">代扣勞保：<strong>- ${l} 元</strong></p><p style="margin:6px 0;color:#ef4444;">代扣健保：<strong>- ${h} 元</strong></p></td><td style="width:50%;padding:25px;text-align:center;background:#ecfdf5;"><span style="color:#059669;font-weight:bold;font-size:16px;">本期實付金額</span><br><strong style="font-size:38px;color:#059669;">$ ${n}</strong></td></tr></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
-  openPreview('派遣薪資單', c, si.drive, s);
-}
-
-function generateFtPayslipPDF(){
-  const s=el('fts_filter_staff').value.trim(), m=el('fts_filter_month').value;
-  if(!s||s==='all'||s==='全部員工'||!m) return showToast('請選員工與年月！', true);
-  const si=ftStaffData.find(x=>x.name===s); if(!si) return;
-  let bs=Number(si.salary)||30000, hr=(bs/30)/8, ats=ftAttendData.filter(x=>x.staff===s&&x.date.startsWith(m)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  let dd=0,ov=0,trs='';
-  ats.forEach(a=>{let h=Number(a.hours)||0; let pc=''; if(a.record_type==='請假'&&a.approval==='已核准'){let d=(a.leave_type==='事假')?h*hr:(h*hr*0.5);dd+=d;pc=`<span style="color:#ef4444">扣薪 $${Math.round(d)}</span>`;}else if(a.record_type==='加班'){let op=h*hr*1.34;ov+=op;pc=`<span style="color:#059669">加班 +$${Math.round(op)}</span>`;}trs+=`<tr><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${a.date}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${a.record_type} ${a.leave_type?'('+a.leave_type+')':''}</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${h} h</td><td style="border:1px solid #cbd5e1;padding:12px;text-align:center;color:#333;">${pc}</td></tr>`;});
-  if(ats.length===0)trs=`<tr><td colspan="4" style="border:1px solid #cbd5e1;padding:20px;color:#64748b;text-align:center;">無紀錄</td></tr>`;
-  let net=bs-dd+ov-(Number(si.labor)||0)-(Number(si.health)||0);
-  const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:55px;margin-bottom:10px;"><br>`:'';
-  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">點籽響有限公司</h2><h3 style="font-size:18px;margin:8px 0 0;color:#64748b;">正職員工薪資單</h3></div><table class="info-table" style="width:100%;margin-bottom:20px;"><tr><td style="font-size:16px;color:#333;"><strong>人員姓名：</strong> ${s}</td><td style="text-align:right;font-size:16px;color:#333;"><strong>結算月份：</strong> ${m.replace('-',' 年 ')} 月</td></tr></table><table style="width:100%;border-collapse:collapse;margin-bottom:30px;text-align:center;"><thead><tr style="background:#f1f5f9;"><th style="border:1px solid #cbd5e1;padding:12px;width:25%;color:#333;">日期</th><th style="border:1px solid #cbd5e1;padding:12px;width:35%;color:#333;">出勤類型</th><th style="border:1px solid #cbd5e1;padding:12px;width:15%;color:#333;">時數</th><th style="border:1px solid #cbd5e1;padding:12px;width:25%;color:#333;">異動金額</th></tr></thead><tbody>${trs}</tbody></table><table style="width:100%;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;"><tr><td style="width:50%;padding:25px;text-align:left;border-right:1px dashed #cbd5e1;font-size:16px;color:#333;"><p style="margin:6px 0;">約定底薪：<strong>${bs} 元</strong></p><p style="margin:6px 0;color:#059669;">加班加給：<strong>+ ${Math.round(ov)} 元</strong></p><p style="margin:6px 0;color:#ef4444;">請假扣薪：<strong>- ${Math.round(dd)} 元</strong></p><p style="margin:6px 0;color:#ef4444;">代扣勞保：<strong>- ${Number(si.labor)||0} 元</strong></p><p style="margin:6px 0;color:#ef4444;">代扣健保：<strong>- ${Number(si.health)||0} 元</strong></p></td><td style="width:50%;padding:25px;text-align:center;background:#ecfdf5;"><span style="color:#059669;font-weight:bold;font-size:16px;">本月實發金額</span><br><strong style="font-size:38px;color:#059669;">$ ${Math.round(net)}</strong></td></tr></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
-  openPreview('正職薪資單', c, si.drive, s);
 }
 
 function showAdminPage(p) {
@@ -936,8 +906,33 @@ function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid inp
 
 function renderAttend(){ 
     const y=el('filter_year').value, m=el('filter_month').value, c=el('filter_company').value.trim(), s=el('filter_staff').value.trim();
-    let l=attendData.filter(x=>(y==='all'||x.date.startsWith(y)) && (m==='all'||x.date.slice(5,7)===String(m).padStart(2,'0')) && (!c || c==='全部' || x.company===c) && (!s || s==='全部人員' || x.staff===s));
+    let l=attendData.filter(x=>{
+        let matchCust = (!c || c==='全部' || x.company===c);
+        let matchStaff = (!s || s==='全部人員' || x.staff===s);
+        let matchDate = isDispatchPayrollPeriod(x.date, y, m);
+        return matchCust && matchStaff && matchDate;
+    });
     l.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    let sumH = 0, sumP = 0;
+    l.forEach(i => { sumH += getItemSalaryHours(i); sumP += getItemDeductPoints(i); });
+    
+    let sumEl = el('attend_summary');
+    if(sumEl) {
+        if(l.length > 0 && (y !== 'all' || m !== 'all' || (c && c !== '全部') || (s && s !== '全部人員'))) {
+            let ptxt = '';
+            if(y !== 'all' && m !== 'all') {
+                let pm = parseInt(m) - 1, py = parseInt(y);
+                if (pm === 0) { pm = 12; py -= 1; }
+                ptxt = ` <span style="color:#64748b;font-size:13px;margin-left:10px;">(區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`;
+            }
+            sumEl.style.display = 'flex';
+            sumEl.innerHTML = `<span><i class="fas fa-info-circle"></i> 篩選結果共 ${l.length} 筆紀錄 ${ptxt}</span> <span style="font-size:15px;">發薪工時：<strong style="font-size:20px;color:#059669;">${sumH.toFixed(1)} h</strong> &nbsp; | &nbsp; 扣除點數：<strong style="font-size:20px;color:#dc2626;">${sumP.toFixed(1)} 點</strong></span>`;
+        } else {
+            sumEl.style.display = 'none';
+        }
+    }
+
     const {pagedList,total,totalPages}=getPagedData(l,'attend'); 
     let h='';
     pagedList.forEach(item=>{ 
@@ -1013,6 +1008,7 @@ function delTalent(i){ if(!confirm('刪除？'))return; talentData.splice(i,1); 
 function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input').forEach(i=>i.value=''); el('tp_status').value='待聯絡'; editTalentIndex=-1; el('btnUpdateTalent').style.display='none'; const b=el('btnAddTalent'); if(b) b.style.display='inline-block'; }
 
 function renderPoint(){ const c=el('point_filter_company').value.trim(); let l=custData.filter(x=>(!c || c==='全部' || x.name===c)); const {pagedList,total,totalPages}=getPagedData(l,'point'); let h=''; pagedList.forEach(ct=>{ const cP=contractData.filter(x=>x.customer===ct.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); h+=`<tr><td>${ct.name}</td><td>${cP}</td><td>${uP}</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${rP<0?'不足':'充足'}</td></tr>`; }); el('pointTable').innerHTML=h||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
+
 function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value; if(!c || c==='全部')return; 
     let l=attendData.filter(x=>x.company===c&&isDispatchPayrollPeriod(x.date,y,m)); 
     l.sort((a,b)=>new Date(b.date)-new Date(a.date)); 
@@ -1031,7 +1027,16 @@ function renderSalary(){
     pagedList.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); const a=Math.round(pH*hy); h+=`<tr><td>${i.staff}</td><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hy}</td><td>${a}</td></tr>`; });
     el('salaryTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('salary',total,totalPages);
-    el('salResult').innerHTML=`工時: ${tH.toFixed(1)} <br> 應付: ${tA} 元`; let lb=0, hl=0; if(s && s!=='全部人員'){ const si=staffData.find(x=>x.name===s); if(si){ lb=Number(si.labor)||0; hl=Number(si.health)||0; } } el('salLabor').textContent=lb; el('salHealth').textContent=hl; el('salNet').textContent=tA-lb-hl;
+    
+    let ptxt = '';
+    if(y !== 'all' && m !== 'all') {
+        let pm=parseInt(m)-1, py=parseInt(y);
+        if(pm===0){pm=12;py-=1;}
+        ptxt = ` <span style="font-size:13px;color:#64748b;margin-left:10px;font-weight:normal;">(結算區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`;
+    }
+    
+    el('salResult').innerHTML=`工時: ${tH.toFixed(1)} <br> 應付: ${tA} 元 ${ptxt}`; 
+    let lb=0, hl=0; if(s && s!=='全部人員'){ const si=staffData.find(x=>x.name===s); if(si){ lb=Number(si.labor)||0; hl=Number(si.health)||0; } } el('salLabor').textContent=lb; el('salHealth').textContent=hl; el('salNet').textContent=tA-lb-hl;
 }
 
 function showBoss() {
