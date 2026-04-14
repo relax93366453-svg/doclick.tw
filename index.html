@@ -148,7 +148,9 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     
     <div class="page admin-only" id="page-bill"><div class="page-title"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="bill_filter_company" placeholder="手打搜尋公司" oninput="resetPage('bill'); renderBill()"><label>結算週期</label><select id="bill_cycle" onchange="renderBill()"><option value="26">26日至25日 (預設)</option><option value="1">1日至31日 (全日曆月)</option></select><label>年</label><select id="bill_filter_year" onchange="renderBill()"></select><label>月</label><select id="bill_filter_month" onchange="renderBill()"></select></div><button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button><button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="billTableBox"><thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody id="billTable"></tbody></table></div></div>
     
-    <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button><button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時累計矩陣總表 (含歷史分年)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
+    <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select></div>
+      <div id="salMilestones" style="display:none; background:#fff1f2; border-left:4px solid #e11d48; padding:15px; border-radius:8px; margin-bottom:15px; font-size:14px; line-height:1.8;"></div>
+      <div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button><button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時累計矩陣總表 (含歷史分年)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
     
     <div class="page" id="page-talent"><div class="page-title"><i class="fas fa-address-card"></i> 人才招募庫</div><div class="grid"><div><label>姓名 *</label><input id="tp_name"></div><div><label>電話</label><input id="tp_tel"></div><div><label>來源</label><input id="tp_source"></div><div><label>地區</label><input id="tp_location"></div><div><label>班別</label><input id="tp_shift"></div><div><label>職務</label><input id="tp_role"></div><div><label>狀態</label><select id="tp_status"><option>待聯絡</option><option>已聯絡</option><option>已錄取</option><option>淘汰</option></select></div><div><label>評價</label><input id="tp_eval"></div><div style="grid-column:span 2;"><label>履歷連結</label><input id="tp_resume"></div><div style="grid-column:span 2;"><label>備註</label><input id="tp_exp"></div></div><button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" id="btnUpdateTalent" onclick="updateTalent()" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋：</label><input type="text" id="tp_filter_role" oninput="resetPage('talent'); renderTalentTable()"><label>狀態：</label><select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select><button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button><button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')">匯出全部</button></div><div class="table-responsive"><table id="talentTableBox"><thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>地區</th><th>班別</th><th>職務</th><th>狀態</th><th>評價</th><th>履歷</th><th>建檔日</th><th>操作</th></tr></thead><tbody id="talentTable"></tbody></table></div></div>
     
@@ -303,99 +305,82 @@ let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packa
 const defaultPortalConf = { adminNoticeTitle: "🚀 系統上線", adminNoticeContent: "請先按右上角重新整理。", serviceTypes: "行政,會計,服務員,理貨包裝,其他", r1Title: "管理規範", r1Content: "嚴禁私下聯繫", r2Title: "注意事項", r2Content: "保持微笑", l1Title: "平台", l1Desc: "點擊", l1Url: "https://google.com", l2Title: "IG", l2Desc: "追蹤", l2Url: "https://instagram.com" };
 let portalConf = safeJSONParse('portalConf', defaultPortalConf);
 
-// 派遣薪資計算按鈕功能：自動過濾當月有上班者
+// 計算里程碑達成日期
+function getStaffMilestoneDates(name) {
+    const milestones = [175, 350, 525, 700];
+    const results = {};
+    let runningTotal = 0;
+    const records = attendData.filter(a => a.staff === name).sort((a,b) => new Date(a.date) - new Date(b.date));
+    records.forEach(r => {
+        const prevTotal = runningTotal;
+        runningTotal += getItemSalaryHours(r);
+        milestones.forEach(m => {
+            if (prevTotal < m && runningTotal >= m && !results[m]) { results[m] = r.date; }
+        });
+    });
+    return results;
+}
+
 function exportAllStaffHoursSummary() {
     const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(y === 'all' || m === 'all') return showToast('請選擇年份與月份', true);
-
-    const activeStaffNames = [...new Set(attendData
-        .filter(a => isDispatchPayrollPeriod(a.date, y, m))
-        .map(a => a.staff))];
-
+    const activeStaffNames = [...new Set(attendData.filter(a => isDispatchPayrollPeriod(a.date, y, m)).map(a => a.staff))];
     if(activeStaffNames.length === 0) return showToast('該月份無派遣紀錄', true);
-
     let tb = document.createElement('table');
     let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">調薪進度明細表 (${y}年${m}月)</th></tr>
                 <tr><th>姓名</th><th>方案</th><th>本月工時</th><th>歷史累計工時</th><th>目前時薪</th><th>下一階門檻</th><th>跳級金額</th></tr></thead><tbody>`;
     let body = '';
-
     activeStaffNames.forEach(name => {
         const s = staffData.find(x => x.name === name) || { name: name, status: '未知' };
         const monthlyRecords = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m));
         const mHrs = monthlyRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
         const info = getStaffCurrentHourlyInfo(name);
-        
         body += `<tr><td>${name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier === 'FIXED' ? '接案' : (info.nextTier || '無')}</td><td>${info.nextWage || '無'}</td></tr>`;
     });
-
     tb.innerHTML = head + body + '</tbody>';
     XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "進度明細"}), `愜易居_${y}年${m}月_派遣調薪進度明細.xlsx`);
     showToast('✅ 匯出成功');
 }
 
-// 派遣薪資計算按鈕功能：年度累計矩陣 (動態展開歷史年度欄位)
 function exportStaffYearlyMatrix() {
     const yInput = el('sal_filter_year').value;
     if(yInput === 'all') return showToast('請先選擇年份', true);
     const targetY = parseInt(yInput);
-    
-    // 計算需要橫向展開的歷史年份 (從 2024 到 targetY-1)
     const historyYears = [];
     for(let y = 2024; y < targetY; y++) historyYears.push(y);
-
     let tb = document.createElement('table');
-    const totalCols = 2 + historyYears.length + 12 + 3; // 姓名+狀態+歷史年+12月+總計+時薪+進度
+    const totalCols = 2 + historyYears.length + 12 + 3;
     let head = `<thead><tr><th colspan="${totalCols}" style="font-size:20px;font-weight:bold;text-align:center;">${targetY}年度 全員派遣工時累計矩陣總表 (愜易居)</th></tr>
                 <tr><th>姓名</th><th>狀態</th>`;
-    
-    // 動態展開歷史年份表頭
     historyYears.forEach(hy => head += `<th style="background:#e0f2fe;">${hy}年累計</th>`);
-    
-    // 當年度 1-12 月表頭
     for(let i=1; i<=12; i++) head += `<th>${i}月</th>`;
     head += `<th style="background:#dcfce7;">最新總累計</th><th>時薪</th><th>跳級進度</th></tr></thead><tbody>`;
-
     let body = '';
-    // 不過濾，顯示在職+離職
     staffData.forEach(s => {
         const statusBadge = s.status === '在職' ? '在職' : '離職';
         body += `<tr><td>${s.name}</td><td>${statusBadge}</td>`;
-        
         let allHistorySum = 0;
-
-        // 填充各歷史年度累計
         historyYears.forEach(hy => {
             const hyHrs = attendData.filter(a => a.staff === s.name && a.date.startsWith(hy.toString())).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
             body += `<td style="background:#f8fafc; text-align:center;">${hyHrs > 0 ? hyHrs.toFixed(1) : '0'}</td>`;
             allHistorySum += hyHrs;
         });
-
-        // 填充查詢年份的 1-12 月
         let currentYearSum = 0;
         for(let m=1; m<=12; m++) {
             const hrs = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, targetY, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
             body += `<td style="text-align:center;">${hrs > 0 ? hrs.toFixed(1) : '0'}</td>`;
             currentYearSum += hrs;
         }
-        
         const latestTotal = allHistorySum + currentYearSum;
         const info = getStaffCurrentHourlyInfo(s.name);
-        
-        let tierStatus = '';
-        if(info.rule === '自訂') {
-            tierStatus = '接案/固定';
-        } else {
-            tierStatus = info.nextTier && info.nextTier !== 'FIXED' ? '還差 ' + (info.nextTier - latestTotal).toFixed(1) + 'h 跳級' : '已最高級';
-        }
-        
+        let tierStatus = info.rule === '自訂' ? '接案/固定' : (info.nextTier && info.nextTier !== 'FIXED' ? '還差 ' + (info.nextTier - latestTotal).toFixed(1) + 'h 跳級' : '已最高級');
         body += `<td style="font-weight:bold; color:#2563eb; background:#dbeafe; text-align:center;">${latestTotal.toFixed(1)}</td>
                  <td style="color:#16a34a; font-weight:bold; text-align:center;">$${info.wage}</td>
                  <td style="white-space:nowrap; text-align:center;">${tierStatus}</td></tr>`;
     });
-
     tb.innerHTML = head + body + '</tbody>';
-    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度分欄總表"}), `愜易居_${targetY}年度_全員派遣工時累計表.xlsx`);
-    showToast('✅ 年度分欄總表匯出成功');
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度累計矩陣"}), `愜易居_${targetY}年度_全員工時累計總表.xlsx`);
+    showToast('✅ 年度總表匯出成功');
 }
 
 function setupGlobalNavigation() {
@@ -407,9 +392,6 @@ function setupGlobalNavigation() {
         const inputs = Array.from(activePage.querySelectorAll('.grid input:not([readonly]):not([type="checkbox"]), .grid select, .grid textarea'));
         const idx = inputs.indexOf(target);
         if (idx === -1) return;
-        const isDate = target.type === 'date';
-        const isSelect = target.tagName === 'SELECT';
-        const canSelect = ['text', 'password', 'search', 'tel', 'url'].includes(target.type) || !target.type;
         if (e.key === 'Enter') {
             e.preventDefault();
             if (idx === inputs.length - 1) {
@@ -419,22 +401,8 @@ function setupGlobalNavigation() {
                 if (updateBtn && updateBtn.style.display !== 'none') { updateBtn.click(); return; }
             } else {
                 const nextEl = inputs[idx + 1];
-                if (nextEl) { nextEl.focus(); if (canSelect && nextEl.select) nextEl.select(); }
+                if (nextEl) { nextEl.focus(); if (nextEl.select) nextEl.select(); }
             }
-        } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-            if (isSelect) return;
-            if (isDate && e.key === 'ArrowRight') return; 
-            if (e.key === 'ArrowRight' && target.tagName === 'INPUT' && canSelect && target.selectionEnd !== null && target.selectionEnd < target.value.length) return;
-            e.preventDefault();
-            const nextEl = inputs[idx + 1];
-            if (nextEl) { nextEl.focus(); if (['text', 'password', 'search', 'tel', 'url'].includes(nextEl.type) || !nextEl.type) nextEl.select(); }
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-            if (isSelect) return;
-            if (isDate && e.key === 'ArrowLeft') return;
-            if (e.key === 'ArrowLeft' && target.tagName === 'INPUT' && canSelect && target.selectionStart !== null && target.selectionStart > 0) return;
-            e.preventDefault();
-            const prevEl = inputs[idx - 1];
-            if (prevEl) { prevEl.focus(); if (['text', 'password', 'search', 'tel', 'url'].includes(prevEl.type) || !prevEl.type) prevEl.select(); }
         }
     });
 }
@@ -537,12 +505,7 @@ function getStaffCurrentHourlyInfo(name){
   const rule=si.salary_rule||'標準階梯';
   const agreed=(si.remark||'').includes('已同意調薪');
   let w=Number(si.hourly)||0, nt=null, nw=null;
-
-  if(rule==='自訂'){
-    w=Number(si.hourly)||0;
-    return {wage:w, nextTier:'FIXED', nextWage:null, hours:h, rule:rule}; 
-  }
-  
+  if(rule==='自訂'){ w=Number(si.hourly)||0; return {wage:w, nextTier:'FIXED', nextWage:null, hours:h, rule:rule}; }
   if(rule==='標準階梯'){
     if(h<=175){w=210;nt=176;nw=220;}
     else if(h<=350){w=220;nt=351;nw=230;}
@@ -561,7 +524,6 @@ function getStaffCurrentHourlyInfo(name){
     else if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';}
     else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
   }
-  
   if(w===0) w=210; 
   return {wage:w, nextTier:nt, nextWage:nw, hours:h, rule:rule};
 }
@@ -575,9 +537,7 @@ function getHistoricalRate(item) {
   const rule=si.salary_rule||'標準階梯';
   const agreed=(si.remark||'').includes('已同意調薪');
   let w=Number(si.hourly)||0;
-
   if(rule==='自訂') return w;
-
   if(rule==='標準階梯'){
     if(h<=175) w=210; else if(h<=350) w=220; else if(h<=525) w=230; else if(h<=700) w=240; else w=agreed?250:240;
   }else if(rule==='245起跳'){
@@ -587,7 +547,6 @@ function getHistoricalRate(item) {
   }else if(rule==='固定220'){
     if(h<=350) w=220; else if(h<=700) w=245; else w=agreed?250:245;
   }
-  
   if(w===0) w=210;
   return w;
 }
@@ -599,10 +558,7 @@ function checkHourlyUpgradeAlert() {
   if(!box) return;
   if(!s || hInp <= 0) { box.style.display = 'none'; return; }
   let cH = getStaffTotalHours(s);
-  if(editAttendIndex > -1) {
-      const oldRec = attendData[editAttendIndex];
-      if(oldRec.staff === s) cH -= getItemSalaryHours(oldRec);
-  }
+  if(editAttendIndex > -1) { const oldRec = attendData[editAttendIndex]; if(oldRec.staff === s) cH -= getItemSalaryHours(oldRec); }
   const si = staffData.find(x => x.name === s);
   if(!si) return;
   const rule = si.salary_rule || '標準階梯';
@@ -657,9 +613,7 @@ function exportExcel(tableId,filename){
   let tb = el(tableId);
   if(!tb) { pageConfig.pageSize = oldSize; refresh(); return showToast('錯誤',true); }
   let cloneTb = tb.cloneNode(true);
-  if(cloneTb.rows[0] && cloneTb.rows[0].cells[cloneTb.rows[0].cells.length-1].innerText.includes('操作')) {
-    Array.from(cloneTb.rows).forEach(row => { if(row.cells.length > 0) row.deleteCell(-1); });
-  }
+  if(cloneTb.rows[0] && cloneTb.rows[0].cells[cloneTb.rows[0].cells.length-1].innerText.includes('操作')) { Array.from(cloneTb.rows).forEach(row => { if(row.cells.length > 0) row.deleteCell(-1); }); }
   XLSX.writeFile(XLSX.utils.table_to_book(cloneTb,{sheet:"Sheet1"}), filename+".xlsx");
   pageConfig.pageSize = oldSize;
   refresh();
@@ -737,7 +691,7 @@ function doNativePrint() {
   w.document.close();
 }
 function doDownloadPdf(isCloud) {
-  showToast(isCloud ? '📄 雲端上傳中...' : '📄 正在產生高畫質 PDF...');
+  showToast(isCloud ? '📄 歸檔中...' : '📄 正在產生高畫質 PDF...');
   let d = window.currentPdfData;
   closePreview();
   const hiddenElements = [];
@@ -780,9 +734,7 @@ function doDownloadPdf(isCloud) {
                 else showToast('失敗',true);
             }).catch(e=>showToast('錯誤',true)); 
          }).catch(e => { finish(); showToast('產出失敗', true); });
-      } else { 
-         w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); 
-      }
+      } else { w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); }
   }, 600);
 }
 
@@ -793,74 +745,38 @@ function generateStatementPDF() {
   const cycle=el('bill_cycle').value;
   if(!cb || cb === '全部' || cb === '') return showToast('請選公司', true);
   const ci=custData.find(x=>x.name===cb);
-  let periodStart = '0000-00-00';
-  let periodEnd = '9999-99-99';
-  let pt = '全部';
+  let periodStart = '0000-00-00', periodEnd = '9999-99-99', pt = '全部';
   if(yb !== 'all' && mb !== 'all') {
-      if(cycle === '1') {
-          periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`;
-          let lastDay = new Date(yb, mb, 0).getDate();
-          periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`;
-          pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`;
-      } else {
-          let py = parseInt(yb);
-          let pm = parseInt(mb) - 1;
-          if(pm === 0) { pm = 12; py -= 1; }
-          periodStart = `${py}-${String(pm).padStart(2,'0')}-26`;
-          periodEnd = `${yb}-${String(mb).padStart(2,'0')}-25`;
-          pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`;
-      }
+      if(cycle === '1') { periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`; let lastDay = new Date(yb, mb, 0).getDate(); periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`; pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`; } 
+      else { let py = parseInt(yb), pm = parseInt(mb) - 1; if(pm === 0) { pm = 12; py -= 1; } periodStart = `${py}-${String(pm).padStart(2,'0')}-26`; periodEnd = `${yb}-${String(mb).padStart(2,'0')}-25`; pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`; }
   }
   const cs=contractData.filter(x=>x.customer===cb && (!x.date || x.date <= periodEnd)).sort((a,b)=>new Date(a.date)-new Date(b.date));
   let tp=0, ph='', ps=new Set();
   cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;});
   if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
   let pastRecords = attendData.filter(x=>x.company===cb && x.date < periodStart);
-  let pastDeducted = 0;
-  let pastBreakdown = {};
+  let pastDeducted = 0, pastBreakdown = {};
   pastRecords.forEach(i => {
-      let pts = getItemDeductPoints(i);
-      pastDeducted += pts;
-      let parts = i.date.split('-');
-      let rY = parseInt(parts[0], 10);
-      let rM = parseInt(parts[1], 10);
-      let rD = parseInt(parts[2], 10);
+      let pts = getItemDeductPoints(i); pastDeducted += pts;
+      let parts = i.date.split('-'), rY = parseInt(parts[0], 10), rM = parseInt(parts[1], 10), rD = parseInt(parts[2], 10);
       if (cycle === '26' && rD >= 26) { rM += 1; if (rM > 12) { rM = 1; rY += 1; } }
-      let pKey = `${rY}年${rM}月`;
-      if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0;
-      pastBreakdown[pKey] += pts;
+      let pKey = `${rY}年${rM}月`; if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0; pastBreakdown[pKey] += pts;
   });
-  let pKeys = Object.keys(pastBreakdown).sort((a,b) => {
-      let [y1, m1] = a.replace('月','').split('年');
-      let [y2, m2] = b.replace('月','').split('年');
-      return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2));
-  });
+  let pKeys = Object.keys(pastBreakdown).sort((a,b) => { let [y1, m1] = a.replace('月','').split('年'), [y2, m2] = b.replace('月','').split('年'); return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2)); });
   let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px; color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
   let ats=attendData.filter(x=>x.company===cb && isDispatchPayrollPeriod(x.date,yb,mb,cycle)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  let ah='';
-  let periodDeducted = 0;
-  if(ats.length>0) {
-      ats.forEach(i=>{
-          const cH = getItemClockHours(i);
-          const cP = getItemDeductPoints(i);
-          periodDeducted += cP;
-          ah+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td>${cH.toFixed(1)}</td><td>${cP}</td></tr>`;
-      });
-  } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`; }
-  const totalDeducted = pastDeducted + periodDeducted;
-  const endingPoints = Number((tp - totalDeducted).toFixed(1));
+  let ah='', periodDeducted = 0;
+  if(ats.length>0) { ats.forEach(i=>{ const cH = getItemClockHours(i); const cP = getItemDeductPoints(i); periodDeducted += cP; ah+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td>${cH.toFixed(1)}</td><td>${cP}</td></tr>`; }); } 
+  else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`; }
+  const endingPoints = Number((tp - (pastDeducted + periodDeducted)).toFixed(1));
   const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">`:'';
   let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">愜易居有限公司 - 服務對帳單</h2></div>
   <table class="info-table" style="margin-bottom:20px;width:100%;">
     <tr>
       <td style="font-size:15px;line-height:1.8;color:#333;vertical-align:top;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td>
       <td style="text-align:right;vertical-align:top;">
-        <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;vertical-align:top;">
-            <div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}
-        </div>
-        <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;margin-left:10px;vertical-align:top;">
-            <div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">歷史扣除明細</div>${pastHistoryHtml}
-        </div>
+        <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;vertical-align:top;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div>
+        <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;margin-left:10px;vertical-align:top;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">歷史扣除明細</div>${pastHistoryHtml}</div>
       </td>
     </tr>
   </table>
@@ -869,14 +785,11 @@ function generateStatementPDF() {
       <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;width:20%;vertical-align:top;background:#f8fafc;">購買總點數<br><strong style="font-size:24px;color:#1e293b;">${tp} 點</strong></td>
       <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;vertical-align:top;background:#f8fafc;width:20%;">歷史已扣<br><strong style="font-size:24px;color:#64748b;">${pastDeducted.toFixed(1)}</strong></td>
       <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#dc2626;background:#fff5f5;vertical-align:top;width:20%;">本期扣除<br><strong style="font-size:24px;">${periodDeducted.toFixed(1)}</strong></td>
-      <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#ea580c;background:#fff7ed;vertical-align:top;width:20%;">累計總扣除<br><strong style="font-size:24px;">${totalDeducted.toFixed(1)}</strong></td>
+      <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#ea580c;background:#fff7ed;vertical-align:top;width:20%;">累計總扣除<br><strong style="font-size:24px;">${(pastDeducted + periodDeducted).toFixed(1)}</strong></td>
       <td style="padding:12px 8px;color:#059669;background:#ecfdf5;vertical-align:top;width:20%;">最新剩餘點數<br><strong style="font-size:28px;color:${endingPoints<0?'#ef4444':'#059669'};">${endingPoints.toFixed(1)}</strong></td>
     </tr>
   </table>
-  <table style="width:100%;border-collapse:collapse;text-align:center;">
-    <thead><tr style="background:#f1f5f9;"><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead>
-    <tbody>${ah}</tbody>
-  </table>
+  <table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody>${ah}</tbody></table>
   <div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
   openPreview('對帳單', c, ci?ci.drive:'', cb);
 }
@@ -908,24 +821,18 @@ function changePage(m,tp) { pageConfig.currentPage[m]=tp; switch(m){ case'custom
 
 function fillFilters() {
   const rf = (s,h) => { document.querySelectorAll(s).forEach(e=>{const v=e.value; e.innerHTML=h; if(v)e.value=v;}); };
-  const y=new Date().getFullYear(); 
-  let yr='<option value="all">全部</option>'; 
-  for(let i=2024; i<=y; i++) yr+=`<option value="${i}">${i}</option>`;
+  const y=new Date().getFullYear(); let yr='<option value="all">全部</option>'; for(let i=2024; i<=y; i++) yr+=`<option value="${i}">${i}</option>`;
   rf('#filter_year,#bill_filter_year,#sal_filter_year,#boss_year',yr);
-  let mh='<option value="all">全部</option>';
-  for(let i=1;i<=12;i++) mh+=`<option value="${i}">${i}月</option>`; rf('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month',mh);
+  let mh='<option value="all">全部</option>'; for(let i=1;i<=12;i++) mh+=`<option value="${i}">${i}月</option>`; rf('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month',mh);
   let custH = '<option value="全部">'; custData.forEach(c=>custH+=`<option value="${c.name}">`); if(el('list_cust')) el('list_cust').innerHTML = custH;
   let staffH = '<option value="全部人員">'; staffData.filter(s=>s.status==='在職').forEach(s=>staffH+=`<option value="${s.name}">`);
   if(el('list_staff')) el('list_staff').innerHTML = staffH;
   let ftStaffH = '<option value="全部員工">'; ftStaffData.filter(s=>s.status==='在職').forEach(s=>ftStaffH+=`<option value="${s.name}">`);
   if(el('list_ft_staff')) el('list_ft_staff').innerHTML = ftStaffH;
-  let supH = '<option value="全部">';
-  supplierData.forEach(s=>supH+=`<option value="${s.name}">`); if(el('list_supplier')) el('list_supplier').innerHTML = supH;
+  let supH = '<option value="全部">'; supplierData.forEach(s=>supH+=`<option value="${s.name}">`); if(el('list_supplier')) el('list_supplier').innerHTML = supH;
 }
 
-function renderSupplierTable() { const f=el('sup_filter_name').value.trim();
-let l=supplierData.filter(x=>(!f || f==='全部' || x.name===f)); const {pagedList,total,totalPages}=getPagedData(l,'supplier');
-let h='';
+function renderSupplierTable() { const f=el('sup_filter_name').value.trim(); let l=supplierData.filter(x=>(!f || f==='全部' || x.name===f)); const {pagedList,total,totalPages}=getPagedData(l,'supplier'); let h='';
 pagedList.forEach((item, i) => { const idx = supplierData.indexOf(item); const btn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>` : '-'; h += `<tr><td>${item.name}</td><td>${item.contact||'-'}</td><td>${item.tel||'-'}</td><td>${item.tax||'-'}</td><td>${item.pay_method||'-'}</td><td><b class="red">${item.pay_date||'-'}</b></td><td>${item.invoice_date||'-'}</td><td>${item.invoice_no||'-'}</td><td>${item.invoice_amt||0}</td><td>${btn}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editSupplier(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delSupplier(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
 el('supplierTable').innerHTML = h || '<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('supplier', total, totalPages); fillFilters();
 }
@@ -959,7 +866,7 @@ function clearStaffForm(){ document.querySelectorAll('#page-staff .grid input').
 function renderFtStaffTable(){ const fs=el('ft_staff_filter_status').value, fn=el('ft_staff_filter_name').value.trim().toLowerCase(); let l=ftStaffData.filter(x=>(fs==='all'||x.status===fs)&&(!fn || fn==='全部員工' || x.name.toLowerCase().includes(fn))); const {pagedList,total,totalPages}=getPagedData(l,'ft_staff'); let h=''; pagedList.forEach(item=>{ const idx=ftStaffData.findIndex(x=>x.name===item.name); const btn=item.drive?`<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>`:'-'; let d=[]; if(item.doc_id)d.push('<span class="badge badge-green">身</span>');else d.push('<span class="badge badge-red">缺身</span>'); if(item.doc_bank)d.push('<span class="badge badge-green">存</span>');else d.push('<span class="badge badge-red">缺存</span>'); if(item.doc_contract)d.push('<span class="badge badge-green">契</span>');else d.push('<span class="badge badge-red">缺契</span>'); if(item.doc_resume)d.push('<span class="badge badge-green">歷</span>');else d.push('<span class="badge badge-red">缺歷</span>'); let bankStr = item.bank ? `${item.bank}${item.bank_branch ? '('+item.bank_branch+')' : ''}<br><span style="color:#64748b;font-size:11px;">${item.bank_acc||'-'}</span>` : '-'; let accStr = `${item.account||'-'}<br><span style="color:#94a3b8;font-size:11px;">${item.pwd||'-'}</span>`; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.hire_date||'-'}</td><td>${toRocDate(item.birthday)}</td><td>${bankStr}</td><td>${accStr}</td><td>${item.salary||0}</td><td>${item.labor||0}/${item.health||0}</td><td>${btn}</td><td><div style="display:flex;gap:4px;flex-wrap:wrap;">${d.join('')}</div></td><td>${item.status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtStaff(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtStaff(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('ftStaffTable').innerHTML=h||'<tr><td colspan="12" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_staff',total,totalPages); fillFilters(); }
 function addFtStaff(){ const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,bank:el('ft_bank').value.trim(),bank_branch:el('ft_bank_branch').value.trim(),bank_acc:el('ft_bank_acc').value.trim(),drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; if(!o.name)return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 成功'); }
 function editFtStaff(i){ const d=ftStaffData[i]; el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_bank').value=d.bank||''; el('ft_bank_branch').value=d.bank_branch||''; el('ft_bank_acc').value=d.bank_acc||''; el('ft_drive').value=d.drive; el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('ft_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex=i; el('btnUpdateFtStaff').style.display='inline-block'; const b=el('btnAddFtStaff'); if(b) b.style.display='none'; }
-function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,bank:el('ft_bank').value.trim(),bank_branch:el('ft_bank_branch').value.trim(),bank_acc:el('ft_bank_acc').value.trim(),drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; ftStaffData[editFtStaffIndex]={...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
+function updateFtStaff(){ if(editFtStaffIndex<0)return; const o={name:el('ft_name').value.trim(),tel:el('ft_tel').value,id:el('ft_id').value,birthday:el('ft_birthday').value,addr:el('ft_addr').value,account:el('ft_account').value,pwd:el('ft_pwd').value,status:el('ft_status').value,hire_date:el('ft_hire_date').value,leave_date:el('ft_leave_date').value,salary:el('ft_salary').value,labor:el('ft_labor').value,health:el('ft_health').value,bank:el('ft_bank').value.trim(),bank_branch:el('ft_bank_branch').value.trim(),bank_acc:el('ft_bank_acc').value.trim(),drive:el('ft_drive').value,remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked}; ftStaffData[editFtStaffIndex]={...ftStaffData[editStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
 function delFtStaff(i){ if(!confirm('刪除？'))return; ftStaffData.splice(i,1); saveAll(); renderFtStaffTable(); showToast('刪除'); }
 function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid input').forEach(i=>{if(i.type==='checkbox')i.checked=false;else i.value='';}); el('ft_salary').value='30000'; el('ft_labor').value='0'; el('ft_health').value='0'; el('ft_pwd').value='1234'; el('ft_bank').value=''; el('ft_bank_branch').value=''; el('ft_bank_acc').value=''; el('ft_status').value='在職'; editFtStaffIndex=-1; el('btnUpdateFtStaff').style.display='none'; const b=el('btnAddFtStaff'); if(b) b.style.display='inline-block'; }
 
@@ -978,11 +885,7 @@ function renderAttend(){
     if(sumEl) {
         if(l.length > 0 && (y !== 'all' || m !== 'all' || (c && c !== '全部') || (s && s !== '全部人員'))) {
             let ptxt = '';
-            if(y !== 'all' && m !== 'all') {
-                let pm = parseInt(m) - 1, py = parseInt(y);
-                if (pm === 0) { pm = 12; py -= 1; }
-                ptxt = ` <span style="color:#64748b;font-size:13px;margin-left:10px;">(區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`;
-            }
+            if(y !== 'all' && m !== 'all') { let pm = parseInt(m) - 1, py = parseInt(y); if (pm === 0) { pm = 12; py -= 1; } ptxt = ` <span style="color:#64748b;font-size:13px;margin-left:10px;">(區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`; }
             sumEl.style.display = 'flex';
             sumEl.innerHTML = `<span><i class="fas fa-info-circle"></i> 篩選結果共 ${l.length} 筆紀錄 ${ptxt}</span> <span style="font-size:15px;">發薪工時：<strong style="font-size:20px;color:#059669;">${sumH.toFixed(1)} h</strong> &nbsp; | &nbsp; 扣除點數：<strong style="font-size:20px;color:#dc2626;">${sumP.toFixed(1)} 點</strong></span>`;
         } else { sumEl.style.display = 'none'; }
@@ -1081,14 +984,23 @@ function renderSalary(){
     pagedList.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); const a=Math.round(pH*hy); h+=`<tr><td>${i.staff}</td><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hy}</td><td>${a}</td></tr>`; });
     el('salaryTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>';
     renderPagination('salary',total,totalPages);
-    let ptxt = '';
-    if(y !== 'all' && m !== 'all') {
-        let pm=parseInt(m)-1, py=parseInt(y);
-        if(pm===0){pm=12;py-=1;}
-        ptxt = ` <span style="font-size:13px;color:#64748b;margin-left:10px;font-weight:normal;">(結算區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`;
-    }
+    let ptxt = ''; if(y !== 'all' && m !== 'all') { let pm=parseInt(m)-1, py=parseInt(y); if(pm===0){pm=12;py-=1;} ptxt = ` <span style="font-size:13px;color:#64748b;margin-left:10px;font-weight:normal;">(結算區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`; }
     el('salResult').innerHTML=`工時: ${tH.toFixed(1)} <br> 應付: ${tA} 元 ${ptxt}`; 
-    let lb=0, hl=0; if(s && s!=='全部人員'){ const si=staffData.find(x=>x.name===s); if(si){ lb=Number(si.labor)||0; hl=Number(si.health)||0; } } el('salLabor').textContent=lb; el('salHealth').textContent=hl; el('salNet').textContent=tA-lb-hl; }
+    let lb=0, hl=0; if(s && s!=='全部人員'){ const si=staffData.find(x=>x.name===s); if(si){ lb=Number(si.labor)||0; hl=Number(si.health)||0; } } el('salLabor').textContent=lb; el('salHealth').textContent=hl; el('salNet').textContent=tA-lb-hl;
+    
+    // 里程碑提醒邏輯
+    const mBox = el('salMilestones');
+    if(s && s!=='全部人員' && s!=='') {
+        const dates = getStaffMilestoneDates(s);
+        let mHtml = `<i class="fas fa-award"></i> <b>${s} 門檻里程碑紀錄：</b><br>`;
+        const mItems = [];
+        if(dates[175]) mItems.push(`🟢 175h (<b>${dates[175]}</b>)`);
+        if(dates[350]) mItems.push(`🔵 350h (<b>${dates[350]}</b>)`);
+        if(dates[525]) mItems.push(`🟣 525h (<b>${dates[525]}</b>)`);
+        if(dates[700]) mItems.push(`🔥 700h (<b>${dates[700]}</b>)`);
+        if(mItems.length > 0) { mBox.innerHTML = mHtml + mItems.join(' ➔ '); mBox.style.display = 'block'; } else { mBox.style.display = 'none'; }
+    } else { mBox.style.display = 'none'; }
+}
 
 function showBoss() {
   const y=el('boss_year').value, m=el('boss_month').value, c=el('boss_cust_filter').value.trim(); let h='';
