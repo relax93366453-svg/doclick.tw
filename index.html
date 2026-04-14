@@ -23,8 +23,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
 #preview-header-bar{background:#fff;padding:15px 25px;border-radius:8px;margin:0 auto 20px auto;max-width:850px;display:flex;justify-content:space-between;align-items:center}
 #preview-body{max-width:850px;margin:0 auto;padding-bottom:40px}
 .pdf-box{width:100%;max-width:794px;margin:0 auto;background:#fff;padding:35px;color:#333;font-family:'Microsoft JhengHei',sans-serif;text-align:left;box-shadow:0 5px 15px rgba(0,0,0,0.3);-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.pdf-box table{min-width:0 !important;}
-.section-divider { grid-column: span 4; margin-top: 15px; margin-bottom: 5px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; color: #1e293b; font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.pdf-box table{min-width:0 !important;}.section-divider { grid-column: span 4; margin-top: 15px; margin-bottom: 5px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; color: #1e293b; font-weight: 800; font-size: 15px; display: flex; align-items: center; gap: 8px; }
 .workspace-business .ws-hr { display: none !important; }
 .workspace-hr .ws-business { display: none !important; }
 </style>
@@ -303,96 +302,58 @@ let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packa
 const defaultPortalConf = { adminNoticeTitle: "🚀 系統上線", adminNoticeContent: "請先按右上角重新整理。", serviceTypes: "行政,會計,服務員,理貨包裝,其他", r1Title: "管理規範", r1Content: "嚴禁私下聯繫", r2Title: "注意事項", r2Content: "保持微笑", l1Title: "平台", l1Desc: "點擊", l1Url: "https://google.com", l2Title: "IG", l2Desc: "追蹤", l2Url: "https://instagram.com" };
 let portalConf = safeJSONParse('portalConf', defaultPortalConf);
 
-// 派遣薪資計算按鈕功能：自動過濾當月有上班者
 function exportAllStaffHoursSummary() {
     const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(y === 'all' || m === 'all') return showToast('請選擇年份與月份', true);
-
-    const activeStaffNames = [...new Set(attendData
-        .filter(a => isDispatchPayrollPeriod(a.date, y, m))
-        .map(a => a.staff))];
-
+    const activeStaffNames = [...new Set(attendData.filter(a => isDispatchPayrollPeriod(a.date, y, m)).map(a => a.staff))];
     if(activeStaffNames.length === 0) return showToast('該月份無派遣紀錄', true);
-
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">調薪進度明細表 (${y}年${m}月)</th></tr>
-                <tr><th>姓名</th><th>方案</th><th>本月工時</th><th>歷史累計工時</th><th>目前時薪</th><th>下一階門檻</th><th>跳級金額</th></tr></thead><tbody>`;
+    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">調薪進度明細表 (${y}年${m}月)</th></tr><tr><th>姓名</th><th>方案</th><th>本月工時</th><th>歷史累計工時</th><th>目前時薪</th><th>下一階門檻</th><th>跳級金額</th></tr></thead><tbody>`;
     let body = '';
-
     activeStaffNames.forEach(name => {
-        const s = staffData.find(x => x.name === name) || { name: name, status: '未知' };
+        const info = getStaffCurrentHourlyInfo(name);
         const monthlyRecords = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m));
         const mHrs = monthlyRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
-        const info = getStaffCurrentHourlyInfo(name);
-        
         body += `<tr><td>${name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier === 'FIXED' ? '接案' : (info.nextTier || '無')}</td><td>${info.nextWage || '無'}</td></tr>`;
     });
-
     tb.innerHTML = head + body + '</tbody>';
     XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "進度明細"}), `愜易居_${y}年${m}月_派遣調薪進度明細.xlsx`);
     showToast('✅ 匯出成功');
 }
 
-// 派遣薪資計算按鈕功能：年度累計矩陣 (動態展開歷史年度欄位)
 function exportStaffYearlyMatrix() {
     const yInput = el('sal_filter_year').value;
     if(yInput === 'all') return showToast('請先選擇年份', true);
     const targetY = parseInt(yInput);
-    
-    // 計算需要橫向展開的歷史年份 (從 2024 到 targetY-1)
     const historyYears = [];
     for(let y = 2024; y < targetY; y++) historyYears.push(y);
-
     let tb = document.createElement('table');
-    const totalCols = 2 + historyYears.length + 12 + 3; // 姓名+狀態+歷史年+12月+總計+時薪+進度
-    let head = `<thead><tr><th colspan="${totalCols}" style="font-size:20px;font-weight:bold;text-align:center;">${targetY}年度 全員派遣工時累計矩陣總表 (愜易居)</th></tr>
-                <tr><th>姓名</th><th>狀態</th>`;
-    
-    // 動態展開歷史年份表頭
+    const totalCols = 2 + historyYears.length + 12 + 3;
+    let head = `<thead><tr><th colspan="${totalCols}" style="font-size:20px;font-weight:bold;text-align:center;">${targetY}年度 全員派遣工時累計矩陣總表 (愜易居)</th></tr><tr><th>姓名</th><th>狀態</th>`;
     historyYears.forEach(hy => head += `<th style="background:#e0f2fe;">${hy}年累計</th>`);
-    
-    // 當年度 1-12 月表頭
     for(let i=1; i<=12; i++) head += `<th>${i}月</th>`;
     head += `<th style="background:#dcfce7;">最新總累計</th><th>時薪</th><th>跳級進度</th></tr></thead><tbody>`;
-
     let body = '';
-    // 不過濾，顯示在職+離職
     staffData.forEach(s => {
         const statusBadge = s.status === '在職' ? '在職' : '離職';
         body += `<tr><td>${s.name}</td><td>${statusBadge}</td>`;
-        
         let allHistorySum = 0;
-
-        // 填充各歷史年度累計
         historyYears.forEach(hy => {
             const hyHrs = attendData.filter(a => a.staff === s.name && a.date.startsWith(hy.toString())).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
             body += `<td style="background:#f8fafc; text-align:center;">${hyHrs > 0 ? hyHrs.toFixed(1) : '0'}</td>`;
             allHistorySum += hyHrs;
         });
-
-        // 填充查詢年份的 1-12 月
         let currentYearSum = 0;
         for(let m=1; m<=12; m++) {
             const hrs = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, targetY, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
             body += `<td style="text-align:center;">${hrs > 0 ? hrs.toFixed(1) : '0'}</td>`;
             currentYearSum += hrs;
         }
-        
         const latestTotal = allHistorySum + currentYearSum;
         const info = getStaffCurrentHourlyInfo(s.name);
-        
-        let tierStatus = '';
-        if(info.rule === '自訂') {
-            tierStatus = '接案/固定';
-        } else {
-            tierStatus = info.nextTier && info.nextTier !== 'FIXED' ? '還差 ' + (info.nextTier - latestTotal).toFixed(1) + 'h 跳級' : '已最高級';
-        }
-        
-        body += `<td style="font-weight:bold; color:#2563eb; background:#dbeafe; text-align:center;">${latestTotal.toFixed(1)}</td>
-                 <td style="color:#16a34a; font-weight:bold; text-align:center;">$${info.wage}</td>
-                 <td style="white-space:nowrap; text-align:center;">${tierStatus}</td></tr>`;
+        let tierStatus = info.rule === '自訂' ? '接案/固定' : (info.nextTier && info.nextTier !== 'FIXED' ? '還差 ' + (info.nextTier - latestTotal).toFixed(1) + 'h 跳級' : '已最高級');
+        body += `<td style="font-weight:bold; color:#2563eb; background:#dbeafe; text-align:center;">${latestTotal.toFixed(1)}</td><td style="color:#16a34a; font-weight:bold; text-align:center;">$${info.wage}</td><td style="white-space:nowrap; text-align:center;">${tierStatus}</td></tr>`;
     });
-
     tb.innerHTML = head + body + '</tbody>';
     XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度分欄總表"}), `愜易居_${targetY}年度_全員派遣工時累計表.xlsx`);
     showToast('✅ 年度分欄總表匯出成功');
@@ -482,8 +443,7 @@ function restoreLoginState() {
       } else if(r==='staff') {
         el('staff-screen').style.display='flex'; el('admin-screen').style.display='none';
         if(!currentLoginStaff) currentLoginStaff = staffData.find(x=>x&&String(x.account||'').trim()===String(a||'').trim()) || ftStaffData.find(x=>x&&String(x.account||'').trim()===String(a||'').trim());
-        initStaffFrontend();
-        showStaffPage(localStorage.getItem('staffPage')||'home');
+        initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage')||'home');
       }
   } catch(e) { el('login-screen').style.display='flex'; }
 }
@@ -507,8 +467,7 @@ function renderServiceTypes() { const s=el('attend_service'); if(!s)return; let 
 function applyPortalConfigToStaff() {
     if(el('dash_notice_title')) el('dash_notice_title').innerHTML=`<i class="fas fa-bullhorn"></i> `+(portalConf.adminNoticeTitle||'');
     if(el('dash_notice_content')) el('dash_notice_content').innerHTML=(portalConf.adminNoticeContent||'').replace(/\n/g,'<br>');
-    if(!el('staff_r1_title'))return; el('staff_r1_title').innerHTML=`<i class="fas fa-file-contract"></i> ${portalConf.r1Title}`; el('staff_r1_content').innerHTML=portalConf.r1Content;
-    el('staff_r2_title').innerHTML=`<i class="fas fa-user-clock"></i> ${portalConf.r2Title}`; el('staff_r2_content').innerHTML=portalConf.r2Content; el('staff_l1_title').textContent=portalConf.l1Title; el('staff_l1_desc').textContent=portalConf.l1Desc; el('btn_l1').onclick=()=>window.open(portalConf.l1Url,'_blank'); el('staff_l2_title').textContent=portalConf.l2Title; el('staff_l2_desc').textContent=portalConf.l2Desc; el('btn_l2').onclick=()=>window.open(portalConf.l2Url,'_blank');
+    if(!el('staff_r1_title'))return; el('staff_r1_title').innerHTML=`<i class="fas fa-file-contract"></i> ${portalConf.r1Title}`; el('staff_r1_content').innerHTML=portalConf.r1Content; el('staff_r2_title').innerHTML=`<i class="fas fa-user-clock"></i> ${portalConf.r2Title}`; el('staff_r2_content').innerHTML=portalConf.r2Content; el('staff_l1_title').textContent=portalConf.l1Title; el('staff_l1_desc').textContent=portalConf.l1Desc; el('btn_l1').onclick=()=>window.open(portalConf.l1Url,'_blank'); el('staff_l2_title').textContent=portalConf.l2Title; el('staff_l2_desc').textContent=portalConf.l2Desc; el('btn_l2').onclick=()=>window.open(portalConf.l2Url,'_blank');
 }
 function renderPricePlanOptions() { document.querySelectorAll('#co_price_plan').forEach(s=>{const v=s.value; s.innerHTML='<option value="">請選擇</option>'; Object.keys(priceTable).forEach(k=>s.innerHTML+=`<option value="${k}">${k}</option>`); s.value=v;}); }
 function updatePriceByPlan() { const p=el('co_price_plan').value; if(priceTable[p]){el('co_package_price').value=priceTable[p].price||priceTable[p].packagePrice||0; el('co_point_price').value=priceTable[p].avg||priceTable[p].pointPrice||0; el('co_point').value=priceTable[p].points||0; el('co_price').value=priceTable[p].price||priceTable[p].packagePrice||0;} }
@@ -537,33 +496,14 @@ function getStaffCurrentHourlyInfo(name){
   const rule=si.salary_rule||'標準階梯';
   const agreed=(si.remark||'').includes('已同意調薪');
   let w=Number(si.hourly)||0, nt=null, nw=null;
-
-  if(rule==='自訂'){
-    w=Number(si.hourly)||0;
-    return {wage:w, nextTier:'FIXED', nextWage:null, hours:h, rule:rule}; 
-  }
-  
+  if(rule==='自訂'){ w=Number(si.hourly)||0; return {wage:w, nextTier:'FIXED', nextWage:null, hours:h, rule:rule}; }
   if(rule==='標準階梯'){
-    if(h<=175){w=210;nt=176;nw=220;}
-    else if(h<=350){w=220;nt=351;nw=230;}
-    else if(h<=525){w=230;nt=526;nw=240;}
-    else if(h<=700){w=240;nt=701;nw=agreed?250:'250(需備註同意)';}
-    else{w=agreed?250:240; if(!agreed){nt=701;nw='250(需備註同意)';}}
-  }else if(rule==='245起跳'){
-    if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';}
-    else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
-  }else if(rule==='固定205'){
-    if(h<=350){w=205;nt=351;nw=220;}
-    else if(h<=700){w=220;nt=701;nw=agreed?245:'245(需備註同意)';}
-    else{w=agreed?245:220; if(!agreed){nt=701;nw='245(需備註同意)';}}
-  }else if(rule==='固定220'){
-    if(h<=350){w=220;nt=351;nw=245;}
-    else if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';}
-    else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
+    if(h<=175){w=210;nt=176;nw=220;} else if(h<=350){w=220;nt=351;nw=230;} else if(h<=525){w=230;nt=526;nw=240;} else if(h<=700){w=240;nt=701;nw=agreed?250:'250(需備註同意)';} else{w=agreed?250:240; if(!agreed){nt=701;nw='250(需備註同意)';}}
+  }else if(rule==='245起跳'){ if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';} else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
+  }else if(rule==='固定205'){ if(h<=350){w=205;nt=351;nw=220;} else if(h<=700){w=220;nt=701;nw=agreed?245:'245(需備註同意)';} else{w=agreed?245:220; if(!agreed){nt=701;nw='245(需備註同意)';}}
+  }else if(rule==='固定220'){ if(h<=350){w=220;nt=351;nw=245;} else if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';} else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
   }
-  
-  if(w===0) w=210; 
-  return {wage:w, nextTier:nt, nextWage:nw, hours:h, rule:rule};
+  if(w===0) w=210; return {wage:w, nextTier:nt, nextWage:nw, hours:h, rule:rule};
 }
 
 function getHistoricalRate(item) {
@@ -575,21 +515,12 @@ function getHistoricalRate(item) {
   const rule=si.salary_rule||'標準階梯';
   const agreed=(si.remark||'').includes('已同意調薪');
   let w=Number(si.hourly)||0;
-
   if(rule==='自訂') return w;
-
-  if(rule==='標準階梯'){
-    if(h<=175) w=210; else if(h<=350) w=220; else if(h<=525) w=230; else if(h<=700) w=240; else w=agreed?250:240;
-  }else if(rule==='245起跳'){
-    if(h<=700) w=245; else w=agreed?250:245;
-  }else if(rule==='固定205'){
-    if(h<=350) w=205; else if(h<=700) w=220; else w=agreed?245:220;
-  }else if(rule==='固定220'){
-    if(h<=350) w=220; else if(h<=700) w=245; else w=agreed?250:245;
-  }
-  
-  if(w===0) w=210;
-  return w;
+  if(rule==='標準階梯'){ if(h<=175) w=210; else if(h<=350) w=220; else if(h<=525) w=230; else if(h<=700) w=240; else w=agreed?250:240; }
+  else if(rule==='245起跳'){ if(h<=700) w=245; else w=agreed?250:245; }
+  else if(rule==='固定205'){ if(h<=350) w=205; else if(h<=700) w=220; else w=agreed?245:220; }
+  else if(rule==='固定220'){ if(h<=350) w=220; else if(h<=700) w=245; else w=agreed?250:245; }
+  if(w===0) w=210; return w;
 }
 
 function checkHourlyUpgradeAlert() {
@@ -599,36 +530,21 @@ function checkHourlyUpgradeAlert() {
   if(!box) return;
   if(!s || hInp <= 0) { box.style.display = 'none'; return; }
   let cH = getStaffTotalHours(s);
-  if(editAttendIndex > -1) {
-      const oldRec = attendData[editAttendIndex];
-      if(oldRec.staff === s) cH -= getItemSalaryHours(oldRec);
-  }
+  if(editAttendIndex > -1) { const oldRec = attendData[editAttendIndex]; if(oldRec.staff === s) cH -= getItemSalaryHours(oldRec); }
   const si = staffData.find(x => x.name === s);
   if(!si) return;
-  const rule = si.salary_rule || '標準階梯';
-  const agreed = (si.remark||'').includes('已同意調薪');
+  const rule = si.salary_rule || '標準階梯'; const agreed = (si.remark||'').includes('已同意調薪');
   let th = 0, oW = 0, nW = 0, nWText='';
-  if(rule==='標準階梯'){
-      if(cH<176 && cH+hInp>=176){th=175;oW=210;nW=220;nWText='220';}
-      else if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=230;nWText='230';}
-      else if(cH<526 && cH+hInp>=526){th=525;oW=230;nW=240;nWText='240';}
-      else if(cH<701 && cH+hInp>=701){th=700;oW=240;nW=agreed?250:240;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅240)';}
-  }else if(rule==='245起跳'){
-      if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅245)';}
-  }else if(rule==='固定205'){
-      if(cH<351 && cH+hInp>=351){th=350;oW=205;nW=220;nWText='220';}
-      else if(cH<701 && cH+hInp>=701){th=700;oW=220;nW=agreed?245:220;nWText=agreed?'245':'245 (需補上「已同意調薪」備註，否則僅220)';}
-  }else if(rule==='固定220'){
-      if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=245;nWText='245';}
-      else if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅245)';}
+  if(rule==='標準階梯'){ if(cH<176 && cH+hInp>=176){th=175;oW=210;nW=220;nWText='220';} else if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=230;nWText='230';} else if(cH<526 && cH+hInp>=526){th=525;oW=230;nW=240;nWText='240';} else if(cH<701 && cH+hInp>=701){th=700;oW=240;nW=agreed?250:240;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅240)';}
+  }else if(rule==='245起跳'){ if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅245)';}
+  }else if(rule==='固定205'){ if(cH<351 && cH+hInp>=351){th=350;oW=205;nW=220;nWText='220';} else if(cH<701 && cH+hInp>=701){th=700;oW=220;nW=agreed?245:220;nWText=agreed?'245':'245 (需補上「已同意調薪」備註，否則僅220)';}
+  }else if(rule==='固定220'){ if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=245;nWText='245';} else if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'250 (需補上「已同意調薪」備註，否則僅245)';}
   }
   if(th > 0 && cH < th) { 
-      const h1 = (th - cH).toFixed(1);
-      const h2 = (hInp - parseFloat(h1)).toFixed(1);
+      const h1 = (th - cH).toFixed(1); const h2 = (hInp - parseFloat(h1)).toFixed(1);
       if(parseFloat(h2) > 0) { 
           box.innerHTML = `<i class="fas fa-exclamation-circle"></i> <b>跨階預警：</b> 此筆排班會讓 ${s} 的總時數從 <b>${cH.toFixed(1)}h</b> 變成 <b>${(cH+hInp).toFixed(1)}h</b>，跨越 <b>${th}h</b> 升級門檻！<br><span style="color:#059669; margin-top:5px; display:block;">💡 建議直接拆成兩筆登記以精準計薪：</span>1️⃣ 第一筆：工時填 <b>${h1}</b>，特殊時薪填 <b>${oW}</b> (備註: 跨階前)<br>2️⃣ 第二筆：工時填 <b>${h2}</b>，特殊時薪留空自動抓 <b>${nWText||nW}</b> (備註: 升級)`;
-          box.style.display = 'block';
-          return;
+          box.style.display = 'block'; return;
       }
   }
   box.style.display = 'none';
@@ -636,34 +552,13 @@ function checkHourlyUpgradeAlert() {
 
 function updateSystemClock(){const d=new Date();const s=d.toLocaleString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});if(el('current-time'))el('current-time').innerHTML=`<i class="far fa-clock" style="color:#2d9d5c;"></i> ${s}`;if(el('staff-current-time'))el('staff-current-time').innerHTML=`<i class="far fa-clock" style="color:#2d9d5c;"></i> ${s}`;}
 function exportExcel(tableId,filename){
-  const oldSize = pageConfig.pageSize;
-  pageConfig.pageSize = 99999;
-  const refresh = () => {
-    if(tableId==='customerTableBox') renderCustTable();
-    if(tableId==='contractTableBox') renderContractTable();
-    if(tableId==='staffTableBox') renderStaffTable();
-    if(tableId==='ftStaffTableBox') renderFtStaffTable();
-    if(tableId==='attendTableBox') renderAttend();
-    if(tableId==='ftAttendTableBox') renderFtAttendTable();
-    if(tableId==='ftSalaryTableBox') renderFtSalaryTable();
-    if(tableId==='talentTableBox') renderTalentTable();
-    if(tableId==='supplierTableBox') renderSupplierTable();
-    if(tableId==='pointTableBox') renderPoint();
-    if(tableId==='billTableBox') renderBill();
-    if(tableId==='salaryTableBox') renderSalary();
-    if(tableId==='bossTableBox') showBoss();
-  };
-  refresh();
-  let tb = el(tableId);
+  const oldSize = pageConfig.pageSize; pageConfig.pageSize = 99999;
+  const refresh = () => { if(tableId==='customerTableBox') renderCustTable(); if(tableId==='contractTableBox') renderContractTable(); if(tableId==='staffTableBox') renderStaffTable(); if(tableId==='ftStaffTableBox') renderFtStaffTable(); if(tableId==='attendTableBox') renderAttend(); if(tableId==='ftAttendTableBox') renderFtAttendTable(); if(tableId==='ftSalaryTableBox') renderFtSalaryTable(); if(tableId==='talentTableBox') renderTalentTable(); if(tableId==='supplierTableBox') renderSupplierTable(); if(tableId==='pointTableBox') renderPoint(); if(tableId==='billTableBox') renderBill(); if(tableId==='salaryTableBox') renderSalary(); if(tableId==='bossTableBox') showBoss(); };
+  refresh(); let tb = el(tableId);
   if(!tb) { pageConfig.pageSize = oldSize; refresh(); return showToast('錯誤',true); }
   let cloneTb = tb.cloneNode(true);
-  if(cloneTb.rows[0] && cloneTb.rows[0].cells[cloneTb.rows[0].cells.length-1].innerText.includes('操作')) {
-    Array.from(cloneTb.rows).forEach(row => { if(row.cells.length > 0) row.deleteCell(-1); });
-  }
-  XLSX.writeFile(XLSX.utils.table_to_book(cloneTb,{sheet:"Sheet1"}), filename+".xlsx");
-  pageConfig.pageSize = oldSize;
-  refresh();
-  showToast('✅ 匯出成功');
+  if(cloneTb.rows[0] && cloneTb.rows[0].cells[cloneTb.rows[0].cells.length-1].innerText.includes('操作')) { Array.from(cloneTb.rows).forEach(row => { if(row.cells.length > 0) row.deleteCell(-1); }); }
+  XLSX.writeFile(XLSX.utils.table_to_book(cloneTb,{sheet:"Sheet1"}), filename+".xlsx"); pageConfig.pageSize = oldSize; refresh(); showToast('✅ 匯出成功');
 }
 
 function exportBossSalaryExcel() {
@@ -676,36 +571,25 @@ function exportBossSalaryExcel() {
   let sm = {};
   fData.forEach(i => {
     let n = i.staff;
-    if(!sm[n]) {
-      const si = staffData.find(x => x.name === n) || {};
-      sm[n] = { name: n, items: {}, tHrs: 0, tAmt: 0, l: Number(si.labor)||0, h: Number(si.health)||0, b: `${si.bank||''}${si.bank_branch ? '('+si.bank_branch+')' : ''}${si.bank_acc||''}`, id: si.id || '' };
-    }
-    let pH = getItemSalaryHours(i);
-    let hy = getHistoricalRate(i);
-    let pk = `${i.company}${i.service||''}_${hy}`;
-    let pn = `${i.company}${i.service||''}`;
+    if(!sm[n]) { const si = staffData.find(x => x.name === n) || {}; sm[n] = { name: n, items: {}, tHrs: 0, tAmt: 0, l: Number(si.labor)||0, h: Number(si.health)||0, b: `${si.bank||''}${si.bank_branch ? '('+si.bank_branch+')' : ''}${si.bank_acc||''}`, id: si.id || '' }; }
+    let pH = getItemSalaryHours(i); let hy = getHistoricalRate(i); let pk = `${i.company}${i.service||''}_${hy}`; let pn = `${i.company}${i.service||''}`;
     if(!sm[n].items[pk]) sm[n].items[pk] = { name: pn, hrs: 0, rate: hy, amt: 0 };
     sm[n].items[pk].hrs += pH; sm[n].items[pk].amt += Math.round(pH * hy); sm[n].tHrs += pH; sm[n].tAmt += Math.round(pH * hy);
   });
   let tb = document.createElement('table');
   let head = `<thead><tr><th colspan="12" style="font-size:20px;font-weight:bold;text-align:center;">愜易居有限公司 兼職人員薪資表 (${ptxt})</th></tr><tr><th>姓名</th><th>服務項目</th><th>時數</th><th>時薪</th><th>金額</th><th>小計</th><th>應扣勞保</th><th>應扣健保</th><th>其他</th><th>應匯</th><th>帳號</th><th>身分證</th></tr></thead><tbody>`;
-  let body = '';
-  let gHrs=0, gAmt=0, gL=0, gH=0, gNet=0;
+  let body = ''; let gHrs=0, gAmt=0, gL=0, gH=0, gNet=0;
   Object.values(sm).forEach(s => {
-     let keys = Object.keys(s.items); let rs = keys.length; let net = s.tAmt - s.l - s.h;
-     gHrs+=s.tHrs; gAmt+=s.tAmt; gL+=s.l; gH+=s.h; gNet+=net;
+     let keys = Object.keys(s.items); let rs = keys.length; let net = s.tAmt - s.l - s.h; gHrs+=s.tHrs; gAmt+=s.tAmt; gL+=s.l; gH+=s.h; gNet+=net;
      keys.forEach((k, idx) => {
-       let it = s.items[k]; let tr = '<tr>';
-       if(idx===0) tr += `<td rowspan="${rs}">${s.name}</td>`;
+       let it = s.items[k]; let tr = '<tr>'; if(idx===0) tr += `<td rowspan="${rs}">${s.name}</td>`;
        tr += `<td>${it.name}(${it.hrs.toFixed(1)}H)</td><td>${it.hrs.toFixed(1)}</td><td>${it.rate}</td><td>${it.amt}</td>`;
        if(idx===0) tr += `<td rowspan="${rs}">${s.tAmt}</td><td rowspan="${rs}">${s.l}</td><td rowspan="${rs}">${s.h}</td><td rowspan="${rs}">0</td><td rowspan="${rs}">${net}</td><td rowspan="${rs}">${s.b}</td><td rowspan="${rs}">${s.id}</td>`;
        tr += '</tr>'; body += tr;
      });
   });
   body += `<tr><td colspan="2" style="font-weight:bold;text-align:right;">合計：</td><td>${gHrs.toFixed(1)}</td><td></td><td>${gAmt}</td><td>${gAmt}</td><td>${gL}</td><td>${gH}</td><td>0</td><td>${gNet}</td><td></td><td></td></tr></tbody>`;
-  tb.innerHTML = head + body;
-  XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "薪資表"}), `愜易居_${y}年${m}月_老闆專用薪資彙整表.xlsx`);
-  showToast('✅ 匯出成功');
+  tb.innerHTML = head + body; XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "薪資表"}), `愜易居_${y}年${m}月_老闆專用薪資彙整表.xlsx`); showToast('✅ 匯出成功');
 }
 
 function clearLoginBg(){if(confirm('刪除？')){loginBgBase64='';localStorage.removeItem('loginBg');updateLogoPreview();saveAllSilently();}}
@@ -713,7 +597,7 @@ function clearLoginLogo(){if(confirm('刪除？')){loginLogoBase64='';localStora
 function clearPdfLogo(){if(confirm('刪除？')){pdfLogoBase64='';localStorage.removeItem('pdfLogo');updateLogoPreview();saveAllSilently();}}
 function updateLogoPreview(){const pl=el('loginLogoPreview'),bl=el('btnClearLoginLogo'),pp=el('pdfLogoPreview'),bp=el('btnClearPdfLogo'),limg=el('login-logo-img'),licon=el('login-logo-icon'),ls=el('login-screen'),btnBg=el('btnClearLoginBg'),bgStatus=el('bg-upload-status');if(loginBgBase64){if(ls)ls.style.backgroundImage=`url('${loginBgBase64}')`;if(btnBg)btnBg.style.display='inline-block';if(el('loginBgUrl'))el('loginBgUrl').value=loginBgBase64;}else{if(ls)ls.style.backgroundImage="url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')";if(btnBg)btnBg.style.display='none';if(bgStatus)bgStatus.style.display='none';if(el('loginBgUrl'))el('loginBgUrl').value='';}if(loginLogoBase64){if(pl){pl.src=loginLogoBase64;pl.style.display='block';bl.style.display='inline-block';}if(limg){limg.src=loginLogoBase64;limg.style.display='block';if(licon)licon.style.display='none';}if(el('loginLogoUrl'))el('loginLogoUrl').value=loginLogoBase64;}else{if(pl){pl.src='';pl.style.display='none';bl.style.display='none';}if(limg){limg.src='';limg.style.display='none';if(licon)licon.style.display='block';}if(el('loginLogoUrl'))el('loginLogoUrl').value='';}if(pdfLogoBase64){if(pp){pp.src=pdfLogoBase64;pp.style.display='block';bp.style.display='inline-block';}if(el('pdfLogoUrl'))el('pdfLogoUrl').value=pdfLogoBase64;}else{if(pp){pp.src='';pp.style.display='none';bp.style.display='none';}if(el('pdfLogoUrl'))el('pdfLogoUrl').value='';}}
 
-function loadDataFromCloud(forceRender=false){if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{let nA=0;if(r.sysConfig){if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_admin_acc'))el('setting_admin_acc').value=r.sysConfig.adminAcc;}if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_admin_pwd'))el('setting_admin_pwd').value=r.sysConfig.adminPwd;}if(r.sysConfig.hrAcc){localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(el('setting_hr_acc'))el('setting_hr_acc').value=r.sysConfig.hrAcc;}if(r.sysConfig.hrPwd){localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(el('setting_hr_pwd'))el('setting_hr_pwd').value=r.sysConfig.hrPwd;}if(r.sysConfig.priceTable){localStorage.setItem('priceTable',r.sysConfig.priceTable);priceTable=JSON.parse(r.sysConfig.priceTable);if(el('config_price_table'))el('config_price_table').value=r.sysConfig.priceTable;renderPricePlanOptions();}if(r.sysConfig.portalConf){let c=JSON.parse(r.sysConfig.portalConf);portalConf={...defaultPortalConf,...c};localStorage.setItem('portalConf',JSON.stringify(portalConf));renderPortalConfigUI();applyPortalConfigToStaff();renderServiceTypes();}if(r.sysConfig.loginLogo){localStorage.setItem('loginLogo',r.sysConfig.loginLogo);loginLogoBase64=r.sysConfig.loginLogo;}if(r.sysConfig.pdfLogo){localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);pdfLogoBase64=r.sysConfig.pdfLogo;}if(r.sysConfig.loginBg){localStorage.setItem('loginBg',r.sysConfig.loginBg);loginBgBase64=r.sysConfig.loginBg;}updateLogoPreview();}if(!r.talentData)r.talentData=talentData||[];r.talentData=r.talentData.filter(x=>x&&String(x.name||'').trim()!=='');let pC=r.talentData.length;let fm=r['Form_Responses']||r['表單回應 1']||r['表單回應']||r['Form Responses 1'];if(fm&&Array.isArray(fm)&&fm.length>0){const hH=String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名');const dR=hH?fm.slice(1):fm;dR.forEach(row=>{if(Array.isArray(row)){let n=String(row[1]||'').trim(),t=String(row[4]||row[2]||'').trim(),l=String(row[5]||'').trim(),y=String(row[8]||'').trim(),e=String(row[9]||'').trim(),loc=String(row[10]||'').trim(),s=String(row[11]||'').trim(),rl=String(row[22]||row[12]||'').trim(),dt=String(row[0]||'').trim();let ex=[];if(l)ex.push('Line:'+l);if(y)ex.push('年資:'+y);if(e)ex.push('經歷:'+e);if(n&&n!==''&&!n.includes('全名')&&!n.includes('姓名')){if(!r.talentData.some(t=>String(t.name).trim()===n)){r.talentData.push({name:n,tel:t,source:'Google表單',location:loc,shift:s,role:rl,status:'待聯絡',eval:'',resume:'',exp:ex.join(' | '),date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0]});nA++;}}}});}if(r.custData)custData=r.custData;if(r.contractData)contractData=r.contractData;if(r.staffData)staffData=r.staffData;if(r.attendData)attendData=r.attendData;if(r.ftStaffData)ftStaffData=r.ftStaffData;if(r.ftAttendData)ftAttendData=r.ftAttendData;talentData=r.talentData;if(r.supplierData)supplierData=r.supplierData;standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));}catch(e){}if(nA>0||talentData.length<pC)saveAllSilently();if(forceRender){if(nA>0)alert(`匯入 ${nA} 筆`);else if(fm)alert(`無新履歷`);}if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');const cp=localStorage.getItem('adminPage')||'dashboard';if(el('admin-screen')&&el('admin-screen').style.display!=='none'){if(forceRender)showAdminPage(cp);else{if(cp==='dashboard')renderDashboard();else if(cp==='customer')renderCustTable();else if(cp==='staff')renderStaffTable();else if(cp==='talent')renderTalentTable();else if(cp==='supplier')renderSupplierTable();}}}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線',true);});}
+function loadDataFromCloud(forceRender=false){if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{let nA=0;if(r.sysConfig){if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_admin_acc'))el('setting_admin_acc').value=r.sysConfig.adminAcc;}if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_admin_pwd'))el('setting_admin_pwd').value=r.sysConfig.adminPwd;}if(r.sysConfig.hrAcc){localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(el('setting_hr_acc'))el('setting_hr_acc').value=r.sysConfig.hrAcc;}if(r.sysConfig.hrPwd){localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(el('setting_hr_pwd'))el('setting_hr_pwd').value=r.sysConfig.hrPwd;}if(r.sysConfig.priceTable){localStorage.setItem('priceTable',r.sysConfig.priceTable);priceTable=JSON.parse(r.sysConfig.priceTable);if(el('config_price_table'))el('config_price_table').value=r.sysConfig.priceTable;renderPricePlanOptions();}if(r.sysConfig.portalConf){let c=JSON.parse(r.sysConfig.portalConf);portalConf={...defaultPortalConf,...c};localStorage.setItem('portalConf',JSON.stringify(portalConf));renderPortalConfigUI();applyPortalConfigToStaff();renderServiceTypes();}if(r.sysConfig.loginLogo){localStorage.setItem('loginLogo',r.sysConfig.loginLogo);loginLogoBase64=r.sysConfig.loginLogo;}if(r.sysConfig.pdfLogo){localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);pdfLogoBase64=r.sysConfig.pdfLogo;}if(r.sysConfig.loginBg){localStorage.setItem('loginBg',r.sysConfig.loginBg);loginBgBase64=r.sysConfig.loginBg;}updateLogoPreview();}if(!r.talentData)r.talentData=talentData||[];r.talentData=r.talentData.filter(x=>x&&String(x.name||'').trim()!=='');let fm=r['Form_Responses']||r['表單回應 1']||r['表單回應']||r['Form Responses 1'];if(fm&&Array.isArray(fm)&&fm.length>0){const dR=String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名')?fm.slice(1):fm;dR.forEach(row=>{if(Array.isArray(row)){let n=String(row[1]||'').trim(),t=String(row[4]||row[2]||'').trim(),l=String(row[5]||'').trim(),y=String(row[8]||'').trim(),e=String(row[9]||'').trim(),loc=String(row[10]||'').trim(),s=String(row[11]||'').trim(),rl=String(row[22]||row[12]||'').trim(),dt=String(row[0]||'').trim();if(n&&n!==''&&!n.includes('全名')&&!n.includes('姓名')){if(!r.talentData.some(t=>String(t.name).trim()===n)){let ex=[];if(l)ex.push('Line:'+l);if(y)ex.push('年資:'+y);if(e)ex.push('經歷:'+e);r.talentData.push({name:n,tel:t,source:'Google表單',location:loc,shift:s,role:rl,status:'待聯絡',eval:'',resume:'',exp:ex.join(' | '),date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0]});nA++;}}}});}if(r.custData)custData=r.custData;if(r.contractData)contractData=r.contractData;if(r.staffData)staffData=r.staffData;if(r.attendData)attendData=r.attendData;if(r.ftStaffData)ftStaffData=r.ftStaffData;if(r.ftAttendData)ftAttendData=r.ftAttendData;talentData=r.talentData;if(r.supplierData)supplierData=r.supplierData;standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));}catch(e){}if(nA>0)saveAllSilently();if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');const cp=localStorage.getItem('adminPage')||'dashboard';if(el('admin-screen')&&el('admin-screen').style.display!=='none'){if(forceRender)showAdminPage(cp);else{if(cp==='dashboard')renderDashboard();else if(cp==='customer')renderCustTable();else if(cp==='staff')renderStaffTable();else if(cp==='talent')renderTalentTable();else if(cp==='supplier')renderSupplierTable();}}}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線',true);});}
 function saveAllSilently(){fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,sysConfig:getSysConfigPayload()}),headers:{'Content-Type':'text/plain;charset=utf-8'}});}
 function saveAll(){standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));}catch(e){}if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 存...');fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,sysConfig:getSysConfigPayload()}),headers:{'Content-Type':'text/plain;charset=utf-8'}}).then(r=>r.json()).then(r=>{if(r.status==='success'&&el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);});}
 function syncTalentFromForm(){if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...');fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'syncForm'}),headers:{'Content-Type':'text/plain;charset=utf-8'}}).then(r=>r.json()).then(r=>{showToast(`✅ 同步！`);loadDataFromCloud(true);}).catch(e=>{showToast('❌ 網路錯誤',true);if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');});}
@@ -723,161 +607,59 @@ function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showT
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
 function openPreview(title, contentHtml, fUrl, filename) {
-  const overlay = el('preview-overlay');
-  el('preview-title').innerHTML = `<i class="fas fa-file-pdf" style="color:#ef4444;"></i> 預覽：${title} (直向)`;
-  el('preview-body').innerHTML = `<div class="pdf-box">${contentHtml}</div>`;
-  overlay.style.display = 'block';
-  window.currentPdfData = { title, filename, fUrl, contentHtml };
+  const overlay = el('preview-overlay'); el('preview-title').innerHTML = `<i class="fas fa-file-pdf" style="color:#ef4444;"></i> 預覽：${title} (直向)`; el('preview-body').innerHTML = `<div class="pdf-box">${contentHtml}</div>`; overlay.style.display = 'block'; window.currentPdfData = { title, filename, fUrl, contentHtml };
 }
 function closePreview() { el('preview-overlay').style.display = 'none'; el('preview-body').innerHTML = ''; }
 function doNativePrint() {
-  let d = window.currentPdfData;
-  let w = window.open('', '_blank');
+  let d = window.currentPdfData; let w = window.open('', '_blank');
   w.document.write(`<html><head><title>${d.title}</title><style>@page{size:A4 portrait; margin:15mm;} body{font-family:"Microsoft JhengHei",sans-serif;color:#333;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;} table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px;} th,td{border:1px solid #cbd5e1;padding:12px;text-align:center;} th{background:#f1f5f9;font-weight:bold;color:#333;} .summary-table td{border:none;padding:15px;} .summary-table{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;} .info-table td{border:none;padding:4px 0;text-align:left;color:#333;} .info-table td:last-child{text-align:right;} h2{margin:0;color:#2d9d5c;font-size:28px;} h3{margin:8px 0 0;color:#64748b;font-size:18px;} .footer{text-align:right;font-size:12px;color:#888;margin-top:30px;} @media print{ button{display:none;} }</style></head><body><div style="text-align:right;margin-bottom:20px;"><button onclick="window.print()" style="padding:10px 20px;background:#2d9d5c;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:16px;">列印 / 另存 PDF</button></div>${d.contentHtml}<script>setTimeout(function(){window.print();},500);<\/script></body></html>`);
   w.document.close();
 }
 function doDownloadPdf(isCloud) {
   showToast(isCloud ? '📄 雲端上傳中...' : '📄 正在產生高畫質 PDF...');
-  let d = window.currentPdfData;
-  closePreview();
+  let d = window.currentPdfData; closePreview();
   const hiddenElements = [];
-  Array.from(document.body.children).forEach(child => {
-      if (child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE' && child.id !== 'toast') {
-          hiddenElements.push({ el: child, display: child.style.display });
-          child.style.display = 'none';
-      }
-  });
-  const oldBg = document.body.style.background;
-  const oldOverflow = document.body.style.overflow;
-  const oldHeight = document.body.style.height;
-  document.body.style.background = '#ffffff';
-  document.body.style.overflow = 'visible';
-  document.body.style.height = 'auto';
+  Array.from(document.body.children).forEach(child => { if (child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE' && child.id !== 'toast') { hiddenElements.push({ el: child, display: child.style.display }); child.style.display = 'none'; } });
+  const oldBg = document.body.style.background, oldOverflow = document.body.style.overflow, oldHeight = document.body.style.height;
+  document.body.style.background = '#ffffff'; document.body.style.overflow = 'visible'; document.body.style.height = 'auto';
   let c = document.createElement('div');
-  c.id = 'pdf-export-box';
-  c.style.cssText = 'width:794px; padding:40px; margin:0; background:#fff; color:#333; font-family:"Microsoft JhengHei",sans-serif; text-align:left; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; min-height:1122px;';
+  c.id = 'pdf-export-box'; c.style.cssText = 'width:794px; padding:40px; margin:0; background:#fff; color:#333; font-family:"Microsoft JhengHei",sans-serif; text-align:left; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; min-height:1122px;';
   c.innerHTML = `<style>#pdf-export-box table { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;} #pdf-export-box th, #pdf-export-box td { border:1px solid #cbd5e1; padding:12px; text-align:center; color:#333; } #pdf-export-box th { background:#f1f5f9; font-weight:bold; color:#333; } #pdf-export-box .summary-table { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; margin-bottom:25px; text-align:center; font-size:16px; border-collapse:collapse;} #pdf-export-box .summary-table td { padding:18px; border:none; border-right:1px solid #d1fae5; } #pdf-export-box .summary-table td:last-child { border-right:none; } #pdf-export-box .info-table { width:100%; margin-bottom:20px; border:none; border-collapse:collapse;} #pdf-export-box .info-table td { border:none; padding:4px 0; text-align:left; color:#333; }</style>${d.contentHtml.replace(/<table/g, '<table class="pdf-export-table"').replace(/<table class="pdf-export-table" class="info-table"/g, '<table class="info-table"').replace(/<table class="pdf-export-table" class="summary-table"/g, '<table class="summary-table"')}`;
-  document.body.appendChild(c);
-  window.scrollTo(0,0);
+  document.body.appendChild(c); window.scrollTo(0,0);
   let opt = { margin:[10,0,10,0], filename:`${d.filename}_${d.title}.pdf`, image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true, scrollY:0}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} };
-  const finish = () => {
-      if(document.body.contains(c)) document.body.removeChild(c);
-      document.body.style.background = oldBg;
-      document.body.style.overflow = oldOverflow;
-      document.body.style.height = oldHeight;
-      hiddenElements.forEach(item => item.el.style.display = item.display);
-      window.scrollTo(0,0);
-  };
+  const finish = () => { if(document.body.contains(c)) document.body.removeChild(c); document.body.style.background = oldBg; document.body.style.overflow = oldOverflow; document.body.style.height = oldHeight; hiddenElements.forEach(item => item.el.style.display = item.display); window.scrollTo(0,0); };
   setTimeout(() => {
       let w = html2pdf().set(opt).from(c);
       if(isCloud) {
          if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
          w.outputPdf('datauristring').then(b64 => { 
-            finish();
-            fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'savePDF',folderUrl:d.fUrl,fileName:opt.filename,base64Data:b64})})
-            .then(r=>r.json()).then(r=>{ 
-                if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} 
-                else showToast('失敗',true);
-            }).catch(e=>showToast('錯誤',true)); 
+            finish(); fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'savePDF',folderUrl:d.fUrl,fileName:opt.filename,base64Data:b64})})
+            .then(r=>r.json()).then(r=>{ if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} else showToast('失敗',true); }).catch(e=>showToast('錯誤',true)); 
          }).catch(e => { finish(); showToast('產出失敗', true); });
-      } else { 
-         w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); 
-      }
+      } else { w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); }
   }, 600);
 }
 
-function uploadTablePDF(tid, t, cid, isC, isS=false) { showToast('請使用原生報表產出功能。', true); }
-
 function generateStatementPDF() {
-  const cb=el('bill_filter_company').value.trim(), yb=el('bill_filter_year').value, mb=el('bill_filter_month').value;
-  const cycle=el('bill_cycle').value;
+  const cb=el('bill_filter_company').value.trim(), yb=el('bill_filter_year').value, mb=el('bill_filter_month').value; const cycle=el('bill_cycle').value;
   if(!cb || cb === '全部' || cb === '') return showToast('請選公司', true);
-  const ci=custData.find(x=>x.name===cb);
-  let periodStart = '0000-00-00';
-  let periodEnd = '9999-99-99';
-  let pt = '全部';
+  const ci=custData.find(x=>x.name===cb); let periodStart = '0000-00-00', periodEnd = '9999-99-99', pt = '全部';
   if(yb !== 'all' && mb !== 'all') {
-      if(cycle === '1') {
-          periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`;
-          let lastDay = new Date(yb, mb, 0).getDate();
-          periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`;
-          pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`;
-      } else {
-          let py = parseInt(yb);
-          let pm = parseInt(mb) - 1;
-          if(pm === 0) { pm = 12; py -= 1; }
-          periodStart = `${py}-${String(pm).padStart(2,'0')}-26`;
-          periodEnd = `${yb}-${String(mb).padStart(2,'0')}-25`;
-          pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`;
-      }
+      if(cycle === '1') { periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`; let lastDay = new Date(yb, mb, 0).getDate(); periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`; pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`;
+      } else { let py = parseInt(yb), pm = parseInt(mb) - 1; if(pm === 0) { pm = 12; py -= 1; } periodStart = `${py}-${String(pm).padStart(2,'0')}-26`; periodEnd = `${yb}-${String(mb).padStart(2,'0')}-25`; pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`; }
   }
   const cs=contractData.filter(x=>x.customer===cb && (!x.date || x.date <= periodEnd)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  let tp=0, ph='', ps=new Set();
-  cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;});
-  if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
-  let pastRecords = attendData.filter(x=>x.company===cb && x.date < periodStart);
-  let pastDeducted = 0;
-  let pastBreakdown = {};
-  pastRecords.forEach(i => {
-      let pts = getItemDeductPoints(i);
-      pastDeducted += pts;
-      let parts = i.date.split('-');
-      let rY = parseInt(parts[0], 10);
-      let rM = parseInt(parts[1], 10);
-      let rD = parseInt(parts[2], 10);
-      if (cycle === '26' && rD >= 26) { rM += 1; if (rM > 12) { rM = 1; rY += 1; } }
-      let pKey = `${rY}年${rM}月`;
-      if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0;
-      pastBreakdown[pKey] += pts;
-  });
-  let pKeys = Object.keys(pastBreakdown).sort((a,b) => {
-      let [y1, m1] = a.replace('月','').split('年');
-      let [y2, m2] = b.replace('月','').split('年');
-      return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2));
-  });
+  let tp=0, ph='', ps=new Set(); cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;}); if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
+  let pastRecords = attendData.filter(x=>x.company===cb && x.date < periodStart); let pastDeducted = 0, pastBreakdown = {};
+  pastRecords.forEach(i => { let pts = getItemDeductPoints(i); pastDeducted += pts; let parts = i.date.split('-'); let rY = parseInt(parts[0], 10), rM = parseInt(parts[1], 10), rD = parseInt(parts[2], 10); if (cycle === '26' && rD >= 26) { rM += 1; if (rM > 12) { rM = 1; rY += 1; } } let pKey = `${rY}年${rM}月`; if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0; pastBreakdown[pKey] += pts; });
+  let pKeys = Object.keys(pastBreakdown).sort((a,b) => { let [y1, m1] = a.replace('月','').split('年'), [y2, m2] = b.replace('月','').split('年'); return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2)); });
   let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px; color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
   let ats=attendData.filter(x=>x.company===cb && isDispatchPayrollPeriod(x.date,yb,mb,cycle)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  let ah='';
-  let periodDeducted = 0;
-  if(ats.length>0) {
-      ats.forEach(i=>{
-          const cH = getItemClockHours(i);
-          const cP = getItemDeductPoints(i);
-          periodDeducted += cP;
-          ah+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td>${cH.toFixed(1)}</td><td>${cP}</td></tr>`;
-      });
+  let ah='', periodDeducted = 0;
+  if(ats.length>0) { ats.forEach(i=>{ const cH = getItemClockHours(i), cP = getItemDeductPoints(i); periodDeducted += cP; ah+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td>${cH.toFixed(1)}</td><td>${cP}</td></tr>`; });
   } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`; }
-  const totalDeducted = pastDeducted + periodDeducted;
-  const endingPoints = Number((tp - totalDeducted).toFixed(1));
-  const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">`:'';
-  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">愜易居有限公司 - 服務對帳單</h2></div>
-  <table class="info-table" style="margin-bottom:20px;width:100%;">
-    <tr>
-      <td style="font-size:15px;line-height:1.8;color:#333;vertical-align:top;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td>
-      <td style="text-align:right;vertical-align:top;">
-        <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;vertical-align:top;">
-            <div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}
-        </div>
-        <div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;margin-left:10px;vertical-align:top;">
-            <div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">歷史扣除明細</div>${pastHistoryHtml}
-        </div>
-      </td>
-    </tr>
-  </table>
-  <table class="summary-table" style="width:100%;background:#fff;border-radius:8px;margin-bottom:25px;text-align:center;font-size:15px;border:1px solid #cbd5e1;box-shadow:0 4px 6px rgba(0,0,0,0.05);">
-    <tr>
-      <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;width:20%;vertical-align:top;background:#f8fafc;">購買總點數<br><strong style="font-size:24px;color:#1e293b;">${tp} 點</strong></td>
-      <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;vertical-align:top;background:#f8fafc;width:20%;">歷史已扣<br><strong style="font-size:24px;color:#64748b;">${pastDeducted.toFixed(1)}</strong></td>
-      <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#dc2626;background:#fff5f5;vertical-align:top;width:20%;">本期扣除<br><strong style="font-size:24px;">${periodDeducted.toFixed(1)}</strong></td>
-      <td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#ea580c;background:#fff7ed;vertical-align:top;width:20%;">累計總扣除<br><strong style="font-size:24px;">${totalDeducted.toFixed(1)}</strong></td>
-      <td style="padding:12px 8px;color:#059669;background:#ecfdf5;vertical-align:top;width:20%;">最新剩餘點數<br><strong style="font-size:28px;color:${endingPoints<0?'#ef4444':'#059669'};">${endingPoints.toFixed(1)}</strong></td>
-    </tr>
-  </table>
-  <table style="width:100%;border-collapse:collapse;text-align:center;">
-    <thead><tr style="background:#f1f5f9;"><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead>
-    <tbody>${ah}</tbody>
-  </table>
-  <div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+  const totalDeducted = pastDeducted + periodDeducted, endingPoints = Number((tp - totalDeducted).toFixed(1)), lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">`:'';
+  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">愜易居有限公司 - 服務對帳單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;vertical-align:top;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td><td style="text-align:right;vertical-align:top;"><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;vertical-align:top;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;margin-left:10px;vertical-align:top;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">歷史扣除明細</div>${pastHistoryHtml}</div></td></tr></table><table class="summary-table" style="width:100%;background:#fff;border-radius:8px;margin-bottom:25px;text-align:center;font-size:15px;border:1px solid #cbd5e1;box-shadow:0 4px 6px rgba(0,0,0,0.05);"><tr><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;width:20%;vertical-align:top;background:#f8fafc;">購買總點數<br><strong style="font-size:24px;color:#1e293b;">${tp} 點</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;vertical-align:top;background:#f8fafc;width:20%;">歷史已扣<br><strong style="font-size:24px;color:#64748b;">${pastDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#dc2626;background:#fff5f5;vertical-align:top;width:20%;">本期扣除<br><strong style="font-size:24px;">${periodDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#ea580c;background:#fff7ed;vertical-align:top;width:20%;">累計總扣除<br><strong style="font-size:24px;">${totalDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;color:#059669;background:#ecfdf5;vertical-align:top;width:20%;">最新剩餘點數<br><strong style="font-size:28px;color:${endingPoints<0?'#ef4444':'#059669'};">${endingPoints.toFixed(1)}</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
   openPreview('對帳單', c, ci?ci.drive:'', cb);
 }
 
@@ -885,19 +667,9 @@ function showAdminPage(p) {
   try {
       if(el('admin-screen').classList.contains('mode-hr') && ['customer','contract','point','bill','boss','supplier','appearance','settings'].includes(p)) return showToast('營業專屬', true);
       let tp=el('page-'+p); if(!tp) { p='dashboard'; tp=el('page-dashboard'); } 
-      localStorage.setItem('adminPage',p); document.querySelectorAll('#admin-screen .page').forEach(x=>x.classList.remove('active')); tp.classList.add('active');
-      document.querySelectorAll('#admin-screen .sidebar-nav a').forEach(a=>a.classList.remove('active'));
+      localStorage.setItem('adminPage',p); document.querySelectorAll('#admin-screen .page').forEach(x=>x.classList.remove('active')); tp.classList.add('active'); document.querySelectorAll('#admin-screen .sidebar-nav a').forEach(a=>a.classList.remove('active'));
       let l=document.querySelector(`a[onclick*="showAdminPage('${p}')"]`); if(l) l.classList.add('active');
-      if(p==='customer') { clearCustForm(); renderCustTable(); } 
-      if(p==='contract') { clearContractForm(); renderContractTable(); }
-      if(p==='staff') { clearStaffForm(); renderStaffTable(); } 
-      if(p==='attend') { clearAttendForm(); renderAttend(); }
-      if(p==='ft_staff') { clearFtStaffForm(); renderFtStaffTable(); } 
-      if(p==='ft_attend') { clearFtAttendForm(); renderFtAttendTable(); }
-      if(p==='talent') { clearTalentForm(); renderTalentTable(); } 
-      if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); }
-      if(p==='boss') showBoss();
-      if(p==='dashboard') renderDashboard();
+      if(p==='customer') { clearCustForm(); renderCustTable(); } if(p==='contract') { clearContractForm(); renderContractTable(); } if(p==='staff') { clearStaffForm(); renderStaffTable(); } if(p==='attend') { clearAttendForm(); renderAttend(); } if(p==='ft_staff') { clearFtStaffForm(); renderFtStaffTable(); } if(p==='ft_attend') { clearFtAttendForm(); renderFtAttendTable(); } if(p==='talent') { clearTalentForm(); renderTalentTable(); } if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); } if(p==='boss') showBoss(); if(p==='dashboard') renderDashboard();
   } catch(e) {}
 }
 
@@ -908,27 +680,16 @@ function changePage(m,tp) { pageConfig.currentPage[m]=tp; switch(m){ case'custom
 
 function fillFilters() {
   const rf = (s,h) => { document.querySelectorAll(s).forEach(e=>{const v=e.value; e.innerHTML=h; if(v)e.value=v;}); };
-  const y=new Date().getFullYear(); 
-  let yr='<option value="all">全部</option>'; 
-  for(let i=2024; i<=y; i++) yr+=`<option value="${i}">${i}</option>`;
+  const y=new Date().getFullYear(); let yr='<option value="all">全部</option>'; for(let i=2024; i<=y; i++) yr+=`<option value="${i}">${i}</option>`;
   rf('#filter_year,#bill_filter_year,#sal_filter_year,#boss_year',yr);
-  let mh='<option value="all">全部</option>';
-  for(let i=1;i<=12;i++) mh+=`<option value="${i}">${i}月</option>`; rf('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month',mh);
+  let mh='<option value="all">全部</option>'; for(let i=1;i<=12;i++) mh+=`<option value="${i}">${i}月</option>`; rf('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month',mh);
   let custH = '<option value="全部">'; custData.forEach(c=>custH+=`<option value="${c.name}">`); if(el('list_cust')) el('list_cust').innerHTML = custH;
-  let staffH = '<option value="全部人員">'; staffData.filter(s=>s.status==='在職').forEach(s=>staffH+=`<option value="${s.name}">`);
-  if(el('list_staff')) el('list_staff').innerHTML = staffH;
-  let ftStaffH = '<option value="全部員工">'; ftStaffData.filter(s=>s.status==='在職').forEach(s=>ftStaffH+=`<option value="${s.name}">`);
-  if(el('list_ft_staff')) el('list_ft_staff').innerHTML = ftStaffH;
-  let supH = '<option value="全部">';
-  supplierData.forEach(s=>supH+=`<option value="${s.name}">`); if(el('list_supplier')) el('list_supplier').innerHTML = supH;
+  let staffH = '<option value="全部人員">'; staffData.filter(s=>s.status==='在職').forEach(s=>staffH+=`<option value="${s.name}">`); if(el('list_staff')) el('list_staff').innerHTML = staffH;
+  let ftStaffH = '<option value="全部員工">'; ftStaffData.filter(s=>s.status==='在職').forEach(s=>ftStaffH+=`<option value="${s.name}">`); if(el('list_ft_staff')) el('list_ft_staff').innerHTML = ftStaffH;
+  let supH = '<option value="全部">'; supplierData.forEach(s=>supH+=`<option value="${s.name}">`); if(el('list_supplier')) el('list_supplier').innerHTML = supH;
 }
 
-function renderSupplierTable() { const f=el('sup_filter_name').value.trim();
-let l=supplierData.filter(x=>(!f || f==='全部' || x.name===f)); const {pagedList,total,totalPages}=getPagedData(l,'supplier');
-let h='';
-pagedList.forEach((item, i) => { const idx = supplierData.indexOf(item); const btn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>` : '-'; h += `<tr><td>${item.name}</td><td>${item.contact||'-'}</td><td>${item.tel||'-'}</td><td>${item.tax||'-'}</td><td>${item.pay_method||'-'}</td><td><b class="red">${item.pay_date||'-'}</b></td><td>${item.invoice_date||'-'}</td><td>${item.invoice_no||'-'}</td><td>${item.invoice_amt||0}</td><td>${btn}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editSupplier(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delSupplier(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
-el('supplierTable').innerHTML = h || '<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('supplier', total, totalPages); fillFilters();
-}
+function renderSupplierTable() { const f=el('sup_filter_name').value.trim(); let l=supplierData.filter(x=>(!f || f==='全部' || x.name===f)); const {pagedList,total,totalPages}=getPagedData(l,'supplier'); let h=''; pagedList.forEach((item, i) => { const idx = supplierData.indexOf(item); const btn = item.drive ? `<button class="btn-sm btn-excel" onclick="window.open('${item.drive}','_blank')"><i class="fas fa-folder-open"></i></button>` : '-'; h += `<tr><td>${item.name}</td><td>${item.contact||'-'}</td><td>${item.tel||'-'}</td><td>${item.tax||'-'}</td><td>${item.pay_method||'-'}</td><td><b class="red">${item.pay_date||'-'}</b></td><td>${item.invoice_date||'-'}</td><td>${item.invoice_no||'-'}</td><td>${item.invoice_amt||0}</td><td>${btn}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editSupplier(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delSupplier(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('supplierTable').innerHTML = h || '<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('supplier', total, totalPages); fillFilters(); }
 function addSupplier() { const o = {name:el('sup_name').value.trim(), contact:el('sup_contact').value.trim(), tel:el('sup_tel').value.trim(), addr:el('sup_addr').value.trim(), tax:el('sup_tax').value.trim(), pay_method:el('sup_pay_method').value.trim(), pay_date:el('sup_pay_date').value, invoice_date:el('sup_invoice_date').value, invoice_no:el('sup_invoice_no').value.trim(), invoice_amt:el('sup_invoice_amt').value, drive:el('sup_drive').value.trim()}; if(!o.name)return; supplierData.push(o); saveAll(); renderSupplierTable(); clearSupplierForm(); showToast('✅ 成功'); }
 function editSupplier(i) { const d = supplierData[i]; el('sup_name').value=d.name; el('sup_contact').value=d.contact||''; el('sup_tel').value=d.tel||''; el('sup_addr').value=d.addr||''; el('sup_tax').value=d.tax||''; el('sup_pay_method').value=d.pay_method||''; el('sup_pay_date').value=d.pay_date||''; el('sup_invoice_date').value=d.invoice_date||''; el('sup_invoice_no').value=d.invoice_no||''; el('sup_invoice_amt').value=d.invoice_amt||''; el('sup_drive').value=d.drive||''; editSupplierIndex=i; el('btnUpdateSupplier').style.display='inline-block'; const b=el('btnAddSupplier'); if(b) b.style.display='none'; }
 function updateSupplier() { if(editSupplierIndex<0)return; const o = {name:el('sup_name').value.trim(), contact:el('sup_contact').value.trim(), tel:el('sup_tel').value.trim(), addr:el('sup_addr').value.trim(), tax:el('sup_tax').value.trim(), pay_method:el('sup_pay_method').value.trim(), pay_date:el('sup_pay_date').value, invoice_date:el('sup_invoice_date').value, invoice_no:el('sup_invoice_no').value.trim(), invoice_amt:el('sup_invoice_amt').value, drive:el('sup_drive').value.trim()}; supplierData[editSupplierIndex]={...supplierData[editSupplierIndex], ...o}; saveAll(); renderSupplierTable(); clearSupplierForm(); showToast('✅ 修改'); }
@@ -965,58 +726,20 @@ function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid inp
 
 function renderAttend(){ 
     const y=el('filter_year').value, m=el('filter_month').value, c=el('filter_company').value.trim(), s=el('filter_staff').value.trim();
-    let l=attendData.filter(x=>{
-        let matchCust = (!c || c==='全部' || x.company===c);
-        let matchStaff = (!s || s==='全部人員' || x.staff===s);
-        let matchDate = isDispatchPayrollPeriod(x.date, y, m);
-        return matchCust && matchStaff && matchDate;
-    });
+    let l=attendData.filter(x=>{ let matchCust = (!c || c==='全部' || x.company===c); let matchStaff = (!s || s==='全部人員' || x.staff===s); let matchDate = isDispatchPayrollPeriod(x.date, y, m); return matchCust && matchStaff && matchDate; });
     l.sort((a, b) => new Date(b.date) - new Date(a.date));
-    let sumH = 0, sumP = 0;
-    l.forEach(i => { sumH += getItemSalaryHours(i); sumP += getItemDeductPoints(i); });
-    let sumEl = el('attend_summary');
-    if(sumEl) {
-        if(l.length > 0 && (y !== 'all' || m !== 'all' || (c && c !== '全部') || (s && s !== '全部人員'))) {
-            let ptxt = '';
-            if(y !== 'all' && m !== 'all') {
-                let pm = parseInt(m) - 1, py = parseInt(y);
-                if (pm === 0) { pm = 12; py -= 1; }
-                ptxt = ` <span style="color:#64748b;font-size:13px;margin-left:10px;">(區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`;
-            }
-            sumEl.style.display = 'flex';
-            sumEl.innerHTML = `<span><i class="fas fa-info-circle"></i> 篩選結果共 ${l.length} 筆紀錄 ${ptxt}</span> <span style="font-size:15px;">發薪工時：<strong style="font-size:20px;color:#059669;">${sumH.toFixed(1)} h</strong> &nbsp; | &nbsp; 扣除點數：<strong style="font-size:20px;color:#dc2626;">${sumP.toFixed(1)} 點</strong></span>`;
-        } else { sumEl.style.display = 'none'; }
-    }
-    const {pagedList,total,totalPages}=getPagedData(l,'attend'); 
-    let h='';
-    pagedList.forEach(item=>{ 
-        const idx = attendData.indexOf(item); 
-        const am = item.am_s&&item.am_e?`${item.am_s}-${item.am_e}`:'-'; 
-        const pm = item.pm_s&&item.pm_e?`${item.pm_s}-${item.pm_e}`:'-';
-        h+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
-    });
-    el('attendTable').innerHTML=h||'<tr><td colspan="10" style="text-align:center;">無資料</td></tr>'; 
-    renderPagination('attend',total,totalPages); 
+    let sumH = 0, sumP = 0; l.forEach(i => { sumH += getItemSalaryHours(i); sumP += getItemDeductPoints(i); });
+    let sumEl = el('attend_summary'); if(sumEl) { if(l.length > 0 && (y !== 'all' || m !== 'all' || (c && c !== '全部') || (s && s !== '全部人員'))) { let ptxt = ''; if(y !== 'all' && m !== 'all') { let pm = parseInt(m) - 1, py = parseInt(y); if (pm === 0) { pm = 12; py -= 1; } ptxt = ` <span style="color:#64748b;font-size:13px;margin-left:10px;">(區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`; } sumEl.style.display = 'flex'; sumEl.innerHTML = `<span><i class="fas fa-info-circle"></i> 篩選結果共 ${l.length} 筆紀錄 ${ptxt}</span> <span style="font-size:15px;">發薪工時：<strong style="font-size:20px;color:#059669;">${sumH.toFixed(1)} h</strong> &nbsp; | &nbsp; 扣除點數：<strong style="font-size:20px;color:#dc2626;">${sumP.toFixed(1)} 點</strong></span>`; } else { sumEl.style.display = 'none'; } }
+    const {pagedList,total,totalPages}=getPagedData(l,'attend'); let h='';
+    pagedList.forEach(item=>{ const idx = attendData.indexOf(item); const am = item.am_s&&item.am_e?`${item.am_s}-${item.am_e}`:'-', pm = item.pm_s&&item.pm_e?`${item.pm_s}-${item.pm_e}`:'-'; h+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
+    el('attendTable').innerHTML=h||'<tr><td colspan="10" style="text-align:center;">無資料</td></tr>'; renderPagination('attend',total,totalPages); 
 }
-function calcAttendTemp(){ 
-  const h=(+getHours(el('am_s').value,el('am_e').value))+(+getHours(el('pm_s').value,el('pm_e').value)); 
-  if(h>0){el('attend_salary_hours').value=h.toFixed(1);el('attend_deduct_points').value=h.toFixed(1);}
-  else{el('attend_salary_hours').value='';el('attend_deduct_points').value='';} 
-  checkHourlyUpgradeAlert();
-}
+function calcAttendTemp(){ const h=(+getHours(el('am_s').value,el('am_e').value))+(+getHours(el('pm_s').value,el('pm_e').value)); if(h>0){el('attend_salary_hours').value=h.toFixed(1);el('attend_deduct_points').value=h.toFixed(1);} else{el('attend_salary_hours').value='';el('attend_deduct_points').value='';} checkHourlyUpgradeAlert(); }
 function addAttend(){ 
     const o={ company:el('attend_company').value.trim(), staff:el('attend_staff').value.trim(), date:el('attend_date').value, service:el('attend_service').value, remark:el('attend_remark').value, am_s:el('am_s').value, am_e:el('am_e').value, pm_s:el('pm_s').value, pm_e:el('pm_e').value, salary_hours:el('attend_salary_hours').value, deduct_points:el('attend_deduct_points').value, special_hourly:el('attend_special_hourly').value };
     if(!o.company||!o.staff||!o.date)return;
-    if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } 
-    else { attendData.push(o); } 
-    saveAll(); renderAttend(); 
-    el('am_s').value=''; el('am_e').value=''; el('pm_s').value=''; el('pm_e').value=''; el('attend_salary_hours').value=''; el('attend_deduct_points').value=''; el('attend_special_hourly').value=''; el('attend_remark').value='';
-    editAttendIndex=-1; const b=el('btnAddAttend');
-    if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} 
-    const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空';
-    showToast('✅ 儲存');
-    if(el('attend_upgrade_alert')) el('attend_upgrade_alert').style.display = 'none';
-    const firstInput = el('attend_company'); if(firstInput) { firstInput.focus(); if(firstInput.select) firstInput.select(); }
+    if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } else { attendData.push(o); } 
+    saveAll(); renderAttend(); el('am_s').value=''; el('am_e').value=''; el('pm_s').value=''; el('pm_e').value=''; el('attend_salary_hours').value=''; el('attend_deduct_points').value=''; el('attend_special_hourly').value=''; el('attend_remark').value=''; editAttendIndex=-1; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空'; showToast('✅ 儲存'); if(el('attend_upgrade_alert')) el('attend_upgrade_alert').style.display = 'none'; const firstInput = el('attend_company'); if(firstInput) { firstInput.focus(); if(firstInput.select) firstInput.select(); }
 }
 function editAttend(i){ const d=attendData[i]; el('attend_company').value=d.company; el('attend_staff').value=d.staff; el('attend_date').value=d.date; el('attend_service').value=d.service; el('attend_remark').value=d.remark; el('am_s').value=d.am_s; el('am_e').value=d.am_e; el('pm_s').value=d.pm_s; el('pm_e').value=d.pm_e; el('attend_salary_hours').value=d.salary_hours; el('attend_deduct_points').value=d.deduct_points; el('attend_special_hourly').value=d.special_hourly||''; editAttendIndex=i; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-edit"></i> 修改'; b.classList.replace('btn-success','btn-warning');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-times"></i> 取消'; checkHourlyUpgradeAlert();}
 function delAttend(i){ if(!confirm('刪除記錄？'))return; attendData.splice(i,1); saveAll(); renderAttend(); showToast('刪除'); }
@@ -1028,111 +751,63 @@ function showLeaveInfo() {
     const s = el('fta_staff').value.trim(); const p = el('leave-info-panel');
     if(!p) return; if(!s || s === '全部員工' || s === '') { p.style.display = 'none'; return; }
     const st = ftStaffData.find(x => x.name === s); if(!st || !st.hire_date) { el('leave-info-name').textContent=s; el('leave-info-tenure').textContent='無'; el('leave-info-total').textContent='-'; el('leave-info-used').textContent='-'; el('leave-info-remain').textContent='-'; el('leave-info-next').textContent='請先設定'; p.style.display='block'; return; }
-    const hd = new Date(st.hire_date), td = new Date();
-    let m = (td.getFullYear()-hd.getFullYear())*12+(td.getMonth()-hd.getMonth()); if(td.getDate()<hd.getDate()) m--; let y = m/12;
+    const hd = new Date(st.hire_date), td = new Date(); let m = (td.getFullYear()-hd.getFullYear())*12+(td.getMonth()-hd.getMonth()); if(td.getDate()<hd.getDate()) m--; let y = m/12;
     let ent = 0, nD = new Date(hd), nx = 0, pS = new Date(hd), pE = new Date(hd);
-    if(m < 6) { ent=0; nD.setMonth(nD.getMonth()+6); nx=3; pS = new Date(td); pE = new Date(td); } 
-    else if (m >= 6 && m < 12) { ent=3; nD.setFullYear(nD.getFullYear()+1); nx=7; pS.setMonth(pS.getMonth()+6); pE.setFullYear(pE.getFullYear()+1); } 
-    else { let yF = Math.floor(y); if(yF>=10) { ent=15+yF-9; if(ent>30)ent=30; } else if(yF>=5) ent=15; else if(yF>=3) ent=14; else if(yF>=2) ent=10; else if(yF>=1) ent=7; nD.setFullYear(nD.getFullYear()+yF+1); let nYF = yF+1; if(nYF>=10) { nx=15+nYF-9; if(nx>30)nx=30; } else if(nYF>=5) nx=15; else if(nYF>=3) nx=14; else if(nYF>=2) nx=10; else if(nYF>=1) nx=7; pS.setFullYear(pS.getFullYear()+yF); pE.setFullYear(pE.getFullYear()+yF+1); }
-    let uh = 0; if(ent>0) { const sS = pS.toISOString().split('T')[0], eS = pE.toISOString().split('T')[0];
-    let lv = ftAttendData.filter(x=>x.staff===s&&x.record_type==='請假'&&x.leave_type==='特休假'&&x.date>=sS&&x.date<eS&&x.approval==='已核准'); uh = lv.reduce((s,x)=>s+(Number(x.hours)||0),0); }
-    let ud = uh/8, rm = ent-ud;
-    el('leave-info-name').textContent = s; el('leave-info-tenure').textContent=`${Math.floor(y)} 年 ${m%12} 個月`; el('leave-info-total').textContent=`${ent} 天`; el('leave-info-used').textContent=`${ud.toFixed(1)} 天`; el('leave-info-remain').textContent=`${rm.toFixed(1)} 天`; el('leave-info-next').textContent=`${nD.toLocaleDateString('zh-TW')}起獲 ${nx} 天`; p.style.display='block';
+    if(m < 6) { ent=0; nD.setMonth(nD.getMonth()+6); nx=3; pS = new Date(td); pE = new Date(td); } else if (m >= 6 && m < 12) { ent=3; nD.setFullYear(nD.getFullYear()+1); nx=7; pS.setMonth(pS.getMonth()+6); pE.setFullYear(pE.getFullYear()+1); } else { let yF = Math.floor(y); if(yF>=10) { ent=15+yF-9; if(ent>30)ent=30; } else if(yF>=5) ent=15; else if(yF>=3) ent=14; else if(yF>=2) ent=10; else if(yF>=1) ent=7; nD.setFullYear(nD.getFullYear()+yF+1); let nYF = yF+1; if(nYF>=10) { nx=15+nYF-9; if(nx>30)nx=30; } else if(nYF>=5) nx=15; else if(nYF>=3) nx=14; else if(nYF>=2) nx=10; else if(nYF>=1) nx=7; pS.setFullYear(pS.getFullYear()+yF); pE.setFullYear(pE.getFullYear()+yF+1); }
+    let uh = 0; if(ent>0) { const sS = pS.toISOString().split('T')[0], eS = pE.toISOString().split('T')[0]; let lv = ftAttendData.filter(x=>x.staff===s&&x.record_type==='請假'&&x.leave_type==='特休假'&&x.date>=sS&&x.date<eS&&x.approval==='已核准'); uh = lv.reduce((s,x)=>s+(Number(x.hours)||0),0); }
+    let ud = uh/8, rm = ent-ud; el('leave-info-name').textContent = s; el('leave-info-tenure').textContent=`${Math.floor(y)} 年 ${m%12} 個月`; el('leave-info-total').textContent=`${ent} 天`; el('leave-info-used').textContent=`${ud.toFixed(1)} 天`; el('leave-info-remain').textContent=`${rm.toFixed(1)} 天`; el('leave-info-next').textContent=`${nD.toLocaleDateString('zh-TW')}起獲 ${nx} 天`; p.style.display='block';
 }
-function renderFtAttendTable(){ const m=el('fta_filter_month').value, s=el('fta_filter_staff').value.trim(); let l=ftAttendData.filter(x=>(!s || s==='全部員工' || x.staff===s)&&(!m||x.date.startsWith(m))); l.sort((a, b) => new Date(b.date) - new Date(a.date));
-const {pagedList,total,totalPages}=getPagedData(l,'ft_attend'); let h=''; pagedList.forEach(item=>{ const idx=ftAttendData.indexOf(item); let ts=item.record_type==='正常出勤'||item.record_type==='異常'?`${item.time_in||'-'}~${item.time_out||'-'}`:(item.leave_type||item.record_type); let b=''; if(item.record_type==='異常')b=`<span class="badge badge-red">異常</span>`;else if(item.record_type==='請假')b=`<span class="badge ${item.approval==='已核准'?'badge-green':'badge-yellow'}">${item.approval||''}</span>`; h+=`<tr><td>${item.staff}</td><td>${item.date}</td><td>${item.record_type}</td><td>${ts}</td><td>${item.hours||0}</td><td>${b} ${item.reason||''}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
-el('ftAttendTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_attend',total,totalPages); }
+
+function renderFtAttendTable(){ const m=el('fta_filter_month').value, s=el('fta_filter_staff').value.trim(); let l=ftAttendData.filter(x=>(!s || s==='全部員工' || x.staff===s)&&(!m||x.date.startsWith(m))); l.sort((a, b) => new Date(b.date) - new Date(a.date)); const {pagedList,total,totalPages}=getPagedData(l,'ft_attend'); let h=''; pagedList.forEach(item=>{ const idx=ftAttendData.indexOf(item); let ts=item.record_type==='正常出勤'||item.record_type==='異常'?`${item.time_in||'-'}~${item.time_out||'-'}`:(item.leave_type||item.record_type), b=''; if(item.record_type==='異常')b=`<span class="badge badge-red">異常</span>`;else if(item.record_type==='請假')b=`<span class="badge ${item.approval==='已核准'?'badge-green':'badge-yellow'}">${item.approval||''}</span>`; h+=`<tr><td>${item.staff}</td><td>${item.date}</td><td>${item.record_type}</td><td>${ts}</td><td>${item.hours||0}</td><td>${b} ${item.reason||''}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('ftAttendTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_attend',total,totalPages); }
 function addFtAttend(){ const o={staff:el('fta_staff').value.trim(),date:el('fta_date').value,record_type:el('fta_record_type').value,reason:el('fta_reason').value,time_in:el('fta_time_in').value,time_out:el('fta_time_out').value,hours:el('fta_hours').value,leave_type:el('fta_leave_type').value,approval:el('fta_approval').value}; if(!o.staff||!o.date)return; if(editFtAttendIndex > -1) { ftAttendData[editFtAttendIndex]={...ftAttendData[editFtAttendIndex], ...o}; editFtAttendIndex = -1; } else { ftAttendData.push(o); } saveAll(); renderFtAttendTable(); showLeaveInfo(); el('fta_time_in').value=''; el('fta_time_out').value=''; el('fta_hours').value=''; el('fta_reason').value=''; editFtAttendIndex=-1; const b=el('btnAddFtAttend'); if(b) b.innerHTML='<i class="fas fa-save"></i> 儲存'; showToast('✅ 儲存'); }
 function editFtAttend(i){ const d=ftAttendData[i]; el('fta_staff').value=d.staff; el('fta_date').value=d.date; el('fta_record_type').value=d.record_type; el('fta_reason').value=d.reason; el('fta_time_in').value=d.time_in; el('fta_time_out').value=d.time_out; el('fta_hours').value=d.hours; el('fta_leave_type').value=d.leave_type||'事假'; el('fta_approval').value=d.approval||'已核准'; toggleFtaFields(); editFtAttendIndex=i; showLeaveInfo(); const b=el('btnAddFtAttend'); if(b) b.innerHTML='<i class="fas fa-edit"></i> 修改'; }
 function delFtAttend(i){ if(!confirm('刪除？'))return; ftAttendData.splice(i,1); saveAll(); renderFtAttendTable(); showLeaveInfo(); showToast('刪除'); }
 function clearFtAttendForm(){ document.querySelectorAll('#page-ft_attend .grid input').forEach(i=>i.value=''); el('fta_record_type').value='正常出勤'; el('fta_approval').value='已核准'; el('fta_deduct_break').checked=true; toggleFtaFields(); editFtAttendIndex=-1; const b=el('btnAddFtAttend'); if(b) b.innerHTML='<i class="fas fa-save"></i> 儲存紀錄'; }
 
-function renderFtSalaryTable(){ const m=el('fts_filter_month').value, s=el('fts_filter_staff').value.trim(); if(!m)return el('ftSalaryTable').innerHTML='<tr><td colspan="8" style="text-align:center;">請選擇年月</td></tr>';
-let l=ftStaffData.filter(x=>x.status==='在職' && (!s || s==='全部員工' || x.name===s)); const {pagedList,total,totalPages}=getPagedData(l,'ft_salary'); let h='';
-pagedList.forEach(st=>{ let bs=Number(st.salary)||30000, dly=bs/30, hr=dly/8, mya=ftAttendData.filter(x=>x.staff===st.name&&x.date.startsWith(m)), tw=0, dd=0, ov=0; mya.forEach(a=>{ let h=Number(a.hours)||0; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班')tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){if(a.leave_type==='事假')dd+=h*hr; if(a.leave_type==='病假'||a.leave_type==='生理假')dd+=h*hr*0.5;} else if(a.record_type==='加班')ov+=h*hr*1.34; }); let net=bs-dd+ov-(Number(st.labor)||0)-(Number(st.health)||0); h+=`<tr><td>${st.name}</td><td>${bs}</td><td>${tw.toFixed(1)}</td><td class="red">-${Math.round(dd)}</td><td class="green">+${Math.round(ov)}</td><td>${(Number(st.labor)||0)+(Number(st.health)||0)}</td><td style="font-weight:bold;color:#1e3a8a;">$${Math.round(net)}</td><td><button class="btn-sm btn-pdf" onclick="document.getElementById('fts_filter_staff').value='${st.name}'; generateFtPayslipPDF()"><i class="fas fa-eye"></i></button></td></tr>`;
-}); el('ftSalaryTable').innerHTML=h||'<tr><td colspan="8" style="text-align:center;">無</td></tr>'; renderPagination('ft_salary',total,totalPages); }
+function renderFtSalaryTable(){ const m=el('fts_filter_month').value, s=el('fts_filter_staff').value.trim(); if(!m)return el('ftSalaryTable').innerHTML='<tr><td colspan="8" style="text-align:center;">請選擇年月</td></tr>'; let l=ftStaffData.filter(x=>x.status==='在職' && (!s || s==='全部員工' || x.name===s)); const {pagedList,total,totalPages}=getPagedData(l,'ft_salary'); let h=''; pagedList.forEach(st=>{ let bs=Number(st.salary)||30000, dly=bs/30, hr=dly/8, mya=ftAttendData.filter(x=>x.staff===st.name&&x.date.startsWith(m)), tw=0, dd=0, ov=0; mya.forEach(a=>{ let h=Number(a.hours)||0; if(a.record_type==='正常出勤'||a.record_type==='異常'||a.record_type==='外出'||a.record_type==='換班')tw+=h; else if(a.record_type==='請假'&&a.approval==='已核准'){if(a.leave_type==='事假')dd+=h*hr; if(a.leave_type==='病假'||a.leave_type==='生理假')dd+=h*hr*0.5;} else if(a.record_type==='加班')ov+=h*hr*1.34; }); let net=bs-dd+ov-(Number(st.labor)||0)-(Number(st.health)||0); h+=`<tr><td>${st.name}</td><td>${bs}</td><td>${tw.toFixed(1)}</td><td class="red">-${Math.round(dd)}</td><td class="green">+${Math.round(ov)}</td><td>${(Number(st.labor)||0)+(Number(st.health)||0)}</td><td style="font-weight:bold;color:#1e3a8a;">$${Math.round(net)}</td><td><button class="btn-sm btn-pdf" onclick="document.getElementById('fts_filter_staff').value='${st.name}'; generateFtPayslipPDF()"><i class="fas fa-eye"></i></button></td></tr>`; }); el('ftSalaryTable').innerHTML=h||'<tr><td colspan="8" style="text-align:center;">無</td></tr>'; renderPagination('ft_salary',total,totalPages); }
 
-function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent'); let h='';
-pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; let rb=item.resume?`<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i></button>`:'-'; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${rb}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
-el('talentTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
+function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent'); let h=''; pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; let rb=item.resume?`<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i></button>`:'-'; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${rb}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); el('talentTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
 function addTalent(){ const o={name:el('tp_name').value.trim(),tel:el('tp_tel').value.trim(),source:el('tp_source').value.trim(),location:el('tp_location').value.trim(),shift:el('tp_shift').value.trim(),role:el('tp_role').value.trim(),status:el('tp_status').value,eval:el('tp_eval').value.trim(),resume:el('tp_resume').value.trim(),exp:el('tp_exp').value.trim(),date:new Date().toISOString().split('T')[0]}; if(!o.name)return; talentData.push(o); saveAll(); renderTalentTable(); clearTalentForm(); showToast('✅ 成功'); }
 function editTalent(i){ const d=talentData[i]; el('tp_name').value=d.name; el('tp_tel').value=d.tel||''; el('tp_source').value=d.source||''; el('tp_location').value=d.location||''; el('tp_shift').value=d.shift||''; el('tp_role').value=d.role||''; el('tp_status').value=d.status||'待聯絡'; el('tp_eval').value=d.eval||''; el('tp_resume').value=d.resume||''; el('tp_exp').value=d.exp||''; editTalentIndex=i; el('btnUpdateTalent').style.display='inline-block'; const b=el('btnAddTalent'); if(b) b.style.display='none'; }
 function updateTalent(){ if(editTalentIndex<0)return; const o={name:el('tp_name').value.trim(),tel:el('tp_tel').value.trim(),source:el('tp_source').value.trim(),location:el('tp_location').value.trim(),shift:el('tp_shift').value.trim(),role:el('tp_role').value.trim(),status:el('tp_status').value,eval:el('tp_eval').value.trim(),resume:el('tp_resume').value.trim(),exp:el('tp_exp').value.trim(),date:talentData[editTalentIndex].date}; talentData[editTalentIndex]={...talentData[editTalentIndex], ...o}; saveAll(); renderTalentTable(); clearCustForm(); showToast('✅ 修改'); }
 function delTalent(i){ if(!confirm('刪除？'))return; talentData.splice(i,1); saveAll(); renderTalentTable(); showToast('刪除'); }
 function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input').forEach(i=>i.value=''); el('tp_status').value='待聯絡'; editTalentIndex=-1; el('btnUpdateTalent').style.display='none'; const b=el('btnAddTalent'); if(b) b.style.display='inline-block'; }
 
-function renderPoint(){ const c=el('point_filter_company').value.trim();
-let l=custData.filter(x=>(!c || c==='全部' || x.name===c)); const {pagedList,total,totalPages}=getPagedData(l,'point'); let h=''; pagedList.forEach(ct=>{ const cP=contractData.filter(x=>x.customer===ct.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); h+=`<tr><td>${ct.name}</td><td>${cP}</td><td>${uP}</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${rP<0?'不足':'充足'}</td></tr>`; });
-el('pointTable').innerHTML=h||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
-function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value; const cycle=el('bill_cycle').value; if(!c || c==='全部')return; 
-    let l=attendData.filter(x=>x.company===c && isDispatchPayrollPeriod(x.date,y,m,cycle));
-    l.sort((a,b)=>new Date(b.date)-new Date(a.date)); 
-    const {pagedList,total,totalPages}=getPagedData(l,'bill');
-    let h=''; pagedList.forEach(i=>{ h+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service||'-'}</td><td>${getItemClockHours(i).toFixed(1)}</td><td>${i.deduct_points||0}</td></tr>`; }); 
-    el('billTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('bill',total,totalPages);
-}
+function renderPoint(){ const c=el('point_filter_company').value.trim(); let l=custData.filter(x=>(!c || c==='全部' || x.name===c)); const {pagedList,total,totalPages}=getPagedData(l,'point'); let h=''; pagedList.forEach(ct=>{ const cP=contractData.filter(x=>x.customer===ct.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); h+=`<tr><td>${ct.name}</td><td>${cP}</td><td>${uP}</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${rP<0?'不足':'充足'}</td></tr>`; }); el('pointTable').innerHTML=h||'<tr><td colspan=5 style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages); }
+function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value, cycle=el('bill_cycle').value; if(!c || c==='全部')return; let l=attendData.filter(x=>x.company===c && isDispatchPayrollPeriod(x.date,y,m,cycle)); l.sort((a,b)=>new Date(b.date)-new Date(a.date)); const {pagedList,total,totalPages}=getPagedData(l,'bill'); let h=''; pagedList.forEach(i=>{ h+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service||'-'}</td><td>${getItemClockHours(i).toFixed(1)}</td><td>${i.deduct_points||0}</td></tr>`; }); el('billTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('bill',total,totalPages); }
 function renderSalary(){ 
     const s=el('sal_filter_staff').value.trim(), y=el('sal_filter_year').value, m=el('sal_filter_month').value;
     let l=attendData.filter(x=>(!s || s==='全部人員' || x.staff===s)&&isDispatchPayrollPeriod(x.date, y, m));
-    l.sort((a,b)=>new Date(b.date)-new Date(a.date)); 
-    const {pagedList,total,totalPages}=getPagedData(l,'salary'); 
-    let h='', tH=0, tA=0;
-    l.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); tH+=pH; tA+=Math.round(pH*hy); });
-    pagedList.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); const a=Math.round(pH*hy); h+=`<tr><td>${i.staff}</td><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hy}</td><td>${a}</td></tr>`; });
-    el('salaryTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>';
-    renderPagination('salary',total,totalPages);
-    let ptxt = '';
-    if(y !== 'all' && m !== 'all') {
-        let pm=parseInt(m)-1, py=parseInt(y);
-        if(pm===0){pm=12;py-=1;}
-        ptxt = ` <span style="font-size:13px;color:#64748b;margin-left:10px;font-weight:normal;">(結算區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`;
-    }
+    l.sort((a,b)=>new Date(b.date)-new Date(a.date)); const {pagedList,total,totalPages}=getPagedData(l,'salary'); 
+    let h='', tH=0, tA=0; l.forEach(i=>{ const pH=getItemSalaryHours(i), hy=getHistoricalRate(i); tH+=pH; tA+=Math.round(pH*hy); });
+    pagedList.forEach(i=>{ const pH=getItemSalaryHours(i), hy=getHistoricalRate(i), a=Math.round(pH*hy); h+=`<tr><td>${i.staff}</td><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hy}</td><td>${a}</td></tr>`; });
+    el('salaryTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; renderPagination('salary',total,totalPages);
+    let ptxt = ''; if(y !== 'all' && m !== 'all') { let pm=parseInt(m)-1, py=parseInt(y); if(pm===0){pm=12;py-=1;} ptxt = ` <span style="font-size:13px;color:#64748b;margin-left:10px;font-weight:normal;">(結算區間：${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25)</span>`; }
     el('salResult').innerHTML=`工時: ${tH.toFixed(1)} <br> 應付: ${tA} 元 ${ptxt}`; 
-    let lb=0, hl=0; if(s && s!=='全部人員'){ const si=staffData.find(x=>x.name===s); if(si){ lb=Number(si.labor)||0; hl=Number(si.health)||0; } } el('salLabor').textContent=lb; el('salHealth').textContent=hl; el('salNet').textContent=tA-lb-hl; }
+    let lb=0, hl=0; if(s && s!=='全部人員'){ const si=staffData.find(x=>x.name===s); if(si){ lb=Number(si.labor)||0; hl=Number(si.health)||0; } } el('salLabor').textContent=lb; el('salHealth').textContent=hl; el('salNet').textContent=tA-lb-hl; 
+}
 
 function showBoss() {
   const y=el('boss_year').value, m=el('boss_month').value, c=el('boss_cust_filter').value.trim(); let h='';
-  custData.forEach(ct => {
-      if(c && c!=='全部' && ct.name!==c) return;
-      const cs = contractData.filter(x=>x.customer===ct.name).sort((a,b)=>new Date(b.date)-new Date(a.date));
-      const tP = cs.reduce((s,i)=>s+(+i.point||0),0), cD = cs.map(x=>x.date).join('<br>'), cS = cs.length>0?cs[0].status:'-';
-      const uH = attendData.filter(x=>x.company===ct.name&&isDispatchPayrollPeriod(x.date,y,m)).reduce((s,i)=>s+getItemSalaryHours(i),0);
-      const tUP = Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP = Number((tP-tUP).toFixed(1));
-      h+=`<tr><td>${ct.coop}</td><td>${ct.name}</td><td>${cD||'-'}</td><td>${tP}</td><td>${uH.toFixed(1)} h</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${cS}</td></tr>`;
-  });
-  el('bossTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>';
+  custData.forEach(ct => { if(c && c!=='全部' && ct.name!==c) return; const cs = contractData.filter(x=>x.customer===ct.name).sort((a,b)=>new Date(b.date)-new Date(a.date)); const tP = cs.reduce((s,i)=>s+(+i.point||0),0), cD = cs.map(x=>x.date).join('<br>'), cS = cs.length>0?cs[0].status:'-', uH = attendData.filter(x=>x.company===ct.name&&isDispatchPayrollPeriod(x.date,y,m)).reduce((s,i)=>s+getItemSalaryHours(i),0), tUP = Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP = Number((tP-tUP).toFixed(1)); h+=`<tr><td>${ct.coop}</td><td>${ct.name}</td><td>${cD||'-'}</td><td>${tP}</td><td>${uH.toFixed(1)} h</td><td class="${rP<0?'red':'green'}">${rP}</td><td>${cS}</td></tr>`; }); el('bossTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>';
 }
 function renderDashboard(){
   el('dash_total_cust').textContent=custData.length; el('dash_active_cust').textContent=custData.filter(x=>x.coop==='正合作').length;
-  let pG=0, pL=0, aH='';
-  custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP} 點</td><td><button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
+  let pG=0, pL=0, aH=''; custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP} 點</td><td><button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
   el('dash_point_ge50').textContent=pG; el('dash_point_lt50').textContent=pL; el('dash_alert_table').innerHTML=aH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">無</td></tr>';
-  let aS=staffData.filter(x=>x.status==='在職'), aF=ftStaffData.filter(x=>x.status==='在職'), aA=aS.concat(aF);
-  el('dash_staff_active').textContent=aA.length; el('dash_miss_id').textContent=aA.filter(x=>!x.doc_id).length; el('dash_miss_bank').textContent=aA.filter(x=>!x.doc_bank).length; el('dash_miss_contract').textContent=aA.filter(x=>!x.doc_contract).length;
-  let mH='';
-  aA.forEach(s=>{ let m=[]; if(!s.doc_id)m.push('<span class="badge badge-red">身分</span>'); if(!s.doc_bank)m.push('<span class="badge badge-red">存摺</span>'); if(!s.doc_contract)m.push('<span class="badge badge-red">合約</span>'); if(!s.doc_resume)m.push('<span class="badge badge-red">履歷</span>'); if(m.length>0){ const iF=ftStaffData.some(x=>x.name===s.name), tg=iF?'<span class="badge badge-blue">正職</span>':'<span class="badge badge-yellow">派遣</span>'; mH+=`<tr><td style="font-weight:bold;color:#444;">${s.name} ${tg}</td><td><div style="display:flex;flex-wrap:wrap;gap:5px;">${m.join('')}</div></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('${iF?'ft_staff':'staff'}'); setTimeout(()=>${iF?'editFtStaff':'editStaff'}(${iF?ftStaffData.findIndex(x=>x.name===s.name):staffData.findIndex(x=>x.name===s.name)}), 300);"><i class="fas fa-edit"></i></button></td></tr>`; } });
-  el('dash_missing_docs_table').innerHTML=mH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 20px;">資料已繳齊</td></tr>';
+  let aS=staffData.filter(x=>x.status==='在職'), aF=ftStaffData.filter(x=>x.status==='在職'), aA=aS.concat(aF); el('dash_staff_active').textContent=aA.length; el('dash_miss_id').textContent=aA.filter(x=>!x.doc_id).length; el('dash_miss_bank').textContent=aA.filter(x=>!x.doc_bank).length; el('dash_miss_contract').textContent=aA.filter(x=>!x.doc_contract).length;
+  let mH=''; aA.forEach(s=>{ let m=[]; if(!s.doc_id)m.push('<span class="badge badge-red">身分</span>'); if(!s.doc_bank)m.push('<span class="badge badge-red">存摺</span>'); if(!s.doc_contract)m.push('<span class="badge badge-red">合約</span>'); if(!s.doc_resume)m.push('<span class="badge badge-red">履歷</span>'); if(m.length>0){ const iF=ftStaffData.some(x=>x.name===s.name), tg=iF?'<span class="badge badge-blue">正職</span>':'<span class="badge badge-yellow">派遣</span>'; mH+=`<tr><td style="font-weight:bold;color:#444;">${s.name} ${tg}</td><td><div style="display:flex;flex-wrap:wrap;gap:5px;">${m.join('')}</div></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('${iF?'ft_staff':'staff'}'); setTimeout(()=>${iF?'editFtStaff':'editStaff'}(${iF?ftStaffData.findIndex(x=>x.name===s.name):staffData.findIndex(x=>x.name===s.name)}), 300);"><i class="fas fa-edit"></i></button></td></tr>`; } }); el('dash_missing_docs_table').innerHTML=mH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 20px;">資料已繳齊</td></tr>';
   const td=new Date(), tS=td.getFullYear()+'-'+String(td.getMonth()+1).padStart(2,'0')+'-'+String(td.getDate()).padStart(2,'0');
-  let tH=''; attendData.filter(x=>x.date===tS).forEach(i=>{ const am=i.am_s&&i.am_e?`${i.am_s}-${i.am_e}`:'', pm=i.pm_s&&i.pm_e?`${i.pm_s}-${i.pm_e}`:''; tH+=`<tr><td>${i.staff}</td><td>${i.company}</td><td>${[am,pm].filter(x=>x).join('/')||'-'}</td></tr>`; });
-  el('dash_today_table').innerHTML=tH||'<tr><td colspan="3" style="text-align:center;color:#999;">本日無記錄</td></tr>';
-  let bH=''; const cm=td.getMonth()+1; 
-  let bList = aA.filter(x => { if(!x.birthday) return false; let p = x.birthday.split(/[-/]/); return p.length >= 2 && parseInt(p[1],10) === cm; }).sort((a,b) => { let pA = a.birthday.split(/[-/]/), pB = b.birthday.split(/[-/]/); let dA = pA.length>=3 ? parseInt(pA[2],10) : 0, dB = pB.length>=3 ? parseInt(pB[2],10) : 0; return dA - dB; });
-  bList.forEach(i=>{ const iF=ftStaffData.some(x=>x.name===i.name), tg=iF?'<span class="badge badge-blue">正</span>':'<span class="badge badge-yellow">派</span>'; bH+=`<tr><td style="font-weight:bold;">${i.name} ${tg}</td><td>${i.birthday}</td><td><span style="color:#e91e63;"><i class="fas fa-gift"></i></span></td></tr>`; });
-  el('dash_birthday_table').innerHTML=bH||'<tr><td colspan="3" style="text-align:center;color:#999;">本月壽星無資料</td></tr>';
-  let apH='';
-  let tMs=td.getTime(); supplierData.forEach((s, idx) => { if(s.pay_date){ let pD=new Date(s.pay_date).getTime(), dD=Math.ceil((pD-tMs)/(1000*60*60*24)); if(dD<=7){ let st=dD<0?`<span class="badge badge-red">逾期 ${Math.abs(dD)} 天</span>`:(dD===0?`<span class="badge badge-red">今日到期</span>`:`<span class="badge badge-yellow">剩 ${dD} 天</span>`); apH+=`<tr><td style="font-weight:bold;">${s.name}</td><td>$${s.invoice_amt||0}</td><td>${s.pay_date}</td><td>${st}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('supplier'); setTimeout(()=>editSupplier(${idx}),300)"><i class="fas fa-eye"></i></button></td></tr>`; } } });
-  el('dash_ap_table').innerHTML=apH||'<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無</td></tr>';
-  let upH=''; aS.forEach(s=>{ let info=getStaffCurrentHourlyInfo(s.name); if(info.nextTier && info.nextWage){ let diff=info.nextTier - info.hours; if((diff>0 && diff<=30) || (diff<=0 && String(info.nextWage).includes('需備註'))){ let diffText = diff<=0 ? '待備註同意' : `剩 ${diff.toFixed(1)} h`; upH+=`<tr><td style="font-weight:bold;color:#1e293b;">${s.name}</td><td><span class="badge badge-blue">${info.rule}</span></td><td>${info.hours.toFixed(1)} <span style="color:#94a3b8;">/ ${info.nextTier} h</span></td><td><b style="color:#059669;font-size:15px;">$${info.wage}</b> <i class="fas fa-arrow-right" style="color:#cbd5e1;margin:0 8px;"></i> <b style="color:#e11d48;font-size:15px;">$${info.nextWage}</b></td><td><b class="red">${diffText}</b></td></tr>`; } } });
-  if(el('dash_upgrade_table')) el('dash_upgrade_table').innerHTML=upH||'<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">近期無人即將調薪</td></tr>';
-  let insH=''; aS.forEach(s => { if(s.ins_date && s.ins_status !== '都不保' && s.ins_status !== '僅健保') { let stDate = new Date(s.ins_date); let targetDate = new Date(stDate); targetDate.setMonth(targetDate.getMonth() + 3); let diffDays = Math.ceil((targetDate - td) / (1000 * 60 * 60 * 24)); if (diffDays <= 15 && diffDays >= -15) { let tag = diffDays < 0 ? `<span class="badge badge-red">已逾期 ${Math.abs(diffDays)} 天</span>` : `<span class="badge badge-yellow">剩 ${diffDays} 天</span>`; insH += `<tr><td style="font-weight:bold;">${s.name}</td><td>${s.ins_date}</td><td><b style="color:#db2777;">${targetDate.toLocaleDateString('zh-TW')}</b></td><td>${tag}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('staff'); setTimeout(()=>editStaff(staffData.findIndex(x=>x.name===s.name)), 300);"><i class="fas fa-edit"></i> 去調整</button></td></tr>`; } } });
-  if(el('dash_ins_alert_table')) el('dash_ins_alert_table').innerHTML = insH || '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">本月無人需調整勞保級距</td></tr>';
+  let tH=''; attendData.filter(x=>x.date===tS).forEach(i=>{ const am=i.am_s&&i.am_e?`${i.am_s}-${i.am_e}`:'', pm=i.pm_s&&i.pm_e?`${i.pm_s}-${i.pm_e}`:''; tH+=`<tr><td>${i.staff}</td><td>${i.company}</td><td>${[am,pm].filter(x=>x).join('/')||'-'}</td></tr>`; }); el('dash_today_table').innerHTML=tH||'<tr><td colspan="3" style="text-align:center;color:#999;">本日無記錄</td></tr>';
+  let bH=''; const cm=td.getMonth()+1; let bList = aA.filter(x => { if(!x.birthday) return false; let p = x.birthday.split(/[-/]/); return p.length >= 2 && parseInt(p[1],10) === cm; }).sort((a,b) => { let pA = a.birthday.split(/[-/]/), pB = b.birthday.split(/[-/]/); let dA = pA.length>=3 ? parseInt(pA[2],10) : 0, dB = pB.length>=3 ? parseInt(pB[2],10) : 0; return dA - dB; }); bList.forEach(i=>{ const iF=ftStaffData.some(x=>x.name===i.name), tg=iF?'<span class="badge badge-blue">正</span>':'<span class="badge badge-yellow">派</span>'; bH+=`<tr><td style="font-weight:bold;">${i.name} ${tg}</td><td>${i.birthday}</td><td><span style="color:#e91e63;"><i class="fas fa-gift"></i></span></td></tr>`; }); el('dash_birthday_table').innerHTML=bH||'<tr><td colspan="3" style="text-align:center;color:#999;">本月壽星無資料</td></tr>';
+  let apH=''; let tMs=td.getTime(); supplierData.forEach((s, idx) => { if(s.pay_date){ let pD=new Date(s.pay_date).getTime(), dD=Math.ceil((pD-tMs)/(1000*60*60*24)); if(dD<=7){ let st=dD<0?`<span class="badge badge-red">逾期 ${Math.abs(dD)} 天</span>`:(dD===0?`<span class="badge badge-red">今日到期</span>`:`<span class="badge badge-yellow">剩 ${dD} 天</span>`); apH+=`<tr><td style="font-weight:bold;">${s.name}</td><td>$${s.invoice_amt||0}</td><td>${s.pay_date}</td><td>${st}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('supplier'); setTimeout(()=>editSupplier(${idx}),300)"><i class="fas fa-eye"></i></button></td></tr>`; } } }); el('dash_ap_table').innerHTML=apH||'<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無</td></tr>';
+  let upH=''; aS.forEach(s=>{ let info=getStaffCurrentHourlyInfo(s.name); if(info.nextTier && info.nextWage){ let diff=info.nextTier - info.hours; if((diff>0 && diff<=30) || (diff<=0 && String(info.nextWage).includes('需備註'))){ let diffText = diff<=0 ? '待備註同意' : `剩 ${diff.toFixed(1)} h`; upH+=`<tr><td style="font-weight:bold;color:#1e293b;">${s.name}</td><td><span class="badge badge-blue">${info.rule}</span></td><td>${info.hours.toFixed(1)} <span style="color:#94a3b8;">/ ${info.nextTier} h</span></td><td><b style="color:#059669;font-size:15px;">$${info.wage}</b> <i class="fas fa-arrow-right" style="color:#cbd5e1;margin:0 8px;"></i> <b style="color:#e11d48;font-size:15px;">$${info.nextWage}</b></td><td><b class="red">${diffText}</b></td></tr>`; } } }); if(el('dash_upgrade_table')) el('dash_upgrade_table').innerHTML=upH||'<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">近期無人即將調薪</td></tr>';
+  let insH=''; aS.forEach(s => { if(s.ins_date && s.ins_status !== '都不保' && s.ins_status !== '僅健保') { let stDate = new Date(s.ins_date), targetDate = new Date(stDate); targetDate.setMonth(targetDate.getMonth() + 3); let diffDays = Math.ceil((targetDate - td) / (1000 * 60 * 60 * 24)); if (diffDays <= 15 && diffDays >= -15) { let tag = diffDays < 0 ? `<span class="badge badge-red">已逾期 ${Math.abs(diffDays)} 天</span>` : `<span class="badge badge-yellow">剩 ${diffDays} 天</span>`; insH += `<tr><td style="font-weight:bold;">${s.name}</td><td>${s.ins_date}</td><td><b style="color:#db2777;">${targetDate.toLocaleDateString('zh-TW')}</b></td><td>${tag}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('staff'); setTimeout(()=>editStaff(staffData.findIndex(x=>x.name===s.name)), 300);"><i class="fas fa-edit"></i> 去調整</button></td></tr>`; } } }); if(el('dash_ins_alert_table')) el('dash_ins_alert_table').innerHTML = insH || '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">本月無人需調整勞保級距</td></tr>';
 }
 function initStaffFrontend() {
     if(!currentLoginStaff) return;
-    if(el('staff-welcome-name')) el('staff-welcome-name').textContent=currentLoginStaff.name||''; if(el('staff-profile-name')) el('staff-profile-name').textContent=currentLoginStaff.name||'-';
-    if(el('staff-profile-tel')) el('staff-profile-tel').textContent=currentLoginStaff.tel||'-'; if(el('staff-profile-id')) el('staff-profile-id').textContent=currentLoginStaff.id||'-'; if(el('staff-profile-acc')) el('staff-profile-acc').textContent=currentLoginStaff.account||'-';
-    if(el('staff_status_id')) el('staff_status_id').innerHTML=currentLoginStaff.doc_id?'<span class="badge badge-green">已繳</span>':'<span class="badge badge-red">缺件</span>'; if(el('staff_status_bank')) el('staff_status_bank').innerHTML=currentLoginStaff.doc_bank?'<span class="badge badge-green">已繳</span>':'<span class="badge badge-red">缺件</span>';
-    if(el('staff_status_contract')) el('staff_status_contract').innerHTML=currentLoginStaff.doc_contract?'<span class="badge badge-green">已繳</span>':'<span class="badge badge-red">缺件</span>'; if(el('staff_status_resume')) el('staff_status_resume').innerHTML=currentLoginStaff.doc_resume?'<span class="badge badge-green">已繳</span>':'<span class="badge badge-red">缺件</span>';
+    if(el('staff-welcome-name')) el('staff-welcome-name').textContent=currentLoginStaff.name||''; if(el('staff-profile-name')) el('staff-profile-name').textContent=currentLoginStaff.name||'-'; if(el('staff-profile-tel')) el('staff-profile-tel').textContent=currentLoginStaff.tel||'-'; if(el('staff-profile-id')) el('staff-profile-id').textContent=currentLoginStaff.id||'-'; if(el('staff-profile-acc')) el('staff-profile-acc').textContent=currentLoginStaff.account||'-';
+    if(el('staff_status_id')) el('staff_status_id').innerHTML=currentLoginStaff.doc_id?'<span class="badge badge-green">已繳</span>':'<span class="badge badge-red">缺件</span>'; if(el('staff_status_bank')) el('staff_status_bank').innerHTML=currentLoginStaff.doc_bank?'<span class="badge badge-green">已繳</span>':'<span class="badge badge-red">缺件</span>'; if(el('staff_status_contract')) el('staff_status_contract').innerHTML=currentLoginStaff.doc_contract?'<span class="badge badge-green">已繳</span>':'<span class="badge badge-red">缺件</span>'; if(el('staff_status_resume')) el('staff_status_resume').innerHTML=currentLoginStaff.doc_resume?'<span class="badge badge-green">已繳</span>':'<span class="badge badge-red">缺件</span>';
     renderStaffRecords(); renderStaffMyPayFilters(); renderStaffMyPay();
 }
 function showStaffPage(p,a) { document.querySelectorAll('#staff-screen .page').forEach(x=>x.classList.remove('active')); const t=el('staff-page-'+p); if(t)t.classList.add('active'); document.querySelectorAll('#staff-screen .sidebar-nav a').forEach(x=>x.classList.remove('active')); if(a)a.classList.add('active'); localStorage.setItem('staffPage',p); }
