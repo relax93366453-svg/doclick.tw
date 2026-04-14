@@ -251,7 +251,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
           <button class="btn btn-success" onclick="savePortalConfig()" style="margin-top:10px;"><i class="fas fa-cloud-upload-alt"></i> 同步前台設定</button>
         </div>
         <label style="font-weight:bold; display:block; margin-top:20px;">💰 價目表 JSON</label>
-        <textarea id="config_price_table" style="width:100%; height:80px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea>
+        <textarea id="config_price table" style="width:100%; height:80px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea>
         <br><button class="btn btn-success" onclick="savePriceConfig()"><i class="fas fa-cloud-upload-alt"></i> 同步價目</button>
       </div>
     </div>
@@ -307,43 +307,62 @@ let portalConf = safeJSONParse('portalConf', defaultPortalConf);
 function exportAllStaffHoursSummary() {
     const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(y === 'all' || m === 'all') return showToast('請選擇年份與月份', true);
+    
+    // 只找當月有上班的人
+    const monthlyStaffNames = [...new Set(attendData.filter(a => isDispatchPayrollPeriod(a.date, y, m)).map(a => a.staff))];
+    
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">調薪進度明細表 (${y}年${m}月)</th></tr><tr><th>姓名</th><th>方案</th><th>本月工時</th><th>歷史累計工時</th><th>目前時薪</th><th>下一階門檻</th><th>跳級金額</th></tr></thead><tbody>`;
+    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">人員工時累計表 (本月有上班名單) - ${y}年${m}月</th></tr><tr><th>姓名</th><th>計薪方案</th><th>本月工時</th><th>歷史總累計</th><th>目前時薪</th><th>跳級門檻</th><th>備註</th></tr></thead><tbody>`;
     let body = '';
-    staffData.filter(s => s.status === '在職').forEach(s => {
-        const monthlyRecords = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, y, m));
+    
+    monthlyStaffNames.forEach(name => {
+        const s = staffData.find(x => x.name === name) || { name: name, salary_rule: '標準階梯', status: '未知' };
+        const monthlyRecords = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m));
         const mHrs = monthlyRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
-        const info = getStaffCurrentHourlyInfo(s.name);
-        body += `<tr><td>${s.name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier || '無'}</td><td>${info.nextWage || '無'}</td></tr>`;
+        const info = getStaffCurrentHourlyInfo(name);
+        
+        body += `<tr><td>${name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier ? info.nextTier + 'h' : '已最高級'}</td><td>${s.remark || ''}</td></tr>`;
     });
+    
     tb.innerHTML = head + body + '</tbody>';
-    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "進度明細"}), `點籽響_${y}年${m}月_派遣調薪進度明細.xlsx`);
-    showToast('✅ 匯出成功');
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "人員累計"}), `點籽響_${y}年${m}月_人員工時累計表.xlsx`);
+    showToast('✅ 累計表匯出成功');
 }
 
 function exportStaffYearlyMatrix() {
     const y = el('sal_filter_year').value;
     if(y === 'all') return showToast('請先選擇年份', true);
+    
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="17" style="font-size:20px;font-weight:bold;text-align:center;">${y}年度 全員派遣工時累計矩陣總表 (含歷史追蹤)</th></tr><tr><th>姓名</th><th>歷史累計(2024起)</th>`;
+    // 橫向矩陣：姓名、2024累計、1-12月、總累計、目前時薪、門檻
+    let head = `<thead><tr><th colspan="17" style="font-size:20px;font-weight:bold;text-align:center;">${y}年度 全員派遣工時累計矩陣總表 (含離職人員)</th></tr><tr><th>姓名</th><th>2024(及以前)累計</th>`;
     for(let i=1; i<=12; i++) head += `<th>${i}月</th>`;
-    head += `<th>最新總計</th><th>時薪</th><th>跳級進度</th></tr></thead><tbody>`;
+    head += `<th>最新總累計</th><th>目前時薪</th><th>跳級進度</th></tr></thead><tbody>`;
+    
     let body = '';
-    staffData.filter(s => s.status === '在職').forEach(s => {
-        const prevYearHrs = attendData.filter(a => a.staff === s.name && a.date < `${y}-01-01`).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
-        body += `<tr><td>${s.name}</td><td style="background:#fef3c7;">${prevYearHrs.toFixed(1)}</td>`;
+    // 包含所有人員 (離職也算)
+    staffData.forEach(s => {
+        const name = s.name;
+        // 計算該年度以前的所有累計
+        const prevTotal = attendData.filter(a => a.staff === name && a.date < `${y}-01-01`).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+        
+        body += `<tr><td>${name}${s.status === '離職' ? ' (離職)' : ''}</td><td style="background:#fef3c7;">${prevTotal.toFixed(1)}</td>`;
+        
         let yearlySum = 0;
         for(let m=1; m<=12; m++) {
-            const hrs = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, y, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+            const hrs = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
             body += `<td>${hrs > 0 ? hrs.toFixed(1) : '0'}</td>`;
             yearlySum += hrs;
         }
-        const info = getStaffCurrentHourlyInfo(s.name);
-        const latestTotal = prevYearHrs + yearlySum;
-        body += `<td style="font-weight:bold; color:#2563eb; background:#dbeafe;">${latestTotal.toFixed(1)}</td><td style="color:#16a34a; font-weight:bold;">$${info.wage}</td><td style="white-space:nowrap;">${info.nextTier ? '還差 ' + (info.nextTier - latestTotal).toFixed(1) + 'h 跳級' : '已最高級'}</td></tr>`;
+        
+        const info = getStaffCurrentHourlyInfo(name);
+        const finalTotal = prevTotal + yearlySum;
+        
+        body += `<td style="font-weight:bold; color:#2563eb; background:#dbeafe;">${finalTotal.toFixed(1)}</td><td style="color:#16a34a; font-weight:bold;">$${info.wage}</td><td style="white-space:nowrap;">${info.nextTier ? '還差 ' + (info.nextTier - finalTotal).toFixed(1) + 'h 跳級' : '已最高級'}</td></tr>`;
     });
+    
     tb.innerHTML = head + body + '</tbody>';
-    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度累計矩陣"}), `點籽響_${y}年_全員年度工時累計總表.xlsx`);
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度總表"}), `點籽響_${y}年_全員年度工時矩陣總表.xlsx`);
     showToast('✅ 年度總表匯出成功');
 }
 
@@ -649,48 +668,67 @@ function exportBossSalaryExcel() {
   showToast('✅ 匯出成功');
 }
 
-// 派遣薪資計算按鈕功能：工時累計與總表
+// 派遣薪資計算功能：人員工時累計與矩陣總表
 function exportAllStaffHoursSummary() {
     const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(y === 'all' || m === 'all') return showToast('請選擇年份與月份', true);
+    
+    // 找出當月有上班的人員名單
+    const monthlyStaffNames = [...new Set(attendData.filter(a => isDispatchPayrollPeriod(a.date, y, m)).map(a => a.staff))];
+    
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">調薪進度明細表 (${y}年${m}月)</th></tr><tr><th>姓名</th><th>方案</th><th>本月工時</th><th>歷史累計工時</th><th>目前時薪</th><th>下一階門檻</th><th>跳級金額</th></tr></thead><tbody>`;
+    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">人員工時累計表 (本月有上班者) - ${y}年${m}月</th></tr><tr><th>姓名</th><th>計薪方案</th><th>本月工時</th><th>歷史總累計</th><th>目前時薪</th><th>跳級門檻</th><th>備註</th></tr></thead><tbody>`;
     let body = '';
-    staffData.filter(s => s.status === '在職').forEach(s => {
-        const monthlyRecords = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, y, m));
+    
+    monthlyStaffNames.forEach(name => {
+        const s = staffData.find(x => x.name === name) || { name: name };
+        const monthlyRecords = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m));
         const mHrs = monthlyRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
-        const info = getStaffCurrentHourlyInfo(s.name);
-        body += `<tr><td>${s.name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier || '無'}</td><td>${info.nextWage || '無'}</td></tr>`;
+        const info = getStaffCurrentHourlyInfo(name);
+        
+        body += `<tr><td>${name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier ? info.nextTier + 'h' : '已最高級'}</td><td>${s.remark || ''}</td></tr>`;
     });
+    
     tb.innerHTML = head + body + '</tbody>';
-    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "進度明細"}), `點籽響_${y}年${m}月_派遣調薪進度明細.xlsx`);
-    showToast('✅ 匯出成功');
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "人員累計"}), `點籽響_${y}年${m}月_人員工時累計進度.xlsx`);
+    showToast('✅ 累計表匯出成功');
 }
 
 function exportStaffYearlyMatrix() {
     const y = el('sal_filter_year').value;
     if(y === 'all') return showToast('請先選擇年份', true);
+    
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="17" style="font-size:20px;font-weight:bold;text-align:center;">${y}年度 全員派遣工時累計矩陣總表 (含歷史累計)</th></tr><tr><th>姓名</th><th>歷史累計(2024起)</th>`;
+    // 橫向矩陣：包含 2024 累計、各月明細、總計、目前薪資與進度
+    let head = `<thead><tr><th colspan="17" style="font-size:20px;font-weight:bold;text-align:center;">${y}年度 全員派遣工時累計矩陣總表 (含離職人員)</th></tr><tr><th>姓名</th><th>2024(以前)累計</th>`;
     for(let i=1; i<=12; i++) head += `<th>${i}月</th>`;
-    head += `<th>最新總計</th><th>時薪</th><th>跳級進度</th></tr></thead><tbody>`;
+    head += `<th>最新總計</th><th>目前時薪</th><th>跳級進度</th></tr></thead><tbody>`;
+    
     let body = '';
-    staffData.filter(s => s.status === '在職').forEach(s => {
-        const prevYearHrs = attendData.filter(a => a.staff === s.name && a.date < `${y}-01-01`).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
-        body += `<tr><td>${s.name}</td><td style="background:#fef3c7;">${prevYearHrs.toFixed(1)}</td>`;
+    // 使用 staffData 包含所有狀態的人員 (包含離職)
+    staffData.forEach(s => {
+        const name = s.name;
+        // 算出選定年份以前（從 2024 開始計）的所有工時
+        const prevYearTotal = attendData.filter(a => a.staff === name && a.date < `${y}-01-01`).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+        
+        body += `<tr><td>${name}${s.status === '離職' ? ' (離職)' : ''}</td><td style="background:#fef3c7;">${prevYearTotal.toFixed(1)}</td>`;
+        
         let yearlySum = 0;
         for(let m=1; m<=12; m++) {
-            const hrs = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, y, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+            const hrs = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
             body += `<td>${hrs > 0 ? hrs.toFixed(1) : '0'}</td>`;
             yearlySum += hrs;
         }
-        const info = getStaffCurrentHourlyInfo(s.name);
-        const latestTotal = prevYearHrs + yearlySum;
-        body += `<td style="font-weight:bold; color:#2563eb; background:#dbeafe;">${latestTotal.toFixed(1)}</td><td style="color:#16a34a; font-weight:bold;">$${info.wage}</td><td style="white-space:nowrap;">${info.nextTier ? '還差 ' + (info.nextTier - latestTotal).toFixed(1) + 'h 跳級' : '已最高級'}</td></tr>`;
+        
+        const info = getStaffCurrentHourlyInfo(name);
+        const finalCumulative = prevYearTotal + yearlySum;
+        
+        body += `<td style="font-weight:bold; color:#2563eb; background:#dbeafe;">${finalCumulative.toFixed(1)}</td><td style="color:#16a34a; font-weight:bold;">$${info.wage}</td><td style="white-space:nowrap;">${info.nextTier ? '還差 ' + (info.nextTier - finalCumulative).toFixed(1) + 'h 跳級' : '已最高級'}</td></tr>`;
     });
+    
     tb.innerHTML = head + body + '</tbody>';
-    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度累計矩陣"}), `點籽響_${y}年_人員年度工時矩陣總表.xlsx`);
-    showToast('✅ 年度總表匯出成功');
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度總累計"}), `點籽響_${y}年_人員工時矩陣總表.xlsx`);
+    showToast('✅ 年度矩陣總表匯出成功');
 }
 
 function clearLoginBg(){if(confirm('刪除？')){loginBgBase64='';localStorage.removeItem('loginBg');updateLogoPreview();saveAllSilently();}}
@@ -770,8 +808,6 @@ function doDownloadPdf(isCloud) {
       }
   }, 600);
 }
-
-function uploadTablePDF(tid, t, cid, isC, isS=false) { showToast('請使用原生報表產出功能。', true); }
 
 function generateStatementPDF() {
   const cb=el('bill_filter_company').value.trim(), yb=el('bill_filter_year').value, mb=el('bill_filter_month').value;
@@ -905,9 +941,6 @@ function fillFilters() {
   let custH = '<option value="全部">'; custData.forEach(c=>custH+=`<option value="${c.name}">`); if(el('list_cust')) el('list_cust').innerHTML = custH;
   let staffH = '<option value="全部人員">'; staffData.filter(s=>s.status==='在職').forEach(s=>staffH+=`<option value="${s.name}">`);
   if(el('list_staff')) el('list_staff').innerHTML = staffH;
-  let ftStaffH = '<option value="全部員工">'; ftStaffData.filter(s=>s.status==='在職').forEach(s=>ftStaffH+=`<option value="${s.name}">`); if(el('list_ft_staff')) el('list_ft_staff').innerHTML = ftStaffH;
-  let supH = '<option value="全部">';
-  supplierData.forEach(s=>supH+=`<option value="${s.name}">`); if(el('list_supplier')) el('list_supplier').innerHTML = supH;
 }
 
 function renderSupplierTable() { const f=el('sup_filter_name').value.trim(); let l=supplierData.filter(x=>(!f || f==='全部' || x.name===f)); const {pagedList,total,totalPages}=getPagedData(l,'supplier');
@@ -915,8 +948,7 @@ function renderSupplierTable() { const f=el('sup_filter_name').value.trim(); let
  el('supplierTable').innerHTML = h || '<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('supplier', total, totalPages); fillFilters();
  }
 function addSupplier() { const o = {name:el('sup_name').value.trim(), contact:el('sup_contact').value.trim(), tel:el('sup_tel').value.trim(), addr:el('sup_addr').value.trim(), tax:el('sup_tax').value.trim(), pay_method:el('sup_pay_method').value.trim(), pay_date:el('sup_pay_date').value, invoice_date:el('sup_invoice_date').value, invoice_no:el('sup_invoice_no').value.trim(), invoice_amt:el('sup_invoice_amt').value, drive:el('sup_drive').value.trim()}; if(!o.name)return; supplierData.push(o); saveAll(); renderSupplierTable(); clearSupplierForm(); showToast('✅ 成功'); }
-function editSupplier(i) { const d = supplierData[i]; el('sup_name').value=d.name; el('sup_contact').value=d.contact||''; el('sup_tel').value=d.tel||''; el('sup_addr').value=d.addr||''; el('sup_tax').value=d.tax||''; el('sup_pay_method').value=d.pay_method||''; el('sup_pay_date').value=d.pay_date||''; el('sup_invoice_date').value=d.invoice_date||''; el('sup_invoice_no').value=d.invoice_no||'';
- el('sup_invoice_amt').value=d.invoice_amt||''; el('sup_drive').value=d.drive||''; editSupplierIndex=i; el('btnUpdateSupplier').style.display='inline-block'; const b=el('btnAddSupplier'); if(b) b.style.display='none'; }
+function editSupplier(i) { const d = supplierData[i]; el('sup_name').value=d.name; el('sup_contact').value=d.contact||''; el('sup_tel').value=d.tel||''; el('sup_addr').value=d.addr||''; el('sup_tax').value=d.tax||''; el('sup_pay_method').value=d.pay_method||''; el('sup_pay_date').value=d.pay_date||''; el('sup_invoice_date').value=d.invoice_date||''; el('sup_invoice_no').value=d.invoice_no||''; el('sup_invoice_amt').value=d.invoice_amt||''; el('sup_drive').value=d.drive||''; editSupplierIndex=i; el('btnUpdateSupplier').style.display='inline-block'; const b=el('btnAddSupplier'); if(b) b.style.display='none'; }
 function updateSupplier() { if(editSupplierIndex<0)return; const o = {name:el('sup_name').value.trim(), contact:el('sup_contact').value.trim(), tel:el('sup_tel').value.trim(), addr:el('sup_addr').value.trim(), tax:el('sup_tax').value.trim(), pay_method:el('sup_pay_method').value.trim(), pay_date:el('sup_pay_date').value, invoice_date:el('sup_invoice_date').value, invoice_no:el('sup_invoice_no').value.trim(), invoice_amt:el('sup_invoice_amt').value, drive:el('sup_drive').value.trim()}; supplierData[editSupplierIndex]={...supplierData[editSupplierIndex], ...o}; saveAll(); renderSupplierTable(); clearSupplierForm(); showToast('✅ 修改'); }
 function delSupplier(i) { if(!confirm('刪除？'))return; supplierData.splice(i,1); saveAll(); renderSupplierTable(); showToast('刪除'); }
 function clearSupplierForm() { document.querySelectorAll('#page-supplier .grid input').forEach(i=>i.value=''); editSupplierIndex=-1; el('btnUpdateSupplier').style.display='none'; const b=el('btnAddSupplier'); if(b) b.style.display='inline-block'; }
@@ -1125,6 +1157,43 @@ function renderStaffMyPayFilters() { if(!el('staff_my_year')||!el('staff_my_mont
 function renderStaffMyPay() { if(!el('staffMyPayTable')||!currentLoginStaff)return; const y=el('staff_my_year').value, m=el('staff_my_month').value; let h=''; attendData.filter(x=>x.staff===currentLoginStaff.name&&isDispatchPayrollPeriod(x.date,y,m)).forEach(i=>{h+=`<tr><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${getItemSalaryHours(i)}</td></tr>`;}); el('staffMyPayTable').innerHTML=h||'<tr><td colspan="4" style="text-align:center;">無</td></tr>'; }
 function staffDownloadPayslip() { if(!currentLoginStaff)return; const iF=ftStaffData.some(x=>x.name===currentLoginStaff.name); if(iF){el('fts_filter_staff').value=currentLoginStaff.name; const y=el('staff_my_year').value, m=el('staff_my_month').value; el('fts_filter_month').value=`${y}-${String(m).padStart(2,'0')}`; generateFtPayslipPDF();} else{el('sal_filter_staff').value=currentLoginStaff.name; el('sal_filter_year').value=el('staff_my_year').value; el('sal_filter_month').value=el('staff_my_month').value; generatePayslipPDF();} }
 function openStaffDrive() { if(currentLoginStaff&&currentLoginStaff.drive) window.open(currentLoginStaff.drive,'_blank'); else showToast('無資料夾',true); }
-</script>
-</body>
-</html>
+
+// 派遣薪資計算按鈕功能：工時累計與矩陣總表 (確保包含所有邏輯)
+function exportAllStaffHoursSummary() {
+    const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
+    if(y === 'all' || m === 'all') return showToast('請選擇年份與月份', true);
+    const monthlyStaffNames = [...new Set(attendData.filter(a => isDispatchPayrollPeriod(a.date, y, m)).map(a => a.staff))];
+    let tb = document.createElement('table');
+    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">人員工時累計表 (本月有上班名單) - ${y}年${m}月</th></tr><tr><th>姓名</th><th>計薪方案</th><th>本月工時</th><th>歷史總累計</th><th>目前時薪</th><th>跳級門檻</th><th>備註</th></tr></thead><tbody>`;
+    let body = '';
+    monthlyStaffNames.forEach(name => {
+        const s = staffData.find(x => x.name === name) || { name: name };
+        const monthlyRecords = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m));
+        const mHrs = monthlyRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+        const info = getStaffCurrentHourlyInfo(name);
+        body += `<tr><td>${name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier ? info.nextTier + 'h' : '已最高級'}</td><td>${s.remark || ''}</td></tr>`;
+    });
+    tb.innerHTML = head + body + '</tbody>';
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "人員累計"}), `點籽響_${y}年${m}月_人員工時累計表.xlsx`);
+    showToast('✅ 累計表匯出成功');
+}
+
+function exportStaffYearlyMatrix() {
+    const y = el('sal_filter_year').value;
+    if(y === 'all') return showToast('請先選擇年份', true);
+    let tb = document.createElement('table');
+    let head = `<thead><tr><th colspan="17" style="font-size:20px;font-weight:bold;text-align:center;">${y}年度 全員派遣工時累計矩陣總表 (含離職人員)</th></tr><tr><th>姓名</th><th>2024(及以前)累計</th>`;
+    for(let i=1; i<=12; i++) head += `<th>${i}月</th>`;
+    head += `<th>最新總累計</th><th>目前時薪</th><th>跳級進度</th></tr></thead><tbody>`;
+    let body = '';
+    staffData.forEach(s => {
+        const name = s.name;
+        const prevTotal = attendData.filter(a => a.staff === name && a.date < `${y}-01-01`).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+        body += `<tr><td>${name}${s.status === '離職' ? ' (離職)' : ''}</td><td style="background:#fef3c7;">${prevTotal.toFixed(1)}</td>`;
+        let yearlySum = 0;
+        for(let m=1; m<=12; m++) {
+            const hrs = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+            body += `<td>${hrs > 0 ? hrs.toFixed(1) : '0'}</td>`;
+            yearlySum += hrs;
+        }
+        const info = getStaffCurrentHourlyInfo(name);
