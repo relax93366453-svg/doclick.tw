@@ -6,7 +6,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-/* 核心樣式設定 */
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei',sans-serif}body{background:#f4f7fb;color:#334155;line-height:1.6}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
 #login-screen{display:flex;justify-content:center;align-items:center;height:100vh;background:url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;background-color:#1e293b;position:fixed;top:0;left:0;width:100%;z-index:9998}#login-screen::before{content:'';position:absolute;inset:0;background:rgba(15,23,42,.65)}
 .login-box{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.5);padding:45px 40px;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);width:100%;max-width:420px;text-align:center;position:relative;z-index:1;border-top:6px solid #2d9d5c}
@@ -545,24 +544,24 @@ function getStaffCurrentHourlyInfo(name){
 
   if(rule==='自訂' || rule==='接案'){ w=Number(si.hourly)||0; return {wage:w, nextTier:'FIXED', nextWage:null, hours:h, rule:rule}; }
 
-  if(rule==='114年標準' || rule==='標準階梯'){
+  if(rule.includes('114年標準') || rule.includes('標準階梯')){
     if(h<=175){w=210;nt=176;nw=220;}
     else if(h<=350){w=220;nt=351;nw=230;}
     else if(h<=525){w=230;nt=526;nw=240;}
     else if(h<=700){w=240;nt=701;nw=agreed?250:'250(需備註同意)';}
     else{w=agreed?250:240; if(!agreed){nt=701;nw='250(需備註同意)';}}
-  }else if(rule==='早期約' || rule==='245起跳'){
+  }else if(rule.includes('早期約') || rule.includes('245起跳')){
     if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';}
     else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
-  }else if(rule==='固定205'){
+  }else if(rule.includes('固定205')){
     if(h<=350){w=205;nt=351;nw=220;}
     else if(h<=700){w=220;nt=701;nw=agreed?245:'245(需備註同意)';}
     else{w=agreed?245:220; if(!agreed){nt=701;nw='245(需備註同意)';}}
-  }else if(rule==='固定220'){
+  }else if(rule.includes('固定220')){
     if(h<=350){w=220;nt=351;nw=245;}
     else if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';}
     else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
-  }else if(rule==='特殊225'){
+  }else if(rule.includes('特殊225')){
     if(h<=350){w=225;nt=351;nw=245;}
     else if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';}
     else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
@@ -571,7 +570,7 @@ function getStaffCurrentHourlyInfo(name){
   return {wage:w, nextTier:nt, nextWage:nw, hours:h, rule:rule};
 }
 
-// ★ 歷史紀錄時薪計算 (加入浮點數誤差修正) ★
+// ★ 歷史紀錄時薪計算 (完美對齊表格累計與防浮點誤差) ★
 function getHistoricalRate(item) {
   if(item.special_hourly) return Number(item.special_hourly);
   const si=staffData.find(x=>x.name===item.staff);
@@ -585,7 +584,7 @@ function getHistoricalRate(item) {
   let h = 0;
   for (let sr of staffRecords) {
       h += getItemSalaryHours(sr.record);
-      h = Math.round(h * 10) / 10; // 防浮點數微小誤差
+      h = Math.round(h * 10) / 10;
       if (sr.record === item) break;
   }
 
@@ -610,7 +609,7 @@ function getHistoricalRate(item) {
   return w;
 }
 
-// ★ 跨階預警系統與時數邏輯 (加入浮點數誤差修正與自動拆單按鈕) ★
+// ★ 跨階預警系統與時數邏輯 (含防呆按鈕設計) ★
 function checkHourlyUpgradeAlert() {
   const s = el('attend_staff').value.trim();
   const hInp = parseFloat(el('attend_salary_hours').value) || 0;
@@ -634,7 +633,7 @@ function checkHourlyUpgradeAlert() {
   for (let sr of staffRecords) {
       if (sr.isCurrent) break;
       cH += getItemSalaryHours(sr.record);
-      cH = Math.round(cH * 10) / 10; // 防浮點數微小誤差
+      cH = Math.round(cH * 10) / 10;
   }
 
   const si = staffData.find(x => x.name === s);
@@ -987,6 +986,15 @@ function delAttend(i){ if(!confirm('刪除記錄？'))return; attendData.splice(
 function clearAttendForm(){ document.querySelectorAll('#page-attend .grid input').forEach(i=>i.value=''); el('attend_service').value=''; el('attend_special_hourly').value=''; editAttendIndex=-1; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} const c=el('btnClearAttend');
   if(c) c.innerHTML='<i class="fas fa-eraser"></i> 清空'; if(el('attend_upgrade_alert')) el('attend_upgrade_alert').style.display = 'none'; }
 
+// ★ 防呆專用：自動填寫跨階拆單數值 ★
+function autoFillSplit(h1, rate1, h2) {
+    el('attend_salary_hours').value = h1;
+    el('attend_deduct_points').value = h1;
+    el('attend_special_hourly').value = rate1;
+    el('attend_remark').value = '跨階前(系統自動拆單)';
+    alert(`✅ 防呆輔助成功！\n\n系統已自動將表單修改為跨階前的「${h1} 小時」並鎖定舊時薪「$${rate1}」。\n\n👉 第一步：請直接點擊綠色的「儲存 / 修改」按鈕。\n👉 第二步：儲存後，請再新增一筆「${h2} 小時」的紀錄（特殊時薪留空即可），就完成完美拆單了！`);
+}
+
 function toggleFtaFields(){ const t=el('fta_record_type').value; el('fta_time_block').style.display='grid'; el('fta_leave_type_block').style.display=t==='請假'?'block':'none'; el('fta_approval_block').style.display=t==='請假'?'block':'none';
   if(t==='請假'){el('fta_time_in').value='';el('fta_time_out').value='';el('fta_hours').value='8';} }
 function calcFtaHours(){ const s=el('fta_time_in').value, e=el('fta_time_out').value; if(!s||!e){el('fta_hours').value='';return;} let h=(+getHours(s,e)); const d=el('fta_deduct_break'); if(d&&d.checked&&h>1)h-=1; if(h>0)el('fta_hours').value=h.toFixed(1);else el('fta_hours').value='0'; }
@@ -1165,12 +1173,7 @@ function renderPoint(){ const c=el('point_filter_company').value.trim();
 function renderBill(){ const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value; const cycle=el('bill_cycle').value; if(!c || c==='全部')return; let l=attendData.filter(x=>x.company===c && isDispatchPayrollPeriod(x.date,y,m,cycle));
   l.sort((a,b)=>new Date(b.date)-new Date(a.date)); const {pagedList,total,totalPages}=getPagedData(l,'bill'); let h=''; pagedList.forEach(i=>{ h+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service||'-'}</td><td>${getItemClockHours(i).toFixed(1)}</td><td>${i.deduct_points||0}</td></tr>`; }); el('billTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('bill',total,totalPages); }
 
-function renderSalary(){ const s=el('sal_filter_staff').value.trim(), y=el('sal_filter_year').value, m=el('sal_filter_month').value;
-  calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
-  let l=attendData.filter(x=>(!s || s==='全部人員' || x.staff===s)&&isDispatchPayrollPeriod(x.date, y, m)); l.sort((a,b)=>new Date(b.date)-new Date(a.date)); const {pagedList,total,totalPages}=getPagedData(l,'salary'); let h='', tH=0, tA=0;
-  l.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); tH+=pH; tA+=Math.round(pH*hy); }); pagedList.forEach(i=>{ const pH=getItemSalaryHours(i); const hy=getHistoricalRate(i); const a=Math.round(pH*hy); h+=`<tr><td>${i.staff}</td><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hy}</td><td>${a}</td></tr>`; }); el('salaryTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>';
-  renderPagination('salary',total,totalPages); let ptxt = ''; if(y !== 'all' && m !== 'all') { let pm=parseInt(m)-1, py=parseInt(y);
-  if(pmfunction renderSalary(){ 
+function renderSalary(){ 
   const s=el('sal_filter_staff').value.trim(), y=el('sal_filter_year').value, m=el('sal_filter_month').value;
   calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
   let l=attendData.filter(x=>(!s || s==='全部人員' || x.staff===s)&&isDispatchPayrollPeriod(x.date, y, m)); l.sort((a,b)=>new Date(b.date)-new Date(a.date)); const {pagedList,total,totalPages}=getPagedData(l,'salary'); let h='', tH=0, tA=0;
