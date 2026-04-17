@@ -578,8 +578,8 @@ function getStaffCurrentHourlyInfo(name){
     else{w=agreed?250:245; if(!agreed){nt=701;nw='250(需備註同意)';}}
   }else if(rule.includes('固定205')){
     if(h<=350){w=205;nt=351;nw=220;}
-    else if(h<=700){w=220;nt=701;nw=agreed?245:'245(需備註同意)';}
-    else{w=agreed?245:220; if(!agreed){nt=701;nw='245(需備註同意)';}}
+    else if(h<=700){w=220;nt=701;nw=agreed?250:'250(需備註同意)';}
+    else{w=agreed?250:220; if(!agreed){nt=701;nw='250(需備註同意)';}}
   }else if(rule.includes('固定220')){
     if(h<=350){w=220;nt=351;nw=245;}
     else if(h<=700){w=245;nt=701;nw=agreed?250:'250(需備註同意)';}
@@ -619,7 +619,7 @@ function getHistoricalRate(item) {
   }else if(rule.includes('早期約') || rule.includes('245起跳')){
     if(h<=700) w=245; else w=agreed?250:245;
   }else if(rule.includes('固定205')){
-    if(h<=350) w=205; else if(h<=700) w=220; else w=agreed?245:220;
+    if(h<=350) w=205; else if(h<=700) w=220; else w=agreed?250:220;
   }else if(rule.includes('固定220')){
     if(h<=350) w=220; else if(h<=700) w=245; else w=agreed?250:245;
   }else if(rule.includes('特殊225')){
@@ -668,7 +668,7 @@ function checkHourlyUpgradeAlert() {
       if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'250 (需備註同意調薪)';}
   }else if(rule.includes('固定205')){
       if(cH<351 && cH+hInp>=351){th=350;oW=205;nW=220;nWText='220';}
-      else if(cH<701 && cH+hInp>=701){th=700;oW=220;nW=agreed?245:220;nWText=agreed?'245':'245 (需備註同意調薪)';}
+      else if(cH<701 && cH+hInp>=701){th=700;oW=220;nW=agreed?250:220;nWText=agreed?'250':'250 (需備註同意調薪)';}
   }else if(rule.includes('固定220')){
       if(cH<351 && cH+hInp>=351){th=350;oW=220;nW=245;nWText='245';}
       else if(cH<701 && cH+hInp>=701){th=700;oW=245;nW=agreed?250:245;nWText=agreed?'250':'250 (需備註同意調薪)';}
@@ -1103,7 +1103,7 @@ function clearMatchForm(){
   const b = el('btnAddMatch'); if(b) b.style.display = 'inline-block'; 
 }
 
-function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
+function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===fs)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
   let h='';
   pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; let rb=item.resume?`<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i></button>`:'-'; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${rb}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
   el('talentTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
