@@ -141,7 +141,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
       </div>
       <div id="attend_upgrade_alert" style="display:none; background:#fffbeb; border-left:4px solid #f59e0b; padding:15px; border-radius:8px; color:#b45309; font-size:14px; margin-bottom:20px; line-height:1.8;"></div>
       <button class="btn btn-success" id="btnAddAttend" onclick="addAttend()"><i class="fas fa-save"></i> 儲存</button>
-      <button class="btn" id="btnClearAttend" style="background:#64748b;" onclick="clearAttendForm()"><i class="fas fa-eraser"></i> 清空表單</button>
+      <button class="btn" id="btnClearAttend" style="background:#64748b;" onclick="clearAttendForm(); document.getElementById('attend_company').focus();"><i class="fas fa-eraser"></i> 一鍵清除</button>
       <div class="filter-bar" style="margin-top: 20px;">
         <label>搜尋公司：</label><input list="list_cust" id="filter_company" placeholder="手打搜尋公司" oninput="resetPage('attend'); renderAttend()">
         <label>年</label><select id="filter_year" onchange="resetPage('attend'); renderAttend()"></select>
@@ -1048,8 +1048,26 @@ function renderAttend(){
     el('attendTable').innerHTML=h||'<tr><td colspan="13" style="text-align:center;">無資料</td></tr>'; renderPagination('attend',total,totalPages); 
 }
 function calcAttendTemp(){ const h=(+getHours(el('am_s').value,el('am_e').value))+(+getHours(el('pm_s').value,el('pm_e').value)); if(h>0){el('attend_salary_hours').value=h.toFixed(1);el('attend_deduct_points').value=h.toFixed(1);} else{el('attend_salary_hours').value='';el('attend_deduct_points').value='';} checkHourlyUpgradeAlert(); }
-function addAttend(){ const o={ company:el('attend_company').value.trim(), staff:el('attend_staff').value.trim(), date:el('attend_date').value, service:el('attend_service').value, remark:el('attend_remark').value, am_s:el('am_s').value, am_e:el('am_e').value, pm_s:el('pm_s').value, pm_e:el('pm_e').value, salary_hours:el('attend_salary_hours').value, project_fee:el('attend_project_fee').value, deduct_points:el('attend_deduct_points').value, special_hourly:el('attend_special_hourly').value }; if(!o.company||!o.staff||!o.date)return;
-if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } else { attendData.push(o); } saveAll(); renderAttend(); clearAttendForm(); showToast('✅ 儲存'); }
+function addAttend(){ 
+  const o={ company:el('attend_company').value.trim(), staff:el('attend_staff').value.trim(), date:el('attend_date').value, service:el('attend_service').value, remark:el('attend_remark').value, am_s:el('am_s').value, am_e:el('am_e').value, pm_s:el('pm_s').value, pm_e:el('pm_e').value, salary_hours:el('attend_salary_hours').value, project_fee:el('attend_project_fee').value, deduct_points:el('attend_deduct_points').value, special_hourly:el('attend_special_hourly').value }; 
+  if(!o.company||!o.staff||!o.date)return;
+  if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } else { attendData.push(o); } 
+  saveAll(); 
+  renderAttend(); 
+  
+  const keepCompany = el('attend_company').value;
+  const keepStaff = el('attend_staff').value;
+  const keepService = el('attend_service').value;
+  
+  clearAttendForm(); 
+  
+  el('attend_company').value = keepCompany;
+  el('attend_staff').value = keepStaff;
+  el('attend_service').value = keepService;
+  el('attend_company').focus();
+  
+  showToast('✅ 儲存'); 
+}
 function editAttend(i){ const d=attendData[i];
 el('attend_company').value=d.company; el('attend_staff').value=d.staff; el('attend_date').value=d.date; el('attend_service').value=d.service; el('attend_remark').value=d.remark; el('am_s').value=d.am_s; el('am_e').value=d.am_e; el('pm_s').value=d.pm_s; el('pm_e').value=d.pm_e; el('attend_salary_hours').value=d.salary_hours; el('attend_project_fee').value=d.project_fee||0; el('attend_deduct_points').value=d.deduct_points; el('attend_special_hourly').value=d.special_hourly||''; editAttendIndex=i; const b=el('btnAddAttend');
 if(b) {b.innerHTML='<i class="fas fa-edit"></i> 修改'; b.classList.replace('btn-success','btn-warning');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-times"></i> 取消'; checkHourlyUpgradeAlert(); }
@@ -1103,7 +1121,7 @@ function clearMatchForm(){
   const b = el('btnAddMatch'); if(b) b.style.display = 'inline-block'; 
 }
 
-function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===fs)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
+function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
   let h='';
   pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; let rb=item.resume?`<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i></button>`:'-'; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${rb}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
   el('talentTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
@@ -1199,7 +1217,7 @@ function generatePayslipPDF() {
 
 function renderDashboard(){
   el('dash_total_cust').textContent=custData.length; el('dash_active_cust').textContent=custData.filter(x=>x.coop==='正合作').length; let pG=0, pL=0, aH='';
-  custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP} 點</td><td><button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
+  custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP} 點</td><td>button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
   el('dash_point_ge50').textContent=pG; el('dash_point_lt50').textContent=pL; el('dash_alert_table').innerHTML=aH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">無</td></tr>';
   let aS=staffData.filter(x=>x.status==='在職'), aF=ftStaffData.filter(x=>x.status==='在職'), aA=aS.concat(aF); el('dash_staff_active').textContent=aA.length; el('dash_miss_id').textContent=aA.filter(x=>!x.doc_id).length; el('dash_miss_bank').textContent=aA.filter(x=>!x.doc_bank).length; el('dash_miss_contract').textContent=aA.filter(x=>!x.doc_contract).length; let mH='';
   aA.forEach(s=>{ let m=[]; if(!s.doc_id)m.push('<span class="badge badge-red">身分</span>'); if(!s.doc_bank)m.push('<span class="badge badge-red">存摺</span>'); if(!s.doc_contract)m.push('<span class="badge badge-red">合約</span>'); if(!s.doc_resume)m.push('<span class="badge badge-red">履歷</span>'); if(m.length>0){ const iF=ftStaffData.some(x=>x.name===s.name), tg=iF?'<span class="badge badge-blue">正職</span>':'<span class="badge badge-yellow">派遣</span>'; mH+=`<tr><td style="font-weight:bold;color:#444;">${s.name} ${tg}</td><td><div style="display:flex;flex-wrap:wrap;gap:5px;">${m.join('')}</div></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('${iF?'ft_staff':'staff'}'); setTimeout(()=>${iF?'editFtStaff':'editStaff'}(${iF?ftStaffData.findIndex(x=>x.name===s.name):staffData.findIndex(x=>x.name===s.name)}), 300);"><i class="fas fa-edit"></i></button></td></tr>`; } });
