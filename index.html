@@ -946,6 +946,150 @@ function calcSalesBonus() {
     }
 }
 
+function loadDataFromCloud(forceRender=false){if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{let nA=0;if(r.sysConfig){if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_admin_acc'))el('setting_admin_acc').value=r.sysConfig.adminAcc;}if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_admin_pwd'))el('setting_admin_pwd').value=r.sysConfig.adminPwd;}if(r.sysConfig.hrAcc){localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(el('setting_hr_acc'))el('setting_hr_acc').value=r.sysConfig.hrAcc;}if(r.sysConfig.hrPwd){localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(el('setting_hr_pwd'))el('setting_hr_pwd').value=r.sysConfig.hrPwd;}if(r.sysConfig.salesAcc){localStorage.setItem('salesAcc',r.sysConfig.salesAcc);if(el('setting_sales_acc'))el('setting_sales_acc').value=r.sysConfig.salesAcc;}if(r.sysConfig.salesPwd){localStorage.setItem('salesPwd',r.sysConfig.salesPwd);if(el('setting_sales_pwd'))el('setting_sales_pwd').value=r.sysConfig.salesPwd;}if(r.sysConfig.adminPin){localStorage.setItem('adminPin',r.sysConfig.adminPin);if(el('setting_admin_pin'))el('setting_admin_pin').value=r.sysConfig.adminPin;}if(r.sysConfig.priceTable){localStorage.setItem('priceTable',r.sysConfig.priceTable);priceTable=JSON.parse(r.sysConfig.priceTable);if(el('config_price_table'))el('config_price_table').value=r.sysConfig.priceTable;renderPricePlanOptions();}if(r.sysConfig.portalConf){let c=JSON.parse(r.sysConfig.portalConf);portalConf={...defaultPortalConf,...c};localStorage.setItem('portalConf',JSON.stringify(portalConf));renderPortalConfigUI();applyPortalConfigToStaff();renderServiceTypes();}if(r.sysConfig.loginLogo){localStorage.setItem('loginLogo',r.sysConfig.loginLogo);loginLogoBase64=r.sysConfig.loginLogo;}if(r.sysConfig.pdfLogo){localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);pdfLogoBase64=r.sysConfig.pdfLogo;}if(r.sysConfig.loginBg){localStorage.setItem('loginBg',r.sysConfig.loginBg);loginBgBase64=r.sysConfig.loginBg;}updateLogoPreview();}if(!r.talentData)r.talentData=talentData||[];r.talentData=r.talentData.filter(x=>x&&String(x.name||'').trim()!=='');let pC=r.talentData.length;let fm=r['Form_Responses']||r['表單回應 1']||r['表單回應']||r['Form Responses 1'];if(fm&&Array.isArray(fm)&&fm.length>0){const hH=String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名');const dR=hH?fm.slice(1):fm;dR.forEach(row=>{if(Array.isArray(row)){let n=String(row[1]||'').trim(),t=String(row[4]||row[2]||'').trim(),l=String(row[5]||'').trim(),y=String(row[8]||'').trim(),e=String(row[9]||'').trim(),loc=String(row[10]||'').trim(),s=String(row[11]||'').trim(),rl=String(row[22]||row[12]||'').trim(),dt=String(row[0]||'').trim();let ex=[];if(l)ex.push('Line:'+l);if(y)ex.push('年資:'+y);if(e)ex.push('經歷:'+e);if(n&&n!==''&&!n.includes('全名')&&!n.includes('姓名')){if(!r.talentData.some(t=>String(t.name).trim()===n)){r.talentData.push({name:n,tel:t,source:'Google表單',location:loc,shift:s,role:rl,status:'待聯絡',eval:'',resume:'',exp:ex.join(' | '),date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0]});nA++;}}}});}if(r.custData)custData=r.custData;if(r.contractData)contractData=r.contractData;if(r.staffData)staffData=r.staffData;if(r.attendData)attendData=r.attendData;if(r.ftStaffData)ftStaffData=r.ftStaffData;if(r.ftAttendData)ftAttendData=r.ftAttendData;talentData=r.talentData;if(r.supplierData)supplierData=r.supplierData;if(r.matchData)matchData=r.matchData;if(r.reqData)reqData=r.reqData;if(r.dispatchData)dispatchData=r.dispatchData;standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));localStorage.setItem('matchData',JSON.stringify(matchData));localStorage.setItem('reqData',JSON.stringify(reqData));localStorage.setItem('dispatchData',JSON.stringify(dispatchData));}catch(e){}if(nA>0||talentData.length<pC)saveAllSilently();if(forceRender){if(nA>0)alert(`匯入 ${nA} 筆`);else if(fm)alert(`無新履歷`);}if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');const cp=localStorage.getItem('adminPage')||'dashboard';if(el('admin-screen')&&el('admin-screen').style.display!=='none'){if(forceRender)showAdminPage(cp);else{if(cp==='dashboard')renderDashboard();else if(cp==='customer')renderCustTable();else if(cp==='staff')renderStaffTable();else if(cp==='talent')renderTalentTable();else if(cp==='supplier')renderSupplierTable();else if(cp==='match')renderMatchTable();else if(cp==='req')renderReqTable();else if(cp==='dispatch')renderDispatchTable();}}}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線',true);});}
+function saveAllSilently(){fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,matchData,reqData,dispatchData,sysConfig:getSysConfigPayload()}),headers:{'Content-Type':'text/plain;charset=utf-8'}});}
+function saveAll(){standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));localStorage.setItem('matchData',JSON.stringify(matchData));localStorage.setItem('reqData',JSON.stringify(reqData));localStorage.setItem('dispatchData',JSON.stringify(dispatchData));}catch(e){}if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 存...');fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,matchData,reqData,dispatchData,sysConfig:getSysConfigPayload()}),headers:{'Content-Type':'text/plain;charset=utf-8'}}).then(r=>r.json()).then(r=>{if(r.status==='success'&&el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);});}
+function syncTalentFromForm(){if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...');fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'syncForm'}),headers:{'Content-Type':'text/plain;charset=utf-8'}}).then(r=>r.json()).then(r=>{showToast(`✅ 同步！`);loadDataFromCloud(true);}).catch(e=>{showToast('❌ 網路錯誤',true);if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');});}
+function backupAllData(){const d={custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,matchData,reqData,dispatchData,sysConfig:getSysConfigPayload()};const b=new Blob([JSON.stringify(d)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`愜易居備份_${new Date().getTime()}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function restoreData(i){if(!i.files||!i.files[0])return;const rd=new FileReader();rd.onload=function(e){try{const r=JSON.parse(e.target.result);if(r.custData)custData=r.custData;if(r.contractData)contractData=r.contractData;if(r.staffData)staffData=r.staffData;if(r.attendData)attendData=r.attendData;if(r.ftStaffData)ftStaffData=r.ftStaffData;if(r.ftAttendData)ftAttendData=r.ftAttendData;if(r.talentData)talentData=r.talentData;if(r.supplierData)supplierData=r.supplierData;if(r.matchData)matchData=r.matchData;if(r.reqData)reqData=r.reqData;if(r.dispatchData)dispatchData=r.dispatchData;if(r.sysConfig){if(r.sysConfig.loginLogo)localStorage.setItem('loginLogo',r.sysConfig.loginLogo);if(r.sysConfig.pdfLogo)localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);if(r.sysConfig.loginBg)localStorage.setItem('loginBg',r.sysConfig.loginBg);if(r.sysConfig.priceTable)localStorage.setItem('priceTable',r.sysConfig.priceTable);if(r.sysConfig.adminAcc)localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(r.sysConfig.adminPwd)localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(r.sysConfig.hrAcc)localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(r.sysConfig.hrPwd)localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(r.sysConfig.salesAcc)localStorage.setItem('salesAcc',r.sysConfig.salesAcc);if(r.sysConfig.salesPwd)localStorage.setItem('salesPwd',r.sysConfig.salesPwd);if(r.sysConfig.adminPin)localStorage.setItem('adminPin',r.sysConfig.adminPin);if(r.sysConfig.portalConf)localStorage.setItem('portalConf',r.sysConfig.portalConf);}saveAll();showToast('✅ 還原！');setTimeout(()=>window.location.reload(),1000);}catch(er){showToast('❌ 格式錯誤',true);}};rd.readAsText(i.files[0]);}
+function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
+function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
+
+function clearLoginBg(){if(confirm('刪除？')){loginBgBase64='';localStorage.removeItem('loginBg');updateLogoPreview();saveAllSilently();}}
+function clearLoginLogo(){if(confirm('刪除？')){loginLogoBase64='';localStorage.removeItem('loginLogo');updateLogoPreview();saveAllSilently();}}
+function clearPdfLogo(){if(confirm('刪除？')){pdfLogoBase64='';localStorage.removeItem('pdfLogo');updateLogoPreview();saveAllSilently();}}
+function updateLogoPreview(){const pl=el('loginLogoPreview'),bl=el('btnClearLoginLogo'),pp=el('pdfLogoPreview'),bp=el('btnClearPdfLogo'),limg=el('login-logo-img'),licon=el('login-logo-icon'),ls=el('login-screen'),btnBg=el('btnClearLoginBg'),bgStatus=el('bg-upload-status');if(loginBgBase64){if(ls)ls.style.backgroundImage=`url('${loginBgBase64}')`;if(btnBg)btnBg.style.display='inline-block';if(el('loginBgUrl'))el('loginBgUrl').value=loginBgBase64;}else{if(ls)ls.style.backgroundImage="url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop')";if(btnBg)btnBg.style.display='none';if(bgStatus)bgStatus.style.display='none';if(el('loginBgUrl'))el('loginBgUrl').value='';}if(loginLogoBase64){if(pl){pl.src=loginLogoBase64;pl.style.display='block';bl.style.display='inline-block';}if(limg){limg.src=loginLogoBase64;limg.style.display='block';if(licon)licon.style.display='none';}if(el('loginLogoUrl'))el('loginLogoUrl').value=loginLogoBase64;}else{if(pl){pl.src='';pl.style.display='none';bl.style.display='none';}if(limg){limg.src='';limg.style.display='none';if(licon)licon.style.display='block';}if(el('loginLogoUrl'))el('loginLogoUrl').value='';}if(pdfLogoBase64){if(pp){pp.src=pdfLogoBase64;pp.style.display='block';bp.style.display='inline-block';}if(el('pdfLogoUrl'))el('pdfLogoUrl').value=pdfLogoBase64;}else{if(pp){pp.src='';pp.style.display='none';bp.style.display='none';}if(el('pdfLogoUrl'))el('pdfLogoUrl').value='';}}
+
+function openPreview(title, contentHtml, fUrl, filename) {
+  const overlay = el('preview-overlay');
+  el('preview-title').innerHTML = `<i class="fas fa-file-pdf" style="color:#ef4444;"></i> 預覽：${title} (直向)`;
+  el('preview-body').innerHTML = `<div class="pdf-box">${contentHtml}</div>`;
+  overlay.style.display = 'block';
+  window.currentPdfData = { title, filename, fUrl, contentHtml };
+}
+function closePreview() { el('preview-overlay').style.display = 'none'; el('preview-body').innerHTML = ''; }
+function doNativePrint() {
+  let d = window.currentPdfData; let w = window.open('', '_blank');
+  w.document.write(`<html><head><title>${d.title}</title><style>@page{size:A4 portrait; margin:15mm;} body{font-family:"Microsoft JhengHei",sans-serif;color:#333;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;} table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px;} th,td{border:1px solid #cbd5e1;padding:12px;text-align:center;} th{background:#f1f5f9;font-weight:bold;color:#333;} .summary-table td{border:none;padding:15px;} .summary-table{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;} .info-table td{border:none;padding:4px 0;text-align:left;color:#333;} .info-table td:last-child{text-align:right;} h2{margin:0;color:#2d9d5c;font-size:28px;} h3{margin:8px 0 0;color:#64748b;font-size:18px;} .footer{text-align:right;font-size:12px;color:#888;margin-top:30px;} @media print{ button{display:none;} }</style></head><body><div style="text-align:right;margin-bottom:20px;"><button onclick="window.print()" style="padding:10px 20px;background:#2d9d5c;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:16px;">列印 / 另存 PDF</button></div>${d.contentHtml}<script>setTimeout(function(){window.print();},500);<\/script></body></html>`);
+  w.document.close();
+}
+function doDownloadPdf(isCloud) {
+  showToast(isCloud ? '📄 雲端上傳中...' : '📄 正在產生高畫質 PDF...');
+  let d = window.currentPdfData; closePreview();
+  const hiddenElements = [];
+  Array.from(document.body.children).forEach(child => { if (child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE' && child.id !== 'toast') { hiddenElements.push({ el: child, display: child.style.display }); child.style.display = 'none'; } });
+  const oldBg = document.body.style.background; const oldOverflow = document.body.style.overflow; const oldHeight = document.body.style.height;
+  document.body.style.background = '#ffffff'; document.body.style.overflow = 'visible';
+  document.body.style.height = 'auto';
+  let c = document.createElement('div'); c.id = 'pdf-export-box'; c.style.cssText = 'width:794px; padding:40px; margin:0; background:#fff; color:#333; font-family:"Microsoft JhengHei",sans-serif; text-align:left; box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; min-height:1122px;';
+  c.innerHTML = `<style>#pdf-export-box table { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:14px;} #pdf-export-box th, #pdf-export-box td { border:1px solid #cbd5e1; padding:12px; text-align:center; color:#333; } #pdf-export-box th { background:#f1f5f9; font-weight:bold; color:#333; } #pdf-export-box .summary-table { background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px; margin-bottom:25px; text-align:center; font-size:16px; border-collapse:collapse;} #pdf-export-box .summary-table td { padding:18px; border:none; border-right:1px solid #d1fae5; } #pdf-export-box .summary-table td:last-child { border-right:none; } #pdf-export-box .info-table { width:100%; margin-bottom:20px; border:none; border-collapse:collapse;} #pdf-export-box .info-table td { border:none; padding:4px 0; text-align:left; color:#333; }</style>${d.contentHtml.replace(/<table/g, '<table class="pdf-export-table"').replace(/<table class="pdf-export-table" class="info-table"/g, '<table class="info-table"').replace(/<table class="pdf-export-table" class="summary-table"/g, '<table class="summary-table"')}`;
+  document.body.appendChild(c); window.scrollTo(0,0);
+  let opt = { margin:[10,0,10,0], filename:`${d.filename}_${d.title}.pdf`, image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true, scrollY:0}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} };
+  const finish = () => { if(document.body.contains(c)) document.body.removeChild(c); document.body.style.background = oldBg; document.body.style.overflow = oldOverflow; document.body.style.height = oldHeight; hiddenElements.forEach(item => item.el.style.display = item.display); window.scrollTo(0,0); };
+  setTimeout(() => {
+      let w = html2pdf().set(opt).from(c);
+      if(isCloud) {
+         if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
+         w.outputPdf('datauristring').then(b64 => { finish(); fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'savePDF',folderUrl:d.fUrl,fileName:opt.filename,base64Data:b64})}).then(r=>r.json()).then(r=>{ if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} else showToast('失敗',true); }).catch(e=>showToast('錯誤',true)); }).catch(e => { finish(); showToast('產出失敗', true); });
+      } else { w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); }
+  }, 600);
+}
+
+function renderReqTable(){ 
+  const kw = el('cr_filter_keyword').value.trim().toLowerCase(); 
+  const stat = el('cr_filter_status').value;
+  let l = reqData.filter(x => {
+      let matchKw = (!kw || x.name.toLowerCase().includes(kw) || x.contact.toLowerCase().includes(kw) || (x.dev_name||'').toLowerCase().includes(kw));
+      let matchStat = (stat === 'all' || x.status === stat);
+      return matchKw && matchStat;
+  });
+  const {pagedList, total, totalPages} = getPagedData(l, 'req'); 
+  let h = '';
+  pagedList.forEach(item => { 
+    const idx = reqData.indexOf(item); 
+    let sColor = item.status==='轉正式公司資料'?'badge-green':(item.status==='拒絕'?'badge-red':'badge-yellow');
+    let decStr = item.decision ? '<i class="fas fa-star" style="color:#f59e0b;font-size:12px;margin-left:4px;" title="決策者"></i>' : '';
+    h += `<tr><td><span class="badge ${sColor}">${item.status}</span></td><td style="font-weight:bold;color:#1e293b;">${item.name}</td><td>${item.contact}${decStr}<br><span style="color:#94a3b8;font-size:11px;">${item.title||'-'}</span></td><td>${item.phone||'-'}</td><td>${item.source||'-'}</td><td>${item.dev_name||'-'}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editReq(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delReq(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
+  });
+  el('reqTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">目前無客戶追蹤紀錄</td></tr>'; 
+  renderPagination('req', total, totalPages);
+}
+function addReq(){ 
+  const o = {name:el('cr_name').value.trim(), tax:el('cr_tax').value.trim(), industry:el('cr_industry').value.trim(), scale:el('cr_scale').value.trim(), contact:el('cr_contact').value.trim(), title:el('cr_title').value.trim(), phone:el('cr_phone').value.trim(), tel:el('cr_tel').value.trim(), email:el('cr_email').value.trim(), decision:el('cr_decision').checked, finance:el('cr_finance').value.trim(), source:el('cr_source').value, source_attr:el('cr_source_attr').value, dev_name:el('cr_dev_name').value.trim(), status:el('cr_status').value, remark:el('cr_remark').value.trim()}; 
+  if(!o.name || !o.contact) return showToast('請輸入公司與聯絡窗口', true); 
+  reqData.push(o); saveAll();
+  renderReqTable(); clearReqForm(); showToast('✅ 紀錄已儲存'); renderDashboard();
+}
+function editReq(i){ 
+  const d = reqData[i];
+  el('cr_name').value=d.name||''; el('cr_tax').value=d.tax||''; el('cr_industry').value=d.industry||''; el('cr_scale').value=d.scale||''; el('cr_contact').value=d.contact||''; el('cr_title').value=d.title||''; el('cr_phone').value=d.phone||''; el('cr_tel').value=d.tel||''; el('cr_email').value=d.email||''; el('cr_decision').checked=d.decision; el('cr_finance').value=d.finance||''; el('cr_source').value=d.source||'點籽響'; el('cr_source_attr').value=d.source_attr||'承接'; el('cr_dev_name').value=d.dev_name||''; el('cr_status').value=d.status||'待追蹤'; el('cr_remark').value=d.remark||''; 
+  editReqIndex = i;
+  el('btnUpdateReq').style.display = 'inline-block'; const b = el('btnAddReq'); if(b) b.style.display = 'none'; 
+}
+function updateReq(){ 
+  if(editReqIndex < 0) return;
+  const o = {name:el('cr_name').value.trim(), tax:el('cr_tax').value.trim(), industry:el('cr_industry').value.trim(), scale:el('cr_scale').value.trim(), contact:el('cr_contact').value.trim(), title:el('cr_title').value.trim(), phone:el('cr_phone').value.trim(), tel:el('cr_tel').value.trim(), email:el('cr_email').value.trim(), decision:el('cr_decision').checked, finance:el('cr_finance').value.trim(), source:el('cr_source').value, source_attr:el('cr_source_attr').value, dev_name:el('cr_dev_name').value.trim(), status:el('cr_status').value, remark:el('cr_remark').value.trim()}; 
+  reqData[editReqIndex] = {...reqData[editReqIndex], ...o}; 
+  saveAll(); renderReqTable(); clearReqForm(); showToast('✅ 紀錄已更新'); renderDashboard();
+}
+function delReq(i){ 
+  if(!confirm('確定要刪除這筆客戶紀錄嗎？')) return; 
+  reqData.splice(i,1); saveAll(); renderReqTable(); showToast('已刪除'); renderDashboard();
+}
+function clearReqForm(){ 
+  document.querySelectorAll('#page-req .grid input').forEach(i => { if(i.type==='checkbox')i.checked=false; else i.value=''; }); 
+  el('cr_source').value='點籽響'; el('cr_source_attr').value='承接'; el('cr_status').value='待追蹤';
+  editReqIndex = -1; el('btnUpdateReq').style.display = 'none';
+  const b = el('btnAddReq'); if(b) b.style.display = 'inline-block'; 
+}
+
+function renderDispatchTable() { 
+  const kw = el('dp_filter_keyword').value.trim().toLowerCase(); 
+  const stat = el('dp_filter_status').value;
+  let l = dispatchData.filter(x => {
+      let matchKw = (!kw || x.company.toLowerCase().includes(kw) || x.role.toLowerCase().includes(kw) || (x.staff||'').toLowerCase().includes(kw));
+      let matchStat = (stat === 'all' || x.status === stat);
+      return matchKw && matchStat;
+  });
+  const {pagedList, total, totalPages} = getPagedData(l, 'dispatch'); 
+  let h = '';
+  pagedList.forEach(item => { 
+    const idx = dispatchData.indexOf(item); 
+    let sColor = item.status==='預計派發日'?'badge-blue':(item.status==='換人等待'?'badge-red':(item.status==='二面日期'?'badge-yellow':'badge-green'));
+    h += `<tr><td><span class="badge ${sColor}">${item.status}</span></td><td style="font-weight:bold;color:#1e293b;">${item.company}</td><td>${item.role}</td><td>${item.num}</td><td>${item.staff||'-'}</td><td>${item.tel||'-'}</td><td>${item.interview||'-'}</td><td>${item.date||'-'}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editDispatch(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delDispatch(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
+  });
+  el('dispatchTable').innerHTML = h || '<tr><td colspan="10" style="text-align:center;">目前無待派發案件</td></tr>'; 
+  renderPagination('dispatch', total, totalPages);
+}
+function addDispatch(){ 
+  const o = {company:el('dp_company').value.trim(), role:el('dp_role').value.trim(), num:el('dp_num').value, status:el('dp_status').value, staff:el('dp_staff').value.trim(), tel:el('dp_tel').value.trim(), date:el('dp_date').value, interview:el('dp_interview').value, remark:el('dp_remark').value.trim()}; 
+  if(!o.company || !o.role) return showToast('請輸入公司與職位', true); 
+  dispatchData.push(o); saveAll();
+  renderDispatchTable(); clearDispatchForm(); showToast('✅ 案件已新增'); renderDashboard();
+}
+function editDispatch(i){ 
+  const d = dispatchData[i];
+  el('dp_company').value=d.company||''; el('dp_role').value=d.role||''; el('dp_num').value=d.num||1; el('dp_status').value=d.status||'招募中'; el('dp_staff').value=d.staff||''; el('dp_tel').value=d.tel||''; el('dp_date').value=d.date||''; el('dp_interview').value=d.interview||''; el('dp_remark').value=d.remark||''; 
+  editDispatchIndex = i;
+  el('btnUpdateDispatch').style.display = 'inline-block'; const b = el('btnAddDispatch'); if(b) b.style.display = 'none'; 
+}
+function updateDispatch(){ 
+  if(editDispatchIndex < 0) return;
+  const o = {company:el('dp_company').value.trim(), role:el('dp_role').value.trim(), num:el('dp_num').value, status:el('dp_status').value, staff:el('dp_staff').value.trim(), tel:el('dp_tel').value.trim(), date:el('dp_date').value, interview:el('dp_interview').value, remark:el('dp_remark').value.trim()}; 
+  dispatchData[editDispatchIndex] = {...dispatchData[editDispatchIndex], ...o}; 
+  saveAll(); renderDispatchTable(); clearDispatchForm(); showToast('✅ 案件已更新'); renderDashboard();
+}
+function delDispatch(i){ 
+  if(!confirm('確定要刪除這筆案件嗎？')) return; 
+  dispatchData.splice(i,1); saveAll(); renderDispatchTable(); showToast('已刪除'); renderDashboard();
+}
+function clearDispatchForm(){ 
+  document.querySelectorAll('#page-dispatch .grid input').forEach(i => i.value=''); 
+  el('dp_num').value='1'; el('dp_status').value='招募中';
+  editDispatchIndex = -1; el('btnUpdateDispatch').style.display = 'none';
+  const b = el('btnAddDispatch'); if(b) b.style.display = 'inline-block'; 
+}
+
 function showAdminPage(p) {
   try {
       let sysRole = localStorage.getItem('sysRole') || 'admin';
@@ -1120,181 +1264,7 @@ function renderAttend(){
         let staffRecords = attendData
             .map((r, i) => ({ record: r, idx: i }))
             .filter(r => r.record.staff === staffName)
-            .sort((a, b) => new Date(a.record.date) - new Date(b.record.date) || a.idx - b.idx);
-        
-        let runSum = 0;
-        staffRecords.forEach(sr => {
-            runSum += getItemSalaryHours(sr.record);
-            cumulativeMap[sr.idx] = runSum;
-        });
-    });
-    let h='';
-    pagedList.forEach(item=>{ 
-        const idx = attendData.indexOf(item); 
-        const am = item.am_s&&item.am_e?`${item.am_s}-${item.am_e}`:'-'; const pm = item.pm_s&&item.pm_e?`${item.pm_s}-${item.pm_e}`:'-';
-        const hr = getHistoricalRate(item); const hrDisplay = item.special_hourly ? `<span class="badge badge-yellow">${item.special_hourly} (特)</span>` : `<span style="color:#059669; font-weight:bold;">$${hr}</span>`;
-        const cumulative = cumulativeMap[idx] || 0;
-        const fee = Number(item.project_fee) || 0;
-
-        h+=`<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${cumulative.toFixed(1)}</td><td>${hrDisplay}</td><td><b style="color:#ea580c;">${fee>0?fee:"-"}</b></td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
-    });
-    el('attendTable').innerHTML=h||'<tr><td colspan="13" style="text-align:center;">無資料</td></tr>'; renderPagination('attend',total,totalPages); 
-}
-function calcAttendTemp(){ const h=(+getHours(el('am_s').value,el('am_e').value))+(+getHours(el('pm_s').value,el('pm_e').value)); if(h>0){el('attend_salary_hours').value=h.toFixed(1);el('attend_deduct_points').value=h.toFixed(1);} else{el('attend_salary_hours').value='';el('attend_deduct_points').value='';} checkHourlyUpgradeAlert(); }
-
-function addAttend(){ 
-  const o={ company:el('attend_company').value.trim(), staff:el('attend_staff').value.trim(), date:el('attend_date').value, service:el('attend_service').value, remark:el('attend_remark').value, am_s:el('am_s').value, am_e:el('am_e').value, pm_s:el('pm_s').value, pm_e:el('pm_e').value, salary_hours:el('attend_salary_hours').value, project_fee:el('attend_project_fee').value, deduct_points:el('attend_deduct_points').value, special_hourly:el('attend_special_hourly').value }; 
-  if(!o.company||!o.staff||!o.date)return;
-  if(editAttendIndex > -1) { attendData[editAttendIndex]={...attendData[editAttendIndex],...o}; editAttendIndex=-1; } else { attendData.push(o); } 
-  saveAll(); 
-  renderAttend(); 
-  
-  const keepCompany = el('attend_company').value;
-  const keepStaff = el('attend_staff').value;
-  const keepService = el('attend_service').value;
-  const keepDate = el('attend_date').value;
-  
-  clearAttendForm(); 
-  
-  el('attend_company').value = keepCompany;
-  el('attend_staff').value = keepStaff;
-  el('attend_service').value = keepService;
-  el('attend_date').value = keepDate;
-  el('attend_company').focus();
-  
-  showToast('✅ 儲存'); 
-}
-
-function editAttend(i){ const d=attendData[i];
-el('attend_company').value=d.company; el('attend_staff').value=d.staff; el('attend_date').value=d.date; el('attend_service').value=d.service; el('attend_remark').value=d.remark; el('am_s').value=d.am_s; el('am_e').value=d.am_e; el('pm_s').value=d.pm_s; el('pm_e').value=d.pm_e; el('attend_salary_hours').value=d.salary_hours; el('attend_project_fee').value=d.project_fee||0; el('attend_deduct_points').value=d.deduct_points; el('attend_special_hourly').value=d.special_hourly||''; editAttendIndex=i; const b=el('btnAddAttend');
-if(b) {b.innerHTML='<i class="fas fa-edit"></i> 修改'; b.classList.replace('btn-success','btn-warning');} const c=el('btnClearAttend'); if(c) c.innerHTML='<i class="fas fa-times"></i> 取消'; checkHourlyUpgradeAlert(); }
-function delAttend(i){ if(!confirm('刪除記錄？'))return; attendData.splice(i,1); saveAll(); renderAttend(); showToast('刪除'); }
-function clearAttendForm(){ document.querySelectorAll('#page-attend .grid input').forEach(i=>i.value=''); el('attend_service').value=''; editAttendIndex=-1; const b=el('btnAddAttend'); if(b) {b.innerHTML='<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning','btn-success');} if(el('attend_upgrade_alert')) el('attend_upgrade_alert').style.display = 'none'; }
-
-function renderMatchTable(){ 
-  const kw = el('match_filter_keyword').value.trim().toLowerCase(); 
-  let l = matchData.filter(x => (!kw || x.name.toLowerCase().includes(kw) || (x.skills||'').toLowerCase().includes(kw) || (x.region||'').toLowerCase().includes(kw)));
-  const {pagedList, total, totalPages} = getPagedData(l, 'match'); 
-  let h = '';
-  pagedList.forEach(item => { 
-    const idx = matchData.indexOf(item); 
-    h += `<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.region||'-'}</td><td>${item.transport||'-'}</td><td>${item.skills||'-'}</td><td>${item.exp||'-'}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editMatch(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delMatch(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
-  });
-  el('matchTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">目前無媒合資料</td></tr>'; 
-  renderPagination('match', total, totalPages);
-}
-
-function addMatch(){ 
-  const o = {name:el('match_name').value.trim(), tel:el('match_tel').value.trim(), region:el('match_region').value.trim(), transport:el('match_transport').value.trim(), skills:el('match_skills').value.trim(), exp:el('match_exp').value.trim(), remark:el('match_remark').value.trim()}; 
-  if(!o.name) return showToast('請輸入姓名', true); 
-  matchData.push(o); saveAll();
-  renderMatchTable(); clearMatchForm(); showToast('✅ 成功新增至媒合平台'); 
-}
-
-function editMatch(i){ 
-  const d = matchData[i];
-  el('match_name').value = d.name||''; el('match_tel').value = d.tel||'';
-  el('match_region').value = d.region||''; el('match_transport').value = d.transport||''; el('match_skills').value = d.skills||''; el('match_exp').value = d.exp||''; el('match_remark').value = d.remark||''; 
-  editMatchIndex = i;
-  el('btnUpdateMatch').style.display = 'inline-block'; 
-  const b = el('btnAddMatch'); if(b) b.style.display = 'none'; 
-}
-
-function updateMatch(){ 
-  if(editMatchIndex < 0) return;
-  const o = {name:el('match_name').value.trim(), tel:el('match_tel').value.trim(), region:el('match_region').value.trim(), transport:el('match_transport').value.trim(), skills:el('match_skills').value.trim(), exp:el('match_exp').value.trim(), remark:el('match_remark').value.trim()}; 
-  matchData[editMatchIndex] = {...matchData[editMatchIndex], ...o}; 
-  saveAll(); renderMatchTable(); clearMatchForm(); showToast('✅ 修改成功');
-}
-
-function delMatch(i){ 
-  if(!confirm('確定要刪除這筆媒合資料嗎？')) return; 
-  matchData.splice(i,1); saveAll(); renderMatchTable(); showToast('已刪除');
-}
-
-function clearMatchForm(){ 
-  document.querySelectorAll('#page-match .grid input').forEach(i => i.value = ''); 
-  editMatchIndex = -1; el('btnUpdateMatch').style.display = 'none';
-  const b = el('btnAddMatch'); if(b) b.style.display = 'inline-block'; 
-}
-
-function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
-  let h='';
-  pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; let rb=item.resume?`<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i></button>`:'-'; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${rb}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
-  el('talentTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
-function addTalent(){ const o={name:el('tp_name').value.trim(),tel:el('tp_tel').value.trim(),source:el('tp_source').value.trim(),location:el('tp_location').value.trim(),shift:el('tp_shift').value.trim(),role:el('tp_role').value.trim(),status:el('tp_status').value,eval:el('tp_eval').value.trim(),resume:el('tp_resume').value.trim(),exp:el('tp_exp').value.trim(),date:new Date().toISOString().split('T')[0]}; if(!o.name)return; talentData.push(o); saveAll(); renderTalentTable(); clearTalentForm(); showToast('✅ 成功'); }
-function editTalent(i){ const d=talentData[i];
-el('tp_name').value=d.name; el('tp_tel').value=d.tel||''; el('tp_source').value=d.source||''; el('tp_location').value=d.location||''; el('tp_shift').value=d.shift||''; el('tp_role').value=d.role||''; el('tp_status').value=d.status||'待聯絡'; el('tp_eval').value=d.eval||''; el('tp_resume').value=d.resume||''; el('tp_exp').value=d.exp||''; editTalentIndex=i; el('btnUpdateTalent').style.display='inline-block'; const b=el('btnAddTalent'); if(b) b.style.display='none'; }
-function updateTalent(){ if(editTalentIndex<0)return;
-const o={name:el('tp_name').value.trim(),tel:el('tp_tel').value.trim(),source:el('tp_source').value.trim(),location:el('tp_location').value.trim(),shift:el('tp_shift').value.trim(),role:el('tp_role').value.trim(),status:el('tp_status').value,eval:el('tp_eval').value.trim(),resume:el('tp_resume').value.trim(),exp:el('tp_exp').value.trim(),date:talentData[editTalentIndex].date}; talentData[editTalentIndex]={...talentData[editTalentIndex], ...o}; saveAll(); renderTalentTable(); clearTalentForm(); showToast('✅ 修改'); }
-function delTalent(i){ if(!confirm('刪除？'))return; talentData.splice(i,1); saveAll(); renderTalentTable(); showToast('刪除'); }
-function clearTalentForm(){ document.querySelectorAll('#page-talent .grid input').forEach(i=>i.value=''); el('tp_status').value='待聯絡'; editTalentIndex=-1; el('btnUpdateTalent').style.display='none'; const b=el('btnAddTalent'); if(b) b.style.display='inline-block'; }
-
-function renderPoint(){ const c=el('point_filter_company').value.trim();
-  let l=custData.filter(x=>(!c || c==='全部' || x.name===c)); const {pagedList,total,totalPages}=getPagedData(l,'point'); let h='';
-  pagedList.forEach(ct=>{ const cP=contractData.filter(x=>x.customer===ct.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===ct.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); h+=`<tr><td>${ct.name}</td><td>${cP.toFixed(1)}</td><td>${uP.toFixed(1)}</td><td><b style="color:${rP<50?'#ef4444':'#2d9d5c'};">${rP.toFixed(1)}</b></td><td>${rP<0?'<span class="badge badge-red">透支</span>':(rP<50?'<span class="badge badge-yellow">偏低</span>':'<span class="badge badge-green">充足</span>')}</td></tr>`; });
-  el('pointTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無資料</td></tr>'; renderPagination('point',total,totalPages);
-}
-
-function showBoss(){ 
-  const y=el('boss_year').value, m=el('boss_month').value, f=el('boss_cust_filter').value.trim(); 
-  let l=custData.filter(x=>(!f||f==='全部'||x.name===f)); 
-  const {pagedList,total,totalPages}=getPagedData(l,'boss'); let h='';
-  pagedList.forEach(c=>{ 
-    const cs=contractData.filter(x=>x.customer===c.name).sort((a,b)=>new Date(a.date)-new Date(b.date)); let latest=cs.length>0?cs[0].date:'-'; 
-    let tp=0; cs.forEach(x=>tp+=Number(x.point)||0); 
-    let used=0; attendData.filter(x=>x.company===c.name&&isDispatchPayrollPeriod(x.date,y,m)).forEach(x=>used+=getItemDeductPoints(x)); 
-    let tr=0; attendData.filter(x=>x.company===c.name).forEach(x=>tr+=getItemDeductPoints(x)); let rm=tp-tr; 
-    h+=`<tr><td>${c.coop}</td><td>${c.name}</td><td>${latest}</td><td>${tp.toFixed(1)}</td><td>${used.toFixed(1)}</td><td><b class="${rm<0?'red':(rm<50?'yellow':'green')}">${rm.toFixed(1)}</b></td><td>${rm<0?'透支':(rm<50?'偏低':'正常')}</td></tr>`; 
-  });
-  el('bossTable').innerHTML=h||'<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; renderPagination('boss',total,totalPages); 
-}
-
-function renderBill(){ 
-  const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value, cycle=el('bill_cycle').value; 
-  
-  let l=attendData.filter(x=>{
-    if(c && c!=='全部' && x.company!==c) return false;
-    if(cycle === 'manual') {
-      const sD = el('bill_start_date').value, eD = el('bill_end_date').value;
-      if(sD && x.date < sD) return false;
-      if(eD && x.date > eD) return false;
-      return true;
-    }
-    return isDispatchPayrollPeriod(x.date,y,m,cycle);
-  }); 
-  
-  let gl={};
-  l.forEach(i=>{
-    let rm=(i.remark||'').replace('跨階前(自動時間拆分)','').replace('升級後(自動時間拆分)','').trim();
-    let k=`${i.date}_${i.staff}_${i.service}_${rm}`;
-    if(!gl[k]) gl[k]={...i, remark:rm, cH:0, cP:0};
-    gl[k].cH+=getItemClockHours(i); 
-    gl[k].cP+=getItemDeductPoints(i);
-  });
-  let fl=Object.values(gl).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  
-  const {pagedList,total,totalPages}=getPagedData(fl,'bill');
-  let h=''; 
-  pagedList.forEach(item=>{ h+=`<tr><td>${item.date}</td><td>${item.staff}</td><td>${item.service?(item.remark?item.service+'('+item.remark+')':item.service):'-'}</td><td>${item.cH.toFixed(1)}</td><td>${item.cP}</td></tr>`; }); 
-  el('billTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無紀錄</td></tr>'; renderPagination('bill',total,totalPages); 
-}
-
-function generateStatementPDF() {
-  const cb=el('bill_filter_company').value.trim(), yb=el('bill_filter_year').value, mb=el('bill_filter_month').value; const cycle=el('bill_cycle').value;
-  if(!cb || cb === '全部' || cb === '') return showToast('請選公司', true); const ci=custData.find(x=>x.name===cb);
-  let periodStart = '0000-00-00', periodEnd = '9999-99-99', pt = '全部';
-  if (cycle === 'manual') {
-      periodStart = el('bill_start_date').value || '0000-00-00';
-      periodEnd = el('bill_end_date').value || '9999-99-99';
-      let ptStart = periodStart === '0000-00-00' ? '最前' : periodStart;
-      let ptEnd = periodEnd === '9999-99-99' ? '最後' : periodEnd;
-      pt = `${ptStart} ~ ${ptEnd}`;
-      if(periodStart === '0000-00-00' && periodEnd === '9999-99-99') pt = '全部';
-  } else {
-      if(yb !== 'all' && mb !== 'all') {
-          if(cycle === '1') { periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`;
-          let lastDay = new Date(yb, mb, 0).getDate(); periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`; pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`;
+            .sort((a, b) => new Date(a.record.date) - new Date(b.record.date) || a.idx - b.idx);(); periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`; pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`;
           } 
           else { let py = parseInt(yb); let pm = parseInt(mb) - 1;
           if(pm === 0) { pm = 12; py -= 1; } periodStart = `${py}-${String(pm).padStart(2,'0')}-26`; periodEnd = `${yb}-${String(mb).padStart(2,'0')}-25`;
