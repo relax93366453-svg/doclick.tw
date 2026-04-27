@@ -937,7 +937,18 @@ function restoreData(i) {
             const r = JSON.parse(e.target.result);
             if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; if(r.talentData) talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData;
             if(r.sysConfig) { if(r.sysConfig.loginLogo) localStorage.setItem('loginLogo',r.sysConfig.loginLogo); if(r.sysConfig.pdfLogo) localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo); if(r.sysConfig.loginBg) localStorage.setItem('loginBg',r.sysConfig.loginBg); if(r.sysConfig.priceTable) localStorage.setItem('priceTable',r.sysConfig.priceTable); if(r.sysConfig.adminAcc) localStorage.setItem('adminAcc',r.sysConfig.adminAcc); if(r.sysConfig.adminPwd) localStorage.setItem('adminPwd',r.sysConfig.adminPwd); if(r.sysConfig.hrAcc) localStorage.setItem('hrAcc',r.sysConfig.hrAcc); if(r.sysConfig.hrPwd) localStorage.setItem('hrPwd',r.sysConfig.hrPwd); if(r.sysConfig.salesAcc) localStorage.setItem('salesAcc',r.sysConfig.salesAcc); if(r.sysConfig.salesPwd) localStorage.setItem('salesPwd',r.sysConfig.salesPwd); if(r.sysConfig.adminPin) localStorage.setItem('adminPin',r.sysConfig.adminPin); if(r.sysConfig.portalConf) localStorage.setItem('portalConf',r.sysConfig.portalConf); }
-            saveAll(); showToast('✅ 還原！'); setTimeout(() => window.location.reload(), 1000);
+            
+            // 1. 強制寫入本地記憶體，確保資料穩固
+            standardizeData();
+            localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData));
+            
+            // 2. 拔除重新整理指令，讓畫面「瞬間」更新！
+            fillFilters(); 
+            showAdminPage(localStorage.getItem('adminPage')||'dashboard');
+            
+            // 3. 在背景安全地上傳給雲端，不干擾畫面
+            saveAll(); 
+            showToast('✅ 資料還原成功！'); 
         } catch(er) { showToast('❌ 格式錯誤',true); }
     }; rd.readAsText(i.files[0]);
 }
@@ -1324,7 +1335,7 @@ function renderStaffMyPayFilters() {
     for(let i=1; i<=12; i++) mh += `<option value="${i}">${i}月</option>`; 
     el('staff_my_month').innerHTML = mh;
     el('staff_my_month').value = new Date().getMonth() + 1; 
-}
+}ㄑ
 
 function renderStaffMyPay() { 
     if(!el('staffMyPayTable') || !currentLoginStaff) return; 
