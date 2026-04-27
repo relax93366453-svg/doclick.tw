@@ -188,7 +188,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     
     <div class="page admin-only" id="page-point"><div class="page-title"><i class="fas fa-calculator"></i> 點數統計</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="point_filter_company" placeholder="手打搜尋公司" oninput="resetPage('point'); renderPoint()"><button class="btn btn-success" style="margin-bottom:0;" onclick="renderPoint()">統計</button><button class="btn btn-clear-filter" onclick="clearFilters('point')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div class="table-responsive"><table id="pointTableBox"><thead><tr><th>公司</th><th>總購買點數</th><th>已扣除點數</th><th>剩餘點數</th><th>狀態</th></tr></thead><tbody id="pointTable"></tbody></table></div></div>
     
-    <div class="page admin-only" id="page-bill"><div class="page-title"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="bill_filter_company" placeholder="手打搜尋公司" oninput="resetPage('bill'); renderBill()"><label>結算週期</label><select id="bill_cycle" onchange="renderBill()"><option value="26">26日至25日 (預設)</option><option value="1">1日至31日 (全日曆月)</option></select><label>年</label><select id="bill_filter_year" onchange="renderBill()"></select><label>月</label><select id="bill_filter_month" onchange="renderBill()"></select><button class="btn btn-clear-filter" onclick="clearFilters('bill')"><i class="fas fa-broom"></i> 清除搜尋</button></div><button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button><button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="billTableBox"><thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody id="billTable"></tbody></table></div></div>
+    <div class="page admin-only" id="page-bill"><div class="page-title"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="bill_filter_company" placeholder="手打搜尋公司" oninput="resetPage('bill'); renderBill()"><label>結算週期</label><select id="bill_cycle" onchange="toggleBillManualDate(); renderBill()"><option value="26">26日至25日 (預設)</option><option value="1">1日至31日 (全日曆月)</option><option value="manual">自訂區間 (手動選擇)</option></select><span id="bill_manual_dates" style="display:none; align-items:center; gap:8px;"><input type="date" id="bill_start_date" onchange="renderBill()"> ~ <input type="date" id="bill_end_date" onchange="renderBill()"></span><label class="bill-ym-label">年</label><select id="bill_filter_year" class="bill-ym-label" onchange="renderBill()"></select><label class="bill-ym-label">月</label><select id="bill_filter_month" class="bill-ym-label" onchange="renderBill()"></select><button class="btn btn-clear-filter" onclick="clearFilters('bill')"><i class="fas fa-broom"></i> 清除搜尋</button></div><button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button><button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="billTableBox"><thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody id="billTable"></tbody></table></div></div>
     
     <div class="page" id="page-salary">
       <div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div>
@@ -350,6 +350,19 @@ function isDispatchPayrollPeriod(d, y, m, cycle = '26') {
     if(rY===pY && rM===pM && rD>=26) return true; 
     if(rY===tY && rM===tM && rD<=25) return true;
     return false;
+  }
+}
+
+function toggleBillManualDate() {
+  const cycle = el('bill_cycle').value;
+  const mDates = el('bill_manual_dates');
+  const ymLabels = document.querySelectorAll('.bill-ym-label');
+  if(cycle === 'manual') {
+    mDates.style.display = 'flex';
+    ymLabels.forEach(e => e.style.display = 'none');
+  } else {
+    mDates.style.display = 'none';
+    ymLabels.forEach(e => e.style.display = 'inline-block');
   }
 }
 
@@ -853,33 +866,17 @@ function doDownloadPdf(isCloud) {
   }, 600);
 }
 
-function generateStatementPDF() {
-  const cb=el('bill_filter_company').value.trim(), yb=el('bill_filter_year').value, mb=el('bill_filter_month').value; const cycle=el('bill_cycle').value;
-  if(!cb || cb === '全部' || cb === '') return showToast('請選公司', true); const ci=custData.find(x=>x.name===cb);
-  let periodStart = '0000-00-00', periodEnd = '9999-99-99', pt = '全部';
-  if(yb !== 'all' && mb !== 'all') {
-      if(cycle === '1') { periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`;
-      let lastDay = new Date(yb, mb, 0).getDate(); periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`; pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`;
-      } 
-      else { let py = parseInt(yb); let pm = parseInt(mb) - 1;
-      if(pm === 0) { pm = 12; py -= 1; } periodStart = `${py}-${String(pm).padStart(2,'0')}-26`; periodEnd = `${yb}-${String(mb).padStart(2,'0')}-25`;
-      pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`; }
+function toggleBillManualDate() {
+  const cycle = el('bill_cycle').value;
+  const mDates = el('bill_manual_dates');
+  const ymLabels = document.querySelectorAll('.bill-ym-label');
+  if(cycle === 'manual') {
+    mDates.style.display = 'flex';
+    ymLabels.forEach(e => e.style.display = 'none');
+  } else {
+    mDates.style.display = 'none';
+    ymLabels.forEach(e => e.style.display = 'inline-block');
   }
-  const cs=contractData.filter(x=>x.customer===cb && (!x.date || x.date <= periodEnd)).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  let tp=0, ph='', ps=new Set(); cs.forEach(c=>{tp+=Number(c.point)||0;if(c.price_plan)ps.add(c.price_plan);ph+=`<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;});
-  if(cs.length===0){ph='<div style="color:#999;">無</div>';ps.add('無');}
-  let pastRecords = attendData.filter(x=>x.company===cb && x.date < periodStart); let pastDeducted = 0; let pastBreakdown = {};
-  pastRecords.forEach(i => { let pts = getItemDeductPoints(i); pastDeducted += pts; let parts = i.date.split('-'); let rY = parseInt(parts[0], 10); let rM = parseInt(parts[1], 10); let rD = parseInt(parts[2], 10); if (cycle === '26' && rD >= 26) { rM += 1; if (rM > 12) { rM = 1; rY += 1; } } let pKey = `${rY}年${rM}月`; if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0; pastBreakdown[pKey] += pts; });
-  let pKeys = Object.keys(pastBreakdown).sort((a,b) => { let [y1, m1] = a.replace('月','').split('年'); let [y2, m2] = b.replace('月','').split('年'); return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2)); });
-  let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px; color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
-  let ats=attendData.filter(x=>x.company===cb && isDispatchPayrollPeriod(x.date,yb,mb,cycle)).sort((a,b)=>new Date(a.date)-new Date(b.date)); let ah=''; let periodDeducted = 0;
-  if(ats.length>0) { ats.forEach(i=>{ const cH = getItemClockHours(i); const cP = getItemDeductPoints(i); periodDeducted += cP; ah+=`<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service?(i.remark?i.service+'('+i.remark+')':i.service):'-'}</td><td>${cH.toFixed(1)}</td><td>${cP}</td></tr>`; });
-  } else { ah=`<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`; }
-  const totalDeducted = pastDeducted + periodDeducted;
-  const endingPoints = Number((tp - totalDeducted).toFixed(1));
-  const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">`:'';
-  let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">愜易居有限公司 - 服務對帳單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;vertical-align:top;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td><td style="text-align:right;vertical-align:top;"><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;vertical-align:top;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;margin-left:10px;vertical-align:top;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">歷史扣除明細</div>${pastHistoryHtml}</div></td></tr></table><table class="summary-table" style="width:100%;background:#fff;border-radius:8px;margin-bottom:25px;text-align:center;font-size:15px;border:1px solid #cbd5e1;box-shadow:0 4px 6px rgba(0,0,0,0.05);"><tr><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;width:20%;vertical-align:top;background:#f8fafc;">購買總點數<br><strong style="font-size:24px;color:#1e293b;">${tp} 點</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;vertical-align:top;background:#f8fafc;width:20%;">歷史已扣<br><strong style="font-size:24px;color:#64748b;">${pastDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#dc2626;background:#fff5f5;vertical-align:top;width:20%;">本期扣除<br><strong style="font-size:24px;">${periodDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#ea580c;background:#fff7ed;vertical-align:top;width:20%;">累計總扣除<br><strong style="font-size:24px;">${totalDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;color:#059669;background:#ecfdf5;vertical-align:top;width:20%;">最新剩餘點數<br><strong style="font-size:28px;color:${endingPoints<0?'#ef4444':'#059669'};">${endingPoints.toFixed(1)}</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
-  openPreview('對帳單', c, ci?ci.drive:'', cb);
 }
 
 function showAdminPage(p) {
@@ -920,7 +917,7 @@ function clearFilters(page) {
   else if(page === 'ft_salary') { el('fts_filter_staff').value=''; el('fts_filter_month').value=''; el('fts_standard_days').value='22'; resetPage('ft_salary'); renderFtSalaryTable(); }
   else if(page === 'talent') { el('tp_filter_role').value=''; el('tp_filter_status').value='all'; resetPage('talent'); renderTalentTable(); }
   else if(page === 'point') { el('point_filter_company').value=''; resetPage('point'); renderPoint(); }
-  else if(page === 'bill') { el('bill_filter_company').value=''; el('bill_cycle').value='26'; el('bill_filter_year').value='all'; el('bill_filter_month').value='all'; resetPage('bill'); renderBill(); }
+  else if(page === 'bill') { el('bill_filter_company').value=''; el('bill_cycle').value='26'; if(el('bill_start_date'))el('bill_start_date').value=''; if(el('bill_end_date'))el('bill_end_date').value=''; toggleBillManualDate(); el('bill_filter_year').value='all'; el('bill_filter_month').value='all'; resetPage('bill'); renderBill(); }
   else if(page === 'salary') { el('sal_filter_staff').value=''; el('sal_filter_year').value='all'; el('sal_filter_month').value='all'; resetPage('salary'); renderSalary(); }
   else if(page === 'boss') { el('boss_cust_filter').value=''; el('boss_year').value='all'; el('boss_month').value='all'; resetPage('boss'); showBoss(); }
 }
@@ -996,7 +993,15 @@ function renderAttend(){
         let matchDate = isDispatchPayrollPeriod(x.date, y, m);
         return matchCust && matchStaff && matchDate;
     });
-    l.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    l.sort((a, b) => { 
+        let dDiff = new Date(b.date) - new Date(a.date); 
+        if(dDiff !== 0) return dDiff; 
+        let tA = a.am_s || a.pm_s || '00:00'; 
+        let tB = b.am_s || b.pm_s || '00:00'; 
+        return tB.localeCompare(tA); 
+    });
+    
     let sumH = 0, sumP = 0;
     l.forEach(i => { sumH += getItemSalaryHours(i); sumP += getItemDeductPoints(i); });
     
@@ -1159,10 +1164,31 @@ function showBoss(){
 
 function renderBill(){ 
   const c=el('bill_filter_company').value.trim(), y=el('bill_filter_year').value, m=el('bill_filter_month').value, cycle=el('bill_cycle').value; 
-  let l=attendData.filter(x=>(!c||c==='全部'||x.company===c)&&isDispatchPayrollPeriod(x.date,y,m,cycle)); l.sort((a,b)=>new Date(a.date)-new Date(b.date)); 
-  const {pagedList,total,totalPages}=getPagedData(l,'bill');
+  
+  let l=attendData.filter(x=>{
+    if(c && c!=='全部' && x.company!==c) return false;
+    if(cycle === 'manual') {
+      const sD = el('bill_start_date').value, eD = el('bill_end_date').value;
+      if(sD && x.date < sD) return false;
+      if(eD && x.date > eD) return false;
+      return true;
+    }
+    return isDispatchPayrollPeriod(x.date,y,m,cycle);
+  }); 
+  
+  let gl={};
+  l.forEach(i=>{
+    let rm=(i.remark||'').replace('跨階前(自動時間拆分)','').replace('升級後(自動時間拆分)','').trim();
+    let k=`${i.date}_${i.staff}_${i.service}_${rm}`;
+    if(!gl[k]) gl[k]={...i, remark:rm, cH:0, cP:0};
+    gl[k].cH+=getItemClockHours(i); 
+    gl[k].cP+=getItemDeductPoints(i);
+  });
+  let fl=Object.values(gl).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  
+  const {pagedList,total,totalPages}=getPagedData(fl,'bill');
   let h=''; 
-  pagedList.forEach(item=>{ h+=`<tr><td>${item.date}</td><td>${item.staff}</td><td>${item.service?(item.remark?item.service+'('+item.remark+')':item.service):'-'}</td><td>${getItemClockHours(item).toFixed(1)}</td><td>${getItemDeductPoints(item)}</td></tr>`; }); 
+  pagedList.forEach(item=>{ h+=`<tr><td>${item.date}</td><td>${item.staff}</td><td>${item.service?(item.remark?item.service+'('+item.remark+')':item.service):'-'}</td><td>${item.cH.toFixed(1)}</td><td>${item.cP}</td></tr>`; }); 
   el('billTable').innerHTML=h||'<tr><td colspan="5" style="text-align:center;">無紀錄</td></tr>'; renderPagination('bill',total,totalPages); 
 }
 
