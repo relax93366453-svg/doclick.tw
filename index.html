@@ -47,7 +47,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
   <div id="preview-body"></div>
 </div>
 
-<div id="login-screen"><div class="login-box"><div class="login-logo-container"><img id="login-logo-img" src=""><i class="fas fa-leaf" id="login-logo-icon"></i></div><h1 style="margin-top:10px;">愜易居管理系統</h1><div class="pro-badge">專業企業版</div><div class="login-field"><label>登入身分</label><select id="login_role"><option value="admin" style="color:#dc2626; font-weight:bold;">👑 系統管理員 / 業務 / 人資</option><option value="staff" style="color:#2563eb; font-weight:bold;">💼 派遣/正職員工登入</option></select></div><div class="login-field auth-input"><label>登入帳號</label><input type="text" id="login_acc" placeholder="請輸入帳號"></div><div class="login-field auth-input"><label>登入密碼</label><input type="password" id="login_pwd" placeholder="請輸入密碼"></div><button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登 入 系 統</button></div></div>
+<div id="login-screen"><div class="login-box"><div class="login-logo-container"><img id="login-logo-img" src=""><i class="fas fa-leaf" id="login-logo-icon"></i></div><h1 style="margin-top:10px;">愜易居管理系統</h1><div class="pro-badge">專業企業版</div><div class="login-field"><label>登入身分</label><select id="login_role"><option value="admin" style="color:#dc2626; font-weight:bold;">👑 系統管理員</option><option value="staff" style="color:#2563eb; font-weight:bold;">💼 員工專區</option></select></div><div class="login-field auth-input"><label>登入帳號</label><input type="text" id="login_acc" placeholder="請輸入帳號"></div><div class="login-field auth-input"><label>登入密碼</label><input type="password" id="login_pwd" placeholder="請輸入密碼"></div><button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登 入 系 統</button></div></div>
 
 <div class="app-container workspace-business" id="admin-screen">
   <div class="sidebar">
@@ -368,16 +368,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
               帳號:<input type="text" id="setting_hr_acc" style="width:80px; margin-right:8px; padding:4px;"> 
               密碼:<input type="text" id="setting_hr_pwd" style="width:80px; padding:4px;">
             </div>
-            <div style="background:white; padding:10px; border-radius:6px; border:1px solid #d8b4fe;">
-              <label style="font-size:12px; color:#9333ea; display:block;">🤝 業務</label>
-              帳號:<input type="text" id="setting_sales_acc" style="width:80px; margin-right:8px; padding:4px;"> 
-              密碼:<input type="text" id="setting_sales_pwd" style="width:80px; padding:4px;">
-            </div>
             <button class="btn btn-pdf" style="margin:0;" onclick="savePasswords()"><i class="fas fa-save"></i> 同步</button>
-          </div>
-          <div style="background:#fff7ed; padding:15px; border-radius:8px; border:1px solid #fed7aa; margin-top:15px;">
-            <label style="font-weight:bold; color:#c2410c;"><i class="fas fa-lock"></i> 設定頁面二階段解鎖密碼 (預設 8888)</label><br>
-            <input type="password" id="setting_admin_pin" style="width:120px; padding:6px; margin-top:5px;">
           </div>
         </div>
       </div>
@@ -425,7 +416,8 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
     <div class="page" id="staff-page-links"><div class="page-title"><i class="fas fa-link"></i> 常用連結</div><div class="grid" style="grid-template-columns:1fr 1fr; gap:30px;"><div id="btn_l1" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fas fa-globe" style="font-size:50px; color:#3b82f6;"></i><h3 id="staff_l1_title" style="margin-top:10px;"></h3><p id="staff_l1_desc" style="color:#64748b; font-size:13px;"></p></div><div id="btn_l2" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fab fa-instagram" style="font-size:50px; color:#e1306c;"></i><h3 id="staff_l2_title" style="margin-top:10px;"></h3><p id="staff_l2_desc" style="color:#64748b; font-size:13px;"></p></div></div></div>
   </div>
 </div>
-<script>const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywZSMycd8za6Nllo9F0jkGuygqalO8N6AKX20bNXR1RWCXEGU5BGHMlpet-fo-oPJY-Q/exec';
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywZSMycd8za6Nllo9F0jkGuygqalO8N6AKX20bNXR1RWCXEGU5BGHMlpet-fo-oPJY-Q/exec';
 const el = id => document.getElementById(id);
 function showToast(m, err = false) { const t=el('toast'); if(!t)return; t.style.background=err?'#ef4444':'#10b981'; t.innerHTML=m; t.style.display='block'; t.style.opacity='1'; setTimeout(()=>{t.style.opacity='0'; setTimeout(()=>t.style.display='none',300);}, 3500); }
 function updateSyncStatus(m, err = false) { const e=el('sync-status'); if(!e)return; e.innerHTML=m; e.style.backgroundColor=err?'#fee2e2':'#f1f5f9'; e.style.color=err?'#dc2626':'#475569'; }
@@ -450,8 +442,13 @@ function toggleBillManualDate() {
   const cycle = el('bill_cycle').value;
   const mDates = el('bill_manual_dates');
   const ymLabels = document.querySelectorAll('.bill-ym-label');
-  if(cycle === 'manual') { mDates.style.display = 'flex'; ymLabels.forEach(e => e.style.display = 'none'); } 
-  else { mDates.style.display = 'none'; ymLabels.forEach(e => e.style.display = 'inline-block'); }
+  if(cycle === 'manual') {
+    mDates.style.display = 'flex';
+    ymLabels.forEach(e => e.style.display = 'none');
+  } else {
+    mDates.style.display = 'none';
+    ymLabels.forEach(e => e.style.display = 'inline-block');
+  }
 }
 
 function toRocDate(d) { return d || '-'; }
@@ -464,6 +461,65 @@ const pageConfig = { pageSize: 10, currentPage: { customer:1, contract:1, staff:
 let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packagePrice:0,avg:400} });
 const defaultPortalConf = { adminNoticeTitle: "🚀 系統重要公告與操作須知", adminNoticeContent: "1. 準備新增或修改資料前，請先按右上角的「重新整理」。<br>2. 確保畫面為最新狀態後再進行輸入與儲存，以免互相覆蓋資料。<br>3. 右側選單可以隨時切換「營業管理區」與「人事員工區」。<br>4. 未來建檔遇到同名同姓，請一律在姓名後方加上 (手機後三碼)。(例：陳冠宇123)", serviceTypes: "行政,會計,服務員,理貨包裝,其他", r1Title: "2025 年管理規範新制", r1Content: "一、【溝通管理】 <br>嚴禁直接與業主方聯繫，所有事項均須透過窗口統一處理。<br>", r2Title: "注意事項", r2Content: "<li>嚴禁與業主或環境人員發生言語或肢體衝突。</li>", l1Title: "官方平台", l1Desc: "點擊前往", l1Url: "https://google.com", l2Title: "官方 IG", l2Desc: "追蹤資訊", l2Url: "https://instagram.com" };
 let portalConf = safeJSONParse('portalConf', defaultPortalConf);
+
+function exportAllStaffHoursSummary() {
+    const y = el('sal_filter_year').value, m = el('sal_filter_month').value;
+    if(y === 'all' || m === 'all') return showToast('請選擇年份與月份', true);
+    const activeStaffNames = [...new Set(attendData.filter(a => isDispatchPayrollPeriod(a.date, y, m)).map(a => a.staff))];
+    if(activeStaffNames.length === 0) return showToast('該月份無派遣紀錄', true);
+    let tb = document.createElement('table');
+    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">調薪進度明細表 (${y}年${m}月)</th></tr><tr><th>姓名</th><th>方案</th><th>本月工時</th><th>歷史累計工時</th><th>目前時薪</th><th>下一階門檻</th><th>跳級金額</th></tr></thead><tbody>`;
+    let body = '';
+    activeStaffNames.forEach(name => {
+        const monthlyRecords = attendData.filter(a => a.staff === name && isDispatchPayrollPeriod(a.date, y, m));
+        const mHrs = monthlyRecords.reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+        const info = getStaffCurrentHourlyInfo(name);
+        body += `<tr><td>${name}</td><td>${info.rule}</td><td>${mHrs.toFixed(1)}</td><td>${info.hours.toFixed(1)}</td><td>$${info.wage}</td><td>${info.nextTier === 'FIXED' ? '接案' : (info.nextTier || '無')}</td><td>${info.nextWage || '無'}</td></tr>`;
+    });
+    tb.innerHTML = head + body + '</tbody>';
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "進度明細"}), `愜易居_${y}年${m}月_派遣調薪進度明細.xlsx`);
+    showToast('✅ 匯出成功');
+}
+
+function exportStaffYearlyMatrix() {
+    const yInput = el('sal_filter_year').value;
+    if(yInput === 'all') return showToast('請先選擇年份', true);
+    const targetY = parseInt(yInput);
+    const historyYears = [];
+    for(let y = 2024; y < targetY; y++) historyYears.push(y);
+    let tb = document.createElement('table');
+    const totalCols = 2 + historyYears.length + 12 + 3;
+    let head = `<thead><tr><th colspan="${totalCols}" style="font-size:20px;font-weight:bold;text-align:center;">${targetY}年度 全員派遣工時累計矩陣總表 (愜易居)</th></tr><tr><th>姓名</th><th>狀態</th>`;
+    historyYears.forEach(hy => head += `<th style="background:#e0f2fe;">${hy}年累計</th>`);
+    for(let i=1; i<=12; i++) head += `<th>${i}月</th>`;
+    head += `<th style="background:#dcfce7;">最新總累計</th><th>時薪</th><th>跳級進度</th></tr></thead><tbody>`;
+    let body = '';
+    staffData.forEach(s => {
+        const statusBadge = s.status === '在職' ? '在職' : '離職';
+        body += `<tr><td>${s.name}</td><td>${statusBadge}</td>`;
+        let allHistorySum = 0;
+        historyYears.forEach(hy => {
+            const hyHrs = attendData.filter(a => a.staff === s.name && a.date.startsWith(hy.toString())).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+            body += `<td style="background:#f8fafc; text-align:center;">${hyHrs > 0 ? hyHrs.toFixed(1) : '0'}</td>`;
+            allHistorySum += hyHrs;
+        });
+        let currentYearSum = 0;
+        for(let m=1; m<=12; m++) {
+            const hrs = attendData.filter(a => a.staff === s.name && isDispatchPayrollPeriod(a.date, targetY, m)).reduce((sum, r) => sum + getItemSalaryHours(r), 0);
+            body += `<td style="text-align:center;">${hrs > 0 ? hrs.toFixed(1) : '0'}</td>`;
+            currentYearSum += hrs;
+        }
+        const latestTotal = allHistorySum + currentYearSum;
+        const info = getStaffCurrentHourlyInfo(s.name);
+        let tierStatus = '';
+        if(info.rule === '自訂' || info.rule === '接案' || info.rule.includes('固定月薪')) { tierStatus = '接案/固定'; } 
+        else { tierStatus = info.nextTier && info.nextTier !== 'FIXED' ? '還差 ' + (info.nextTier - latestTotal).toFixed(1) + 'h 跳級' : '已最高級'; }
+        body += `<td style="font-weight:bold; color:#2563eb; background:#dbeafe; text-align:center;">${latestTotal.toFixed(1)}</td><td style="color:#16a34a; font-weight:bold; text-align:center;">$${info.wage}</td><td style="white-space:nowrap; text-align:center;">${tierStatus}</td></tr>`;
+    });
+    tb.innerHTML = head + body + '</tbody>';
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "年度分欄總表"}), `愜易居_${targetY}年度_全員派遣工時累計表.xlsx`);
+    showToast('✅ 年度分欄總表匯出成功');
+}
 
 function setupGlobalNavigation() {
     document.addEventListener('keydown', (e) => {
@@ -512,26 +568,22 @@ document.addEventListener('DOMContentLoaded', () => {
       if(el('config_price_table')) el('config_price_table').value = JSON.stringify(priceTable, null, 2);
       if(el('setting_admin_acc')) el('setting_admin_acc').value = localStorage.getItem('adminAcc')||'admin'; if(el('setting_admin_pwd')) el('setting_admin_pwd').value = localStorage.getItem('adminPwd')||'1234';
       if(el('setting_hr_acc')) el('setting_hr_acc').value = localStorage.getItem('hrAcc')||'hr'; if(el('setting_hr_pwd')) el('setting_hr_pwd').value = localStorage.getItem('hrPwd')||'1234';
-      if(el('setting_sales_acc')) el('setting_sales_acc').value = localStorage.getItem('salesAcc')||'sales'; if(el('setting_sales_pwd')) el('setting_sales_pwd').value = localStorage.getItem('salesPwd')||'1234';
-      if(el('setting_admin_pin')) el('setting_admin_pin').value = localStorage.getItem('adminPin')||'8888';
-      
       renderPricePlanOptions(); updateLogoPreview(); renderPortalConfigUI(); applyPortalConfigToStaff(); renderServiceTypes();
       updateSystemClock(); setInterval(updateSystemClock, 1000);
       const pi=el('login_pwd'); if(pi) pi.addEventListener('keypress', e => { if(e.key==='Enter') handleLogin(); });
       loadDataFromCloud();
       setupGlobalNavigation();
-  } catch (err) { el('login-screen').style.display='flex'; } finally { restoreLoginState(); }
+  } catch (err) { 
+      el('login-screen').style.display='flex'; } finally { restoreLoginState(); }
 });
 
 function handleLogin() {
   const role=el('login_role').value, acc=el('login_acc').value.trim(), pwd=el('login_pwd').value.trim();
   if(!acc||!pwd) return showToast('請輸入帳密', true);
-  const sAA=localStorage.getItem('adminAcc')||'admin', sAP=localStorage.getItem('adminPwd')||'1234', sHA=localStorage.getItem('hrAcc')||'hr', sHP=localStorage.getItem('hrPwd')||'1234', sSA=localStorage.getItem('salesAcc')||'sales', sSP=localStorage.getItem('salesPwd')||'1234';
-  
+  const sAA=localStorage.getItem('adminAcc')||'admin', sAP=localStorage.getItem('adminPwd')||'1234', sHA=localStorage.getItem('hrAcc')||'hr', sHP=localStorage.getItem('hrPwd')||'1234';
   if (role === 'admin') {
-    if ((acc===sAA&&pwd===sAP)||(acc==='admin'&&pwd==='doclick888')) { localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','admin'); localStorage.setItem('workspace','business'); restoreLoginState(); showToast('登入成功'); } 
-    else if ((acc===sHA&&pwd===sHP)||(acc==='hr'&&pwd==='doclick888')) { localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','hr'); localStorage.setItem('workspace','hr'); restoreLoginState(); showToast('登入成功'); } 
-    else if ((acc===sSA&&pwd===sSP)||(acc==='sales'&&pwd==='doclick888')) { localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','sales'); localStorage.setItem('workspace','sales'); restoreLoginState(); showToast('登入成功'); } 
+    if ((acc===sAA&&pwd===sAP)||(acc==='admin'&&pwd==='doclick888')) { localStorage.setItem('loginRole','admin'); localStorage.setItem('workspace','business'); restoreLoginState(); showToast('登入成功'); } 
+    else if ((acc===sHA&&pwd===sHP)||(acc==='hr'&&pwd==='doclick888')) { localStorage.setItem('loginRole','admin'); localStorage.setItem('workspace','hr'); restoreLoginState(); showToast('登入成功'); } 
     else showToast('帳密錯誤', true);
   } else {
     const s = staffData.find(x=>x&&String(x.account||'').trim()===acc&&String(x.pwd||'').trim()===pwd), fs = ftStaffData.find(x=>x&&String(x.account||'').trim()===acc&&String(x.pwd||'').trim()===pwd);
@@ -547,12 +599,7 @@ function restoreLoginState() {
       el('login-screen').style.display='none';
       if(r==='admin') {
         const sc=el('admin-screen'); sc.style.display='flex'; el('staff-screen').style.display='none';
-        let sysRole = localStorage.getItem('sysRole') || 'admin';
-        
-        if(sysRole === 'hr') { currentWorkspace = 'hr'; localStorage.setItem('workspace', 'hr'); if(el('workspace-toggle-btn')) el('workspace-toggle-btn').style.display='none'; }
-        else if(sysRole === 'sales') { currentWorkspace = 'sales'; localStorage.setItem('workspace', 'sales'); if(el('workspace-toggle-btn')) el('workspace-toggle-btn').style.display='none'; }
-        else { currentWorkspace=localStorage.getItem('workspace')||'business'; if(el('workspace-toggle-btn')) el('workspace-toggle-btn').style.display='inline-block'; }
-
+        currentWorkspace=localStorage.getItem('workspace')||'business';
         sc.classList.remove('workspace-business', 'workspace-hr', 'workspace-sales', 'mode-hr');
         if(el('admin-sidebar-title-business')) el('admin-sidebar-title-business').style.display='none';
         if(el('admin-sidebar-title-hr')) el('admin-sidebar-title-hr').style.display='none';
@@ -561,19 +608,19 @@ function restoreLoginState() {
         if(currentWorkspace==='hr') { 
           sc.classList.add('workspace-hr','mode-hr'); 
           if(el('admin-sidebar-title-hr')) el('admin-sidebar-title-hr').style.display='flex'; 
-          if(sysRole==='admin' && el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至業務區'; 
+          if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至業務區'; 
           document.body.style.backgroundColor = '#f0fdfa';
         } 
         else if(currentWorkspace==='sales') { 
           sc.classList.add('workspace-sales'); 
           if(el('admin-sidebar-title-sales')) el('admin-sidebar-title-sales').style.display='flex'; 
-          if(sysRole==='admin' && el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至營業區'; 
+          if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至營業區'; 
           document.body.style.backgroundColor = '#f5f3ff';
         }
         else { 
           sc.classList.add('workspace-business'); 
           if(el('admin-sidebar-title-business')) el('admin-sidebar-title-business').style.display='flex'; 
-          if(sysRole==='admin' && el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至人事區'; 
+          if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至人事區'; 
           document.body.style.backgroundColor = '#f4f7fb';
         }
         fillFilters(); showAdminPage(localStorage.getItem('adminPage')||'dashboard');
@@ -612,9 +659,9 @@ function toggleWorkspace() {
   showAdminPage('dashboard');
 }
 
-function logout() { localStorage.removeItem('loginRole'); localStorage.removeItem('loginAcc'); localStorage.removeItem('sysRole'); localStorage.removeItem('workspace'); window.location.reload(); }
-function getSysConfigPayload() { return { adminAcc:localStorage.getItem('adminAcc')||'admin', adminPwd:localStorage.getItem('adminPwd')||'1234', hrAcc:localStorage.getItem('hrAcc')||'hr', hrPwd:localStorage.getItem('hrPwd')||'1234', salesAcc:localStorage.getItem('salesAcc')||'sales', salesPwd:localStorage.getItem('salesPwd')||'1234', adminPin:localStorage.getItem('adminPin')||'8888', priceTable:localStorage.getItem('priceTable'), portalConf:localStorage.getItem('portalConf'), loginLogo:localStorage.getItem('loginLogo')||'', pdfLogo:localStorage.getItem('pdfLogo')||'', loginBg:localStorage.getItem('loginBg')||'' }; }
-function savePasswords() { const aa=el('setting_admin_acc').value.trim(), ap=el('setting_admin_pwd').value.trim(), ha=el('setting_hr_acc').value.trim(), hp=el('setting_hr_pwd').value.trim(), sa=el('setting_sales_acc').value.trim(), sp=el('setting_sales_pwd').value.trim(), pin=el('setting_admin_pin').value.trim(); if(aa) localStorage.setItem('adminAcc',aa); if(ap) localStorage.setItem('adminPwd',ap); if(ha) localStorage.setItem('hrAcc',ha); if(hp) localStorage.setItem('hrPwd',hp); if(sa) localStorage.setItem('salesAcc',sa); if(sp) localStorage.setItem('salesPwd',sp); if(pin) localStorage.setItem('adminPin',pin); saveAllSilently(); showToast('✅ 同步'); }
+function logout() { localStorage.removeItem('loginRole'); localStorage.removeItem('loginAcc'); localStorage.removeItem('workspace'); window.location.reload(); }
+function getSysConfigPayload() { return { adminAcc:localStorage.getItem('adminAcc')||'admin', adminPwd:localStorage.getItem('adminPwd')||'1234', hrAcc:localStorage.getItem('hrAcc')||'hr', hrPwd:localStorage.getItem('hrPwd')||'1234', priceTable:localStorage.getItem('priceTable'), portalConf:localStorage.getItem('portalConf'), loginLogo:localStorage.getItem('loginLogo')||'', pdfLogo:localStorage.getItem('pdfLogo')||'', loginBg:localStorage.getItem('loginBg')||'' }; }
+function savePasswords() { const aa=el('setting_admin_acc').value.trim(), ap=el('setting_admin_pwd').value.trim(), ha=el('setting_hr_acc').value.trim(), hp=el('setting_hr_pwd').value.trim(); if(aa) localStorage.setItem('adminAcc',aa); if(ap) localStorage.setItem('adminPwd',ap); if(ha) localStorage.setItem('hrAcc',ha); if(hp) localStorage.setItem('hrPwd',hp); saveAllSilently(); showToast('✅ 同步'); }
 function handleLogoUrl(t) {
     if(t==='login') { const u=el('loginLogoUrl').value.trim(); if(!u)return; loginLogoBase64=u; localStorage.setItem('loginLogo',u); updateLogoPreview(); saveAllSilently(); showToast('套用'); } 
     else if(t==='pdf') { const u=el('pdfLogoUrl').value.trim(); if(!u)return; pdfLogoBase64=u; localStorage.setItem('pdfLogo',u); updateLogoPreview(); saveAllSilently(); showToast('套用'); } 
@@ -1072,28 +1119,12 @@ function clearDispatchForm(){
 
 function showAdminPage(p) {
   try {
-      let sysRole = localStorage.getItem('sysRole') || 'admin';
-      
-      if(p === 'settings') {
-          if(sysRole !== 'admin') return showToast('權限不足', true);
-          let pin = prompt('🔒 系統安全鎖：\n請輸入高階管理密碼以解鎖設定頁面：\n(若未更改過，預設為 8888)');
-          if(pin !== (localStorage.getItem('adminPin') || '8888')) {
-              showToast('安全碼錯誤，拒絕存取', true);
-              return;
-          }
-      }
-
-      if(sysRole === 'hr' && !['dashboard','staff','ft_staff','match','ft_attend','ft_salary','talent','dispatch'].includes(p)) return showToast('無權限訪問', true);
-      if(sysRole === 'sales' && !['dashboard','customer','req','dispatch'].includes(p)) return showToast('無權限訪問', true);
-
       if(el('admin-screen').classList.contains('mode-hr') && ['customer','contract','point','bill','boss','supplier','appearance','settings'].includes(p)) return showToast('營業專屬', true);
       if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch'].includes(p)) return showToast('業務專屬', true);
-      
       let tp=el('page-'+p); if(!tp) { p='dashboard'; tp=el('page-dashboard'); } 
       localStorage.setItem('adminPage',p); document.querySelectorAll('#admin-screen .page').forEach(x=>x.classList.remove('active')); tp.classList.add('active');
       document.querySelectorAll('#admin-screen .sidebar-nav a').forEach(a=>a.classList.remove('active'));
       let l=document.querySelector(`a[onclick*="showAdminPage('${p}')"]`); if(l) l.classList.add('active');
-      
       if(p==='customer') { clearCustForm(); renderCustTable(); } 
       if(p==='contract') { clearContractForm(); renderContractTable(); }
       if(p==='staff') { clearStaffForm(); renderStaffTable(); } 
@@ -1182,8 +1213,7 @@ function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid inp
 
 function calculateMilestones(staffName, boxId, contentId) {
     const box = el(boxId); const content = el(contentId);
-    if (!staffName || staffName === '全部人員') { if(box) box.style.display = 'none'; return; }
-    let records = attendData.filter(x => x.staff === staffName).sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (!staffName || staffName === '全部人員') { if(box) box.style.display = 'none'; return; }let records = attendData.filter(x => x.staff === staffName).sort((a, b) => new Date(a.date) - new Date(b.date));
     let cumulativeHours = 0; let milestones = { 175: null, 350: null, 525: null, 700: null };
     let mKeys = [175, 350, 525, 700];
     records.forEach(r => { let h = getItemSalaryHours(r); if (h > 0) { let prev = cumulativeHours; cumulativeHours += h; for (let k of mKeys) { if (prev < k && cumulativeHours >= k && !milestones[k]) { milestones[k] = r.date; } } } });
@@ -1342,7 +1372,7 @@ function clearMatchForm(){
   const b = el('btnAddMatch'); if(b) b.style.display = 'inline-block'; 
 }
 
-function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===fs)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
+function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
   let h='';
   pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; let rb=item.resume?`<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i></button>`:'-'; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${rb}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
   el('talentTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
@@ -1517,6 +1547,32 @@ function generatePayslipPDF() {
   const lh=pdfLogoBase64?`<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">`:''; 
   let c=`<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #f59e0b;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#d97706;">愜易居有限公司 - 薪資明細單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>人員姓名：</strong> ${s}<br><strong>結算期間：</strong> ${ptxt}</td><td style="text-align:right;"><strong>入帳帳戶：</strong><br>${si.bank||''} ${si.bank_branch||''}<br>${si.bank_acc||''}</td></tr></table><table class="summary-table" style="width:100%;margin-bottom:20px;border:1px solid #fde68a;"><tr><td>應發總額<br><strong style="font-size:24px;color:#1e293b;">${tAmt.toFixed(1)}</strong></td><td>代扣勞保<br><strong style="font-size:24px;color:#ef4444;">-${lb}</strong></td><td>代扣健保<br><strong style="font-size:24px;color:#ef4444;">-${hl}</strong></td><td style="background:#fffbeb;">實付金額<br><strong style="font-size:28px;color:#d97706;">${net}</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>公司</th><th>服務</th><th>工時</th><th>時薪/專案</th><th>金額</th></tr></thead><tbody>${ah}</tbody></table><div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
   openPreview(`${s}的薪資單`, c, si.drive||'', s); 
+}
+
+function renderDashboard(){
+  el('dash_total_cust').textContent=custData.length; el('dash_active_cust').textContent=custData.filter(x=>x.coop==='正合作').length; let pG=0, pL=0, aH='';
+  custData.forEach(c=>{ const cP=contractData.filter(x=>x.customer===c.name).reduce((s,i)=>s+(+i.point||0),0), uP=Number(attendData.filter(x=>x.company===c.name).reduce((s,i)=>s+getItemDeductPoints(i),0).toFixed(1)), rP=Number((cP-uP).toFixed(1)); if(rP>=50) pG++; else { pL++; if(c.coop!=='無合作') aH+=`<tr><td>${c.name}</td><td class="red">${rP} 點</td><td><button class="btn-sm btn-success" onclick="showAdminPage('contract');"><i class="fas fa-file-contract"></i></button></td></tr>`; } });
+  el('dash_point_ge50').textContent=pG; el('dash_point_lt50').textContent=pL; el('dash_alert_table').innerHTML=aH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 15px;">無</td></tr>';
+  let aS=staffData.filter(x=>x.status==='在職'), aF=ftStaffData.filter(x=>x.status==='在職'), aA=aS.concat(aF); el('dash_staff_active').textContent=aA.length; el('dash_miss_id').textContent=aA.filter(x=>!x.doc_id).length; el('dash_miss_bank').textContent=aA.filter(x=>!x.doc_bank).length; el('dash_miss_contract').textContent=aA.filter(x=>!x.doc_contract).length; let mH='';
+  
+  if(el('dash_sales_req')) el('dash_sales_req').textContent = reqData.filter(x=>x.status==='待追蹤').length;
+  if(el('dash_sales_win')) el('dash_sales_win').textContent = reqData.filter(x=>x.status==='轉正式公司資料').length;
+  if(el('dash_sales_dispatch')) el('dash_sales_dispatch').textContent = dispatchData.filter(x=>x.status!=='已完成').length;
+  
+  aA.forEach(s=>{ let m=[]; if(!s.doc_id)m.push('<span class="badge badge-red">身分</span>'); if(!s.doc_bank)m.push('<span class="badge badge-red">存摺</span>'); if(!s.doc_contract)m.push('<span class="badge badge-red">合約</span>'); if(!s.doc_resume)m.push('<span class="badge badge-red">履歷</span>'); if(m.length>0){ const iF=ftStaffData.some(x=>x.name===s.name), tg=iF?'<span class="badge badge-blue">正職</span>':'<span class="badge badge-yellow">派遣</span>'; mH+=`<tr><td style="font-weight:bold;color:#444;">${s.name} ${tg}</td><td><div style="display:flex;flex-wrap:wrap;gap:5px;">${m.join('')}</div></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('${iF?'ft_staff':'staff'}'); setTimeout(()=>${iF?'editFtStaff':'editStaff'}(${iF?ftStaffData.findIndex(x=>x.name===s.name):staffData.findIndex(x=>x.name===s.name)}), 300);"><i class="fas fa-edit"></i></button></td></tr>`; } });
+  el('dash_missing_docs_table').innerHTML=mH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 20px;">資料已繳齊</td></tr>';
+  const td=new Date(), tS=td.getFullYear()+'-'+String(td.getMonth()+1).padStart(2,'0')+'-'+String(td.getDate()).padStart(2,'0'); let tH=''; attendData.filter(x=>x.date===tS).forEach(i=>{ const am=i.am_s&&i.am_e?`${i.am_s}-${i.am_e}`:'', pm=i.pm_s&&i.pm_e?`${i.pm_s}-${i.pm_e}`:''; tH+=`<tr><td>${i.staff}</td><td>${i.company}</td><td>${[am,pm].filter(x=>x).join('/')||'-'}</td></tr>`; });
+  el('dash_today_table').innerHTML=tH||'<tr><td colspan="3" style="text-align:center;color:#999;">本日無記錄</td></tr>';
+  let bH=''; const cm=td.getMonth()+1; let bList = aA.filter(x => { if(!x.birthday) return false; let p = x.birthday.split(/[-/]/); return p.length >= 2 && parseInt(p[1],10) === cm; }).sort((a,b) => { let pA = a.birthday.split(/[-/]/), pB = b.birthday.split(/[-/]/); let dA = pA.length>=3 ? parseInt(pA[2],10) : 0, dB = pB.length>=3 ? parseInt(pB[2],10) : 0; return dA - dB; });
+  bList.forEach(i=>{ const iF=ftStaffData.some(x=>x.name===i.name), tg=iF?'<span class="badge badge-blue">正</span>':'<span class="badge badge-yellow">派</span>'; bH+=`<tr><td style="font-weight:bold;">${i.name} ${tg}</td><td>${i.birthday}</td><td><span style="color:#e91e63;"><i class="fas fa-gift"></i></span></td></tr>`; }); el('dash_birthday_table').innerHTML=bH||'<tr><td colspan="3" style="text-align:center;color:#999;">本月壽星無資料</td></tr>';
+  let apH='';
+  let tMs=td.getTime(); supplierData.forEach((s, idx) => { if(s.pay_date){ let pD=new Date(s.pay_date).getTime(), dD=Math.ceil((pD-tMs)/(1000*60*60*24)); if(dD<=7){ let st=dD<0?`<span class="badge badge-red">逾期 ${Math.abs(dD)} 天</span>`:(dD===0?`<span class="badge badge-red">今日到期</span>`:`<span class="badge badge-yellow">剩 ${dD} 天</span>`); apH+=`<tr><td style="font-weight:bold;">${s.name}</td><td>$${s.invoice_amt||0}</td><td>${s.pay_date}</td><td>${st}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('supplier'); setTimeout(()=>editSupplier(idx),300)"><i class="fas fa-eye"></i></button></td></tr>`; } } });
+  el('dash_ap_table').innerHTML=apH||'<tr><td colspan="5" style="text-align:center; color:#999; padding: 15px;">無</td></tr>';
+  let upH=''; aS.forEach(s=>{ let info=getStaffCurrentHourlyInfo(s.name); if(info.nextTier && info.nextWage){ let diff=info.nextTier - info.hours; if((diff>0 && diff<=30) || (diff<=0 && String(info.nextWage).includes('需同意'))){ let diffText = diff<=0 ? '待備註同意' : `剩 ${diff.toFixed(1)} h`; upH+=`<tr><td style="font-weight:bold;color:#1e293b;">${s.name}</td><td><span class="badge badge-blue">${info.rule}</span></td><td>${info.hours.toFixed(1)} <span style="color:#94a3b8;">/ ${info.nextTier} h</span></td><td><b style="color:#059669;font-size:15px;">$${info.wage}</b> <i class="fas fa-arrow-right" style="color:#cbd5e1;margin:0 8px;"></i> <b style="color:#e11d48;font-size:15px;">$${info.nextWage}</b></td><td><b class="red">${diffText}</b></td></tr>`; } } });
+  el('dash_upgrade_table').innerHTML=upH||'<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">近期無人即將調薪</td></tr>';
+  let insH=''; aS.forEach(s => { if(s.ins_date && s.ins_status !== '都不保' && s.ins_status !== '僅健保') { let stDate = new Date(s.ins_date); let targetDate = new Date(stDate); targetDate.setMonth(targetDate.getMonth() + 3); let diffDays = Math.ceil((targetDate - td) / (1000 * 60 * 60 * 24)); if (diffDays <= 15 && diffDays >= -15) { let tag = diffDays < 0 ? `<span class="badge badge-red">已逾期 ${Math.abs(diffDays)} 天</span>` : `<span class="badge badge-yellow">剩 ${diffDays} 天</span>`; insH += `<tr><td style="font-weight:bold;">${s.name}</td><td>${s.ins_date}</td><td><b style="color:#db2777;">${targetDate.toLocaleDateString('zh-TW')}</b></td><td>${tag}</td><td><button class="btn-sm btn-warning" onclick="showAdminPage('staff'); setTimeout(()=>editStaff(staffData.findIndex(x=>x.name===s.name)), 300);"><i class="fas fa-edit"></i> 去調整</button></td></tr>`; } } });
+  if(el('dash_ins_alert_table')) el('dash_ins_alert_table').innerHTML = insH || '<tr><td colspan="5" style="text-align:center;color:#999;padding:20px;">本月無人需調整勞保級距</td></tr>';
+  calcSalesBonus();
 }
 
 function initStaffFrontend() {
