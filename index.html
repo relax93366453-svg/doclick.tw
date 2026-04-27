@@ -6,7 +6,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei',sans-serif}body{background:#f4f7fb;color:#334155;line-height:1.6; transition: background-color 0.4s ease;}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft JhengHei',sans-serif}body{background:#f4f7fb;color:#334155;line-height:1.6}::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#f1f5f9}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
 #login-screen{display:flex;justify-content:center;align-items:center;height:100vh;background:url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;background-color:#1e293b;position:fixed;top:0;left:0;width:100%;z-index:9998}#login-screen::before{content:'';position:absolute;inset:0;background:rgba(15,23,42,.65)}
 .login-box{background:rgba(255,255,255,.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.5);padding:45px 40px;border-radius:16px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);width:100%;max-width:420px;text-align:center;position:relative;z-index:1;border-top:6px solid #2d9d5c}
 .login-logo-container{margin-bottom:20px;height:80px;display:flex;justify-content:center;align-items:center}.login-logo-container img{max-width:100%;max-height:100%;object-fit:contain;display:none}#login-logo-icon{font-size:50px;color:#2d9d5c}.login-box h1{color:#1e293b;margin-bottom:5px;font-size:24px;font-weight:900}.pro-badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:bold;margin-bottom:25px}
@@ -72,7 +72,6 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
       <li class="ws-hr"><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
       <li class="ws-hr"><a onclick="showAdminPage('ft_salary')"><i class="fas fa-money-check-alt"></i> 正職薪資結算</a></li>
       <li class="ws-hr"><a onclick="showAdminPage('talent')"><i class="fas fa-address-card"></i> 人才招募庫</a></li>
-      <li class="ws-hr"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
       
       <li class="ws-sales"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 業務儀表板</a></li>
       <li class="ws-sales"><a onclick="showAdminPage('customer')"><i class="fas fa-building"></i> 客戶資料</a></li>
@@ -92,7 +91,7 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
       <div class="quick-actions" style="margin-bottom:25px;display:flex;gap:12px;flex-wrap:wrap;background:white;padding:15px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.02);border:1px solid #f1f5f9;"><span style="font-weight:bold; color:#64748b; line-height:38px; margin-right:10px;"><i class="fas fa-bolt"></i> 快捷操作：</span><button class="btn btn-success ws-business" onclick="showAdminPage('attend');" style="margin:0;"><i class="fas fa-plus"></i> 新增派遣記錄</button><button class="btn btn-warning ws-business admin-only" onclick="showAdminPage('customer');" style="margin:0;"><i class="fas fa-building"></i> 新增客戶</button><button class="btn btn-excel ws-business admin-only" onclick="showAdminPage('contract');" style="margin:0;"><i class="fas fa-file-contract"></i> 新增合約</button><button class="btn btn-pdf ws-business admin-only" onclick="showAdminPage('supplier');" style="margin:0; background:#8b5cf6;"><i class="fas fa-truck"></i> 新增供應商</button><button class="btn btn-warning ws-hr" onclick="showAdminPage('staff');" style="margin:0;"><i class="fas fa-user-tag"></i> 新增派遣員工</button><button class="btn btn-success ws-hr" onclick="showAdminPage('ft_staff');" style="margin:0;"><i class="fas fa-user-tie"></i> 新增正職員工</button><button class="btn btn-excel ws-hr" onclick="showAdminPage('ft_attend');" style="margin:0;"><i class="fas fa-calendar-check"></i> 新增正職出勤</button><button class="btn btn-warning ws-sales" onclick="showAdminPage('req');" style="margin:0;"><i class="fas fa-comment-dots"></i> 新增客戶追蹤</button></div>
       <div class="ws-business admin-only"><div class="dashboard-grid"><div class="dash-card primary"><i class="fas fa-building dash-icon"></i><div class="label">客戶總數</div><div class="num blue" id="dash_total_cust">0</div></div><div class="dash-card success"><i class="fas fa-handshake dash-icon"></i><div class="label">正合作客戶</div><div class="num green" id="dash_active_cust">0</div></div><div class="dash-card success"><i class="fas fa-battery-full dash-icon"></i><div class="label">點數充足 (≥50)</div><div class="num green" id="dash_point_ge50">0</div></div><div class="dash-card danger"><i class="fas fa-battery-quarter dash-icon"></i><div class="label">點數偏低 (&lt;50)</div><div class="num red" id="dash_point_lt50">0</div></div></div></div>
       <div class="ws-hr"><div class="dashboard-grid"><div class="dash-card primary"><i class="fas fa-user-check dash-icon"></i><div class="label">全公司在職人數</div><div class="num blue" id="dash_staff_active">0</div></div><div class="dash-card danger"><i class="fas fa-id-card dash-icon"></i><div class="label">缺交 身分證</div><div class="num red" id="dash_miss_id">0</div></div><div class="dash-card danger"><i class="fas fa-money-check dash-icon"></i><div class="label">缺交 存摺/帳戶</div><div class="num red" id="dash_miss_bank">0</div></div><div class="dash-card danger"><i class="fas fa-file-signature dash-icon"></i><div class="label">缺交 勞動契約</div><div class="num red" id="dash_miss_contract">0</div></div></div></div>
-      <div class="ws-sales"><div class="dashboard-grid"><div class="dash-card primary"><i class="fas fa-building dash-icon"></i><div class="label">追蹤中客戶數</div><div class="num blue" id="dash_sales_req">0</div></div><div class="dash-card success"><i class="fas fa-file-signature dash-icon"></i><div class="label">成功轉為正式</div><div class="num green" id="dash_sales_win">0</div></div><div class="dash-card danger"><i class="fas fa-hourglass-half dash-icon"></i><div class="label">待派發案件</div><div class="num red" id="dash_sales_dispatch">0</div></div></div></div>
+      <div class="ws-sales"><div class="dashboard-grid"><div class="dash-card primary"><i class="fas fa-building dash-icon"></i><div class="label">追蹤中客戶數</div><div class="num blue" id="dash_sales_req">0</div></div><div class="dash-card success"><i class="fas fa-file-signature dash-icon"></i><div class="label">成功轉為正式</div><div class="num green" id="dash_sales_win">0</div></div><div class="dash-card danger"><i class="fas fa-times-circle dash-icon"></i><div class="label">已拒絕客戶</div><div class="num red" id="dash_sales_loss">0</div></div></div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
         
         <div class="panel ws-sales" style="grid-column:1/-1; border-top:3px solid #8b5cf6;">
@@ -140,42 +139,14 @@ table{width:100%;border-collapse:collapse;font-size:13px;min-width:800px;backgro
       <button class="btn btn-success" id="btnAddReq" onclick="addReq()"><i class="fas fa-save"></i> 儲存紀錄</button>
       <button class="btn btn-warning" id="btnUpdateReq" onclick="updateReq()" style="display:none"><i class="fas fa-edit"></i> 修改紀錄</button>
       <button class="btn" style="background:#64748b;" onclick="clearReqForm()"><i class="fas fa-eraser"></i> 清空表單</button>
-      
-      <div class="filter-bar" style="margin-top: 20px;">
-        <label>搜尋公司：</label><input type="text" id="cr_filter_keyword" placeholder="手打關鍵字" oninput="resetPage('req'); renderReqTable()">
-        <label>狀態：</label><select id="cr_filter_status" onchange="resetPage('req'); renderReqTable()"><option value="all">全部</option><option>待追蹤</option><option>轉正式公司資料</option><option>拒絕</option></select>
-        <button class="btn btn-clear-filter" onclick="clearFilters('req')"><i class="fas fa-broom"></i> 清除搜尋</button>
-        <button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('reqTableBox','客戶需求追蹤')"><i class="fas fa-file-excel"></i> 匯出全部</button>
-      </div>
-      <div class="table-responsive" style="margin-top:5px; border-top:2px solid #e2e8f0; padding-top:20px;">
+      <div class="table-responsive" style="margin-top:25px; border-top:2px solid #e2e8f0; padding-top:20px;">
         <table id="reqTableBox"><thead><tr><th>狀態</th><th>公司名稱</th><th>聯絡窗口</th><th>手機號碼</th><th>來源</th><th>開發者</th><th>備註</th><th>操作</th></tr></thead><tbody id="reqTable"></tbody></table>
       </div>
     </div>
     
     <div class="page" id="page-dispatch">
-      <div class="page-title"><i class="fas fa-tasks"></i> 待派發案件管理</div>
-      <div class="grid" style="background:#f8fafc;padding:25px;border-radius:12px;border:1px solid #e2e8f0;">
-        <div><label>公司名稱 *</label><input list="list_cust" id="dp_company" required></div>
-        <div><label>職位 *</label><input id="dp_role" required></div>
-        <div><label>需求人數</label><input type="number" id="dp_num" value="1" min="1"></div>
-        <div><label>案件狀態</label><select id="dp_status" style="font-weight:bold;"><option>招募中</option><option style="color:#f59e0b;">二面日期</option><option style="color:#0ea5e9;">預計派發日</option><option style="color:#ef4444;">換人等待</option></select></div>
-        <div><label>派遣人員姓名</label><input list="list_staff" id="dp_staff" placeholder="已確認人選時填寫"></div>
-        <div><label>聯繫電話</label><input id="dp_tel" placeholder="人員電話"></div>
-        <div><label>實際到職或派發日期</label><input type="date" id="dp_date"></div>
-        <div><label>二面日期</label><input type="date" id="dp_interview"></div>
-        <div style="grid-column: span 4;"><label>備註與交接事項</label><input id="dp_remark" placeholder="交接細節、注意事項等..."></div>
-      </div>
-      <button class="btn btn-success" id="btnAddDispatch" onclick="addDispatch()"><i class="fas fa-save"></i> 新增案件</button>
-      <button class="btn btn-warning" id="btnUpdateDispatch" onclick="updateDispatch()" style="display:none"><i class="fas fa-edit"></i> 修改案件</button>
-      <button class="btn" style="background:#64748b;" onclick="clearDispatchForm()"><i class="fas fa-eraser"></i> 清空表單</button>
-      
-      <div class="filter-bar" style="margin-top: 20px;">
-        <label>搜尋公司或職位：</label><input type="text" id="dp_filter_keyword" placeholder="手打關鍵字" oninput="resetPage('dispatch'); renderDispatchTable()">
-        <label>狀態：</label><select id="dp_filter_status" onchange="resetPage('dispatch'); renderDispatchTable()"><option value="all">全部狀態</option><option>招募中</option><option>二面日期</option><option>預計派發日</option><option>換人等待</option></select>
-        <button class="btn btn-clear-filter" onclick="clearFilters('dispatch')"><i class="fas fa-broom"></i> 清除搜尋</button>
-        <button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('dispatchTableBox','待派發案件')"><i class="fas fa-file-excel"></i> 匯出全部</button>
-      </div>
-      <div class="table-responsive"><table id="dispatchTableBox"><thead><tr><th>狀態</th><th>公司名稱</th><th>職位</th><th>人數</th><th>派遣人員</th><th>聯繫電話</th><th>二面日</th><th>派發日</th><th>備註與交接</th><th>操作</th></tr></thead><tbody id="dispatchTable"></tbody></table></div>
+      <div class="page-title"><i class="fas fa-tasks"></i> 目前待派發案件</div>
+      <div style="background:#f8fafc; padding:50px; text-align:center; border-radius:12px; border:1px dashed #cbd5e1; color:#64748b; font-weight:bold;"><i class="fas fa-tools"></i> 業務區專屬：待派發案件模組介面建置中...</div>
     </div>
 
     <div class="page admin-only" id="page-customer"><div class="page-title"><i class="fas fa-building"></i> 客戶資料管理</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="cust_filter_company" placeholder="手打關鍵字" oninput="resetPage('customer'); renderCustTable()"><label>狀態：</label><select id="cust_filter_coop" onchange="resetPage('customer'); renderCustTable()"><option value="all">全部</option><option value="正合作">正合作</option><option value="無合作">無合作</option></select><button class="btn btn-clear-filter" onclick="clearFilters('customer')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div class="grid"><div><label>客戶名稱 *</label><input list="list_cust" id="c_name" required></div><div><label>行業別</label><input id="c_industry"></div><div><label>聯絡人</label><input id="c_user"></div><div><label>電話</label><input id="c_tel"></div><div><label>公司地址</label><input id="c_addr"></div><div><label>工作地址</label><input id="c_work_addr"></div><div><label>統編</label><input id="c_tax"></div><div><label>商品簡介</label><input id="c_goods"></div><div><label>前台帳號</label><input id="c_account"></div><div><label>前台密碼</label><input id="c_pwd" type="text"></div><div><label>前台連結</label><input id="c_url"></div><div style="grid-column:span 2;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="c_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateFolder()" id="btnCreateFolder" style="margin-bottom:0;"><i class="fas fa-magic"></i> 建立</button></div></div><div><label>備註</label><input id="c_remark"></div><div><label>合作狀態</label><select id="c_coop"><option>正合作</option><option>無合作</option></select></div></div><button class="btn btn-success" id="btnAddCust" onclick="addCust()"><i class="fas fa-save"></i> 新增</button><button class="btn btn-warning" onclick="updateCust()" id="btnUpdateCust" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearCustForm()"><i class="fas fa-eraser"></i> 清空表單</button><button class="btn btn-excel" onclick="exportExcel('customerTableBox','客戶資料')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="customerTableBox"><thead><tr><th>狀態</th><th>名稱</th><th>行業</th><th>聯絡人</th><th>電話</th><th>公司地址</th><th>工作地址</th><th>統編</th><th>商品</th><th>帳號</th><th>密碼</th><th>前台連結</th><th>雲端資料夾</th><th>備註</th><th>操作</th></tr></thead><tbody id="custTable"></tbody></table></div></div>
@@ -454,10 +425,10 @@ function toggleBillManualDate() {
 function toRocDate(d) { return d || '-'; }
 function formatTimeInput(e) { let v=e.value.replace(/[^0-9]/g,''); if(!v){e.value='';return;} if(v.length===1)v='0'+v+'00'; else if(v.length===2)v=v+'00'; else if(v.length===3)v='0'+v; else if(v.length>4)v=v.substring(0,4); let h=parseInt(v.substring(0,2)), m=parseInt(v.substring(2,4)); if(h>23)h=23; if(m>59)m=59; e.value=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0'); }
 
-let custData=safeJSONParse('custData',[]), contractData=safeJSONParse('contractData',[]), staffData=safeJSONParse('staffData',[]), attendData=safeJSONParse('attendData',[]), ftStaffData=safeJSONParse('ftStaffData',[]), ftAttendData=safeJSONParse('ftAttendData',[]), talentData=safeJSONParse('talentData',[]), supplierData=safeJSONParse('supplierData',[]), matchData=safeJSONParse('matchData',[]), reqData=safeJSONParse('reqData',[]), dispatchData=safeJSONParse('dispatchData',[]);
+let custData=safeJSONParse('custData',[]), contractData=safeJSONParse('contractData',[]), staffData=safeJSONParse('staffData',[]), attendData=safeJSONParse('attendData',[]), ftStaffData=safeJSONParse('ftStaffData',[]), ftAttendData=safeJSONParse('ftAttendData',[]), talentData=safeJSONParse('talentData',[]), supplierData=safeJSONParse('supplierData',[]), matchData=safeJSONParse('matchData',[]), reqData=safeJSONParse('reqData',[]);
 let loginLogoBase64=localStorage.getItem('loginLogo')||'', pdfLogoBase64=localStorage.getItem('pdfLogo')||'', loginBgBase64=localStorage.getItem('loginBg')||'';
-let currentLoginStaff=null, currentWorkspace='business', editCustIndex=-1, editContractIndex=-1, editStaffIndex=-1, editAttendIndex=-1, editFtStaffIndex=-1, editFtAttendIndex=-1, editTalentIndex=-1, editSupplierIndex=-1, editMatchIndex=-1, editReqIndex=-1, editDispatchIndex=-1;
-const pageConfig = { pageSize: 10, currentPage: { customer:1, contract:1, staff:1, attend:1, point:1, bill:1, salary:1, boss:1, ft_staff:1, ft_attend:1, ft_salary:1, talent:1, supplier:1, match:1, req:1, dispatch:1 } };
+let currentLoginStaff=null, currentWorkspace='business', editCustIndex=-1, editContractIndex=-1, editStaffIndex=-1, editAttendIndex=-1, editFtStaffIndex=-1, editFtAttendIndex=-1, editTalentIndex=-1, editSupplierIndex=-1, editMatchIndex=-1, editReqIndex=-1;
+const pageConfig = { pageSize: 10, currentPage: { customer:1, contract:1, staff:1, attend:1, point:1, bill:1, salary:1, boss:1, ft_staff:1, ft_attend:1, ft_salary:1, talent:1, supplier:1, match:1, req:1 } };
 let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packagePrice:0,avg:400} });
 const defaultPortalConf = { adminNoticeTitle: "🚀 系統重要公告與操作須知", adminNoticeContent: "1. 準備新增或修改資料前，請先按右上角的「重新整理」。<br>2. 確保畫面為最新狀態後再進行輸入與儲存，以免互相覆蓋資料。<br>3. 右側選單可以隨時切換「營業管理區」與「人事員工區」。<br>4. 未來建檔遇到同名同姓，請一律在姓名後方加上 (手機後三碼)。(例：陳冠宇123)", serviceTypes: "行政,會計,服務員,理貨包裝,其他", r1Title: "2025 年管理規範新制", r1Content: "一、【溝通管理】 <br>嚴禁直接與業主方聯繫，所有事項均須透過窗口統一處理。<br>", r2Title: "注意事項", r2Content: "<li>嚴禁與業主或環境人員發生言語或肢體衝突。</li>", l1Title: "官方平台", l1Desc: "點擊前往", l1Url: "https://google.com", l2Title: "官方 IG", l2Desc: "追蹤資訊", l2Url: "https://instagram.com" };
 let portalConf = safeJSONParse('portalConf', defaultPortalConf);
@@ -609,19 +580,16 @@ function restoreLoginState() {
           sc.classList.add('workspace-hr','mode-hr'); 
           if(el('admin-sidebar-title-hr')) el('admin-sidebar-title-hr').style.display='flex'; 
           if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至業務區'; 
-          document.body.style.backgroundColor = '#f0fdfa';
         } 
         else if(currentWorkspace==='sales') { 
           sc.classList.add('workspace-sales'); 
           if(el('admin-sidebar-title-sales')) el('admin-sidebar-title-sales').style.display='flex'; 
           if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至營業區'; 
-          document.body.style.backgroundColor = '#f5f3ff';
         }
         else { 
           sc.classList.add('workspace-business'); 
           if(el('admin-sidebar-title-business')) el('admin-sidebar-title-business').style.display='flex'; 
           if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至人事區'; 
-          document.body.style.backgroundColor = '#f4f7fb';
         }
         fillFilters(); showAdminPage(localStorage.getItem('adminPage')||'dashboard');
       } else if(r==='staff') {
@@ -640,21 +608,18 @@ function toggleWorkspace() {
       sc.classList.remove('workspace-business', 'workspace-sales'); sc.classList.add('workspace-hr','mode-hr'); 
       el('admin-sidebar-title-business').style.display='none'; el('admin-sidebar-title-sales').style.display='none'; el('admin-sidebar-title-hr').style.display='flex'; 
       if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至業務區'; 
-      document.body.style.backgroundColor = '#f0fdfa';
   } 
   else if(currentWorkspace==='hr') { 
       currentWorkspace='sales'; localStorage.setItem('workspace','sales'); 
       sc.classList.remove('workspace-hr', 'workspace-business', 'mode-hr'); sc.classList.add('workspace-sales'); 
       el('admin-sidebar-title-hr').style.display='none'; el('admin-sidebar-title-business').style.display='none'; el('admin-sidebar-title-sales').style.display='flex'; 
       if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至營業區'; 
-      document.body.style.backgroundColor = '#f5f3ff';
   }
   else { 
       currentWorkspace='business'; localStorage.setItem('workspace','business'); 
       sc.classList.remove('workspace-hr', 'workspace-sales', 'mode-hr'); sc.classList.add('workspace-business'); 
       el('admin-sidebar-title-hr').style.display='none'; el('admin-sidebar-title-sales').style.display='none'; el('admin-sidebar-title-business').style.display='flex'; 
       if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML='<i class="fas fa-exchange-alt"></i> 切換至人事區'; 
-      document.body.style.backgroundColor = '#f4f7fb';
   }
   showAdminPage('dashboard');
 }
@@ -691,7 +656,6 @@ function standardizeData() {
   contractData=(contractData||[]).filter(x=>x).map(x=>({...x,customer:x.customer||''}));
   matchData=(matchData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tel:x.tel||'',region:x.region||'',transport:x.transport||'',skills:x.skills||'',exp:x.exp||'',remark:x.remark||''}));
   reqData=(reqData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tax:x.tax||'',industry:x.industry||'',scale:x.scale||'',contact:x.contact||'',title:x.title||'',phone:x.phone||'',tel:x.tel||'',email:x.email||'',decision:!!x.decision,finance:x.finance||'',source:x.source||'業務開發',source_attr:x.source_attr||'承接',dev_name:x.dev_name||'',status:x.status||'待追蹤',remark:x.remark||''}));
-  dispatchData=(dispatchData||[]).filter(x=>x).map(x=>({...x, company:x.company||'', role:x.role||'', num:x.num||1, status:x.status||'招募中', staff:x.staff||'', tel:x.tel||'', date:x.date||'', interview:x.interview||'', remark:x.remark||''}));
 }
 function getHours(s,e){if(!s||!e)return 0;try{let[sh,sm]=s.split(':').map(Number);let[eh,em]=e.split(':').map(Number);let min=(eh*60+em)-(sh*60+sm);if(min<0)min+=1440;return(min/60).toFixed(1);}catch(e){return 0;}}
 function getItemClockHours(item){return (+getHours(item.am_s,item.am_e))+(+getHours(item.pm_s,item.pm_e));}
@@ -898,7 +862,6 @@ function exportExcel(tableId,filename){
     if(tableId==='billTableBox') renderBill(); if(tableId==='salaryTableBox') renderSalary();
     if(tableId==='bossTableBox') showBoss(); if(tableId==='matchTableBox') renderMatchTable();
     if(tableId==='reqTableBox') renderReqTable();
-    if(tableId==='dispatchTableBox') renderDispatchTable();
   };
   refresh();
   let tb = el(tableId); if(!tb) { pageConfig.pageSize = oldSize; refresh(); return showToast('錯誤',true); }
@@ -973,12 +936,12 @@ function calcSalesBonus() {
     }
 }
 
-function loadDataFromCloud(forceRender=false){if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{let nA=0;if(r.sysConfig){if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_admin_acc'))el('setting_admin_acc').value=r.sysConfig.adminAcc;}if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_admin_pwd'))el('setting_admin_pwd').value=r.sysConfig.adminPwd;}if(r.sysConfig.hrAcc){localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(el('setting_hr_acc'))el('setting_hr_acc').value=r.sysConfig.hrAcc;}if(r.sysConfig.hrPwd){localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(el('setting_hr_pwd'))el('setting_hr_pwd').value=r.sysConfig.hrPwd;}if(r.sysConfig.priceTable){localStorage.setItem('priceTable',r.sysConfig.priceTable);priceTable=JSON.parse(r.sysConfig.priceTable);if(el('config_price_table'))el('config_price_table').value=r.sysConfig.priceTable;renderPricePlanOptions();}if(r.sysConfig.portalConf){let c=JSON.parse(r.sysConfig.portalConf);portalConf={...defaultPortalConf,...c};localStorage.setItem('portalConf',JSON.stringify(portalConf));renderPortalConfigUI();applyPortalConfigToStaff();renderServiceTypes();}if(r.sysConfig.loginLogo){localStorage.setItem('loginLogo',r.sysConfig.loginLogo);loginLogoBase64=r.sysConfig.loginLogo;}if(r.sysConfig.pdfLogo){localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);pdfLogoBase64=r.sysConfig.pdfLogo;}if(r.sysConfig.loginBg){localStorage.setItem('loginBg',r.sysConfig.loginBg);loginBgBase64=r.sysConfig.loginBg;}updateLogoPreview();}if(!r.talentData)r.talentData=talentData||[];r.talentData=r.talentData.filter(x=>x&&String(x.name||'').trim()!=='');let pC=r.talentData.length;let fm=r['Form_Responses']||r['表單回應 1']||r['表單回應']||r['Form Responses 1'];if(fm&&Array.isArray(fm)&&fm.length>0){const hH=String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名');const dR=hH?fm.slice(1):fm;dR.forEach(row=>{if(Array.isArray(row)){let n=String(row[1]||'').trim(),t=String(row[4]||row[2]||'').trim(),l=String(row[5]||'').trim(),y=String(row[8]||'').trim(),e=String(row[9]||'').trim(),loc=String(row[10]||'').trim(),s=String(row[11]||'').trim(),rl=String(row[22]||row[12]||'').trim(),dt=String(row[0]||'').trim();let ex=[];if(l)ex.push('Line:'+l);if(y)ex.push('年資:'+y);if(e)ex.push('經歷:'+e);if(n&&n!==''&&!n.includes('全名')&&!n.includes('姓名')){if(!r.talentData.some(t=>String(t.name).trim()===n)){r.talentData.push({name:n,tel:t,source:'Google表單',location:loc,shift:s,role:rl,status:'待聯絡',eval:'',resume:'',exp:ex.join(' | '),date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0]});nA++;}}}});}if(r.custData)custData=r.custData;if(r.contractData)contractData=r.contractData;if(r.staffData)staffData=r.staffData;if(r.attendData)attendData=r.attendData;if(r.ftStaffData)ftStaffData=r.ftStaffData;if(r.ftAttendData)ftAttendData=r.ftAttendData;talentData=r.talentData;if(r.supplierData)supplierData=r.supplierData;if(r.matchData)matchData=r.matchData;if(r.reqData)reqData=r.reqData;if(r.dispatchData)dispatchData=r.dispatchData;standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));localStorage.setItem('matchData',JSON.stringify(matchData));localStorage.setItem('reqData',JSON.stringify(reqData));localStorage.setItem('dispatchData',JSON.stringify(dispatchData));}catch(e){}if(nA>0||talentData.length<pC)saveAllSilently();if(forceRender){if(nA>0)alert(`匯入 ${nA} 筆`);else if(fm)alert(`無新履歷`);}if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');const cp=localStorage.getItem('adminPage')||'dashboard';if(el('admin-screen')&&el('admin-screen').style.display!=='none'){if(forceRender)showAdminPage(cp);else{if(cp==='dashboard')renderDashboard();else if(cp==='customer')renderCustTable();else if(cp==='staff')renderStaffTable();else if(cp==='talent')renderTalentTable();else if(cp==='supplier')renderSupplierTable();else if(cp==='match')renderMatchTable();else if(cp==='req')renderReqTable();else if(cp==='dispatch')renderDispatchTable();}}}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線',true);});}
+function loadDataFromCloud(forceRender=false){if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{let nA=0;if(r.sysConfig){if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_admin_acc'))el('setting_admin_acc').value=r.sysConfig.adminAcc;}if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_admin_pwd'))el('setting_admin_pwd').value=r.sysConfig.adminPwd;}if(r.sysConfig.hrAcc){localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(el('setting_hr_acc'))el('setting_hr_acc').value=r.sysConfig.hrAcc;}if(r.sysConfig.hrPwd){localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(el('setting_hr_pwd'))el('setting_hr_pwd').value=r.sysConfig.hrPwd;}if(r.sysConfig.priceTable){localStorage.setItem('priceTable',r.sysConfig.priceTable);priceTable=JSON.parse(r.sysConfig.priceTable);if(el('config_price_table'))el('config_price_table').value=r.sysConfig.priceTable;renderPricePlanOptions();}if(r.sysConfig.portalConf){let c=JSON.parse(r.sysConfig.portalConf);portalConf={...defaultPortalConf,...c};localStorage.setItem('portalConf',JSON.stringify(portalConf));renderPortalConfigUI();applyPortalConfigToStaff();renderServiceTypes();}if(r.sysConfig.loginLogo){localStorage.setItem('loginLogo',r.sysConfig.loginLogo);loginLogoBase64=r.sysConfig.loginLogo;}if(r.sysConfig.pdfLogo){localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);pdfLogoBase64=r.sysConfig.pdfLogo;}if(r.sysConfig.loginBg){localStorage.setItem('loginBg',r.sysConfig.loginBg);loginBgBase64=r.sysConfig.loginBg;}updateLogoPreview();}if(!r.talentData)r.talentData=talentData||[];r.talentData=r.talentData.filter(x=>x&&String(x.name||'').trim()!=='');let pC=r.talentData.length;let fm=r['Form_Responses']||r['表單回應 1']||r['表單回應']||r['Form Responses 1'];if(fm&&Array.isArray(fm)&&fm.length>0){const hH=String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名');const dR=hH?fm.slice(1):fm;dR.forEach(row=>{if(Array.isArray(row)){let n=String(row[1]||'').trim(),t=String(row[4]||row[2]||'').trim(),l=String(row[5]||'').trim(),y=String(row[8]||'').trim(),e=String(row[9]||'').trim(),loc=String(row[10]||'').trim(),s=String(row[11]||'').trim(),rl=String(row[22]||row[12]||'').trim(),dt=String(row[0]||'').trim();let ex=[];if(l)ex.push('Line:'+l);if(y)ex.push('年資:'+y);if(e)ex.push('經歷:'+e);if(n&&n!==''&&!n.includes('全名')&&!n.includes('姓名')){if(!r.talentData.some(t=>String(t.name).trim()===n)){r.talentData.push({name:n,tel:t,source:'Google表單',location:loc,shift:s,role:rl,status:'待聯絡',eval:'',resume:'',exp:ex.join(' | '),date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0]});nA++;}}}});}if(r.custData)custData=r.custData;if(r.contractData)contractData=r.contractData;if(r.staffData)staffData=r.staffData;if(r.attendData)attendData=r.attendData;if(r.ftStaffData)ftStaffData=r.ftStaffData;if(r.ftAttendData)ftAttendData=r.ftAttendData;talentData=r.talentData;if(r.supplierData)supplierData=r.supplierData;if(r.matchData)matchData=r.matchData;standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));localStorage.setItem('matchData',JSON.stringify(matchData));}catch(e){}if(nA>0||talentData.length<pC)saveAllSilently();if(forceRender){if(nA>0)alert(`匯入 ${nA} 筆`);else if(fm)alert(`無新履歷`);}if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');const cp=localStorage.getItem('adminPage')||'dashboard';if(el('admin-screen')&&el('admin-screen').style.display!=='none'){if(forceRender)showAdminPage(cp);else{if(cp==='dashboard')renderDashboard();else if(cp==='customer')renderCustTable();else if(cp==='staff')renderStaffTable();else if(cp==='talent')renderTalentTable();else if(cp==='supplier')renderSupplierTable();else if(cp==='match')renderMatchTable();}}}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線',true);});}
 function saveAllSilently(){fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,matchData,sysConfig:getSysConfigPayload()}),headers:{'Content-Type':'text/plain;charset=utf-8'}});}
-function saveAll(){standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));localStorage.setItem('matchData',JSON.stringify(matchData));localStorage.setItem('reqData',JSON.stringify(reqData));localStorage.setItem('dispatchData',JSON.stringify(dispatchData));}catch(e){}if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 存...');fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,matchData,sysConfig:getSysConfigPayload()}),headers:{'Content-Type':'text/plain;charset=utf-8'}}).then(r=>r.json()).then(r=>{if(r.status==='success'&&el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);});}
+function saveAll(){standardizeData();try{localStorage.setItem('custData',JSON.stringify(custData));localStorage.setItem('contractData',JSON.stringify(contractData));localStorage.setItem('staffData',JSON.stringify(staffData));localStorage.setItem('attendData',JSON.stringify(attendData));localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData));localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData));localStorage.setItem('talentData',JSON.stringify(talentData));localStorage.setItem('supplierData',JSON.stringify(supplierData));localStorage.setItem('matchData',JSON.stringify(matchData));localStorage.setItem('reqData',JSON.stringify(reqData));}catch(e){}if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 存...');fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,matchData,sysConfig:getSysConfigPayload()}),headers:{'Content-Type':'text/plain;charset=utf-8'}}).then(r=>r.json()).then(r=>{if(r.status==='success'&&el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');}).catch(e=>{if(el('sync-status'))updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true);});}
 function syncTalentFromForm(){if(el('sync-status'))updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...');fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'syncForm'}),headers:{'Content-Type':'text/plain;charset=utf-8'}}).then(r=>r.json()).then(r=>{showToast(`✅ 同步！`);loadDataFromCloud(true);}).catch(e=>{showToast('❌ 網路錯誤',true);if(el('sync-status'))updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');});}
-function backupAllData(){const d={custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,matchData,reqData,dispatchData,sysConfig:getSysConfigPayload()};const b=new Blob([JSON.stringify(d)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`愜易居備份_${new Date().getTime()}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
-function restoreData(i){if(!i.files||!i.files[0])return;const rd=new FileReader();rd.onload=function(e){try{const r=JSON.parse(e.target.result);if(r.custData)custData=r.custData;if(r.contractData)contractData=r.contractData;if(r.staffData)staffData=r.staffData;if(r.attendData)attendData=r.attendData;if(r.ftStaffData)ftStaffData=r.ftStaffData;if(r.ftAttendData)ftAttendData=r.ftAttendData;if(r.talentData)talentData=r.talentData;if(r.supplierData)supplierData=r.supplierData;if(r.matchData)matchData=r.matchData;if(r.reqData)reqData=r.reqData;if(r.dispatchData)dispatchData=r.dispatchData;if(r.sysConfig){if(r.sysConfig.loginLogo)localStorage.setItem('loginLogo',r.sysConfig.loginLogo);if(r.sysConfig.pdfLogo)localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);if(r.sysConfig.loginBg)localStorage.setItem('loginBg',r.sysConfig.loginBg);if(r.sysConfig.priceTable)localStorage.setItem('priceTable',r.sysConfig.priceTable);if(r.sysConfig.adminAcc)localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(r.sysConfig.adminPwd)localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(r.sysConfig.hrAcc)localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(r.sysConfig.hrPwd)localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(r.sysConfig.portalConf)localStorage.setItem('portalConf',r.sysConfig.portalConf);}saveAll();showToast('✅ 還原！');setTimeout(()=>window.location.reload(),1000);}catch(er){showToast('❌ 格式錯誤',true);}};rd.readAsText(i.files[0]);}
+function backupAllData(){const d={custData,contractData,staffData,attendData,ftStaffData,ftAttendData,talentData,supplierData,matchData,reqData,sysConfig:getSysConfigPayload()};const b=new Blob([JSON.stringify(d)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`愜易居備份_${new Date().getTime()}.json`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
+function restoreData(i){if(!i.files||!i.files[0])return;const rd=new FileReader();rd.onload=function(e){try{const r=JSON.parse(e.target.result);if(r.custData)custData=r.custData;if(r.contractData)contractData=r.contractData;if(r.staffData)staffData=r.staffData;if(r.attendData)attendData=r.attendData;if(r.ftStaffData)ftStaffData=r.ftStaffData;if(r.ftAttendData)ftAttendData=r.ftAttendData;if(r.talentData)talentData=r.talentData;if(r.supplierData)supplierData=r.supplierData;if(r.matchData)matchData=r.matchData;if(r.reqData)reqData=r.reqData;if(r.sysConfig){if(r.sysConfig.loginLogo)localStorage.setItem('loginLogo',r.sysConfig.loginLogo);if(r.sysConfig.pdfLogo)localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);if(r.sysConfig.loginBg)localStorage.setItem('loginBg',r.sysConfig.loginBg);if(r.sysConfig.priceTable)localStorage.setItem('priceTable',r.sysConfig.priceTable);if(r.sysConfig.adminAcc)localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(r.sysConfig.adminPwd)localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(r.sysConfig.hrAcc)localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(r.sysConfig.hrPwd)localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(r.sysConfig.portalConf)localStorage.setItem('portalConf',r.sysConfig.portalConf);}saveAll();showToast('✅ 還原！');setTimeout(()=>window.location.reload(),1000);}catch(er){showToast('❌ 格式錯誤',true);}};rd.readAsText(i.files[0]);}
 function autoCreateFolder(){const c=el('c_name').value.trim();if(!c)return showToast('請輸名稱',true);if(el('c_drive').value.trim()!==''&&!confirm('覆蓋？'))return;const b=el('btnCreateFolder');b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:c})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el('c_drive').value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML='<i class="fas fa-magic"></i> 建立';b.disabled=false;});}
 function autoCreateSupplierFolder(nId,dId,p){const s=el(nId).value.trim();if(!s)return showToast('請輸名稱',true);if(el(dId).value.trim()!==''&&!confirm('覆蓋？'))return;const b=el(dId).nextElementSibling;const o=b.innerHTML;b.innerHTML='<i class="fas fa-spinner fa-spin"></i>';b.disabled=true;fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({action:'createFolder',folderName:p+' '+s})}).then(r=>r.json()).then(r=>{if(r.status==='success'){el(dId).value=r.folderUrl;showToast('成功');}else showToast('失敗',true);}).catch(e=>showToast('錯誤',true)).finally(()=>{b.innerHTML=o;b.disabled=false;});}
 
@@ -1023,14 +986,7 @@ function doDownloadPdf(isCloud) {
 }
 
 function renderReqTable(){ 
-  const kw = el('cr_filter_keyword').value.trim().toLowerCase(); 
-  const stat = el('cr_filter_status').value;
-  let l = reqData.filter(x => {
-      let matchKw = (!kw || x.name.toLowerCase().includes(kw) || x.contact.toLowerCase().includes(kw) || (x.dev_name||'').toLowerCase().includes(kw));
-      let matchStat = (stat === 'all' || x.status === stat);
-      return matchKw && matchStat;
-  });
-  const {pagedList, total, totalPages} = getPagedData(l, 'req'); 
+  const {pagedList, total, totalPages} = getPagedData(reqData, 'req'); 
   let h = '';
   pagedList.forEach(item => { 
     const idx = reqData.indexOf(item); 
@@ -1070,53 +1026,6 @@ function clearReqForm(){
   const b = el('btnAddReq'); if(b) b.style.display = 'inline-block'; 
 }
 
-function renderDispatchTable() { 
-  const kw = el('dp_filter_keyword').value.trim().toLowerCase(); 
-  const stat = el('dp_filter_status').value;
-  let l = dispatchData.filter(x => {
-      let matchKw = (!kw || x.company.toLowerCase().includes(kw) || x.role.toLowerCase().includes(kw) || (x.staff||'').toLowerCase().includes(kw));
-      let matchStat = (stat === 'all' || x.status === stat);
-      return matchKw && matchStat;
-  });
-  const {pagedList, total, totalPages} = getPagedData(l, 'dispatch'); 
-  let h = '';
-  pagedList.forEach(item => { 
-    const idx = dispatchData.indexOf(item); 
-    let sColor = item.status==='預計派發日'?'badge-blue':(item.status==='換人等待'?'badge-red':(item.status==='二面日期'?'badge-yellow':'badge-green'));
-    h += `<tr><td><span class="badge ${sColor}">${item.status}</span></td><td style="font-weight:bold;color:#1e293b;">${item.company}</td><td>${item.role}</td><td>${item.num}</td><td>${item.staff||'-'}</td><td>${item.tel||'-'}</td><td>${item.interview||'-'}</td><td>${item.date||'-'}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editDispatch(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delDispatch(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
-  });
-  el('dispatchTable').innerHTML = h || '<tr><td colspan="10" style="text-align:center;">目前無待派發案件</td></tr>'; 
-  renderPagination('dispatch', total, totalPages);
-}
-function addDispatch(){ 
-  const o = {company:el('dp_company').value.trim(), role:el('dp_role').value.trim(), num:el('dp_num').value, status:el('dp_status').value, staff:el('dp_staff').value.trim(), tel:el('dp_tel').value.trim(), date:el('dp_date').value, interview:el('dp_interview').value, remark:el('dp_remark').value.trim()}; 
-  if(!o.company || !o.role) return showToast('請輸入公司與職位', true); 
-  dispatchData.push(o); saveAll();
-  renderDispatchTable(); clearDispatchForm(); showToast('✅ 案件已新增'); renderDashboard();
-}
-function editDispatch(i){ 
-  const d = dispatchData[i];
-  el('dp_company').value=d.company||''; el('dp_role').value=d.role||''; el('dp_num').value=d.num||1; el('dp_status').value=d.status||'招募中'; el('dp_staff').value=d.staff||''; el('dp_tel').value=d.tel||''; el('dp_date').value=d.date||''; el('dp_interview').value=d.interview||''; el('dp_remark').value=d.remark||''; 
-  editDispatchIndex = i;
-  el('btnUpdateDispatch').style.display = 'inline-block'; const b = el('btnAddDispatch'); if(b) b.style.display = 'none'; 
-}
-function updateDispatch(){ 
-  if(editDispatchIndex < 0) return;
-  const o = {company:el('dp_company').value.trim(), role:el('dp_role').value.trim(), num:el('dp_num').value, status:el('dp_status').value, staff:el('dp_staff').value.trim(), tel:el('dp_tel').value.trim(), date:el('dp_date').value, interview:el('dp_interview').value, remark:el('dp_remark').value.trim()}; 
-  dispatchData[editDispatchIndex] = {...dispatchData[editDispatchIndex], ...o}; 
-  saveAll(); renderDispatchTable(); clearDispatchForm(); showToast('✅ 案件已更新'); renderDashboard();
-}
-function delDispatch(i){ 
-  if(!confirm('確定要刪除這筆案件嗎？')) return; 
-  dispatchData.splice(i,1); saveAll(); renderDispatchTable(); showToast('已刪除'); renderDashboard();
-}
-function clearDispatchForm(){ 
-  document.querySelectorAll('#page-dispatch .grid input').forEach(i => i.value=''); 
-  el('dp_num').value='1'; el('dp_status').value='招募中';
-  editDispatchIndex = -1; el('btnUpdateDispatch').style.display = 'none';
-  const b = el('btnAddDispatch'); if(b) b.style.display = 'inline-block'; 
-}
-
 function showAdminPage(p) {
   try {
       if(el('admin-screen').classList.contains('mode-hr') && ['customer','contract','point','bill','boss','supplier','appearance','settings'].includes(p)) return showToast('營業專屬', true);
@@ -1135,7 +1044,6 @@ function showAdminPage(p) {
       if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); }
       if(p==='match') { clearMatchForm(); renderMatchTable(); }
       if(p==='req') { clearReqForm(); renderReqTable(); }
-      if(p==='dispatch') { clearDispatchForm(); renderDispatchTable(); }
       if(p==='boss') showBoss();
       if(p==='dashboard') renderDashboard();
   } catch(e) {}
@@ -1144,7 +1052,7 @@ function showAdminPage(p) {
 function resetPage(m) { pageConfig.currentPage[m]=1; }
 function getPagedData(l,m) { let t=Math.max(1,Math.ceil(l.length/pageConfig.pageSize)); if(pageConfig.currentPage[m]>t) pageConfig.currentPage[m]=t; const s=(pageConfig.currentPage[m]-1)*pageConfig.pageSize; return {pagedList:l.slice(s,s+pageConfig.pageSize),total:l.length,totalPages:t}; }
 function renderPagination(m, t, tp) { const p=pageConfig.currentPage[m], b=el(`${m}TableBox`); if(!b) return; const o=b.parentNode.querySelector('.pagination'); if(o) o.remove(); b.insertAdjacentHTML('afterend', `<div class="pagination"><button onclick="changePage('${m}',1)" ${p===1?'disabled':''}>首頁</button><button onclick="changePage('${m}',${p-1})" ${p===1?'disabled':''}>上一頁</button><span>第 ${p}/${tp} 頁 </span><button onclick="changePage('${m}',${p+1})" ${p>=tp?'disabled':''}>下一頁</button></div>`); }
-function changePage(m,tp) { pageConfig.currentPage[m]=tp; switch(m){ case'customer':renderCustTable();break; case'contract':renderContractTable();break; case'staff':renderStaffTable();break; case'attend':renderAttend();break; case'point':renderPoint();break; case'bill':renderBill();break; case'salary':renderSalary();break; case'ft_staff':renderFtStaffTable();break; case'ft_attend':renderFtAttendTable();break; case'talent':renderTalentTable();break; case'supplier':renderSupplierTable();break; case'match':renderMatchTable();break; case'req':renderReqTable();break; case'dispatch':renderDispatchTable();break; } }
+function changePage(m,tp) { pageConfig.currentPage[m]=tp; switch(m){ case'customer':renderCustTable();break; case'contract':renderContractTable();break; case'staff':renderStaffTable();break; case'attend':renderAttend();break; case'point':renderPoint();break; case'bill':renderBill();break; case'salary':renderSalary();break; case'ft_staff':renderFtStaffTable();break; case'ft_attend':renderFtAttendTable();break; case'talent':renderTalentTable();break; case'supplier':renderSupplierTable();break; case'match':renderMatchTable();break; case'req':renderReqTable();break; } }
 
 function clearFilters(page) {
   if(page === 'customer') { el('cust_filter_company').value=''; el('cust_filter_coop').value='all'; resetPage('customer'); renderCustTable(); }
@@ -1161,8 +1069,6 @@ function clearFilters(page) {
   else if(page === 'bill') { el('bill_filter_company').value=''; el('bill_cycle').value='26'; if(el('bill_start_date'))el('bill_start_date').value=''; if(el('bill_end_date'))el('bill_end_date').value=''; toggleBillManualDate(); el('bill_filter_year').value='all'; el('bill_filter_month').value='all'; resetPage('bill'); renderBill(); }
   else if(page === 'salary') { el('sal_filter_staff').value=''; el('sal_filter_year').value='all'; el('sal_filter_month').value='all'; resetPage('salary'); renderSalary(); }
   else if(page === 'boss') { el('boss_cust_filter').value=''; el('boss_year').value='all'; el('boss_month').value='all'; resetPage('boss'); showBoss(); }
-  else if(page === 'req') { el('cr_filter_keyword').value=''; el('cr_filter_status').value='all'; resetPage('req'); renderReqTable(); }
-  else if(page === 'dispatch') { el('dp_filter_keyword').value=''; el('dp_filter_status').value='all'; resetPage('dispatch'); renderDispatchTable(); }
 }
 
 function fillFilters() {
@@ -1213,7 +1119,8 @@ function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid inp
 
 function calculateMilestones(staffName, boxId, contentId) {
     const box = el(boxId); const content = el(contentId);
-    if (!staffName || staffName === '全部人員') { if(box) box.style.display = 'none'; return; }let records = attendData.filter(x => x.staff === staffName).sort((a, b) => new Date(a.date) - new Date(b.date));
+    if (!staffName || staffName === '全部人員') { if(box) box.style.display = 'none'; return; }
+    let records = attendData.filter(x => x.staff === staffName).sort((a, b) => new Date(a.date) - new Date(b.date));
     let cumulativeHours = 0; let milestones = { 175: null, 350: null, 525: null, 700: null };
     let mKeys = [175, 350, 525, 700];
     records.forEach(r => { let h = getItemSalaryHours(r); if (h > 0) { let prev = cumulativeHours; cumulativeHours += h; for (let k of mKeys) { if (prev < k && cumulativeHours >= k && !milestones[k]) { milestones[k] = r.date; } } } });
@@ -1372,7 +1279,7 @@ function clearMatchForm(){
   const b = el('btnAddMatch'); if(b) b.style.display = 'inline-block'; 
 }
 
-function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===ts)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
+function renderTalentTable(){ const tr=el('tp_filter_role').value.toLowerCase(), ts=el('tp_filter_status').value; let l=talentData.filter(x=>(ts==='all'||x.status===fs)&&(!tr||(x.role||'').toLowerCase().includes(tr))); const {pagedList,total,totalPages}=getPagedData(l,'talent');
   let h='';
   pagedList.forEach(item=>{ const idx=talentData.indexOf(item); let sc='badge-blue'; if(item.status==='已錄取')sc='badge-green'; else if(item.status==='淘汰')sc='badge-red'; let rb=item.resume?`<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i></button>`:'-'; h+=`<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${rb}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; });
   el('talentTable').innerHTML=h||'<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; renderPagination('talent',total,totalPages); }
@@ -1557,7 +1464,7 @@ function renderDashboard(){
   
   if(el('dash_sales_req')) el('dash_sales_req').textContent = reqData.filter(x=>x.status==='待追蹤').length;
   if(el('dash_sales_win')) el('dash_sales_win').textContent = reqData.filter(x=>x.status==='轉正式公司資料').length;
-  if(el('dash_sales_dispatch')) el('dash_sales_dispatch').textContent = dispatchData.filter(x=>x.status!=='已完成').length;
+  if(el('dash_sales_loss')) el('dash_sales_loss').textContent = reqData.filter(x=>x.status==='拒絕').length;
   
   aA.forEach(s=>{ let m=[]; if(!s.doc_id)m.push('<span class="badge badge-red">身分</span>'); if(!s.doc_bank)m.push('<span class="badge badge-red">存摺</span>'); if(!s.doc_contract)m.push('<span class="badge badge-red">合約</span>'); if(!s.doc_resume)m.push('<span class="badge badge-red">履歷</span>'); if(m.length>0){ const iF=ftStaffData.some(x=>x.name===s.name), tg=iF?'<span class="badge badge-blue">正職</span>':'<span class="badge badge-yellow">派遣</span>'; mH+=`<tr><td style="font-weight:bold;color:#444;">${s.name} ${tg}</td><td><div style="display:flex;flex-wrap:wrap;gap:5px;">${m.join('')}</div></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('${iF?'ft_staff':'staff'}'); setTimeout(()=>${iF?'editFtStaff':'editStaff'}(${iF?ftStaffData.findIndex(x=>x.name===s.name):staffData.findIndex(x=>x.name===s.name)}), 300);"><i class="fas fa-edit"></i></button></td></tr>`; } });
   el('dash_missing_docs_table').innerHTML=mH||'<tr><td colspan="3" style="text-align:center; color:#999; padding: 20px;">資料已繳齊</td></tr>';
