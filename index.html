@@ -284,7 +284,6 @@
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('contract')"><i class="fas fa-file-contract"></i> 合約方案</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('supplier')"><i class="fas fa-truck"></i> 供應商及帳款</a></li>
                 <li class="ws-business"><a onclick="showAdminPage('attend')"><i class="fas fa-clock"></i> 派遣記錄</a></li>
-                <li class="ws-business"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('point')"><i class="fas fa-calculator"></i> 點數統計</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('bill')"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</a></li>
                 <li class="ws-business"><a onclick="showAdminPage('salary')"><i class="fas fa-wallet"></i> 派遣薪資計算</a></li>
@@ -343,7 +342,7 @@
                     <button class="btn btn-success ws-hr" onclick="showAdminPage('ft_staff');" style="margin:0;"><i class="fas fa-user-tie"></i> 新增正職員工</button>
                     <button class="btn btn-excel ws-hr" onclick="showAdminPage('ft_attend');" style="margin:0;"><i class="fas fa-calendar-check"></i> 新增正職出勤</button>
                     <button class="btn btn-warning ws-sales" onclick="showAdminPage('req');" style="margin:0;"><i class="fas fa-comment-dots"></i> 新增客戶追蹤</button>
-                    <button class="btn btn-excel ws-sales ws-hr ws-business" onclick="showAdminPage('dispatch');" style="margin:0;"><i class="fas fa-tasks"></i> 新增待派發案件</button>
+                    <button class="btn btn-excel ws-sales ws-hr" onclick="showAdminPage('dispatch');" style="margin:0;"><i class="fas fa-tasks"></i> 新增待派發案件</button>
                 </div>
                 
                 <div class="ws-business sys-auth">
@@ -400,7 +399,49 @@
                 </div>
             </div>
 
-            <div class="page" id="page-req"><div class="page-title"><i class="fas fa-comment-dots"></i> 客戶紀錄追蹤表</div><div class="grid" style="background:#f8fafc;padding:25px;border-radius:12px;border:1px solid #e2e8f0;"><div><label>公司名稱 *</label><input id="cr_name" placeholder="請輸入完整公司名稱" required></div><div><label>統一編號</label><input id="cr_tax" placeholder="8碼數字"></div><div><label>產業別</label><input id="cr_industry" placeholder="例如：餐飲業、科技業"></div><div><label>公司規模(資本額)</label><input id="cr_scale" placeholder="例如：500萬"></div><div><label>主要聯絡窗口 *</label><input id="cr_contact" placeholder="請輸入聯絡人姓名" required></div><div><label>職稱</label><input id="cr_title" placeholder="例如：經理、負責人"></div><div><label>手機號碼</label><input id="cr_phone" placeholder="09XX-XXX-XXX"></div><div><label>公司電話</label><input id="cr_tel" placeholder="02-XXXX-XXXX"></div><div><label>EMAIL</label><input type="email" id="cr_email" placeholder="example@email.com"></div><div style="display:flex; align-items:flex-end; padding-bottom:10px;"><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; color:#d97706;"><input type="checkbox" id="cr_decision" style="width:18px; height:18px; margin:0;"> 是否為決策者</label></div><div><label>財務窗口</label><input id="cr_finance" placeholder="會計或財務聯絡人"></div><div><label>客戶來源</label><select id="cr_source"><option>點籽響</option><option>業務開發</option><option>保有客</option></select></div><div><label>客戶來源屬性</label><select id="cr_source_attr"><option>承接</option><option>其他</option></select></div><div><label>開發者姓名</label><input id="cr_dev_name" placeholder="負責此案的業務"></div><div><label>狀況</label><select id="cr_status" style="font-weight:bold;"><option>待追蹤</option><option style="color:#059669;">轉正式公司資料</option><option style="color:#ef4444;">拒絕</option></select></div><div style="grid-column: span 3;"><label>備註</label><input id="cr_remark" placeholder="紀錄追蹤進度、對話重點等..."></div></div><button class="btn btn-success" id="btnAddReq" onclick="addReq()"><i class="fas fa-save"></i> 儲存紀錄</button><button class="btn btn-warning" id="btnUpdateReq" onclick="updateReq()" style="display:none"><i class="fas fa-edit"></i> 修改紀錄</button><button class="btn" style="background:#64748b;" onclick="clearReqForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋公司：</label><input type="text" id="cr_filter_keyword" placeholder="手打關鍵字" oninput="resetPage('req'); renderReqTable()"><label>狀態：</label><select id="cr_filter_status" onchange="resetPage('req'); renderReqTable()"><option value="all">全部</option><option>待追蹤</option><option>轉正式公司資料</option><option>拒絕</option></select><button class="btn btn-clear-filter" onclick="clearFilters('req')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('reqTableBox','客戶需求追蹤')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive" style="margin-top:5px; border-top:2px solid #e2e8f0; padding-top:20px;"><table id="reqTableBox"><thead><tr><th>狀態</th><th>公司名稱</th><th>聯絡窗口</th><th>手機號碼</th><th>來源</th><th>開發者</th><th>備註</th><th>操作</th></tr></thead><tbody id="reqTable"></tbody></table></div></div>
+            <div class="page" id="page-req">
+                <div class="page-title"><i class="fas fa-comment-dots"></i> 客戶需求單管理</div>
+                <div style="margin-bottom: 20px;">
+                    <a href="https://forms.gle/k8gK9NMhns6LvofV7" target="_blank" class="btn" style="background:#3b82f6; text-decoration:none; display:inline-block;"><i class="fas fa-external-link-alt"></i> 前往填寫 Google 需求單</a>
+                    <button class="btn btn-sync" onclick="syncReqFromForm()"><i class="fas fa-cloud-download-alt"></i> 從 Google 雲端表單同步</button>
+                </div>
+                <div class="grid" style="background:#f8fafc;padding:25px;border-radius:12px;border:1px solid #e2e8f0;">
+                    <div><label>公司名稱 *</label><input id="cr_name" placeholder="請輸入完整公司名稱" required></div>
+                    <div><label>統一編號</label><input id="cr_tax" placeholder="8碼數字"></div>
+                    <div><label>產業別</label><input id="cr_industry" placeholder="例如：餐飲業、科技業"></div>
+                    <div><label>公司規模(資本額)</label><input id="cr_scale" placeholder="例如：500萬"></div>
+                    <div><label>主要聯絡窗口 *</label><input id="cr_contact" placeholder="請輸入聯絡人姓名" required></div>
+                    <div><label>職稱</label><input id="cr_title" placeholder="例如：經理、負責人"></div>
+                    <div><label>手機號碼</label><input id="cr_phone" placeholder="09XX-XXX-XXX"></div>
+                    <div><label>公司電話</label><input id="cr_tel" placeholder="02-XXXX-XXXX"></div>
+                    <div><label>EMAIL</label><input type="email" id="cr_email" placeholder="example@email.com"></div>
+                    <div style="display:flex; align-items:flex-end; padding-bottom:10px;"><label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:bold; color:#d97706;"><input type="checkbox" id="cr_decision" style="width:18px; height:18px; margin:0;"> 是否為決策者</label></div>
+                    <div><label>財務窗口</label><input id="cr_finance" placeholder="會計或財務聯絡人"></div>
+                    <div><label>客戶來源</label><select id="cr_source"><option>線上需求單</option><option>點籽響</option><option>業務開發</option><option>保有客</option></select></div>
+                    <div><label>業務姓名 *</label><input id="cr_dev_name" placeholder="負責此案的業務" required></div>
+                    <div><label>目前狀況</label><select id="cr_status" style="font-weight:bold;"><option style="color:#ef4444;">待處理</option><option style="color:#f59e0b;">接手中</option><option style="color:#10b981;">已結案</option></select></div>
+                    <div style="grid-column: span 2;"><label>備註</label><input id="cr_remark" placeholder="紀錄追蹤進度、需求重點等..."></div>
+                </div>
+                <button class="btn btn-success" id="btnAddReq" onclick="addReq()"><i class="fas fa-save"></i> 儲存需求單</button>
+                <button class="btn btn-warning" id="btnUpdateReq" onclick="updateReq()" style="display:none"><i class="fas fa-edit"></i> 修改</button>
+                <button class="btn" style="background:#64748b;" onclick="clearReqForm()"><i class="fas fa-eraser"></i> 清空</button>
+                
+                <div class="filter-bar" style="margin-top: 20px;">
+                    <label>搜尋公司：</label><input type="text" id="cr_filter_keyword" placeholder="關鍵字..." oninput="resetPage('req'); renderReqTable()">
+                    <label>狀態：</label>
+                    <select id="cr_filter_status" onchange="resetPage('req'); renderReqTable()">
+                        <option value="all">全部</option>
+                        <option>待處理</option>
+                        <option>接手中</option>
+                        <option>已結案</option>
+                    </select>
+                    <button class="btn btn-clear-filter" onclick="clearFilters('req')"><i class="fas fa-broom"></i> 清除搜尋</button>
+                    <button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('reqTableBox','客戶需求單')"><i class="fas fa-file-excel"></i> 匯出</button>
+                </div>
+                <div class="table-responsive" style="margin-top:5px; border-top:2px solid #e2e8f0; padding-top:20px;">
+                    <table id="reqTableBox"><thead><tr><th>狀態</th><th>公司名稱</th><th>聯絡窗口</th><th>手機號碼</th><th>來源</th><th>業務</th><th>備註</th><th>操作</th></tr></thead><tbody id="reqTable"></tbody></table>
+                </div>
+            </div>
             
             <div class="page" id="page-dispatch"><div class="page-title"><i class="fas fa-tasks"></i> 待派發案件管理</div><div class="grid" style="background:#f8fafc;padding:25px;border-radius:12px;border:1px solid #e2e8f0;"><div><label>公司名稱 *</label><input list="list_cust" id="dp_company" required></div><div><label>職位 *</label><input id="dp_role" required></div><div><label>需求人數</label><input type="number" id="dp_num" value="1" min="1"></div><div><label>案件狀態</label><select id="dp_status" style="font-weight:bold;"><option>招募中</option><option style="color:#f59e0b;">二面日期</option><option style="color:#0ea5e9;">預計派發日</option><option style="color:#ef4444;">換人等待</option><option style="color:#10b981;">已完成</option></select></div><div><label>派遣人員姓名</label><input list="list_staff" id="dp_staff" placeholder="已確認人選時填寫"></div><div><label>聯繫電話</label><input id="dp_tel" placeholder="人員電話"></div><div><label>實際到職或派發日期</label><input type="date" id="dp_date"></div><div><label>二面日期</label><input type="date" id="dp_interview"></div><div style="grid-column: span 4;"><label>備註與交接事項</label><input id="dp_remark" placeholder="交接細節、注意事項等..."></div></div><button class="btn btn-success" id="btnAddDispatch" onclick="addDispatch()"><i class="fas fa-save"></i> 新增案件</button><button class="btn btn-warning" id="btnUpdateDispatch" onclick="updateDispatch()" style="display:none"><i class="fas fa-edit"></i> 修改案件</button><button class="btn" style="background:#64748b;" onclick="clearDispatchForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋公司或職位：</label><input type="text" id="dp_filter_keyword" placeholder="手打關鍵字" oninput="resetPage('dispatch'); renderDispatchTable()"><label>狀態：</label><select id="dp_filter_status" onchange="resetPage('dispatch'); renderDispatchTable()"><option value="all">全部狀態</option><option>招募中</option><option>二面日期</option><option>預計派發日</option><option>換人等待</option><option>已完成</option></select><button class="btn btn-clear-filter" onclick="clearFilters('dispatch')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('dispatchTableBox','待派發案件')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="dispatchTableBox"><thead><tr><th>狀態</th><th>公司名稱</th><th>職位</th><th>人數</th><th>派遣人員</th><th>聯繫電話</th><th>二面日</th><th>派發日</th><th>備註與交接</th><th>操作</th></tr></thead><tbody id="dispatchTable"></tbody></table></div></div>
             
@@ -831,7 +872,7 @@ function standardizeData() {
     custData = (custData||[]).filter(x=>x).map(x=>({...x,coop:x.coop||'正合作',name:x.name||'',work_addr:x.work_addr||''}));
     contractData = (contractData||[]).filter(x=>x).map(x=>({...x,customer:x.customer||''}));
     matchData = (matchData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tel:x.tel||'',region:x.region||'',transport:x.transport||'',skills:x.skills||'',exp:x.exp||'',remark:x.remark||''}));
-    reqData = (reqData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tax:x.tax||'',industry:x.industry||'',scale:x.scale||'',contact:x.contact||'',title:x.title||'',phone:x.phone||'',tel:x.tel||'',email:x.email||'',decision:!!x.decision,finance:x.finance||'',source:x.source||'業務開發',source_attr:x.source_attr||'承接',dev_name:x.dev_name||'',status:x.status||'待追蹤',remark:x.remark||''}));
+    reqData = (reqData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tax:x.tax||'',industry:x.industry||'',scale:x.scale||'',contact:x.contact||'',title:x.title||'',phone:x.phone||'',tel:x.tel||'',email:x.email||'',decision:!!x.decision,finance:x.finance||'',source:x.source||'業務開發',source_attr:x.source_attr||'承接',dev_name:x.dev_name||'',status:x.status||'待處理',remark:x.remark||''}));
     dispatchData = (dispatchData||[]).filter(x=>x).map(x=>({...x, company:x.company||'', role:x.role||'', num:x.num||1, status:x.status||'招募中', staff:x.staff||'', tel:x.tel||'', date:x.date||'', interview:x.interview||'', remark:x.remark||''}));
 }
 
@@ -993,6 +1034,8 @@ function saveAll() {
 }
 
 function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
+function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
+
 
 function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
 
@@ -1048,14 +1091,14 @@ function renderReqTable() {
     const kw = el('cr_filter_keyword').value.trim().toLowerCase(); const stat = el('cr_filter_status').value; 
     let l = reqData.filter(x => { let matchKw = (!kw || x.name.toLowerCase().includes(kw) || x.contact.toLowerCase().includes(kw) || (x.dev_name||'').toLowerCase().includes(kw)); let matchStat = (stat === 'all' || x.status === stat); return matchKw && matchStat; }); 
     const {pagedList, total, totalPages} = getPagedData(l, 'req'); let h = ''; 
-    pagedList.forEach(item => { const idx = reqData.indexOf(item); let sColor = item.status==='轉正式公司資料'?'badge-green':(item.status==='拒絕'?'badge-red':'badge-yellow'); let decStr = item.decision ? '<i class="fas fa-star" style="color:#f59e0b;font-size:12px;margin-left:4px;" title="決策者"></i>' : ''; h += `<tr><td><span class="badge ${sColor}">${item.status}</span></td><td style="font-weight:bold;color:#1e293b;">${item.name}</td><td>${item.contact}${decStr}<br><span style="color:#94a3b8;font-size:11px;">${item.title||'-'}</span></td><td>${item.phone||'-'}</td><td>${item.source||'-'}</td><td>${item.dev_name||'-'}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editReq(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delReq(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); 
-    el('reqTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">目前無客戶追蹤紀錄</td></tr>'; renderPagination('req', total, totalPages); 
+    pagedList.forEach(item => { const idx = reqData.indexOf(item); let sColor = item.status==='已結案'?'badge-green':(item.status==='待處理'?'badge-red':'badge-yellow'); let decStr = item.decision ? '<i class="fas fa-star" style="color:#f59e0b;font-size:12px;margin-left:4px;" title="決策者"></i>' : ''; h += `<tr><td><span class="badge ${sColor}">${item.status}</span></td><td style="font-weight:bold;color:#1e293b;">${item.name}</td><td>${item.contact}${decStr}<br><span style="color:#94a3b8;font-size:11px;">${item.title||'-'}</span></td><td>${item.phone||'-'}</td><td>${item.source||'-'}</td><td>${item.dev_name||'-'}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editReq(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delReq(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); 
+    el('reqTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">目前無客戶需求紀錄</td></tr>'; renderPagination('req', total, totalPages); 
 }
 function addReq() { const o = { name:el('cr_name').value.trim(), tax:el('cr_tax').value.trim(), industry:el('cr_industry').value.trim(), scale:el('cr_scale').value.trim(), contact:el('cr_contact').value.trim(), title:el('cr_title').value.trim(), phone:el('cr_phone').value.trim(), tel:el('cr_tel').value.trim(), email:el('cr_email').value.trim(), decision:el('cr_decision').checked, finance:el('cr_finance').value.trim(), source:el('cr_source').value, source_attr:el('cr_source_attr').value, dev_name:el('cr_dev_name').value.trim(), status:el('cr_status').value, remark:el('cr_remark').value.trim() }; if(!o.name || !o.contact) return showToast('請輸入公司與聯絡窗口', true); reqData.push(o); saveAll(); renderReqTable(); clearReqForm(); showToast('✅ 紀錄已儲存'); renderDashboard(); }
 function editReq(i) { const d = reqData[i]; el('cr_name').value=d.name||''; el('cr_tax').value=d.tax||''; el('cr_industry').value=d.industry||''; el('cr_scale').value=d.scale||''; el('cr_contact').value=d.contact||''; el('cr_title').value=d.title||''; el('cr_phone').value=d.phone||''; el('cr_tel').value=d.tel||''; el('cr_email').value=d.email||''; el('cr_decision').checked=d.decision; el('cr_finance').value=d.finance||''; el('cr_source').value=d.source||'點籽響'; el('cr_source_attr').value=d.source_attr||'承接'; el('cr_dev_name').value=d.dev_name||''; el('cr_status').value=d.status||'待追蹤'; el('cr_remark').value=d.remark||''; editReqIndex = i; el('btnUpdateReq').style.display = 'inline-block'; const b = el('btnAddReq'); if(b) b.style.display = 'none'; }
 function updateReq() { if(editReqIndex < 0) return; const o = { name:el('cr_name').value.trim(), tax:el('cr_tax').value.trim(), industry:el('cr_industry').value.trim(), scale:el('cr_scale').value.trim(), contact:el('cr_contact').value.trim(), title:el('cr_title').value.trim(), phone:el('cr_phone').value.trim(), tel:el('cr_tel').value.trim(), email:el('cr_email').value.trim(), decision:el('cr_decision').checked, finance:el('cr_finance').value.trim(), source:el('cr_source').value, source_attr:el('cr_source_attr').value, dev_name:el('cr_dev_name').value.trim(), status:el('cr_status').value, remark:el('cr_remark').value.trim() }; reqData[editReqIndex] = {...reqData[editReqIndex], ...o}; saveAll(); renderReqTable(); clearReqForm(); showToast('✅ 紀錄已更新'); renderDashboard(); }
 function delReq(i) { if(!confirm('確定要刪除這筆客戶紀錄嗎？')) return; reqData.splice(i,1); saveAll(); renderReqTable(); showToast('已刪除'); renderDashboard(); }
-function clearReqForm() { document.querySelectorAll('#page-req .grid input').forEach(i => { if(i.type==='checkbox') i.checked=false; else i.value=''; }); el('cr_source').value='點籽響'; el('cr_source_attr').value='承接'; el('cr_status').value='待追蹤'; editReqIndex = -1; el('btnUpdateReq').style.display = 'none'; const b = el('btnAddReq'); if(b) b.style.display = 'inline-block'; }
+function clearReqForm() { document.querySelectorAll('#page-req .grid input').forEach(i => { if(i.type==='checkbox') i.checked=false; else i.value=''; }); el('cr_source').value='線上需求單'; el('cr_source_attr').value='承接'; el('cr_status').value='待處理'; editReqIndex = -1; el('btnUpdateReq').style.display = 'none'; const b = el('btnAddReq'); if(b) b.style.display = 'inline-block'; }
 
 function renderDispatchTable() { 
     const kw = el('dp_filter_keyword').value.trim().toLowerCase(); const stat = el('dp_filter_status').value; 
@@ -2355,7 +2398,8 @@ function initStaffFrontend() {
     if(!currentLoginStaff) return;
     if(el('staff-welcome-name')) el('staff-welcome-name').textContent = currentLoginStaff.name || '';
     if(el('staff-profile-name')) el('staff-profile-name').textContent = currentLoginStaff.name || '-';
-    if(el('staff-profile-tel')) el('staff-profile-tel').textContent = currentLoginStaff.tel || '-'; 
+    if(el('staff-profile-tel')) el('staff-profile-tel').textContent = currentLoginStaf
+f.tel || '-'; 
     if(el('staff-profile-id')) el('staff-profile-id').textContent = currentLoginStaff.id || '-'; 
     if(el('staff-profile-acc')) el('staff-profile-acc').textContent = currentLoginStaff.account || '-';
     
@@ -2375,8 +2419,7 @@ function showStaffPage(p, a) {
     if(t) t.classList.add('active'); 
     document.querySelectorAll('#staff-screen .sidebar-nav a').forEach(x => x.classList.remove('active')); 
     if(a) a.classList.add('active'); 
-   
- localStorage.setItem('staffPage', p);
+    localStorage.setItem('staffPage', p);
 }
 
 function renderStaffRecords() { 
