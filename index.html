@@ -1045,9 +1045,7 @@ function exportBossSalaryExcel() {
     tb.innerHTML = head + body; XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "薪資表"}), `愜易居_${y}年${m}月_老闆專用薪資彙整表.xlsx`); showToast('✅ 匯出成功'); 
 }
 
-</strong> (門檻 $${target.toLocaleString()})<br><span style="font-size:14px;">新客獎金: $${Math.round(newSales*newRate).toLocaleString()} + 續約獎金: $${Math.round(renewSales*renewRate).toLocaleString()}</span><br><strong style="font-size:20px; color:#047857; margin-top:5px; display:inline-block;">💰 本月預估總發放獎金：$${bonus.toLocaleString()}</strong>`; } 
-    else { let diff = target - total; resEl.style.background = '#fef2f2'; resEl.style.border = '1px solid #ef4444'; resEl.style.color = '#991b1b'; resEl.innerHTML = `⚠️ <strong>尚未達標</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong><br>距離目標 $${target.toLocaleString()} 還差 <strong style="color:#dc2626;">$${diff.toLocaleString()}</strong>，請繼續加油！<br><span style="font-size:13px; color:#ef4444;">(未達標目前系統無法計算獎金)</span>`; }
-}
+
 
 function loadDataFromCloud(forceRender=false) {
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
@@ -2335,8 +2333,7 @@ function exportAllStaffHoursSummary() {
     staffData.forEach(s => {
         if(s.status === '在職') {
             let info = getStaffCurrentHourlyInfo(s.name);
-            let diff = info.nextTier ? (info.nextT
-ier - info.hours).toFixed(1) : '-';
+            let diff = info.nextTier ? (info.nextTier - info.hours).toFixed(1) : '-';
             summary.push({
                 name: s.name,
                 rule: info.rule,
@@ -2352,7 +2349,8 @@ ier - info.hours).toFixed(1) : '-';
     summary.sort((a,b) => parseFloat(a.hoursNeeded === '-' ? 9999 : a.hoursNeeded) - parseFloat(b.hoursNeeded === '-' ? 9999 : b.hoursNeeded));
     
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="7" style="font-size:20px;font-weight:bold;text-align:center;">愜易居 - 在職人員 時薪升級進度總表</th></tr><tr><th>人員姓名</th><th>目前計薪方案</th><th>生涯累積總工時</th><th>目前時薪</th><th>下一階門檻 (h)</th><th>下一階時薪</th><th>距離升級尚需 (h)</th></tr></thead><tbody>`;
+    let head = `<thead><tr><th colspan="7" style="font-size:20px;font-weight:bold;text-align:center;">愜易居 - 在職人員 時薪升級進度總表</th></tr><tr><th>人員姓名</th><th>目前計薪方案</th><th>生涯累積總工時</th><th>目前時薪</th><th>下一階門檻 (h)</th><th>下一階
+時薪</th><th>距離升級尚需 (h)</th></tr></thead><tbody>`;
     let body = '';
     
     summary.forEach(s => {
