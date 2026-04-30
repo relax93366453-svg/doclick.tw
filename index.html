@@ -375,8 +375,9 @@
                 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                     <div class="panel ws-sales" style="grid-column:1/-1; border-top:3px solid #8b5cf6;">
+                        <!-- 保留原本的試算區塊 -->
                         <div style="margin-bottom:25px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">
-                            <h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-calculator" style="color:#8b5cf6;"></i> 業務分潤與獎金自動試算</h3>
+                            <h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-calculator" style="color:#8b5cf6;"></i> 業務分潤與獎金手動試算區</h3>
                             <div class="grid" style="grid-template-columns: repeat(5, 1fr); background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
                                 <div><label>當月標準銷售目標</label><input type="number" id="sales_target" value="500000" oninput="calcSalesBonus()" style="font-weight:bold; color:#1e293b;"></div>
                                 <div><label style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客戶累積業績</label><input type="number" id="sales_new" value="350000" oninput="calcSalesBonus()"></div>
@@ -387,6 +388,7 @@
                             <div id="sales_bonus_result" style="margin-top:15px; padding:15px 20px; border-radius:8px; font-size:16px; line-height:1.8; display:none;"></div>
                         </div>
 
+                        <!-- 加入新的動態儀表板區塊 -->
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                             <h3 style="font-size:16px;font-weight:bold; margin:0;"><i class="fas fa-chart-pie" style="color:#8b5cf6;"></i> 業務績效與即時獎金動態儀表板</h3>
                             <div class="sys-auth" style="display:flex; gap:10px; align-items:center;">
@@ -397,7 +399,7 @@
                         <div id="sales_dynamic_dashboard" style="background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom: 20px;"></div>
                         <h4 style="margin-top:20px; font-size:15px; font-weight:bold; color:#1e293b;"><i class="fas fa-trophy" style="color:#f59e0b;"></i> 業務績效當月排行榜</h4>
                         <div class="table-responsive" style="margin-top:10px;">
-                            <table style="width:100%;"><thead><tr><th>排名</th><th>業務姓名</th><th>當月目標</th><th>新客業績</th><th>續約業績</th><th>總累積業績</th><th>達成率</th><th>進度狀態</th></tr></thead><tbody id="dash_sales_leaderboard"></tbody></table>
+                            <table style="width:100%;"><thead><tr><th>排名</th><th>業務姓名</th><th>當月目標</th><th>新客累積</th><th>續約累積</th><th>總業績</th><th>達成率</th><th>進度狀態</th></tr></thead><tbody id="dash_sales_leaderboard"></tbody></table>
                         </div>
                     </div>
                     
@@ -1036,8 +1038,8 @@ function calcSalesBonus() {
     let total = newSales + renewSales, resEl = el('sales_bonus_result');
     if(!resEl) return;
     resEl.style.display = 'block';
-    if(total >= target) { let bonus = Math.round((newSales * newRate) + (renewSales * renewRate)); resEl.style.background = '#ecfdf5'; resEl.style.border = '1px solid #10b981'; resEl.style.color = '#065f46'; resEl.innerHTML = `🎉 <strong>恭喜達標！</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong> (門檻 $${target.toLocaleString()})<br><span style="font-size:14px;">新客獎金: $${Math.round(newSales*newRate).toLocaleString()} + 續約獎金: $${Math.round(renewSales*renewRate).toLocaleString()}</span><br><strong style="font-size:20px; color:#047857; margin-top:5px; display:inline-block;">💰 本月預估總發放獎金：$${bonus.toLocaleString()}</strong>`; } 
-    else { let diff = target - total; resEl.style.background = '#fef2f2'; resEl.style.border = '1px solid #ef4444'; resEl.style.color = '#991b1b'; resEl.innerHTML = `⚠️ <strong>尚未達標</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong><br>距離目標 $${target.toLocaleString()} 還差 <strong style="color:#dc2626;">$${diff.toLocaleString()}</strong>，請繼續加油！<br><span style="font-size:13px; color:#ef4444;">(未達標目前系統無法計算獎金)</span>`; }
+    if(total >= target) { let bonus = Math.round((newSales * newRate) + (renewSales * renewRate)); resEl.style.background = '#ecfdf5'; resEl.style.border = '1px solid #10b981'; resEl.style.color = '#065f46'; resEl.innerHTML = `🎉 <strong>恭喜達標！</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong> (門檻 $${target.toLocaleString()})<br><span style="font-size:14px;">新客獎金: $${Math.round(newSales*newRate).toLocaleString()} + 續約獎金: $${Math.round(renewSales*renewRate).toLocaleString()}</span><br><strong style="font-size:20px; color:#047857; margin-top:5px; display:inline-block;">💰 預估總發放獎金：$${bonus.toLocaleString()}</strong>`; } 
+    else { let diff = target - total; resEl.style.background = '#fef2f2'; resEl.style.border = '1px solid #ef4444'; resEl.style.color = '#991b1b'; resEl.innerHTML = `⚠️ <strong>尚未達標</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong><br>距離目標 $${target.toLocaleString()} 還差 <strong style="color:#dc2626;">$${diff.toLocaleString()}</strong>，請繼續加油！<br><span style="font-size:13px; color:#ef4444;">(未達標目前無法計算獎金)</span>`; }
 }
 
 function renderSalesDashboard() {
@@ -1073,7 +1075,10 @@ function renderSalesDashboard() {
         
         let totalSales = newSales + renewSales;
         let compRate = target > 0 ? (totalSales / target) * 100 : 0;
-        let estBonus = Math.round((newSales * newRate) + (renewSales * renewRate));
+        let estBonus = 0;
+        if (compRate >= 100) {
+             estBonus = Math.round((newSales * newRate) + (renewSales * renewRate));
+        }
         
         leaderboardData.push({ name: rep.name, target: target, newSales: newSales, renewSales: renewSales, sales: totalSales, compRate: compRate, estBonus: estBonus });
     });
@@ -1101,8 +1106,8 @@ function renderSalesDashboard() {
                 <h4 style="color:#64748b; margin-bottom:10px;">全體團隊當月累積業績</h4>
                 <div style="font-size:40px; font-weight:900; color:#1e293b; margin-bottom:5px;">$${tSales.toLocaleString()} <span style="font-size:16px;color:#94a3b8;font-weight:normal;">/ 目標 $${tTarget.toLocaleString()}</span></div>
                 <div style="font-size:15px; color:#475569; margin-bottom:15px; font-weight:bold;">
-                    <span style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客：$${tNew.toLocaleString()}</span> ｜ 
-                    <span style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約：$${tRenew.toLocaleString()}</span>
+                    <span style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客累積：$${tNew.toLocaleString()}</span> ｜ 
+                    <span style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約累積：$${tRenew.toLocaleString()}</span>
                 </div>
                 <div style="width:100%; background:#cbd5e1; border-radius:10px; height:18px; overflow:hidden; margin-bottom:10px; border:1px solid #94a3b8;">
                     <div style="width:${Math.min(tRate, 100)}%; background:${cColor}; height:100%; transition:width 0.5s ease;"></div>
@@ -1122,8 +1127,8 @@ function renderSalesDashboard() {
                     <h4 style="color:#64748b; margin-bottom:10px;"><i class="fas fa-user-circle"></i> ${r.name} 個人業績進度</h4>
                     <div style="font-size:35px; font-weight:900; color:#1e293b; margin-bottom:5px;">$${r.sales.toLocaleString()} <span style="font-size:14px;color:#94a3b8;font-weight:normal;">/ 目標 $${r.target.toLocaleString()}</span></div>
                     <div style="font-size:14px; color:#475569; margin-bottom:15px; font-weight:bold;">
-                        <span style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客：$${r.newSales.toLocaleString()}</span> ｜ 
-                        <span style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約：$${r.renewSales.toLocaleString()}</span>
+                        <span style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客累積：$${r.newSales.toLocaleString()}</span> ｜ 
+                        <span style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約累積：$${r.renewSales.toLocaleString()}</span>
                     </div>
                     <div style="width:100%; background:#cbd5e1; border-radius:10px; height:12px; overflow:hidden; margin-bottom:10px;">
                         <div style="width:${Math.min(r.compRate, 100)}%; background:${cColor}; height:100%; transition:width 0.5s ease;"></div>
@@ -1133,13 +1138,12 @@ function renderSalesDashboard() {
                 <div style="flex:1; min-width:250px; background:#ecfdf5; padding:20px; border-radius:12px; border:1px dashed #34d399; text-align:center;">
                     <h4 style="color:#065f46; margin-bottom:10px;"><i class="fas fa-coins"></i> 即時預估抽成獎金</h4>
                     <div style="font-size:38px; font-weight:900; color:#047857; margin-bottom:10px;">$${r.estBonus.toLocaleString()}</div>
-                    <p style="font-size:12px; color:#064e3b; margin:0; line-height:1.6;">依據設定：新客${r.newSales} x 比例 + 續約${r.renewSales} x 比例</p>
+                    <p style="font-size:12px; color:#064e3b; margin:0; line-height:1.6;">(需達成 100% 目標才會顯示獎金)<br>新客${r.newSales} x 比例 + 續約${r.renewSales} x 比例</p>
                 </div>
             </div>
         `;
     }
 }
-
 
 function loadDataFromCloud(forceRender=false) {
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
@@ -2344,12 +2348,12 @@ function generatePayslipPDF() {
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(!s || s === '全部人員' || y === 'all' || m === 'all') return showToast('請選人員與年月', true); 
     
-    let pm = parseInt(m) - 1, py = parseInt(y); 
+   
+ let pm = parseInt(m) - 1, py = parseInt(y); 
     if(pm === 0) { pm = 12; py -= 1; } 
     let ptxt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25`; 
     
-    let ats = attendData.filter(x => x.staff =
-== s && isDispatchPayrollPeriod(x.date, y, m)).sort((a,b) => new Date(a.date) - new Date(b.date)); 
+    let ats = attendData.filter(x => x.staff === s && isDispatchPayrollPeriod(x.date, y, m)).sort((a,b) => new Date(a.date) - new Date(b.date)); 
     if(ats.length === 0) return showToast('無紀錄', true);
     
     const si = staffData.find(x => x.name === s) || {}; 
@@ -2558,7 +2562,8 @@ function renderDashboard() {
     if(typeof renderSalesDashboard === 'function') renderSalesDashboard();
 }
 
-function initStaffFrontend() {
+function initStaffFrontend
+() {
     if(!currentLoginStaff) return;
     if(el('staff-welcome-name')) el('staff-welcome-name').textContent = currentLoginStaff.name || '';
     if(el('staff-profile-name')) el('staff-profile-name').textContent = currentLoginStaff.name || '-';
