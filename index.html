@@ -228,6 +228,7 @@
     <datalist id="list_cust"></datalist>
     <datalist id="list_staff"></datalist>
     <datalist id="list_ft_staff"></datalist>
+    <datalist id="list_sales_staff"></datalist>
     <datalist id="list_supplier"></datalist>
 
     <div id="preview-overlay">
@@ -287,12 +288,15 @@
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('point')"><i class="fas fa-calculator"></i> 點數統計</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('bill')"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</a></li>
                 <li class="ws-business"><a onclick="showAdminPage('salary')"><i class="fas fa-wallet"></i> 派遣薪資計算</a></li>
+                <li class="ws-business sys-auth"><a onclick="showAdminPage('sales_ledger')"><i class="fas fa-chart-bar"></i> 業務獎金結算</a></li>
+                <li class="ws-business sys-auth"><a onclick="showAdminPage('bonus_rules')"><i class="fas fa-cogs"></i> 獎金規則設定</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('boss')"><i class="fas fa-user-tie"></i> 老闆專區</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('appearance')"><i class="fas fa-paint-brush"></i> 外觀設定</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('settings')"><i class="fas fa-sliders-h"></i> 系統與使用者</a></li>
                 
                 <li class="ws-hr"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 人事儀表板</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('staff')"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
+                <li class="ws-hr"><a onclick="showAdminPage('sales_staff')"><i class="fas fa-user-tie"></i> 業務人員管理</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('match')"><i class="fas fa-people-arrows"></i> 派工媒合平台</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
@@ -302,7 +306,7 @@
                 
                 <li class="ws-sales"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 業務儀表板</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('customer')"><i class="fas fa-building"></i> 客戶資料庫</a></li>
-                <li class="ws-sales"><a onclick="showAdminPage('req')"><i class="fas fa-comment-dots"></i> 客戶需求單</a></li>
+                <li class="ws-sales"><a onclick="showAdminPage('req')"><i class="fas fa-comment-dots"></i> 客戶紀錄追蹤表</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
             </ul>
         </div>
@@ -341,7 +345,7 @@
                     <button class="btn btn-warning ws-hr" onclick="showAdminPage('staff');" style="margin:0;"><i class="fas fa-user-tag"></i> 新增派遣員工</button>
                     <button class="btn btn-success ws-hr" onclick="showAdminPage('ft_staff');" style="margin:0;"><i class="fas fa-user-tie"></i> 新增正職員工</button>
                     <button class="btn btn-excel ws-hr" onclick="showAdminPage('ft_attend');" style="margin:0;"><i class="fas fa-calendar-check"></i> 新增正職出勤</button>
-                    <button class="btn btn-warning ws-sales" onclick="showAdminPage('req');" style="margin:0;"><i class="fas fa-comment-dots"></i> 新增客戶需求單</button>
+                    <button class="btn btn-warning ws-sales" onclick="showAdminPage('req');" style="margin:0;"><i class="fas fa-comment-dots"></i> 新增客戶追蹤</button>
                     <button class="btn btn-excel ws-sales ws-hr" onclick="showAdminPage('dispatch');" style="margin:0;"><i class="fas fa-tasks"></i> 新增待派發案件</button>
                 </div>
                 
@@ -372,17 +376,24 @@
                 </div>
                 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                    
                     <div class="panel ws-sales" style="grid-column:1/-1; border-top:3px solid #8b5cf6;">
-                        <h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-calculator" style="color:#8b5cf6;"></i> 業務分潤與獎金自動試算儀表板</h3>
-                        <div class="grid" style="grid-template-columns: repeat(5, 1fr); background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
-                            <div><label>當月標準銷售目標</label><input type="number" id="sales_target" value="500000" oninput="calcSalesBonus()" style="font-weight:bold; color:#1e293b;"></div>
-                            <div><label style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客戶累積業績</label><input type="number" id="sales_new" value="350000" oninput="calcSalesBonus()"></div>
-                            <div><label style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約累積業績</label><input type="number" id="sales_renew" value="100000" oninput="calcSalesBonus()"></div>
-                            <div><label>新客抽成比例 (%)</label><input type="number" id="sales_new_rate" value="12" step="0.1" oninput="calcSalesBonus()"></div>
-                            <div><label>續約抽成比例 (%)</label><input type="number" id="sales_renew_rate" value="5" step="0.1" oninput="calcSalesBonus()"></div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                            <h3 style="font-size:16px;font-weight:bold; margin:0;"><i class="fas fa-chart-pie" style="color:#8b5cf6;"></i> 業務績效與即時獎金動態儀表板</h3>
+                            <div class="sys-auth" style="display:flex; gap:10px; align-items:center;">
+                                <label style="font-size:13px; font-weight:bold;">主管檢視切換：</label>
+                                <select id="dash_sales_rep_select" onchange="renderSalesDashboard()" style="padding:5px 10px; border-radius:6px; border:1px solid #cbd5e1;"><option value="all">全體業務總覽</option></select>
+                            </div>
                         </div>
-                        <div id="sales_bonus_result" style="margin-top:15px; padding:20px; border-radius:8px; font-size:16px; line-height:1.8;"></div>
+                        <div id="sales_dynamic_dashboard" style="background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom: 20px;">
+                            <!-- JS Generated Dashboard -->
+                        </div>
+                        <h4 style="margin-top:20px; font-size:15px; font-weight:bold; color:#1e293b;"><i class="fas fa-trophy" style="color:#f59e0b;"></i> 業務績效當月排行榜</h4>
+                        <div class="table-responsive" style="margin-top:10px;">
+                            <table style="width:100%;"><thead><tr><th>排名</th><th>業務姓名</th><th>當月目標</th><th>累積業績</th><th>達成率</th><th>進度狀態</th></tr></thead><tbody id="dash_sales_leaderboard"></tbody></table>
+                        </div>
                     </div>
+
                     
                     <div class="panel ws-sales ws-hr" style="grid-column:1/-1;border-top:3px solid #f59e0b;">
                         <h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-tasks" style="color:#f59e0b;"></i> 優先處理：招募中與換人等待案件</h3>
@@ -449,7 +460,7 @@
             
             <div class="page sys-auth" id="page-supplier"><div class="page-title"><i class="fas fa-truck"></i> 供應商及帳款管理</div><div class="filter-bar"><label>搜尋供應商：</label><input list="list_supplier" id="sup_filter_name" placeholder="手打搜尋供應商" oninput="resetPage('supplier'); renderSupplierTable()"><button class="btn btn-clear-filter" onclick="clearFilters('supplier')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div class="grid" style="background:#f8fafc;padding:25px;border-radius:12px;border:1px solid #e2e8f0;"><div><label>公司名稱 *</label><input list="list_supplier" id="sup_name" required></div><div><label>聯絡人</label><input id="sup_contact"></div><div><label>電話</label><input id="sup_tel"></div><div><label>統編</label><input id="sup_tax"></div><div style="grid-column: span 2;"><label>地址</label><input id="sup_addr"></div><div style="grid-column: span 2;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="sup_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('sup_name', 'sup_drive', '[供應商]')" style="margin-bottom:0;"><i class="fas fa-magic"></i> 建立</button></div></div><div class="section-divider"><i class="fas fa-file-invoice-dollar"></i> 帳務資訊區</div><div><label>交易方式</label><input id="sup_pay_method"></div><div><label>應付帳款日</label><input type="date" id="sup_pay_date" style="font-weight:bold; color:#dc2626;"></div><div><label>發票日期</label><input type="date" id="sup_invoice_date"></div><div><label>發票編號</label><input type="text" id="sup_invoice_no"></div><div><label>發票金額</label><input type="number" id="sup_invoice_amt"></div></div><button class="btn btn-success" id="btnAddSupplier" onclick="addSupplier()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateSupplier()" id="btnUpdateSupplier" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearSupplierForm()"><i class="fas fa-eraser"></i> 清空表單</button><button class="btn btn-excel" onclick="exportExcel('supplierTableBox','供應商')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="supplierTableBox"><thead><tr><th>名稱</th><th>聯絡人</th><th>電話</th><th>統編</th><th>交易方式</th><th>應付日</th><th>發票日期</th><th>發票編號</th><th>金額</th><th>雲端</th><th>操作</th></tr></thead><tbody id="supplierTable"></tbody></table></div></div>
             
-            <div class="page sys-auth" id="page-contract"><div class="page-title"><i class="fas fa-file-contract"></i> 合約方案管理</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="contract_filter_company" placeholder="手打公司名稱" oninput="resetPage('contract'); renderContractTable()"><button class="btn btn-clear-filter" onclick="clearFilters('contract')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div class="grid"><div><label>公司 *</label><input list="list_cust" id="con_customer" placeholder="搜尋客戶公司" required></div><div><label>簽約日期</label><input type="date" id="co_date"></div><div><label>服務內容</label><input id="co_service"></div><div><label>會員類型</label><select id="co_member_type" onchange="updatePriceByPlan()"><option value="">請選擇</option><option value="愜易居標準會員">標準會員</option><option value="愜易居PRO企業會員">PRO會員</option><option value="半年會員費">半年</option><option value="每年會員費">每年</option></select></div><div><label>方案 *</label><select id="co_price_plan" onchange="updatePriceByPlan()"><option value="">請選擇</option></select></div><div><label>包價</label><input id="co_package_price" type="number" readonly></div><div><label>均價</label><input id="co_point_price" type="number" readonly></div><div><label>應收金額</label><input id="co_price" type="number"></div><div><label>點數</label><input id="co_point" type="number" step="0.1" value="0"></div><div><label>發票日</label><input type="date" id="co_invoice_date"></div><div><label>收款日</label><input type="date" id="co_payment_date"></div><div><label>備註</label><input id="co_remark"></div><div><label>狀態</label><select id="co_status"><option>正常</option><option>續約</option><option>到期</option></select></div></div><button class="btn btn-success" id="btnAddContract" onclick="addContract()"><i class="fas fa-save"></i> 新增</button><button class="btn btn-warning" onclick="updateContract()" id="btnUpdateContract" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearContractForm()"><i class="fas fa-eraser"></i> 清空表單</button><button class="btn btn-excel" onclick="exportExcel('contractTableBox','合約方案')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="contractTableBox"><thead><tr><th>公司</th><th>服務</th><th>會員</th><th>方案</th><th>包價</th><th>均價</th><th>應收</th><th>點數</th><th>發票日</th><th>收款日</th><th>簽約日</th><th>備註</th><th>狀態</th><th>操作</th></tr></thead><tbody id="contractTable"></tbody></table></div></div>
+            <div class="page sys-auth" id="page-contract"><div class="page-title"><i class="fas fa-file-contract"></i> 合約方案管理</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="contract_filter_company" placeholder="手打公司名稱" oninput="resetPage('contract'); renderContractTable()"><button class="btn btn-clear-filter" onclick="clearFilters('contract')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div class="grid"><div><label>公司 *</label><input list="list_cust" id="con_customer" placeholder="搜尋客戶公司" required></div><div><label>簽約日期</label><input type="date" id="co_date"></div><div><label>服務內容</label><input id="co_service"></div><div><label>會員類型</label><select id="co_member_type" onchange="updatePriceByPlan()"><option value="">請選擇</option><option value="愜易居標準會員">標準會員</option><option value="愜易居PRO企業會員">PRO會員</option><option value="半年會員費">半年</option><option value="每年會員費">每年</option></select></div><div><label>方案 *</label><select id="co_price_plan" onchange="updatePriceByPlan()"><option value="">請選擇</option></select></div><div><label>包價</label><input id="co_package_price" type="number" readonly></div><div><label>均價</label><input id="co_point_price" type="number" readonly></div><div><label>應收金額</label><input id="co_price" type="number"></div><div><label>點數</label><input id="co_point" type="number" step="0.1" value="0"></div><div><label>發票日</label><input type="date" id="co_invoice_date"></div><div><label>收款日</label><input type="date" id="co_payment_date"></div><div><label>負責業務</label><input list="list_sales_staff" id="co_sales_rep" placeholder="填寫業務姓名"></div><div><label>備註</label><input id="co_remark"></div><div><label>狀態</label><select id="co_status"><option>正常</option><option>續約</option><option>到期</option></select></div></div><button class="btn btn-success" id="btnAddContract" onclick="addContract()"><i class="fas fa-save"></i> 新增</button><button class="btn btn-warning" onclick="updateContract()" id="btnUpdateContract" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearContractForm()"><i class="fas fa-eraser"></i> 清空表單</button><button class="btn btn-excel" onclick="exportExcel('contractTableBox','合約方案')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="contractTableBox"><thead><tr><th>公司</th><th>服務</th><th>會員</th><th>方案</th><th>包價</th><th>均價</th><th>應收</th><th>點數</th><th>發票日</th><th>收款日</th><th>簽約日</th><th>負責業務</th><th>備註</th><th>狀態</th><th>操作</th></tr></thead><tbody id="contractTable"></tbody></table></div></div>
             
             <div class="page" id="page-staff"><div class="page-title"><i class="fas fa-user-tag"></i> 派遣人員資料庫</div><div class="grid" style="background:#fafafa;padding:25px;border-radius:12px;border:1px solid #e2e8f0;"><div><label>姓名 *</label><input list="list_staff" id="staff_name" required></div><div><label>電話</label><input id="staff_tel"></div><div><label>身份證</label><input id="staff_id"></div><div><label>生日 (例:80/01/01)</label><input type="text" id="staff_birthday" placeholder="例: 80/01/01"></div><div><label>地址</label><input id="staff_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號 (建議電話)</label><input id="staff_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼 (預設1234)</label><input id="staff_pwd" type="text" value="1234"></div><div><label>狀態</label><select id="staff_status"><option>在職</option><option>離職</option></select></div><div><label>計薪方案</label><select id="staff_salary_rule"><option value="114年標準">114年標準(210-250)</option><option value="早期約">早期約(245-250)</option><option value="固定205">固定(無機車205)</option><option value="固定220">固定(有機車220)</option><option value="特殊225">特殊案例(225起跳)</option><option value="接案">接案/時薪自訂</option><option value="接案(固定月薪)">接案(固定專案金)</option></select></div><div><label>自訂時薪 (若非專案時)</label><input id="staff_hourly" type="number" value="0"></div><div class="section-divider"><i class="fas fa-university"></i> 銀行帳戶資料</div><div><label>銀行名稱</label><input id="staff_bank" placeholder="例: 國泰世華"></div><div><label>分行名稱</label><input id="staff_bank_branch" placeholder="例: 林口分行"></div><div style="grid-column: span 2;"><label>銀行帳號</label><input id="staff_bank_acc" placeholder="請輸入完整帳號"></div><div class="section-divider"><i class="fas fa-notes-medical"></i> 勞健保設定區</div><div><label>加保狀態</label><select id="staff_ins_status"><option value="勞健雙保">勞健雙保</option><option value="僅勞保">僅勞保</option><option value="僅健保">僅健保</option><option value="都不保">都不保</option></select></div><div><label>勞保 起保日期</label><input type="date" id="staff_ins_date" title="設定後系統會在滿3個月時自動提醒"></div><div><label>依附眷屬人數</label><input type="number" id="staff_ins_deps" value="0" min="0" placeholder="依實際人數填寫"></div><div><label>特殊補助身分</label><select id="staff_ins_subsidy"><option value="無">一般(無補助)</option><option value="身障(輕度)減免25%">身障(輕度)減免25%</option><option value="身障(中度)減免50%">身障(中度)減免50%</option><option value="身障(重度)全額免除">身障(重度)全額免除</option><option value="其他專案補助">其他專案補助</option></select></div><div style="background:#fef2f2; padding:10px; border-radius:6px;"><label style="color:#e11d48;"><i class="fas fa-minus-circle"></i> 實際代扣勞保(元)</label><input id="staff_labor" type="number" value="0"></div><div style="background:#fef2f2; padding:10px; border-radius:6px;"><label style="color:#e11d48;"><i class="fas fa-minus-circle"></i> 實際代扣健保(元)</label><input id="staff_health" type="number" value="0"></div><div><label>備註 (超過700加薪需註明:已同意調薪)</label><input id="staff_remark" placeholder="已同意調薪..."></div><div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="staff_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('staff_name', 'staff_drive', '[派遣]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 到職資料繳交狀態</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="staff_doc_id"> 身分證</label><label><input type="checkbox" id="staff_doc_bank"> 存摺</label><label><input type="checkbox" id="staff_doc_contract"> 契約</label><label><input type="checkbox" id="staff_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddStaff" onclick="addStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateStaff()" id="btnUpdateStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearStaffForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋姓名：</label><input list="list_staff" id="staff_filter_name" placeholder="手打姓名搜尋" oninput="resetPage('staff'); renderStaffTable()"><label>狀態：</label><select id="staff_filter_status" onchange="resetPage('staff'); renderStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select><button class="btn btn-clear-filter" onclick="clearFilters('staff')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('staffTableBox','派遣人員')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="staffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>身份證</th><th>生日</th><th>銀行帳戶</th><th>計薪方案</th><th style="color:#2563eb;">累計工時</th><th>帳/密</th><th>代扣保費</th><th>雲端</th><th>備註</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="staffTable"></tbody></table></div></div>
             
@@ -490,6 +501,59 @@
 嚴禁直接與業主方聯繫，所有事項均須透過窗口統一處理。</textarea></div><div><label>規範二內文</label><textarea id="conf_r2_content" style="height:80px;width:100%;padding:5px;"><li>嚴禁與業主或環境人員發生言語或肢體衝突。</li></textarea></div><div><label>按鈕一(標/副/網址)</label><input id="conf_l1_title" value="官方平台"><input id="conf_l1_desc" value="點擊前往"><input id="conf_l1_url" value="https://google.com"></div><div><label>按鈕二(標/副/網址)</label><input id="conf_l2_title" value="官方 IG"><input id="conf_l2_desc" value="追蹤資訊"><input id="conf_l2_url" value="https://instagram.com"></div></div><button class="btn btn-success" onclick="savePortalConfig()" style="margin-top:10px;"><i class="fas fa-cloud-upload-alt"></i> 同步前台設定</button></div><label style="font-weight:bold; display:block; margin-top:20px;">💰 價目表 JSON</label><textarea id="config_price_table" style="width:100%; height:80px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea><br><button class="btn btn-success" onclick="savePriceConfig()"><i class="fas fa-cloud-upload-alt"></i> 同步價目</button></div></div>
         </div>
     </div>
+
+    
+            <div class="page" id="page-sales_staff">
+                <div class="page-title"><i class="fas fa-user-tie"></i> 業務人員資料庫</div>
+                <div class="grid" style="background:#fefce8;padding:25px;border-radius:12px;border:1px solid #fef08a;">
+                    <div><label>姓名 *</label><input id="ss_name" required></div>
+                    <div><label>電話</label><input id="ss_tel"></div>
+                    <div><label>當月預設目標額 *</label><input type="number" id="ss_target" value="500000"></div>
+                    <div><label>新客預設抽成 (%) *</label><input type="number" step="0.1" id="ss_new_rate" value="10"></div>
+                    <div><label>續約預設抽成 (%) *</label><input type="number" step="0.1" id="ss_renew_rate" value="5"></div>
+                    <div><label>狀態</label><select id="ss_status"><option>在職</option><option>離職</option></select></div>
+                    <div style="grid-column: span 2;"><label>備註</label><input id="ss_remark"></div>
+                </div>
+                <button class="btn btn-success" id="btnAddSalesStaff" onclick="addSalesStaff()"><i class="fas fa-save"></i> 儲存</button>
+                <button class="btn btn-warning" id="btnUpdateSalesStaff" onclick="updateSalesStaff()" style="display:none"><i class="fas fa-edit"></i> 修改</button>
+                <button class="btn" style="background:#64748b;" onclick="clearSalesStaffForm()"><i class="fas fa-eraser"></i> 清空</button>
+                <div class="table-responsive" style="margin-top:20px;">
+                    <table id="salesStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>當月目標</th><th>新客抽成(%)</th><th>續約抽成(%)</th><th>狀態</th><th>備註</th><th>操作</th></tr></thead><tbody id="salesStaffTable"></tbody></table>
+                </div>
+            </div>
+
+            <div class="page sys-auth" id="page-bonus_rules">
+                <div class="page-title"><i class="fas fa-cogs"></i> 業務獎金階梯規則設定</div>
+                <div class="panel" style="border-top: 4px solid #8b5cf6;">
+                    <p style="color:#64748b; margin-bottom:15px;"><i class="fas fa-info-circle"></i> 系統將根據業務的「當月目標達成率」自動套用以下乘數。<br><span style="font-size:12px; color:#ef4444;">計算邏輯：結算達成率若超過 100%，100% 內以「達標乘數」計算，超出目標的部分以「超標乘數」獨立抽成，並外加滿百激勵金。</span></p>
+                    <div class="grid" style="background:#f8fafc;padding:25px;border-radius:12px;border:1px solid #e2e8f0;">
+                        <div><label>未達低標 (%)</label><input type="number" id="br_tier1" value="80" disabled style="background:#e2e8f0;"></div>
+                        <div><label>低標乘數</label><input type="number" step="0.1" id="br_tier1_rate"></div>
+                        <div><label>達標門檻 (%)</label><input type="number" id="br_tier2" value="100" disabled style="background:#e2e8f0;"></div>
+                        <div><label>達標(80-100)乘數</label><input type="number" step="0.1" id="br_tier2_rate"></div>
+                        <div><label>超標(>100%)乘數</label><input type="number" step="0.1" id="br_tier3_rate"></div>
+                        <div><label>滿百額外激勵金 ($)</label><input type="number" id="br_incentive"></div>
+                    </div>
+                    <button class="btn btn-success" onclick="saveBonusRules()"><i class="fas fa-save"></i> 同步更新規則</button>
+                </div>
+            </div>
+
+            <div class="page sys-auth" id="page-sales_ledger">
+                <div class="page-title"><i class="fas fa-chart-bar"></i> 業務獎金結算與人工審核</div>
+                <div class="filter-bar">
+                    <label>年份</label><select id="sl_year" onchange="renderSalesLedger()"></select>
+                    <label>月份</label><select id="sl_month" onchange="renderSalesLedger()"></select>
+                    <label>業務員</label><select id="sl_rep" onchange="renderSalesLedger()"><option value="all">全部</option></select>
+                    <button class="btn btn-excel" style="margin-left:auto;" onclick="exportSalesBonusExcel()"><i class="fas fa-file-excel"></i> 匯出當月結算表(依選定業務)</button>
+                </div>
+                <div id="sl_summary_panel" style="background:#fffbeb; padding:15px; border-radius:8px; border:1px solid #fde68a; margin-bottom:15px; font-size:15px; line-height:1.8; font-weight:bold; color:#b45309; display:none;"></div>
+                <div class="table-responsive">
+                    <table id="salesLedgerTableBox">
+                        <thead><tr><th>日期</th><th>業務員</th><th>客戶名稱</th><th>合約金額</th><th>系統判定</th><th>狀態/申請</th><th>審核操作</th><th>刪除</th></tr></thead>
+                        <tbody id="salesLedgerTable"></tbody>
+                    </table>
+                </div>
+            </div>
 
     <div class="staff-container" id="staff-screen">
         <div class="sidebar" style="background: #2d9d5c;">
@@ -602,6 +666,9 @@ let supplierData = safeJSONParse('supplierData',[]);
 let matchData = safeJSONParse('matchData',[]);
 let reqData = safeJSONParse('reqData',[]);
 let dispatchData = safeJSONParse('dispatchData',[]);
+let salesStaffData = safeJSONParse('salesStaffData',[]);
+let bonusRulesData = safeJSONParse('bonusRulesData',{ tier1:80, tier2:100, tier1Rate:1.0, tier2Rate:1.2, tier3Rate:1.5, incentiveBonus:5000 });
+let salesLedgerData = safeJSONParse('salesLedgerData',[]);
 
 let loginLogoBase64 = localStorage.getItem('loginLogo') || '';
 let pdfLogoBase64 = localStorage.getItem('pdfLogo') || '';
@@ -873,7 +940,9 @@ function standardizeData() {
     contractData = (contractData||[]).filter(x=>x).map(x=>({...x,customer:x.customer||''}));
     matchData = (matchData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tel:x.tel||'',region:x.region||'',transport:x.transport||'',skills:x.skills||'',exp:x.exp||'',remark:x.remark||''}));
     reqData = (reqData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tax:x.tax||'',industry:x.industry||'',scale:x.scale||'',contact:x.contact||'',title:x.title||'',phone:x.phone||'',tel:x.tel||'',email:x.email||'',decision:!!x.decision,finance:x.finance||'',source:x.source||'業務開發',source_attr:x.source_attr||'業務開發',dev_name:x.dev_name||'',status:x.status||'待處理',remark:x.remark||''}));
-    dispatchData = (dispatchData||[]).filter(x=>x).map(x=>({...x, company:x.company||'', role:x.role||'', num:x.num||1, status:x.status||'招募中', staff:x.staff||'', tel:x.tel||'', date:x.date||'', interview:x.interview||'', remark:x.remark||''}));
+    salesStaffData = (salesStaffData||[]).filter(x=>x).map(x=>({...x, name:x.name||'', tel:x.tel||'', target:x.target||500000, new_rate:x.new_rate||10, renew_rate:x.renew_rate||5, status:x.status||'在職', remark:x.remark||''}));
+salesLedgerData = (salesLedgerData||[]).filter(x=>x).map(x=>({...x, id:x.id||Date.now(), date:x.date||'', sales_rep:x.sales_rep||'', customer:x.customer||'', amount:x.amount||0, type:x.type||'續約', override_type:x.override_type||'', remark:x.remark||''}));
+dispatchData = (dispatchData||[]).filter(x=>x).map(x=>({...x, company:x.company||'', role:x.role||'', num:x.num||1, status:x.status||'招募中', staff:x.staff||'', tel:x.tel||'', date:x.date||'', interview:x.interview||'', remark:x.remark||''}));
 }
 
 function getHours(s,e) { if(!s||!e) return 0; try{ let[sh,sm]=s.split(':').map(Number); let[eh,em]=e.split(':').map(Number); let min=(eh*60+em)-(sh*60+sm); if(min<0) min+=1440; return(min/60).toFixed(1); } catch(e) { return 0; } }
@@ -978,11 +1047,7 @@ function exportBossSalaryExcel() {
     tb.innerHTML = head + body; XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "薪資表"}), `愜易居_${y}年${m}月_老闆專用薪資彙整表.xlsx`); showToast('✅ 匯出成功'); 
 }
 
-function calcSalesBonus() {
-    if(!el('sales_target')) return;
-    let target = parseFloat(el('sales_target').value) || 0, newSales = parseFloat(el('sales_new').value) || 0, renewSales = parseFloat(el('sales_renew').value) || 0, newRate = (parseFloat(el('sales_new_rate').value) || 0) / 100, renewRate = (parseFloat(el('sales_renew_rate').value) || 0) / 100;
-    let total = newSales + renewSales, resEl = el('sales_bonus_result');
-    if(total >= target) { let bonus = Math.round((newSales * newRate) + (renewSales * renewRate)); resEl.style.background = '#ecfdf5'; resEl.style.border = '1px solid #10b981'; resEl.style.color = '#065f46'; resEl.innerHTML = `🎉 <strong>恭喜達標！</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong> (門檻 $${target.toLocaleString()})<br><span style="font-size:14px;">新客獎金: $${Math.round(newSales*newRate).toLocaleString()} + 續約獎金: $${Math.round(renewSales*renewRate).toLocaleString()}</span><br><strong style="font-size:20px; color:#047857; margin-top:5px; display:inline-block;">💰 本月預估總發放獎金：$${bonus.toLocaleString()}</strong>`; } 
+</strong> (門檻 $${target.toLocaleString()})<br><span style="font-size:14px;">新客獎金: $${Math.round(newSales*newRate).toLocaleString()} + 續約獎金: $${Math.round(renewSales*renewRate).toLocaleString()}</span><br><strong style="font-size:20px; color:#047857; margin-top:5px; display:inline-block;">💰 本月預估總發放獎金：$${bonus.toLocaleString()}</strong>`; } 
     else { let diff = target - total; resEl.style.background = '#fef2f2'; resEl.style.border = '1px solid #ef4444'; resEl.style.color = '#991b1b'; resEl.innerHTML = `⚠️ <strong>尚未達標</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong><br>距離目標 $${target.toLocaleString()} 還差 <strong style="color:#dc2626;">$${diff.toLocaleString()}</strong>，請繼續加油！<br><span style="font-size:13px; color:#ef4444;">(未達標目前系統無法計算獎金)</span>`; }
 }
 
@@ -1011,9 +1076,9 @@ function loadDataFromCloud(forceRender=false) {
             const hH = String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名'); const dR = hH ? fm.slice(1) : fm;
             dR.forEach(row => { if(Array.isArray(row)){ let n=String(row[1]||'').trim(), t=String(row[4]||row[2]||'').trim(), l=String(row[5]||'').trim(); let y=String(row[8]||'').trim(), e=String(row[9]||'').trim(), loc=String(row[10]||'').trim(); let s=String(row[11]||'').trim(), rl=String(row[22]||row[12]||'').trim(), dt=String(row[0]||'').trim(); let ex=[]; if(l) ex.push('Line:'+l); if(y) ex.push('年資:'+y); if(e) ex.push('經歷:'+e); if(n && n!=='' && !n.includes('全名') && !n.includes('姓名')) { if(!r.talentData.some(t => String(t.name).trim() === n)){ r.talentData.push({ name:n, tel:t, source:'Google表單', location:loc, shift:s, role:rl, status:'待聯絡', eval:'', resume:'', exp:ex.join(' | '), date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0] }); nA++; } } } });
         }
-        if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData;
+        if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.bonusRulesData) bonusRulesData=r.bonusRulesData; if(r.salesLedgerData) salesLedgerData=r.salesLedgerData;
         standardizeData();
-        try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); } catch(e) {}
+        try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('bonusRulesData',JSON.stringify(bonusRulesData)); localStorage.setItem('salesLedgerData',JSON.stringify(salesLedgerData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
         if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
@@ -1024,30 +1089,30 @@ function loadDataFromCloud(forceRender=false) {
     }).catch(e=>{ if(el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線',true); });
 }
 
-function saveAllSilently() { fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, sysConfig:getSysConfigPayload()}), headers:{'Content-Type':'text/plain;charset=utf-8'} }); }
+function saveAllSilently() { fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, bonusRulesData, salesLedgerData, sysConfig:getSysConfigPayload()}), headers:{'Content-Type':'text/plain;charset=utf-8'} }); }
 
 function saveAll() {
     standardizeData();
-    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); } catch(e) {}
+    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('bonusRulesData',JSON.stringify(bonusRulesData)); localStorage.setItem('salesLedgerData',JSON.stringify(salesLedgerData)); } catch(e) {}
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 存...');
-    fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, sysConfig:getSysConfigPayload()}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ if(r.status === 'success' && el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }).catch(e=>{ if(el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true); });
+    fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, bonusRulesData, salesLedgerData, sysConfig:getSysConfigPayload()}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ if(r.status === 'success' && el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }).catch(e=>{ if(el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true); });
 }
 
 function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
 function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
 
 
-function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, bonusRulesData, salesLedgerData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
 
 function restoreData(i) {
     if(!i.files || !i.files[0]) return; const rd = new FileReader();
     rd.onload = function(e) {
         try {
             const r = JSON.parse(e.target.result);
-            if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; if(r.talentData) talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData;
+            if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; if(r.talentData) talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.bonusRulesData) bonusRulesData=r.bonusRulesData; if(r.salesLedgerData) salesLedgerData=r.salesLedgerData;
             if(r.sysConfig) { if(r.sysConfig.loginLogo) localStorage.setItem('loginLogo',r.sysConfig.loginLogo); if(r.sysConfig.pdfLogo) localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo); if(r.sysConfig.loginBg) localStorage.setItem('loginBg',r.sysConfig.loginBg); if(r.sysConfig.priceTable) localStorage.setItem('priceTable',r.sysConfig.priceTable); if(r.sysConfig.adminAcc) localStorage.setItem('adminAcc',r.sysConfig.adminAcc); if(r.sysConfig.adminPwd) localStorage.setItem('adminPwd',r.sysConfig.adminPwd); if(r.sysConfig.hrAcc) localStorage.setItem('hrAcc',r.sysConfig.hrAcc); if(r.sysConfig.hrPwd) localStorage.setItem('hrPwd',r.sysConfig.hrPwd); if(r.sysConfig.salesAcc) localStorage.setItem('salesAcc',r.sysConfig.salesAcc); if(r.sysConfig.salesPwd) localStorage.setItem('salesPwd',r.sysConfig.salesPwd); if(r.sysConfig.adminPin) localStorage.setItem('adminPin',r.sysConfig.adminPin); if(r.sysConfig.portalConf) localStorage.setItem('portalConf',r.sysConfig.portalConf); }
             standardizeData();
-            localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData));
+            localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('bonusRulesData',JSON.stringify(bonusRulesData)); localStorage.setItem('salesLedgerData',JSON.stringify(salesLedgerData));
             fillFilters(); 
             showAdminPage(localStorage.getItem('adminPage')||'dashboard');
             saveAll(); 
@@ -1104,7 +1169,7 @@ function renderDispatchTable() {
     const kw = el('dp_filter_keyword').value.trim().toLowerCase(); const stat = el('dp_filter_status').value; 
     let l = dispatchData.filter(x => { let matchKw = (!kw || x.company.toLowerCase().includes(kw) || x.role.toLowerCase().includes(kw) || (x.staff||'').toLowerCase().includes(kw)); let matchStat = (stat === 'all' || x.status === stat); return matchKw && matchStat; }); 
     const {pagedList, total, totalPages} = getPagedData(l, 'dispatch'); let h = ''; 
-    pagedList.forEach(item => { const idx = dispatchData.indexOf(item); let sColor = item.status==='預計派發日'?'badge-blue':(item.status==='換人等待'?'badge-red':(item.status==='二面日期'?'badge-yellow':'badge-green')); h += `<tr><td><span class="badge ${sColor}">${item.status}</span></td><td style="font-weight:bold;color:#1e293b;">${item.company}</td><td>${item.role}</td><td>${item.num}</td><td>${item.staff||'-'}</td><td>${item.tel||'-'}</td><td>${item.interview||'-'}</td><td>${item.date||'-'}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editDispatch(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delDispatch(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); 
+    pagedList.forEach(item => { const idx = dispatchData.indexOf(item); let sColor = item.status==='預計派發日'?'badge-blue':(item.status==='換人等待'?'badge-red':(item.status==='二面日期'?'badge-yellow':'badge-green')); h += `<tr><td><span class="badge ${sColor}">${item.status}</span></td><td style="font-weight:bold;color:#1e293b;">${item.company}</td><td>${item.role}</td><td>${item.num}</td><td>${item.staff||'-'}</td><td>${item.tel||'-'}</td><td>${item.interview||'-'}</td><td>${item.date||\'-\'}</td><td>${item.sales_rep||\'-\'}</td><td>${item.remark||\'-\'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editDispatch(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delDispatch(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); 
     el('dispatchTable').innerHTML = h || '<tr><td colspan="10" style="text-align:center;">目前無待派發案件</td></tr>'; renderPagination('dispatch', total, totalPages); 
     
     let urgentHtml = '';
@@ -1147,7 +1212,10 @@ function showAdminPage(p) {
         if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); } 
         if(p==='match') { clearMatchForm(); renderMatchTable(); } 
         if(p==='req') { clearReqForm(); renderReqTable(); } 
-        if(p==='dispatch') { clearDispatchForm(); renderDispatchTable(); } 
+        if(p==='dispatch') { clearDispatchForm(); renderDispatchTable(); }
+        if(p==='sales_staff') { clearSalesStaffForm(); renderSalesStaffTable(); }
+        if(p==='bonus_rules') { renderBonusRulesUI(); }
+        if(p==='sales_ledger') { renderSalesLedger(); } 
         if(p==='boss') showBoss(); 
         if(p==='dashboard') renderDashboard(); 
     } catch(e) {} 
@@ -1179,8 +1247,10 @@ function clearFilters(page) {
 
 function fillFilters() { 
     const rf = (s,h) => { document.querySelectorAll(s).forEach(e=>{const v=e.value; e.innerHTML=h; if(v)e.value=v;}); }; 
-    const y=new Date().getFullYear(); let yr='<option value="all">全部</option>'; for(let i=2024; i<=y; i++) yr += `<option value="${i}">${i}</option>`; rf('#filter_year,#bill_filter_year,#sal_filter_year,#boss_year', yr); 
-    let mh='<option value="all">全部</option>'; for(let i=1;i<=12;i++) mh += `<option value="${i}">${i}月</option>`; rf('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month', mh); 
+    const y=new Date().getFullYear(); let yr='<option value="all">全部</option>'; for(let i=2024; i<=y; i++) yr += `<option value="${i}">${i}</option>`; rf('#filter_year,#bill_filter_year,#sal_filter_year,#boss_year,#sl_year', yr); 
+    let mh='<option value="all">全部</option>'; for(let i=1;i<=12;i++) mh += `<option value="${i}">${i}月</option>`; rf('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month,#sl_month', mh); 
+    let slRepH = '<option value="all">全部</option>'; salesStaffData.forEach(s => slRepH += `<option value="${s.name}">${s.name}</option>`); if(el('sl_rep')) el('sl_rep').innerHTML = slRepH; if(el('dash_sales_rep_select')) el('dash_sales_rep_select').innerHTML = slRepH.replace('全部', '全體業務總覽');
+    let listSalesStaff = ''; salesStaffData.forEach(s => listSalesStaff += `<option value="${s.name}">`); if(el('list_sales_staff')) el('list_sales_staff').innerHTML = listSalesStaff;
     let custH = '<option value="全部">'; custData.forEach(c => custH += `<option value="${c.name}">`); if(el('list_cust')) el('list_cust').innerHTML = custH; 
     let staffH = '<option value="全部人員">'; staffData.filter(s => s.status==='在職').forEach(s => staffH += `<option value="${s.name}">`); if(el('list_staff')) el('list_staff').innerHTML = staffH; 
     let ftStaffH = '<option value="全部員工">'; ftStaffData.filter(s => s.status==='在職').forEach(s => ftStaffH += `<option value="${s.name}">`); if(el('list_ft_staff')) el('list_ft_staff').innerHTML = ftStaffH; 
@@ -1211,14 +1281,40 @@ function clearCustForm(){ document.querySelectorAll('#page-customer .grid input'
 
 function renderContractTable(){ 
     const f = el('contract_filter_company').value.trim(); let l = contractData.filter(x => (!f || f === '全部' || x.customer === f)); const {pagedList, total, totalPages} = getPagedData(l, 'contract'); let h = ''; 
-    pagedList.forEach(item => { const idx = contractData.findIndex(x => x.customer === item.customer && x.price_plan === item.price_plan && x.date === item.date); h += `<tr><td>${item.customer}</td><td>${item.service||'-'}</td><td>${item.member_type||'-'}</td><td>${item.price_plan||'-'}</td><td>${item.package_price||0}</td><td>${item.point_price||0}</td><td>${item.price||0}</td><td>${item.point||0}</td><td>${item.invoice_date||'-'}</td><td>${item.payment_date||'-'}</td><td>${item.date||'-'}</td><td>${item.remark||'-'}</td><td>${item.status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editContract(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delContract(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); 
+    pagedList.forEach(item => { const idx = contractData.findIndex(x => x.customer === item.customer && x.price_plan === item.price_plan && x.date === item.date); h += `<tr><td>${item.customer}</td><td>${item.service||'-'}</td><td>${item.member_type||'-'}</td><td>${item.price_plan||'-'}</td><td>${item.package_price||0}</td><td>${item.point_price||0}</td><td>${item.price||0}</td><td>${item.point||0}</td><td>${item.invoice_date||'-'}</td><td>${item.payment_date||'-'}</td><td>${item.date||\'-\'}</td><td>${item.sales_rep||\'-\'}</td><td>${item.remark||\'-\'}</td><td>${item.status}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editContract(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delContract(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); 
     el('contractTable').innerHTML = h || '<tr><td colspan="14" style="text-align:center;">無資料</td></tr>'; renderPagination('contract', total, totalPages); 
 }
-function addContract(){ const o = { customer:el('con_customer').value.trim(), service:el('co_service').value, date:el('co_date').value, member_type:el('co_member_type').value, price_plan:el('co_price_plan').value, package_price:el('co_package_price').value, point_price:el('co_point_price').value, price:el('co_price').value, point:el('co_point').value, invoice_date:el('co_invoice_date').value, payment_date:el('co_payment_date').value, remark:el('co_remark').value, status:el('co_status').value }; if(!o.customer) return; contractData.push(o); saveAll(); renderContractTable(); clearContractForm(); showToast('✅ 成功'); }
-function editContract(i){ const d = contractData[i]; el('con_customer').value = d.customer; el('co_service').value = d.service||''; el('co_date').value = d.date; el('co_member_type').value = d.member_type; el('co_price_plan').value = d.price_plan; el('co_package_price').value = d.package_price; el('co_point_price').value = d.point_price; el('co_price').value = d.price; el('co_point').value = d.point; el('co_invoice_date').value = d.invoice_date; el('co_payment_date').value = d.payment_date; el('co_remark').value = d.remark; el('co_status').value = d.status; editContractIndex = i; el('btnUpdateContract').style.display = 'inline-block'; const b = el('btnAddContract'); if(b) b.style.display = 'none'; }
-function updateContract(){ if(editContractIndex < 0) return; const o = { customer:el('con_customer').value.trim(), service:el('co_service').value, date:el('co_date').value, member_type:el('co_member_type').value, price_plan:el('co_price_plan').value, package_price:el('co_package_price').value, point_price:el('co_point_price').value, price:el('co_price').value, point:el('co_point').value, invoice_date:el('co_invoice_date').value, payment_date:el('co_payment_date').value, remark:el('co_remark').value, status:el('co_status').value }; contractData[editContractIndex] = {...contractData[editContractIndex], ...o}; saveAll(); renderContractTable(); clearContractForm(); showToast('✅ 修改'); }
+
+function addContract(){ 
+    const o = { customer:el('con_customer').value.trim(), service:el('co_service').value, date:el('co_date').value, member_type:el('co_member_type').value, price_plan:el('co_price_plan').value, package_price:el('co_package_price').value, point_price:el('co_point_price').value, price:el('co_price').value, point:el('co_point').value, invoice_date:el('co_invoice_date').value, payment_date:el('co_payment_date').value, sales_rep:el('co_sales_rep').value.trim(), remark:el('co_remark').value, status:el('co_status').value }; 
+    if(!o.customer) return; 
+    
+    // Check if it's new customer or renewal
+    let isNew = true;
+    if(contractData.some(x => x.customer === o.customer)) { isNew = false; }
+    
+    contractData.push(o); 
+    
+    if(o.sales_rep) {
+        salesLedgerData.push({
+            id: Date.now(),
+            date: o.date || new Date().toISOString().split('T')[0],
+            sales_rep: o.sales_rep,
+            customer: o.customer,
+            amount: Number(o.price) || 0,
+            type: isNew ? '新客' : '續約',
+            override_type: '',
+            remark: o.remark
+        });
+    }
+    
+    saveAll(); renderContractTable(); clearContractForm(); showToast('✅ 成功'); 
+}
+
+function editContract(i){ const d = contractData[i]; el('con_customer').value = d.customer; el('co_service').value = d.service||''; el('co_date').value = d.date; el('co_member_type').value = d.member_type; el('co_price_plan').value = d.price_plan; el('co_package_price').value = d.package_price; el('co_point_price').value = d.point_price; el('co_price').value = d.price; el('co_point').value = d.point; el('co_invoice_date').value = d.invoice_date; el('co_payment_date').value = d.payment_date; el('co_remark').value = d.remark; el('co_sales_rep').value = d.sales_rep||''; el('co_status').value = d.status; editContractIndex = i; el('btnUpdateContract').style.display = 'inline-block'; const b = el('btnAddContract'); if(b) b.style.display = 'none'; }
+function updateContract(){ if(editContractIndex < 0) return; const o = { customer:el('con_customer').value.trim(), service:el('co_service').value, date:el('co_date').value, member_type:el('co_member_type').value, price_plan:el('co_price_plan').value, package_price:el('co_package_price').value, point_price:el('co_point_price').value, price:el('co_price').value, point:el('co_point').value, invoice_date:el('co_invoice_date').value, payment_date:el('co_payment_date').value, sales_rep:el('co_sales_rep').value.trim(), remark:el('co_remark').value, status:el('co_status').value }; contractData[editContractIndex] = {...contractData[editContractIndex], ...o}; saveAll(); renderContractTable(); clearContractForm(); showToast('✅ 修改'); }
 function delContract(i){ if(!confirm('刪除？')) return; contractData.splice(i,1); saveAll(); renderContractTable(); showToast('刪除'); }
-function clearContractForm(){ document.querySelectorAll('#page-contract .grid input').forEach(i => i.value = ''); el('co_point').value='0'; el('co_price').value='0'; el('co_status').value='正常'; editContractIndex = -1; el('btnUpdateContract').style.display = 'none'; const b = el('btnAddContract'); if(b) b.style.display = 'inline-block'; }
+function clearContractForm(){ document.querySelectorAll('#page-contract .grid input').forEach(i => i.value = ''); el('co_point').value='0'; el('co_price').value='0'; el('co_status').value='正常'; el('co_sales_rep').value=''; editContractIndex = -1; el('btnUpdateContract').style.display = 'none'; const b = el('btnAddContract'); if(b) b.style.display = 'inline-block'; }
 
 function renderStaffTable(){ 
     const fs = el('staff_filter_status').value, fn = el('staff_filter_name').value.trim().toLowerCase(); let l = staffData.filter(x => (fs === 'all' || x.status === fs) && (!fn || fn === '全部人員' || x.name.toLowerCase().includes(fn))); const {pagedList, total, totalPages} = getPagedData(l, 'staff'); let h = ''; 
@@ -2250,7 +2346,8 @@ function exportStaffYearlyMatrix() {
     
     tb.innerHTML = head + body + '</tbody>';
     XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "分月矩陣"}), `愜易居_${y}年_分月工時矩陣表.xlsx`);
-    showToast('✅ 矩陣表匯出成功');
+   
+ showToast('✅ 矩陣表匯出成功');
 }
 
 function exportAllStaffHoursSummary() {
@@ -2394,8 +2491,7 @@ function renderDashboard() {
     if(el('dash_ap_table')) el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center;">近期無應付帳款</td></tr>';
 }
 
-function initStaffFrontend
-() {
+function initStaffFrontend() {
     if(!currentLoginStaff) return;
     if(el('staff-welcome-name')) el('staff-welcome-name').textContent = currentLoginStaff.name || '';
     if(el('staff-profile-name')) el('staff-profile-name').textContent = currentLoginStaff.name || '-';
@@ -2477,6 +2573,252 @@ function openStaffDrive() {
     if(currentLoginStaff && currentLoginStaff.drive) window.open(currentLoginStaff.drive, '_blank'); 
     else showToast('尚未建立雲端資料夾', true);
 }
+
+
+// ============ 業務人員管理 ============
+let editSalesStaffIndex = -1;
+function renderSalesStaffTable() {
+    let h = '';
+    salesStaffData.forEach((item, i) => {
+        h += `<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>$${Number(item.target).toLocaleString()}</td><td>${item.new_rate}%</td><td>${item.renew_rate}%</td><td><span class="badge ${item.status==='在職'?'badge-green':'badge-red'}">${item.status}</span></td><td>${item.remark||'-'}</td><td><button class="btn-sm btn-warning" onclick="editSalesStaff(${i})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delSalesStaff(${i})"><i class="fas fa-trash"></i></button></td></tr>`;
+    });
+    el('salesStaffTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">無業務人員資料</td></tr>';
+}
+function addSalesStaff() {
+    const o = { name: el('ss_name').value.trim(), tel: el('ss_tel').value.trim(), target: el('ss_target').value, new_rate: el('ss_new_rate').value, renew_rate: el('ss_renew_rate').value, status: el('ss_status').value, remark: el('ss_remark').value.trim() };
+    if(!o.name) return;
+    salesStaffData.push(o); saveAll(); renderSalesStaffTable(); clearSalesStaffForm(); showToast('✅ 新增成功');
+}
+function editSalesStaff(i) {
+    const d = salesStaffData[i];
+    el('ss_name').value = d.name; el('ss_tel').value = d.tel; el('ss_target').value = d.target; el('ss_new_rate').value = d.new_rate; el('ss_renew_rate').value = d.renew_rate; el('ss_status').value = d.status; el('ss_remark').value = d.remark;
+    editSalesStaffIndex = i; el('btnUpdateSalesStaff').style.display = 'inline-block'; el('btnAddSalesStaff').style.display = 'none';
+}
+function updateSalesStaff() {
+    if(editSalesStaffIndex < 0) return;
+    const o = { name: el('ss_name').value.trim(), tel: el('ss_tel').value.trim(), target: el('ss_target').value, new_rate: el('ss_new_rate').value, renew_rate: el('ss_renew_rate').value, status: el('ss_status').value, remark: el('ss_remark').value.trim() };
+    salesStaffData[editSalesStaffIndex] = {...salesStaffData[editSalesStaffIndex], ...o};
+    saveAll(); renderSalesStaffTable(); clearSalesStaffForm(); showToast('✅ 更新成功');
+}
+function delSalesStaff(i) { if(!confirm('確定刪除？')) return; salesStaffData.splice(i,1); saveAll(); renderSalesStaffTable(); showToast('已刪除'); }
+function clearSalesStaffForm() { el('ss_name').value=''; el('ss_tel').value=''; el('ss_target').value='500000'; el('ss_new_rate').value='10'; el('ss_renew_rate').value='5'; el('ss_status').value='在職'; el('ss_remark').value=''; editSalesStaffIndex=-1; el('btnUpdateSalesStaff').style.display='none'; el('btnAddSalesStaff').style.display='inline-block'; }
+
+// ============ 獎金規則設定 ============
+function renderBonusRulesUI() {
+    el('br_tier1_rate').value = bonusRulesData.tier1Rate || 1.0;
+    el('br_tier2_rate').value = bonusRulesData.tier2Rate || 1.2;
+    el('br_tier3_rate').value = bonusRulesData.tier3Rate || 1.5;
+    el('br_incentive').value = bonusRulesData.incentiveBonus || 5000;
+}
+function saveBonusRules() {
+    bonusRulesData.tier1Rate = parseFloat(el('br_tier1_rate').value) || 1.0;
+    bonusRulesData.tier2Rate = parseFloat(el('br_tier2_rate').value) || 1.2;
+    bonusRulesData.tier3Rate = parseFloat(el('br_tier3_rate').value) || 1.5;
+    bonusRulesData.incentiveBonus = parseInt(el('br_incentive').value) || 0;
+    saveAll(); showToast('✅ 規則已同步');
+}
+
+// ============ 核心結算邏輯 ============
+function calcMonthlyBonus(repName, yStr, mStr) {
+    let rep = salesStaffData.find(x => x.name === repName);
+    if(!rep) return null;
+    let target = Number(rep.target) || 0;
+    let rn = (Number(rep.new_rate) || 0) / 100;
+    let rr = (Number(rep.renew_rate) || 0) / 100;
+    let prefix = `${yStr}-${mStr.padStart(2,'0')}`;
+    
+    let entries = salesLedgerData.filter(x => x.sales_rep === repName && x.date && x.date.startsWith(prefix));
+    
+    let totalSales = 0;
+    let baseBonus = 0;
+    entries.forEach(e => {
+        let amt = Number(e.amount) || 0;
+        totalSales += amt;
+        let finalType = e.override_type || e.type; 
+        if(finalType === '新客') baseBonus += amt * rn;
+        else baseBonus += amt * rr;
+    });
+    
+    if (totalSales === 0) return { target, totalSales, compRate:0, finalBonus:0, status:'無績效', detail:'本月無業績', entries };
+    
+    let compRate = target > 0 ? (totalSales / target) * 100 : 0;
+    let t1 = Number(bonusRulesData.tier1) || 80;
+    let t2 = Number(bonusRulesData.tier2) || 100;
+    let r1 = Number(bonusRulesData.tier1Rate) || 1.0;
+    let r2 = Number(bonusRulesData.tier2Rate) || 1.2;
+    let r3 = Number(bonusRulesData.tier3Rate) || 1.5;
+    let incentive = Number(bonusRulesData.incentiveBonus) || 0;
+    
+    let finalBonus = 0;
+    let detail = '';
+    let status = '';
+    
+    if(compRate < t1) {
+        finalBonus = baseBonus * r1;
+        status = '未達低標';
+        detail = `基礎獎金 $${Math.round(baseBonus).toLocaleString()} x 乘數 ${r1}`;
+    } else if (compRate <= t2) {
+        finalBonus = baseBonus * r2;
+        status = '達成提升';
+        detail = `基礎獎金 $${Math.round(baseBonus).toLocaleString()} x 乘數 ${r2}`;
+    } else {
+        let avgBaseRate = baseBonus / totalSales;
+        let targetBonus = target * avgBaseRate * r2;
+        let excessBonus = (totalSales - target) * avgBaseRate * r3;
+        finalBonus = targetBonus + excessBonus + incentive;
+        status = '超標激勵';
+        detail = `達標部分 $${Math.round(targetBonus).toLocaleString()} + 超出部分 $${Math.round(excessBonus).toLocaleString()} + 達標獎勵 $${incentive.toLocaleString()}`;
+    }
+    
+    return { target, totalSales, compRate, finalBonus: Math.round(finalBonus), status, detail, entries };
+}
+
+// ============ 業務獎金結算表 ============
+function renderSalesLedger() {
+    let y = el('sl_year').value, m = el('sl_month').value, rep = el('sl_rep').value;
+    if(y==='all' || m==='all') { el('salesLedgerTable').innerHTML = '<tr><td colspan="8" style="text-align:center;">請選擇年份與月份</td></tr>'; el('sl_summary_panel').style.display='none'; return; }
+    
+    let prefix = `${y}-${String(m).padStart(2,'0')}`;
+    let l = salesLedgerData.filter(x => x.date && x.date.startsWith(prefix) && (rep === 'all' || x.sales_rep === rep));
+    l.sort((a,b) => new Date(b.date) - new Date(a.date));
+    
+    let h = '';
+    l.forEach(item => {
+        let idx = salesLedgerData.findIndex(x => x.id === item.id);
+        let currentType = item.override_type || item.type;
+        let statusHtml = currentType === '新客' ? '<span class="badge badge-green">新客</span>' : '<span class="badge badge-blue">續約</span>';
+        
+        let applyHtml = '';
+        let actionHtml = '-';
+        if(item.override_type === '申請中') {
+            statusHtml = '<span class="badge badge-yellow">審核中</span>';
+            actionHtml = `<button class="btn-sm btn-success" onclick="approveNew(${idx})">核准</button> <button class="btn-sm btn-pdf" onclick="rejectNew(${idx})">退回</button>`;
+        } else if (currentType === '續約') {
+            applyHtml = `<br><button class="btn-sm" style="background:#cbd5e1; color:#333; margin-top:4px;" onclick="requestNew(${idx})">申請轉新客</button>`;
+        } else if (item.override_type === '退回') {
+             applyHtml = `<br><span style="color:#ef4444; font-size:11px;">申請被退回</span>`;
+        }
+        
+        h += `<tr><td>${item.date}</td><td><b style="color:#1e3a8a;">${item.sales_rep}</b></td><td>${item.customer}</td><td>$${Number(item.amount).toLocaleString()}</td><td>${item.type}</td><td>${statusHtml}${applyHtml}</td><td>${actionHtml}</td><td><button class="btn-sm btn-pdf" onclick="delSalesLedger(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+    });
+    
+    el('salesLedgerTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">無交易紀錄</td></tr>';
+    
+    if(rep !== 'all') {
+        let res = calcMonthlyBonus(rep, y, m);
+        if(res) {
+            el('sl_summary_panel').innerHTML = `<i class="fas fa-star"></i> 【${rep}】本月結算：目標 $${res.target.toLocaleString()} ｜ 累積業績 $${res.totalSales.toLocaleString()} (${res.compRate.toFixed(1)}%) ｜ <span style="color:#16a34a;">預估獎金 $${res.finalBonus.toLocaleString()}</span> <br><span style="font-size:12px; color:#64748b; font-weight:normal;">(試算公式：${res.detail})</span>`;
+            el('sl_summary_panel').style.display = 'block';
+        }
+    } else {
+        el('sl_summary_panel').style.display = 'none';
+    }
+}
+
+function requestNew(idx) { salesLedgerData[idx].override_type = '申請中'; saveAll(); renderSalesLedger(); showToast('已送出申請'); }
+function approveNew(idx) { salesLedgerData[idx].override_type = '新客'; saveAll(); renderSalesLedger(); showToast('已核准為新客'); renderDashboard(); }
+function rejectNew(idx) { salesLedgerData[idx].override_type = '退回'; saveAll(); renderSalesLedger(); showToast('已退回申請'); }
+function delSalesLedger(idx) { if(confirm('確定刪除此流水帳？(不影響合約原始資料)')){ salesLedgerData.splice(idx,1); saveAll(); renderSalesLedger(); renderDashboard(); } }
+
+function exportSalesBonusExcel() {
+    let y = el('sl_year').value, m = el('sl_month').value, rep = el('sl_rep').value;
+    if(y==='all' || m==='all') return showToast('請選擇年月', true);
+    
+    let tb = document.createElement('table');
+    let head = `<thead><tr><th colspan="7" style="font-size:18px;font-weight:bold;text-align:center;">${y}年${m}月 業務獎金結算表</th></tr><tr><th>業務姓名</th><th>當月目標</th><th>累積業績</th><th>達成率(%)</th><th>狀態判定</th><th>預估應發獎金</th><th>結算備註</th></tr></thead><tbody>`;
+    let body = '';
+    
+    let repsToCalc = rep === 'all' ? salesStaffData.map(s => s.name) : [rep];
+    repsToCalc.forEach(r => {
+        let res = calcMonthlyBonus(r, y, m);
+        if(res) {
+            body += `<tr><td>${r}</td><td>${res.target}</td><td>${res.totalSales}</td><td>${res.compRate.toFixed(1)}%</td><td>${res.status}</td><td>${res.finalBonus}</td><td>${res.detail}</td></tr>`;
+        }
+    });
+    tb.innerHTML = head + body + '</tbody>';
+    XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "獎金結算"}), `愜易居_${y}年${m}月_業務獎金結算表.xlsx`);
+    showToast('✅ 匯出成功');
+}
+
+// ============ Dashboard Updates ============
+function renderSalesDashboard() {
+    // Modify original Dashboard render to include dynamic Sales part
+    let d = new Date();
+    let yStr = d.getFullYear().toString(), mStr = (d.getMonth() + 1).toString();
+    
+    let container = el('sales_dynamic_dashboard');
+    let board = el('dash_sales_leaderboard');
+    if(!container || !board) return;
+    
+    let activeReps = salesStaffData.filter(s => s.status === '在職');
+    let viewRep = el('dash_sales_rep_select').value;
+    
+    // 1. Leaderboard Logic
+    let leaderboardData = [];
+    activeReps.forEach(r => {
+        let res = calcMonthlyBonus(r.name, yStr, mStr);
+        if(res) leaderboardData.push({name: r.name, target: res.target, sales: res.totalSales, compRate: res.compRate});
+    });
+    leaderboardData.sort((a,b) => b.compRate - a.compRate);
+    
+    let bHtml = '';
+    leaderboardData.forEach((r, idx) => {
+        let cColor = r.compRate >= 100 ? '#10b981' : (r.compRate >= 80 ? '#f59e0b' : '#ef4444');
+        let icon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx+1));
+        bHtml += `<tr><td>${icon}</td><td><b style="color:#1e293b;">${r.name}</b></td><td>$${r.target.toLocaleString()}</td><td>$${r.sales.toLocaleString()}</td><td><b style="color:${cColor};">${r.compRate.toFixed(1)}%</b></td><td><div style="width:100%;background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;"><div style="width:${Math.min(r.compRate, 100)}%;background:${cColor};height:100%;"></div></div></td></tr>`;
+    });
+    board.innerHTML = bHtml || '<tr><td colspan="6" style="text-align:center;">無業務資料</td></tr>';
+    
+    // 2. Dynamic Dashboard Logic
+    if(viewRep === 'all') {
+        let tSales = leaderboardData.reduce((s,i) => s + i.sales, 0);
+        let tTarget = leaderboardData.reduce((s,i) => s + i.target, 0);
+        let tRate = tTarget > 0 ? (tSales / tTarget) * 100 : 0;
+        let cColor = tRate >= 100 ? '#10b981' : (tRate >= 80 ? '#f59e0b' : '#ef4444');
+        
+        container.innerHTML = `
+            <div style="text-align:center;">
+                <h4 style="color:#64748b; margin-bottom:10px;">全體團隊當月累積業績</h4>
+                <div style="font-size:40px; font-weight:900; color:#1e293b; margin-bottom:15px;">$${tSales.toLocaleString()} <span style="font-size:16px;color:#94a3b8;font-weight:normal;">/ 目標 $${tTarget.toLocaleString()}</span></div>
+                <div style="width:100%; background:#cbd5e1; border-radius:10px; height:18px; overflow:hidden; margin-bottom:10px; border:1px solid #94a3b8;">
+                    <div style="width:${Math.min(tRate, 100)}%; background:${cColor}; height:100%; transition:width 0.5s ease;"></div>
+                </div>
+                <div style="font-weight:bold; color:${cColor}; font-size:18px;">團隊達成率：${tRate.toFixed(1)}%</div>
+            </div>
+        `;
+    } else {
+        let res = calcMonthlyBonus(viewRep, yStr, mStr);
+        if(!res) return;
+        let cColor = res.compRate >= 100 ? '#10b981' : (res.compRate >= 80 ? '#f59e0b' : '#ef4444');
+        
+        container.innerHTML = `
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px;">
+                <div style="flex:1; min-width:250px;">
+                    <h4 style="color:#64748b; margin-bottom:10px;"><i class="fas fa-user-circle"></i> ${viewRep} 個人業績進度</h4>
+                    <div style="font-size:35px; font-weight:900; color:#1e293b; margin-bottom:15px;">$${res.totalSales.toLocaleString()} <span style="font-size:14px;color:#94a3b8;font-weight:normal;">/ 目標 $${res.target.toLocaleString()}</span></div>
+                    <div style="width:100%; background:#cbd5e1; border-radius:10px; height:12px; overflow:hidden; margin-bottom:10px;">
+                        <div style="width:${Math.min(res.compRate, 100)}%; background:${cColor}; height:100%; transition:width 0.5s ease;"></div>
+                    </div>
+                    <div style="font-weight:bold; color:${cColor}; font-size:16px;">達成率：${res.compRate.toFixed(1)}% (${res.status})</div>
+                </div>
+                <div style="flex:1; min-width:250px; background:#ecfdf5; padding:20px; border-radius:12px; border:1px dashed #34d399; text-align:center;">
+                    <h4 style="color:#065f46; margin-bottom:10px;"><i class="fas fa-coins"></i> 即時預估獎金</h4>
+                    <div style="font-size:38px; font-weight:900; color:#047857; margin-bottom:10px;">$${res.finalBonus.toLocaleString()}</div>
+                    <p style="font-size:12px; color:#064e3b; margin:0; line-height:1.6;">${res.detail}</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Modify existing renderDashboard to call renderSalesDashboard
+const originalRenderDashboard = renderDashboard;
+renderDashboard = function() {
+    originalRenderDashboard();
+    renderSalesDashboard();
+};
+
+
 </script>
 </body>
 </html>
