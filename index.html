@@ -378,6 +378,20 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                     
                     <div class="panel ws-sales" style="grid-column:1/-1; border-top:3px solid #8b5cf6;">
+                        <!-- 試算區塊保留 -->
+                        <div style="margin-bottom:25px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">
+                            <h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-calculator" style="color:#8b5cf6;"></i> 業務分潤與獎金自動試算</h3>
+                            <div class="grid" style="grid-template-columns: repeat(5, 1fr); background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
+                                <div><label>當月標準銷售目標</label><input type="number" id="sales_target" value="500000" oninput="calcSalesBonus()" style="font-weight:bold; color:#1e293b;"></div>
+                                <div><label style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客戶累積業績</label><input type="number" id="sales_new" value="350000" oninput="calcSalesBonus()"></div>
+                                <div><label style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約累積業績</label><input type="number" id="sales_renew" value="100000" oninput="calcSalesBonus()"></div>
+                                <div><label>新客抽成比例 (%)</label><input type="number" id="sales_new_rate" value="12" step="0.1" oninput="calcSalesBonus()"></div>
+                                <div><label>續約抽成比例 (%)</label><input type="number" id="sales_renew_rate" value="5" step="0.1" oninput="calcSalesBonus()"></div>
+                            </div>
+                            <div id="sales_bonus_result" style="margin-top:15px; padding:15px 20px; border-radius:8px; font-size:16px; line-height:1.8; display:none;"></div>
+                        </div>
+
+                        <!-- 動態儀表板區塊 -->
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                             <h3 style="font-size:16px;font-weight:bold; margin:0;"><i class="fas fa-chart-pie" style="color:#8b5cf6;"></i> 業務績效與即時獎金動態儀表板</h3>
                             <div class="sys-auth" style="display:flex; gap:10px; align-items:center;">
@@ -388,7 +402,7 @@
                         <div id="sales_dynamic_dashboard" style="background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom: 20px;"></div>
                         <h4 style="margin-top:20px; font-size:15px; font-weight:bold; color:#1e293b;"><i class="fas fa-trophy" style="color:#f59e0b;"></i> 業務績效當月排行榜</h4>
                         <div class="table-responsive" style="margin-top:10px;">
-                            <table style="width:100%;"><thead><tr><th>排名</th><th>業務姓名</th><th>當月目標</th><th>累積業績</th><th>達成率</th><th>進度狀態</th></tr></thead><tbody id="dash_sales_leaderboard"></tbody></table>
+                            <table style="width:100%;"><thead><tr><th>排名</th><th>業務姓名</th><th>當月目標</th><th>新客業績</th><th>續約業績</th><th>總累積業績</th><th>達成率</th><th>進度狀態</th></tr></thead><tbody id="dash_sales_leaderboard"></tbody></table>
                         </div>
                     </div>
 
@@ -2320,7 +2334,8 @@ function exportStaffYearlyMatrix() {
     sortedStaff.forEach(s => {
         let grandTotal = s.history + s.total;
         if(grandTotal > 0) { 
-            body += `<tr><td><b style="color:#1e3a8a;">${s.name}</b></td><td style="color:#94a3b8;">${s.history.toFixed(1)}</td><td>${s.m1.toFixed(1)}</td><td>${s.m2.toFixed(1)}</td><td>${s.m3.toFixed(1)}</td><td>${s.m4.toFixed(1)}</td><td>${s.m5.toFixed(1)}</td><td>${s.m6.toFixed(1)}</td><td>${s.m7.toFixed(1)}</td><td>${s.m8.toFixed(1)}</td><td>${s.m9.toFixed(1)}</td><td>${s.m10.toFixed(1)}</td><td>${s.m11.toFixed(1)}</td><td>${s.m12.toFixed(1)}</td><td><b style="color:#d97706;">${s.total.toFixed(1)}</b></td><td><b style="color:#059669;font-size:15px;">${grandTotal.toFixed(1)}</b></td></tr>`;
+            body += `<tr><td><b style="color:#1e3a8a;">${s.name}</b></td><td style="color:#94a3b8;">${s.history.toFixe
+d(1)}</td><td>${s.m1.toFixed(1)}</td><td>${s.m2.toFixed(1)}</td><td>${s.m3.toFixed(1)}</td><td>${s.m4.toFixed(1)}</td><td>${s.m5.toFixed(1)}</td><td>${s.m6.toFixed(1)}</td><td>${s.m7.toFixed(1)}</td><td>${s.m8.toFixed(1)}</td><td>${s.m9.toFixed(1)}</td><td>${s.m10.toFixed(1)}</td><td>${s.m11.toFixed(1)}</td><td>${s.m12.toFixed(1)}</td><td><b style="color:#d97706;">${s.total.toFixed(1)}</b></td><td><b style="color:#059669;font-size:15px;">${grandTotal.toFixed(1)}</b></td></tr>`;
         }
     });
     
@@ -2350,8 +2365,7 @@ function exportAllStaffHoursSummary() {
     summary.sort((a,b) => parseFloat(a.hoursNeeded === '-' ? 9999 : a.hoursNeeded) - parseFloat(b.hoursNeeded === '-' ? 9999 : b.hoursNeeded));
     
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="7" style="font-size:20px;font-weight:bold;text-align:center;">愜易居 - 在職人員 時薪升級進度總表</th></tr><tr><th>人員姓名</th><th>目前計薪方案</th><th>生涯累積總工時</th><th>目前時薪</th><th>下一階門檻 (h)</th><th>下一階
-時薪</th><th>距離升級尚需 (h)</th></tr></thead><tbody>`;
+    let head = `<thead><tr><th colspan="7" style="font-size:20px;font-weight:bold;text-align:center;">愜易居 - 在職人員 時薪升級進度總表</th></tr><tr><th>人員姓名</th><th>目前計薪方案</th><th>生涯累積總工時</th><th>目前時薪</th><th>下一階門檻 (h)</th><th>下一階時薪</th><th>距離升級尚需 (h)</th></tr></thead><tbody>`;
     let body = '';
     
     summary.forEach(s => {
@@ -2598,6 +2612,15 @@ function saveBonusRules() {
 }
 
 // ============ 核心結算邏輯 ============
+function calcSalesBonus() {
+    if(!el('sales_target')) return;
+    let target = parseFloat(el('sales_target').value) || 0, newSales = parseFloat(el('sales_new').value) || 0, renewSales = parseFloat(el('sales_renew').value) || 0, newRate = (parseFloat(el('sales_new_rate').value) || 0) / 100, renewRate = (parseFloat(el('sales_renew_rate').value) || 0) / 100;
+    let total = newSales + renewSales, resEl = el('sales_bonus_result');
+    resEl.style.display = 'block';
+    if(total >= target) { let bonus = Math.round((newSales * newRate) + (renewSales * renewRate)); resEl.style.background = '#ecfdf5'; resEl.style.border = '1px solid #10b981'; resEl.style.color = '#065f46'; resEl.innerHTML = `🎉 <strong>恭喜達標！</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong> (門檻 $${target.toLocaleString()})<br><span style="font-size:14px;">新客獎金: $${Math.round(newSales*newRate).toLocaleString()} + 續約獎金: $${Math.round(renewSales*renewRate).toLocaleString()}</span><br><strong style="font-size:20px; color:#047857; margin-top:5px; display:inline-block;">💰 本月預估總發放獎金：$${bonus.toLocaleString()}</strong>`; } 
+    else { let diff = target - total; resEl.style.background = '#fef2f2'; resEl.style.border = '1px solid #ef4444'; resEl.style.color = '#991b1b'; resEl.innerHTML = `⚠️ <strong>尚未達標</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong><br>距離目標 $${target.toLocaleString()} 還差 <strong style="color:#dc2626;">$${diff.toLocaleString()}</strong>，請繼續加油！<br><span style="font-size:13px; color:#ef4444;">(未達標目前系統無法計算獎金)</span>`; }
+}
+
 function calcMonthlyBonus(repName, yStr, mStr) {
     let rep = salesStaffData.find(x => x.name === repName);
     if(!rep) return null;
@@ -2610,15 +2633,22 @@ function calcMonthlyBonus(repName, yStr, mStr) {
     
     let totalSales = 0;
     let baseBonus = 0;
+    let newSales = 0;
+    let renewSales = 0;
     entries.forEach(e => {
         let amt = Number(e.amount) || 0;
         totalSales += amt;
         let finalType = e.override_type || e.type; 
-        if(finalType === '新客') baseBonus += amt * rn;
-        else baseBonus += amt * rr;
+        if(finalType === '新客') {
+            baseBonus += amt * rn;
+            newSales += amt;
+        } else {
+            baseBonus += amt * rr;
+            renewSales += amt;
+        }
     });
     
-    if (totalSales === 0) return { target, totalSales, compRate:0, finalBonus:0, status:'無績效', detail:'本月無業績', entries };
+    if (totalSales === 0) return { target, totalSales, newSales, renewSales, compRate:0, finalBonus:0, status:'無績效', detail:'本月無業績', entries };
     
     let compRate = target > 0 ? (totalSales / target) * 100 : 0;
     let t1 = Number(bonusRulesData.tier1) || 80;
@@ -2649,7 +2679,7 @@ function calcMonthlyBonus(repName, yStr, mStr) {
         detail = `達標部分 $${Math.round(targetBonus).toLocaleString()} + 超出部分 $${Math.round(excessBonus).toLocaleString()} + 達標獎勵 $${incentive.toLocaleString()}`;
     }
     
-    return { target, totalSales, compRate, finalBonus: Math.round(finalBonus), status, detail, entries };
+    return { target, totalSales, newSales, renewSales, compRate, finalBonus: Math.round(finalBonus), status, detail, entries };
 }
 
 // ============ 業務獎金結算表 ============
@@ -2733,7 +2763,7 @@ function renderSalesDashboard() {
     let leaderboardData = [];
     activeReps.forEach(r => {
         let res = calcMonthlyBonus(r.name, yStr, mStr);
-        if(res) leaderboardData.push({name: r.name, target: res.target, sales: res.totalSales, compRate: res.compRate});
+        if(res) leaderboardData.push({name: r.name, target: res.target, sales: res.totalSales, newSales: res.newSales, renewSales: res.renewSales, compRate: res.compRate});
     });
     leaderboardData.sort((a,b) => b.compRate - a.compRate);
     
@@ -2741,12 +2771,14 @@ function renderSalesDashboard() {
     leaderboardData.forEach((r, idx) => {
         let cColor = r.compRate >= 100 ? '#10b981' : (r.compRate >= 80 ? '#f59e0b' : '#ef4444');
         let icon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx+1));
-        bHtml += `<tr><td>${icon}</td><td><b style="color:#1e293b;">${r.name}</b></td><td>$${r.target.toLocaleString()}</td><td>$${r.sales.toLocaleString()}</td><td><b style="color:${cColor};">${r.compRate.toFixed(1)}%</b></td><td><div style="width:100%;background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;"><div style="width:${Math.min(r.compRate, 100)}%;background:${cColor};height:100%;"></div></div></td></tr>`;
+        bHtml += `<tr><td>${icon}</td><td><b style="color:#1e293b;">${r.name}</b></td><td>$${r.target.toLocaleString()}</td><td><span style="color:#2563eb;">$${r.newSales.toLocaleString()}</span></td><td><span style="color:#059669;">$${r.renewSales.toLocaleString()}</span></td><td><b style="font-size:14px;">$${r.sales.toLocaleString()}</b></td><td><b style="color:${cColor};">${r.compRate.toFixed(1)}%</b></td><td><div style="width:100%;background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;"><div style="width:${Math.min(r.compRate, 100)}%;background:${cColor};height:100%;"></div></div></td></tr>`;
     });
-    board.innerHTML = bHtml || '<tr><td colspan="6" style="text-align:center;">無業務資料</td></tr>';
+    board.innerHTML = bHtml || '<tr><td colspan="8" style="text-align:center;">無業務資料</td></tr>';
     
     if(viewRep === 'all') {
         let tSales = leaderboardData.reduce((s,i) => s + i.sales, 0);
+        let tNew = leaderboardData.reduce((s,i) => s + i.newSales, 0);
+        let tRenew = leaderboardData.reduce((s,i) => s + i.renewSales, 0);
         let tTarget = leaderboardData.reduce((s,i) => s + i.target, 0);
         let tRate = tTarget > 0 ? (tSales / tTarget) * 100 : 0;
         let cColor = tRate >= 100 ? '#10b981' : (tRate >= 80 ? '#f59e0b' : '#ef4444');
@@ -2754,7 +2786,11 @@ function renderSalesDashboard() {
         container.innerHTML = `
             <div style="text-align:center;">
                 <h4 style="color:#64748b; margin-bottom:10px;">全體團隊當月累積業績</h4>
-                <div style="font-size:40px; font-weight:900; color:#1e293b; margin-bottom:15px;">$${tSales.toLocaleString()} <span style="font-size:16px;color:#94a3b8;font-weight:normal;">/ 目標 $${tTarget.toLocaleString()}</span></div>
+                <div style="font-size:40px; font-weight:900; color:#1e293b; margin-bottom:5px;">$${tSales.toLocaleString()} <span style="font-size:16px;color:#94a3b8;font-weight:normal;">/ 目標 $${tTarget.toLocaleString()}</span></div>
+                <div style="font-size:15px; color:#475569; margin-bottom:15px; font-weight:bold;">
+                    <span style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客：$${tNew.toLocaleString()}</span> ｜ 
+                    <span style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約：$${tRenew.toLocaleString()}</span>
+                </div>
                 <div style="width:100%; background:#cbd5e1; border-radius:10px; height:18px; overflow:hidden; margin-bottom:10px; border:1px solid #94a3b8;">
                     <div style="width:${Math.min(tRate, 100)}%; background:${cColor}; height:100%; transition:width 0.5s ease;"></div>
                 </div>
@@ -2770,7 +2806,11 @@ function renderSalesDashboard() {
             <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px;">
                 <div style="flex:1; min-width:250px;">
                     <h4 style="color:#64748b; margin-bottom:10px;"><i class="fas fa-user-circle"></i> ${viewRep} 個人業績進度</h4>
-                    <div style="font-size:35px; font-weight:900; color:#1e293b; margin-bottom:15px;">$${res.totalSales.toLocaleString()} <span style="font-size:14px;color:#94a3b8;font-weight:normal;">/ 目標 $${res.target.toLocaleString()}</span></div>
+                    <div style="font-size:35px; font-weight:900; color:#1e293b; margin-bottom:5px;">$${res.totalSales.toLocaleString()} <span style="font-size:14px;color:#94a3b8;font-weight:normal;">/ 目標 $${res.target.toLocaleString()}</span></div>
+                    <div style="font-size:14px; color:#475569; margin-bottom:15px; font-weight:bold;">
+                        <span style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客：$${res.newSales.toLocaleString()}</span> ｜ 
+                        <span style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約：$${res.renewSales.toLocaleString()}</span>
+                    </div>
                     <div style="width:100%; background:#cbd5e1; border-radius:10px; height:12px; overflow:hidden; margin-bottom:10px;">
                         <div style="width:${Math.min(res.compRate, 100)}%; background:${cColor}; height:100%; transition:width 0.5s ease;"></div>
                     </div>
