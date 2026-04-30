@@ -1457,10 +1457,6 @@ function fillFilters() {
     let supH = '<option value="全部">'; supplierData.forEach(s => supH += `<option value="${s.name}">`); if(el('list_supplier')) el('list_supplier').innerHTML = supH; 
     let slRepH = '<option value="all">全體業務總覽</option>'; salesStaffData.forEach(s => slRepH += `<option value="${s.name}">${s.name}</option>`); if(el('dash_sales_rep_select')) el('dash_sales_rep_select').innerHTML = slRepH;
     let listSalesStaff = ''; salesStaffData.forEach(s => listSalesStaff += `<option value="${s.name}">`); if(el('list_sales_staff')) el('list_sales_staff').innerHTML = listSalesStaff;
- 
-    let slRepH = '<option value="all">全體業務總覽</option>'; salesStaffData.forEach(s => slRepH += `<option value="${s.name}">${s.name}</option>`); if(el('dash_sales_rep_select')) el('dash_sales_rep_select').innerHTML = slRepH;
-    let listSalesStaff = ''; salesStaffData.forEach(s => listSalesStaff += `<option value="${s.name}">`); if(el('list_sales_staff')) el('list_sales_staff').innerHTML = listSalesStaff;
- 
 }
 
 function renderSupplierTable() { 
@@ -2371,13 +2367,13 @@ function generateStatementPDF() {
         return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2)); 
     });
     
-    let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px;
- color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
+    let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px; color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
     
     let atsRaw = attendData.filter(x => {
         if(x.company !== cb) return false;
         if(cycle === 'manual') return (!el('bill_start_date').value || x.date >= periodStart) && (!el('bill_end_date').value || x.date <= periodEnd);
-        return isDispatchPayrollPeriod(x.date, yb, mb, cycle);
+        return isDispatchPayrollPer
+iod(x.date, yb, mb, cycle);
     }); 
     
     let gl = {};
