@@ -1048,8 +1048,6 @@ function exportBossSalaryExcel() {
 }
 
 </strong> (門檻 $${target.toLocaleString()})<br><span style="font-size:14px;">新客獎金: $${Math.round(newSales*newRate).toLocaleString()} + 續約獎金: $${Math.round(renewSales*renewRate).toLocaleString()}</span><br><strong style="font-size:20px; color:#047857; margin-top:5px; display:inline-block;">💰 本月預估總發放獎金：$${bonus.toLocaleString()}</strong>`; } 
-    else { let diff = target - total; resEl.style.background = '#fef2f2'; resEl.style.border = '1px solid #ef4444'; resEl.style.color = '#991b1b'; resEl.innerHTML = `⚠️ <strong>尚未達標</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong><br>距離目標 $${target.toLocaleString()} 還差 <strong style="color:#dc2626;">$${diff.toLocaleString()}</strong>，請繼續加油！<br><span style="font-size:13px; color:#ef4444;">(未達標目前系統無法計算獎金)</span>`; }
-}
 
 function loadDataFromCloud(forceRender=false) {
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
@@ -2346,8 +2344,7 @@ function exportStaffYearlyMatrix() {
     
     tb.innerHTML = head + body + '</tbody>';
     XLSX.writeFile(XLSX.utils.table_to_book(tb, {sheet: "分月矩陣"}), `愜易居_${y}年_分月工時矩陣表.xlsx`);
-   
- showToast('✅ 矩陣表匯出成功');
+    showToast('✅ 矩陣表匯出成功');
 }
 
 function exportAllStaffHoursSummary() {
@@ -2361,7 +2358,8 @@ function exportAllStaffHoursSummary() {
                 rule: info.rule,
                 totalHours: info.hours.toFixed(1),
                 currentWage: info.wage,
-                nextTier: info.nextTier || '-',
+        
+        nextTier: info.nextTier || '-',
                 nextWage: info.nextWage || '-',
                 hoursNeeded: diff
             });
