@@ -306,7 +306,7 @@
                 
                 <li class="ws-sales"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 業務儀表板</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('customer')"><i class="fas fa-building"></i> 客戶資料庫</a></li>
-                <li class="ws-sales"><a onclick="showAdminPage('req')"><i class="fas fa-comment-dots"></i> 客戶需求單</a></li>
+                <li class="ws-sales"><a onclick="showAdminPage('req')"><i class="fas fa-comment-dots"></i> 客戶紀錄追蹤表</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
             </ul>
         </div>
@@ -345,7 +345,7 @@
                     <button class="btn btn-warning ws-hr" onclick="showAdminPage('staff');" style="margin:0;"><i class="fas fa-user-tag"></i> 新增派遣員工</button>
                     <button class="btn btn-success ws-hr" onclick="showAdminPage('ft_staff');" style="margin:0;"><i class="fas fa-user-tie"></i> 新增正職員工</button>
                     <button class="btn btn-excel ws-hr" onclick="showAdminPage('ft_attend');" style="margin:0;"><i class="fas fa-calendar-check"></i> 新增正職出勤</button>
-                    <button class="btn btn-warning ws-sales" onclick="showAdminPage('req');" style="margin:0;"><i class="fas fa-comment-dots"></i> 新增客戶需求單</button>
+                    <button class="btn btn-warning ws-sales" onclick="showAdminPage('req');" style="margin:0;"><i class="fas fa-comment-dots"></i> 新增客戶追蹤</button>
                     <button class="btn btn-excel ws-sales ws-hr" onclick="showAdminPage('dispatch');" style="margin:0;"><i class="fas fa-tasks"></i> 新增待派發案件</button>
                 </div>
                 
@@ -939,8 +939,8 @@ function standardizeData() {
     matchData = (matchData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tel:x.tel||'',region:x.region||'',transport:x.transport||'',skills:x.skills||'',exp:x.exp||'',remark:x.remark||''}));
     reqData = (reqData||[]).filter(x=>x).map(x=>({...x,name:x.name||'',tax:x.tax||'',industry:x.industry||'',scale:x.scale||'',contact:x.contact||'',title:x.title||'',phone:x.phone||'',tel:x.tel||'',email:x.email||'',decision:!!x.decision,finance:x.finance||'',source:x.source||'業務開發',source_attr:x.source_attr||'業務開發',dev_name:x.dev_name||'',status:x.status||'待處理',remark:x.remark||''}));
     salesStaffData = (salesStaffData||[]).filter(x=>x).map(x=>({...x, name:x.name||'', tel:x.tel||'', target:x.target||500000, new_rate:x.new_rate||10, renew_rate:x.renew_rate||5, status:x.status||'在職', remark:x.remark||''}));
-salesLedgerData = (salesLedgerData||[]).filter(x=>x).map(x=>({...x, id:x.id||Date.now(), date:x.date||'', sales_rep:x.sales_rep||'', customer:x.customer||'', amount:x.amount||0, type:x.type||'續約', override_type:x.override_type||'', remark:x.remark||''}));
-dispatchData = (dispatchData||[]).filter(x=>x).map(x=>({...x, company:x.company||'', role:x.role||'', num:x.num||1, status:x.status||'招募中', staff:x.staff||'', tel:x.tel||'', date:x.date||'', interview:x.interview||'', remark:x.remark||''}));
+    salesLedgerData = (salesLedgerData||[]).filter(x=>x).map(x=>({...x, id:x.id||Date.now(), date:x.date||'', sales_rep:x.sales_rep||'', customer:x.customer||'', amount:x.amount||0, type:x.type||'續約', override_type:x.override_type||'', remark:x.remark||''}));
+    dispatchData = (dispatchData||[]).filter(x=>x).map(x=>({...x, company:x.company||'', role:x.role||'', num:x.num||1, status:x.status||'招募中', staff:x.staff||'', tel:x.tel||'', date:x.date||'', interview:x.interview||'', remark:x.remark||''}));
 }
 
 function getHours(s,e) { if(!s||!e) return 0; try{ let[sh,sm]=s.split(':').map(Number); let[eh,em]=e.split(':').map(Number); let min=(eh*60+em)-(sh*60+sm); if(min<0) min+=1440; return(min/60).toFixed(1); } catch(e) { return 0; } }
@@ -2335,8 +2335,8 @@ function exportAllStaffHoursSummary() {
     staffData.forEach(s => {
         if(s.status === '在職') {
             let info = getStaffCurrentHourlyInfo(s.name);
-            let diff = info.nextTier ? (info.nextTier - info.
-hours).toFixed(1) : '-';
+            let diff = info.nextTier ? (info.nextT
+ier - info.hours).toFixed(1) : '-';
             summary.push({
                 name: s.name,
                 rule: info.rule,
@@ -2472,8 +2472,7 @@ function renderDashboard() {
     if(el('dash_ap_table')) el('dash_ap_table').innerHTML = apHtml || '<tr><td colspan="5" style="text-align:center;">近期無應付帳款</td></tr>';
 }
 
-function initStaffFrontend
-() {
+function initStaffFrontend() {
     if(!currentLoginStaff) return;
     if(el('staff-welcome-name')) el('staff-welcome-name').textContent = currentLoginStaff.name || '';
     if(el('staff-profile-name')) el('staff-profile-name').textContent = currentLoginStaff.name || '-';
