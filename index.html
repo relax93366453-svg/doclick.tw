@@ -1048,6 +1048,8 @@ function exportBossSalaryExcel() {
 }
 
 </strong> (門檻 $${target.toLocaleString()})<br><span style="font-size:14px;">新客獎金: $${Math.round(newSales*newRate).toLocaleString()} + 續約獎金: $${Math.round(renewSales*renewRate).toLocaleString()}</span><br><strong style="font-size:20px; color:#047857; margin-top:5px; display:inline-block;">💰 本月預估總發放獎金：$${bonus.toLocaleString()}</strong>`; } 
+    else { let diff = target - total; resEl.style.background = '#fef2f2'; resEl.style.border = '1px solid #ef4444'; resEl.style.color = '#991b1b'; resEl.innerHTML = `⚠️ <strong>尚未達標</strong> 累積總業績 <strong>$${total.toLocaleString()}</strong><br>距離目標 $${target.toLocaleString()} 還差 <strong style="color:#dc2626;">$${diff.toLocaleString()}</strong>，請繼續加油！<br><span style="font-size:13px; color:#ef4444;">(未達標目前系統無法計算獎金)</span>`; }
+}
 
 function loadDataFromCloud(forceRender=false) {
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
@@ -1287,10 +1289,8 @@ function addContract(){
     const o = { customer:el('con_customer').value.trim(), service:el('co_service').value, date:el('co_date').value, member_type:el('co_member_type').value, price_plan:el('co_price_plan').value, package_price:el('co_package_price').value, point_price:el('co_point_price').value, price:el('co_price').value, point:el('co_point').value, invoice_date:el('co_invoice_date').value, payment_date:el('co_payment_date').value, sales_rep:el('co_sales_rep').value.trim(), remark:el('co_remark').value, status:el('co_status').value }; 
     if(!o.customer) return; 
     
-    // Check if it's new customer or renewal
     let isNew = true;
     if(contractData.some(x => x.customer === o.customer)) { isNew = false; }
-    
     contractData.push(o); 
     
     if(o.sales_rep) {
@@ -2347,7 +2347,8 @@ function exportStaffYearlyMatrix() {
     showToast('✅ 矩陣表匯出成功');
 }
 
-function exportAllStaffHoursSummary() {
+functi
+on exportAllStaffHoursSummary() {
     let summary = [];
     staffData.forEach(s => {
         if(s.status === '在職') {
@@ -2358,8 +2359,7 @@ function exportAllStaffHoursSummary() {
                 rule: info.rule,
                 totalHours: info.hours.toFixed(1),
                 currentWage: info.wage,
-        
-        nextTier: info.nextTier || '-',
+                nextTier: info.nextTier || '-',
                 nextWage: info.nextWage || '-',
                 hoursNeeded: diff
             });
@@ -2740,7 +2740,6 @@ function exportSalesBonusExcel() {
 
 // ============ Dashboard Updates ============
 function renderSalesDashboard() {
-    // Modify original Dashboard render to include dynamic Sales part
     let d = new Date();
     let yStr = d.getFullYear().toString(), mStr = (d.getMonth() + 1).toString();
     
@@ -2751,7 +2750,6 @@ function renderSalesDashboard() {
     let activeReps = salesStaffData.filter(s => s.status === '在職');
     let viewRep = el('dash_sales_rep_select').value;
     
-    // 1. Leaderboard Logic
     let leaderboardData = [];
     activeReps.forEach(r => {
         let res = calcMonthlyBonus(r.name, yStr, mStr);
@@ -2767,7 +2765,6 @@ function renderSalesDashboard() {
     });
     board.innerHTML = bHtml || '<tr><td colspan="6" style="text-align:center;">無業務資料</td></tr>';
     
-    // 2. Dynamic Dashboard Logic
     if(viewRep === 'all') {
         let tSales = leaderboardData.reduce((s,i) => s + i.sales, 0);
         let tTarget = leaderboardData.reduce((s,i) => s + i.target, 0);
@@ -2809,7 +2806,6 @@ function renderSalesDashboard() {
     }
 }
 
-// Modify existing renderDashboard to call renderSalesDashboard
 const originalRenderDashboard = renderDashboard;
 renderDashboard = function() {
     originalRenderDashboard();
