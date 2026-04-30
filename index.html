@@ -502,15 +502,6 @@
             </div>
             
             <div class="page sys-auth" id="page-appearance"><div class="page-title"><i class="fas fa-paint-brush"></i> 外觀設定</div><div class="panel" style="border-top: 4px solid #3b82f6;"><h3 class="panel-title"><i class="fas fa-image"></i> 系統外觀管理</h3><div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;"><div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f8fafc;"><label style="font-weight:bold;">👑 登入 LOGO</label><div style="display:flex; gap:10px; margin-top:8px;"><img id="loginLogoPreview" src="" style="height:35px; display:none;"><input type="text" id="loginLogoUrl" style="flex:1; padding:6px; font-size:12px;"><button class="btn-sm btn-warning" style="margin:0;" onclick="handleLogoUrl('login')">套用</button><button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearLoginLogo()" id="btnClearLoginLogo"><i class="fas fa-trash"></i></button></div></div><div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f0fdf4;"><label style="font-weight:bold;">📄 報表 LOGO</label><div style="display:flex; gap:10px; margin-top:8px;"><img id="pdfLogoPreview" src="" style="height:35px; display:none;"><input type="text" id="pdfLogoUrl" style="flex:1; padding:6px; font-size:12px;"><button class="btn-sm btn-success" style="margin:0;" onclick="handleLogoUrl('pdf')">套用</button><button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearPdfLogo()" id="btnClearPdfLogo"><i class="fas fa-trash"></i></button></div></div><div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fffbeb; grid-column: span 2;"><label style="font-weight:bold; color:#b45309;">🖼️ 登入背景圖</label><div style="display:flex; align-items:center; gap:10px; margin-top:8px;"><input type="text" id="loginBgUrl" style="flex:1; padding:8px; font-size:13px;"><button class="btn-sm btn-excel" style="margin:0;" onclick="handleLogoUrl('bg')">套用</button><button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearLoginBg()" id="btnClearLoginBg"><i class="fas fa-trash"></i></button><span id="bg-upload-status" style="color:#10b981; font-weight:bold; display:none;">已套用</span></div></div></div></div></div>
-            <div class="page sys-auth" id="page-settings"><div class="page-title"><i class="fas fa-sliders-h"></i> 系統與使用者設定</div><div class="panel" style="border-top: 4px solid #be123c; margin-bottom:20px;"><h3 class="panel-title"><i class="fas fa-users-cog"></i> 使用者管理</h3><div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fff1f2;"><label style="font-weight:bold; color:#be123c;">🔐 自訂登入帳密</label><div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:8px;"><div style="background:white; padding:10px; border-radius:6px; border:1px solid #fecdd3;"><label style="font-size:12px; color:#e11d48; display:block;">👑 老闆</label>帳號:<input type="text" id="setting_admin_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_admin_pwd" style="width:80px; padding:4px;"></div><div style="background:white; padding:10px; border-radius:6px; border:1px solid #bfdbfe;"><label style="font-size:12px; color:#2563eb; display:block;">💼 人資</label>帳號:<input type="text" id="setting_hr_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_hr_pwd" style="width:80px; padding:4px;"></div><div style="background:white; padding:10px; border-radius:6px; border:1px solid #d8b4fe;"><label style="font-size:12px; color:#9333ea; display:block;">🤝 業務</label>帳號:<input type="text" id="setting_sales_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_sales_pwd" style="width:80px; padding:4px;"></div><button class="btn btn-pdf" style="margin:0;" onclick="savePasswords()"><i class="fas fa-save"></i> 同步</button></div><div style="background:#fff7ed; padding:15px; border-radius:8px; border:1px solid #fed7aa; margin-top:15px;"><label style="font-weight:bold; color:#c2410c;"><i class="fas fa-lock"></i> 設定頁面二階段解鎖密碼 (預設 8888)</label><br><input type="password" id="setting_sys_pin" style="width:120px; padding:6px; margin-top:5px;"></div></div></div><div class="panel" style="border-top: 4px solid #10b981; margin-bottom:20px;"><h3 class="panel-title"><i class="fas fa-desktop"></i> 前台與進階管理</h3><div style="border:1px dashed #10b981; padding:15px; border-radius:8px; background:#ecfdf5; margin-bottom: 20px;"><label style="font-weight:bold; color:#047857; margin-bottom:10px; display:block;">📝 前台管理</label><div class="grid" style="grid-template-columns: 1fr 1fr; gap:15px;"><div style="grid-column: span 2; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #93c5fd;"><label style="font-weight:bold; color:#2563eb; font-size:14px;">派遣服務類型 (,分隔)</label><input id="conf_service_types" value="行政,會計,服務員,理貨包裝,其他" style="margin-top:8px; width:100%;"></div><div style="grid-column: span 2; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #a7f3d0;"><label style="font-weight:bold; color:#059669; font-size:14px;">公告標題</label><input id="conf_sys_notice_title" value="🚀 系統重要公告與操作須知" style="margin-bottom:10px; width:100%;"><label style="font-weight:bold; color:#059669; font-size:14px;">公告內文</label><textarea id="conf_sys_notice_content" style="height:60px; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">1. 準備新增或修改資料前，請先按右上角的「重新整理」。
-2. 確保畫面為最新狀態後再進行輸入與儲存，以免互相覆蓋資料。
-3. 右側選單可以隨時切換「營業管理區」與「人事員工區」。
-4. 未來建檔遇到同名同姓，請一律在姓名後方加上 (手機後三碼)。(例：陳冠宇123)</textarea></div><div><label>規範一標題</label><input id="conf_r1_title" value="2025 年管理規範新制"></div><div><label>規範二標題</label><input id="conf_r2_title" value="注意事項"></div><div><label>規範一內文</label><textarea id="conf_r1_content" style="height:80px;width:100%;padding:5px;">一、【溝通管理】 
-嚴禁直接與業主方聯繫，所有事項均須透過窗口統一處理。</textarea></div><div><label>規範二內文</label><textarea id="conf_r2_content" style="height:80px;width:100%;padding:5px;"><li>嚴禁與業主或環境人員發生言語或肢體衝突。</li></textarea></div><div><label>按鈕一(標/副/網址)</label><input id="conf_l1_title" value="官方平台"><input id="conf_l1_desc" value="點擊前往"><input id="conf_l1_url" value="https://google.com"></div><div><label>按鈕二(標/副/網址)</label><input id="conf_l2_title" value="官方 IG"><input id="conf_l2_desc" value="追蹤資訊"><input id="conf_l2_url" value="https://instagram.com"></div></div><button class="btn btn-success" onclick="savePortalConfig()" style="margin-top:10px;"><i class="fas fa-cloud-upload-alt"></i> 同步前台設定</button></div><label style="font-weight:bold; display:block; margin-top:20px;">💰 價目表 JSON</label><textarea id="config_price_table" style="width:100%; height:80px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea><br><button class="btn btn-success" onclick="savePriceConfig()"><i class="fas fa-cloud-upload-alt"></i> 同步價目</button></div></div>
-        </div>
-    </div>
-
-    
             <div class="page" id="page-sales_staff">
                 <div class="page-title"><i class="fas fa-user-tie"></i> 業務人員資料庫</div>
                 <div class="grid" style="background:#fefce8;padding:25px;border-radius:12px;border:1px solid #fef08a;">
@@ -541,6 +532,17 @@
                     <table id="salesStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>當月目標</th><th>新客抽成(%)</th><th>續約抽成(%)</th><th>狀態</th><th>備註</th><th>操作</th></tr></thead><tbody id="salesStaffTable"></tbody></table>
                 </div>
             </div>
+
+            <div class="page sys-auth" id="page-settings"><div class="page-title"><i class="fas fa-sliders-h"></i> 系統與使用者設定</div><div class="panel" style="border-top: 4px solid #be123c; margin-bottom:20px;"><h3 class="panel-title"><i class="fas fa-users-cog"></i> 使用者管理</h3><div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fff1f2;"><label style="font-weight:bold; color:#be123c;">🔐 自訂登入帳密</label><div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:8px;"><div style="background:white; padding:10px; border-radius:6px; border:1px solid #fecdd3;"><label style="font-size:12px; color:#e11d48; display:block;">👑 老闆</label>帳號:<input type="text" id="setting_admin_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_admin_pwd" style="width:80px; padding:4px;"></div><div style="background:white; padding:10px; border-radius:6px; border:1px solid #bfdbfe;"><label style="font-size:12px; color:#2563eb; display:block;">💼 人資</label>帳號:<input type="text" id="setting_hr_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_hr_pwd" style="width:80px; padding:4px;"></div><div style="background:white; padding:10px; border-radius:6px; border:1px solid #d8b4fe;"><label style="font-size:12px; color:#9333ea; display:block;">🤝 業務</label>帳號:<input type="text" id="setting_sales_acc" style="width:80px; margin-right:8px; padding:4px;"> 密碼:<input type="text" id="setting_sales_pwd" style="width:80px; padding:4px;"></div><button class="btn btn-pdf" style="margin:0;" onclick="savePasswords()"><i class="fas fa-save"></i> 同步</button></div><div style="background:#fff7ed; padding:15px; border-radius:8px; border:1px solid #fed7aa; margin-top:15px;"><label style="font-weight:bold; color:#c2410c;"><i class="fas fa-lock"></i> 設定頁面二階段解鎖密碼 (預設 8888)</label><br><input type="password" id="setting_sys_pin" style="width:120px; padding:6px; margin-top:5px;"></div></div></div><div class="panel" style="border-top: 4px solid #10b981; margin-bottom:20px;"><h3 class="panel-title"><i class="fas fa-desktop"></i> 前台與進階管理</h3><div style="border:1px dashed #10b981; padding:15px; border-radius:8px; background:#ecfdf5; margin-bottom: 20px;"><label style="font-weight:bold; color:#047857; margin-bottom:10px; display:block;">📝 前台管理</label><div class="grid" style="grid-template-columns: 1fr 1fr; gap:15px;"><div style="grid-column: span 2; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #93c5fd;"><label style="font-weight:bold; color:#2563eb; font-size:14px;">派遣服務類型 (,分隔)</label><input id="conf_service_types" value="行政,會計,服務員,理貨包裝,其他" style="margin-top:8px; width:100%;"></div><div style="grid-column: span 2; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #a7f3d0;"><label style="font-weight:bold; color:#059669; font-size:14px;">公告標題</label><input id="conf_sys_notice_title" value="🚀 系統重要公告與操作須知" style="margin-bottom:10px; width:100%;"><label style="font-weight:bold; color:#059669; font-size:14px;">公告內文</label><textarea id="conf_sys_notice_content" style="height:60px; width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">1. 準備新增或修改資料前，請先按右上角的「重新整理」。
+2. 確保畫面為最新狀態後再進行輸入與儲存，以免互相覆蓋資料。
+3. 右側選單可以隨時切換「營業管理區」與「人事員工區」。
+4. 未來建檔遇到同名同姓，請一律在姓名後方加上 (手機後三碼)。(例：陳冠宇123)</textarea></div><div><label>規範一標題</label><input id="conf_r1_title" value="2025 年管理規範新制"></div><div><label>規範二標題</label><input id="conf_r2_title" value="注意事項"></div><div><label>規範一內文</label><textarea id="conf_r1_content" style="height:80px;width:100%;padding:5px;">一、【溝通管理】 
+嚴禁直接與業主方聯繫，所有事項均須透過窗口統一處理。</textarea></div><div><label>規範二內文</label><textarea id="conf_r2_content" style="height:80px;width:100%;padding:5px;"><li>嚴禁與業主或環境人員發生言語或肢體衝突。</li></textarea></div><div><label>按鈕一(標/副/網址)</label><input id="conf_l1_title" value="官方平台"><input id="conf_l1_desc" value="點擊前往"><input id="conf_l1_url" value="https://google.com"></div><div><label>按鈕二(標/副/網址)</label><input id="conf_l2_title" value="官方 IG"><input id="conf_l2_desc" value="追蹤資訊"><input id="conf_l2_url" value="https://instagram.com"></div></div><button class="btn btn-success" onclick="savePortalConfig()" style="margin-top:10px;"><i class="fas fa-cloud-upload-alt"></i> 同步前台設定</button></div><label style="font-weight:bold; display:block; margin-top:20px;">💰 價目表 JSON</label><textarea id="config_price_table" style="width:100%; height:80px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea><br><button class="btn btn-success" onclick="savePriceConfig()"><i class="fas fa-cloud-upload-alt"></i> 同步價目</button></div></div>
+        </div>
+    </div>
+
+    
+            
 
     <div class="staff-container" id="staff-screen">
         <div class="sidebar" style="background: #2d9d5c;">
@@ -1147,6 +1149,110 @@ function renderSalesDashboard() {
     }
 }
 
+
+function renderSalesDashboard() {
+    let d = new Date();
+    let yStr = d.getFullYear().toString();
+    let mStr = (d.getMonth() + 1).toString().padStart(2, '0');
+    let prefix = `${yStr}-${mStr}`; 
+    
+    let container = el('sales_dynamic_dashboard');
+    let board = el('dash_sales_leaderboard');
+    if(!container || !board) return;
+    
+    let activeReps = salesStaffData.filter(s => s.status === '在職');
+    let viewRep = el('dash_sales_rep_select') ? el('dash_sales_rep_select').value : 'all';
+    
+    let leaderboardData = [];
+    
+    activeReps.forEach(rep => {
+        let target = Number(rep.target) || 0;
+        let newRate = (Number(rep.new_rate) || 0) / 100;
+        let renewRate = (Number(rep.renew_rate) || 0) / 100;
+        
+        let repContracts = contractData.filter(c => c.sales_rep === rep.name && c.date && c.date.startsWith(prefix));
+        
+        let newSales = 0;
+        let renewSales = 0;
+        
+        repContracts.forEach(c => {
+            let amt = Number(c.price) || 0;
+            if(c.status === '續約') renewSales += amt;
+            else newSales += amt;
+        });
+        
+        let totalSales = newSales + renewSales;
+        let compRate = target > 0 ? (totalSales / target) * 100 : 0;
+        let estBonus = 0;
+        if (compRate >= 100) {
+             estBonus = Math.round((newSales * newRate) + (renewSales * renewRate));
+        }
+        
+        leaderboardData.push({ name: rep.name, target: target, newSales: newSales, renewSales: renewSales, sales: totalSales, compRate: compRate, estBonus: estBonus });
+    });
+    
+    leaderboardData.sort((a,b) => b.compRate - a.compRate);
+    
+    let bHtml = '';
+    leaderboardData.forEach((r, idx) => {
+        let cColor = r.compRate >= 100 ? '#10b981' : (r.compRate >= 80 ? '#f59e0b' : '#ef4444');
+        let icon = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : idx+1));
+        bHtml += `<tr><td>${icon}</td><td><b style="color:#1e293b;">${r.name}</b></td><td>$${r.target.toLocaleString()}</td><td><span style="color:#2563eb;">$${r.newSales.toLocaleString()}</span></td><td><span style="color:#059669;">$${r.renewSales.toLocaleString()}</span></td><td><b style="font-size:14px;">$${r.sales.toLocaleString()}</b></td><td><b style="color:${cColor};">${r.compRate.toFixed(1)}%</b></td><td><div style="width:100%;background:#e2e8f0;border-radius:4px;height:8px;overflow:hidden;margin-top:4px;"><div style="width:${Math.min(r.compRate, 100)}%;background:${cColor};height:100%;"></div></div></td></tr>`;
+    });
+    board.innerHTML = bHtml || '<tr><td colspan="8" style="text-align:center;">當月無業務資料</td></tr>';
+    
+    if(viewRep === 'all') {
+        let tSales = leaderboardData.reduce((s,i) => s + i.sales, 0);
+        let tNew = leaderboardData.reduce((s,i) => s + i.newSales, 0);
+        let tRenew = leaderboardData.reduce((s,i) => s + i.renewSales, 0);
+        let tTarget = leaderboardData.reduce((s,i) => s + i.target, 0);
+        let tRate = tTarget > 0 ? (tSales / tTarget) * 100 : 0;
+        let cColor = tRate >= 100 ? '#10b981' : (tRate >= 80 ? '#f59e0b' : '#ef4444');
+        
+        container.innerHTML = `
+            <div style="text-align:center;">
+                <h4 style="color:#64748b; margin-bottom:10px;">全體團隊當月累積業績</h4>
+                <div style="font-size:40px; font-weight:900; color:#1e293b; margin-bottom:5px;">$${tSales.toLocaleString()} <span style="font-size:16px;color:#94a3b8;font-weight:normal;">/ 目標 $${tTarget.toLocaleString()}</span></div>
+                <div style="font-size:15px; color:#475569; margin-bottom:15px; font-weight:bold;">
+                    <span style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客累積：$${tNew.toLocaleString()}</span> ｜ 
+                    <span style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約累積：$${tRenew.toLocaleString()}</span>
+                </div>
+                <div style="width:100%; background:#cbd5e1; border-radius:10px; height:18px; overflow:hidden; margin-bottom:10px; border:1px solid #94a3b8;">
+                    <div style="width:${Math.min(tRate, 100)}%; background:${cColor}; height:100%; transition:width 0.5s ease;"></div>
+                </div>
+                <div style="font-weight:bold; color:${cColor}; font-size:18px;">團隊達成率：${tRate.toFixed(1)}%</div>
+            </div>
+        `;
+    } else {
+        let r = leaderboardData.find(x => x.name === viewRep);
+        if(!r) return;
+        let cColor = r.compRate >= 100 ? '#10b981' : (r.compRate >= 80 ? '#f59e0b' : '#ef4444');
+        let statusText = r.compRate >= 100 ? '達標' : (r.compRate >= 80 ? '尚可' : '落後');
+        
+        container.innerHTML = `
+            <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:20px;">
+                <div style="flex:1; min-width:250px;">
+                    <h4 style="color:#64748b; margin-bottom:10px;"><i class="fas fa-user-circle"></i> ${r.name} 個人業績進度</h4>
+                    <div style="font-size:35px; font-weight:900; color:#1e293b; margin-bottom:5px;">$${r.sales.toLocaleString()} <span style="font-size:14px;color:#94a3b8;font-weight:normal;">/ 目標 $${r.target.toLocaleString()}</span></div>
+                    <div style="font-size:14px; color:#475569; margin-bottom:15px; font-weight:bold;">
+                        <span style="color:#2563eb;"><i class="fas fa-plus-circle"></i> 新客累積：$${r.newSales.toLocaleString()}</span> ｜ 
+                        <span style="color:#059669;"><i class="fas fa-sync-alt"></i> 續約累積：$${r.renewSales.toLocaleString()}</span>
+                    </div>
+                    <div style="width:100%; background:#cbd5e1; border-radius:10px; height:12px; overflow:hidden; margin-bottom:10px;">
+                        <div style="width:${Math.min(r.compRate, 100)}%; background:${cColor}; height:100%; transition:width 0.5s ease;"></div>
+                    </div>
+                    <div style="font-weight:bold; color:${cColor}; font-size:16px;">達成率：${r.compRate.toFixed(1)}% (${statusText})</div>
+                </div>
+                <div style="flex:1; min-width:250px; background:#ecfdf5; padding:20px; border-radius:12px; border:1px dashed #34d399; text-align:center;">
+                    <h4 style="color:#065f46; margin-bottom:10px;"><i class="fas fa-coins"></i> 即時預估抽成獎金</h4>
+                    <div style="font-size:38px; font-weight:900; color:#047857; margin-bottom:10px;">$${r.estBonus.toLocaleString()}</div>
+                    <p style="font-size:12px; color:#064e3b; margin:0; line-height:1.6;">(需達成 100% 目標才會顯示獎金)<br>新客${r.newSales} x 比例 + 續約${r.renewSales} x 比例</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
 function loadDataFromCloud(forceRender=false) {
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
     fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{
@@ -1352,6 +1458,9 @@ function fillFilters() {
     let slRepH = '<option value="all">全體業務總覽</option>'; salesStaffData.forEach(s => slRepH += `<option value="${s.name}">${s.name}</option>`); if(el('dash_sales_rep_select')) el('dash_sales_rep_select').innerHTML = slRepH;
     let listSalesStaff = ''; salesStaffData.forEach(s => listSalesStaff += `<option value="${s.name}">`); if(el('list_sales_staff')) el('list_sales_staff').innerHTML = listSalesStaff;
  
+    let slRepH = '<option value="all">全體業務總覽</option>'; salesStaffData.forEach(s => slRepH += `<option value="${s.name}">${s.name}</option>`); if(el('dash_sales_rep_select')) el('dash_sales_rep_select').innerHTML = slRepH;
+    let listSalesStaff = ''; salesStaffData.forEach(s => listSalesStaff += `<option value="${s.name}">`); if(el('list_sales_staff')) el('list_sales_staff').innerHTML = listSalesStaff;
+ 
 }
 
 function renderSupplierTable() { 
@@ -1385,7 +1494,7 @@ function addContract(){ const o = { customer:el('con_customer').value.trim(), se
 function editContract(i){ const d = contractData[i]; el('con_customer').value = d.customer; el('co_service').value = d.service||''; el('co_date').value = d.date; el('co_member_type').value = d.member_type; el('co_price_plan').value = d.price_plan; el('co_package_price').value = d.package_price; el('co_point_price').value = d.point_price; el('co_price').value = d.price; el('co_point').value = d.point; el('co_invoice_date').value = d.invoice_date; el('co_payment_date').value = d.payment_date; if(el('co_sales_rep')) el('co_sales_rep').value = d.sales_rep||''; el('co_remark').value = d.remark; el('co_status').value = d.status; editContractIndex = i; el('btnUpdateContract').style.display = 'inline-block'; const b = el('btnAddContract'); if(b) b.style.display = 'none'; }
 function updateContract(){ if(editContractIndex < 0) return; const o = { customer:el('con_customer').value.trim(), service:el('co_service').value, date:el('co_date').value, member_type:el('co_member_type').value, price_plan:el('co_price_plan').value, package_price:el('co_package_price').value, point_price:el('co_point_price').value, price:el('co_price').value, point:el('co_point').value, invoice_date:el('co_invoice_date').value, payment_date:el('co_payment_date').value, sales_rep:(el('co_sales_rep')?el('co_sales_rep').value.trim():''), remark:el('co_remark').value, status:el('co_status').value }; contractData[editContractIndex] = {...contractData[editContractIndex], ...o}; saveAll(); renderContractTable(); clearContractForm(); showToast('✅ 修改'); }
 function delContract(i){ if(!confirm('刪除？')) return; contractData.splice(i,1); saveAll(); renderContractTable(); showToast('刪除'); }
-function clearContractForm(){ document.querySelectorAll('#page-contract .grid input').forEach(i => i.value = ''); el('co_point').value='0'; el('co_price').value='0'; el('co_status').value='正常'; if(el('co_sales_rep')) el('co_sales_rep').value=''; editContractIndex = -1; el('btnUpdateContract').style.display = 'none'; const b = el('btnAddContract'); if(b) b.style.display = 'inline-block'; }
+function clearContractForm(){ document.querySelectorAll('#page-contract .grid input').forEach(i => i.value = ''); el('co_point').value='0'; el('co_price').value='0'; el('co_status').value='正常'; if(el('co_sales_rep')) el('co_sales_rep').value=''; if(el('co_sales_rep')) el('co_sales_rep').value=''; editContractIndex = -1; el('btnUpdateContract').style.display = 'none'; const b = el('btnAddContract'); if(b) b.style.display = 'inline-block'; }
 
 function renderStaffTable(){ 
     const fs = el('staff_filter_status').value, fn = el('staff_filter_name').value.trim().toLowerCase(); let l = staffData.filter(x => (fs === 'all' || x.status === fs) && (!fn || fn === '全部人員' || x.name.toLowerCase().includes(fn))); const {pagedList, total, totalPages} = getPagedData(l, 'staff'); let h = ''; 
@@ -2262,7 +2371,8 @@ function generateStatementPDF() {
         return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2)); 
     });
     
-    let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px; color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
+    let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px;
+ color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
     
     let atsRaw = attendData.filter(x => {
         if(x.company !== cb) return false;
@@ -2347,11 +2457,11 @@ function renderSalary() {
 }
 
 function generatePayslipPDF() { 
-    const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_
-month').value;
+    const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(!s || s === '全部人員' || y === 'all' || m === 'all') return showToast('請選人員與年月', true); 
     
-    let pm = parseInt(m) - 1, py = parseInt(y); 
+   
+ let pm = parseInt(m) - 1, py = parseInt(y); 
     if(pm === 0) { pm = 12; py -= 1; } 
     let ptxt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25`; 
     
