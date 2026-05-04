@@ -307,7 +307,7 @@
                 <li class="ws-sales"><a onclick="showAdminPage('customer')"><i class="fas fa-building"></i> 客戶資料庫</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('req')"><i class="fas fa-comment-dots"></i> 客戶需求單</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
-                <li class="ws-sales sys-auth"><a onclick="showAdminPage(\'sales_settlement\')"><i class="fas fa-hand-holding-usd"></i> 業務獎金結算總表</a></li>
+                <li class="ws-sales sys-auth"><a onclick="showAdminPage('sales_settlement')"><i class="fas fa-hand-holding-usd"></i> 業務獎金結算總表</a></li>
             </ul>
         </div>
         
@@ -2332,8 +2332,8 @@ function renderSalary() {
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value; 
     calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
     
-    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayro
-llPeriod(x.date, y, m)); 
+    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayroll
+Period(x.date, y, m)); 
     l.sort((a,b) => new Date(a.date) - new Date(b.date)); 
     
     const {pagedList, total, totalPages} = getPagedData(l, 'salary'); 
