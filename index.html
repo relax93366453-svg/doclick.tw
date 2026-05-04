@@ -1321,7 +1321,7 @@ function showAdminPage(p) {
         } 
         if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','ft_attend','ft_salary','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
         if(sysRole === 'sales' && !['dashboard','customer','req','dispatch'].includes(p)) return showToast('無權限訪問', true); 
-        if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch'].includes(p)) return showToast('業務專屬', true); 
+        if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch','sales_settlement'].includes(p)) return showToast('無權限訪問', true); 
         
         let tp=el('page-'+p); if(!tp) { p='dashboard'; tp=el('page-dashboard'); } localStorage.setItem('adminPage',p); 
         document.querySelectorAll('#sys-screen .page').forEach(x=>x.classList.remove('active')); tp.classList.add('active'); 
@@ -2333,8 +2333,8 @@ function renderSalary() {
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value; 
     calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
     
-    let l = attendData.
-filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
+ 
+   let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
     l.sort((a,b) => new Date(a.date) - new Date(b.date)); 
     
     const {pagedList, total, totalPages} = getPagedData(l, 'salary'); 
