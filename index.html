@@ -295,7 +295,7 @@
                 
                 <li class="ws-hr"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 人事儀表板</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('staff')"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('sales_staff')"><i class="fas fa-user-tie"></i> 業務人員管理</a></li>
+                <li class="ws-hr sys-auth"><a onclick="showAdminPage('sales_staff')"><i class="fas fa-user-tie"></i> 業務人員管理</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('match')"><i class="fas fa-people-arrows"></i> 派工媒合平台</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
@@ -504,7 +504,7 @@
             </div>
             
             <div class="page sys-auth" id="page-appearance"><div class="page-title"><i class="fas fa-paint-brush"></i> 外觀設定</div><div class="panel" style="border-top: 4px solid #3b82f6;"><h3 class="panel-title"><i class="fas fa-image"></i> 系統外觀管理</h3><div class="grid" style="grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;"><div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f8fafc;"><label style="font-weight:bold;">👑 登入 LOGO</label><div style="display:flex; gap:10px; margin-top:8px;"><img id="loginLogoPreview" src="" style="height:35px; display:none;"><input type="text" id="loginLogoUrl" style="flex:1; padding:6px; font-size:12px;"><button class="btn-sm btn-warning" style="margin:0;" onclick="handleLogoUrl('login')">套用</button><button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearLoginLogo()" id="btnClearLoginLogo"><i class="fas fa-trash"></i></button></div></div><div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#f0fdf4;"><label style="font-weight:bold;">📄 報表 LOGO</label><div style="display:flex; gap:10px; margin-top:8px;"><img id="pdfLogoPreview" src="" style="height:35px; display:none;"><input type="text" id="pdfLogoUrl" style="flex:1; padding:6px; font-size:12px;"><button class="btn-sm btn-success" style="margin:0;" onclick="handleLogoUrl('pdf')">套用</button><button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearPdfLogo()" id="btnClearPdfLogo"><i class="fas fa-trash"></i></button></div></div><div style="border:1px dashed #ccc; padding:15px; border-radius:8px; background:#fffbeb; grid-column: span 2;"><label style="font-weight:bold; color:#b45309;">🖼️ 登入背景圖</label><div style="display:flex; align-items:center; gap:10px; margin-top:8px;"><input type="text" id="loginBgUrl" style="flex:1; padding:8px; font-size:13px;"><button class="btn-sm btn-excel" style="margin:0;" onclick="handleLogoUrl('bg')">套用</button><button class="btn-sm btn-pdf" style="margin:0; display:none;" onclick="clearLoginBg()" id="btnClearLoginBg"><i class="fas fa-trash"></i></button><span id="bg-upload-status" style="color:#10b981; font-weight:bold; display:none;">已套用</span></div></div></div></div></div>
-            <div class="page" id="page-sales_staff">
+            <div class="page sys-auth" id="page-sales_staff">
                 <div class="page-title"><i class="fas fa-user-tie"></i> 業務人員資料庫</div>
                 <div class="grid" style="background:#fefce8;padding:25px;border-radius:12px;border:1px solid #fef08a;">
                     <div><label>姓名 *</label><input id="ss_name" required></div>
@@ -2332,8 +2332,8 @@ function renderSalary() {
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value; 
     calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
     
-    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayroll
-Period(x.date, y, m)); 
+    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) &&
+ isDispatchPayrollPeriod(x.date, y, m)); 
     l.sort((a,b) => new Date(a.date) - new Date(b.date)); 
     
     const {pagedList, total, totalPages} = getPagedData(l, 'salary'); 
