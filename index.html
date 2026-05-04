@@ -289,7 +289,7 @@
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('bill')"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</a></li>
                 <li class="ws-business"><a onclick="showAdminPage('salary')"><i class="fas fa-wallet"></i> 派遣薪資計算</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('boss')"><i class="fas fa-user-tie"></i> 老闆專區</a></li>
-                <li class="ws-business sys-auth"><a onclick="showAdminPage('sales_settlement')"><i class="fas fa-hand-holding-usd"></i> 業務獎金結算總表</a></li>
+                
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('appearance')"><i class="fas fa-paint-brush"></i> 外觀設定</a></li>
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('settings')"><i class="fas fa-sliders-h"></i> 系統與使用者</a></li>
                 
@@ -2331,12 +2331,12 @@ function generateStatementPDF() {
 }
 
 function renderSalary() { 
-    const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year
-').value, m = el('sal_filter_month').value; 
+    const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value; 
     calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
     
  
-   let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
+   let l = attendData.filt
+er(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
     l.sort((a,b) => new Date(a.date) - new Date(b.date)); 
     
     const {pagedList, total, totalPages} = getPagedData(l, 'salary'); 
