@@ -307,7 +307,6 @@
                 <li class="ws-sales"><a onclick="showAdminPage('customer')"><i class="fas fa-building"></i> 客戶資料庫</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('req')"><i class="fas fa-comment-dots"></i> 客戶需求單</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
-                <li class="ws-sales sys-auth"><a onclick="showAdminPage('sales_settlement')"><i class="fas fa-hand-holding-usd"></i> 業務獎金結算總表</a></li>
             </ul>
         </div>
         
@@ -377,7 +376,6 @@
                 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                     <div class="panel ws-sales" style="grid-column:1/-1; border-top:3px solid #8b5cf6;">
-                        <!-- 保留原本的試算區塊 -->
                         <div style="margin-bottom:25px; padding-bottom:20px; border-bottom:1px dashed #cbd5e1;">
                             <h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-calculator" style="color:#8b5cf6;"></i> 業務分潤與獎金手動試算區</h3>
                             <div class="grid" style="grid-template-columns: repeat(5, 1fr); background:#f8fafc; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
@@ -390,7 +388,6 @@
                             <div id="sales_bonus_result" style="margin-top:15px; padding:15px 20px; border-radius:8px; font-size:16px; line-height:1.8; display:none;"></div>
                         </div>
 
-                        <!-- 加入新的動態儀表板區塊 -->
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                             <h3 style="font-size:16px;font-weight:bold; margin:0;"><i class="fas fa-chart-pie" style="color:#8b5cf6;"></i> 業務績效與即時獎金動態儀表板</h3>
                             <div class="sys-auth" style="display:flex; gap:10px; align-items:center;">
@@ -556,7 +553,7 @@
                 <div class="filter-bar">
                     <label>結算年份：</label><select id="settlement_year" onchange="renderSalesSettlement()"></select>
                     <label>結算月份：</label><select id="settlement_month" onchange="renderSalesSettlement()"></select>
-                    <label>指定業務：</label><select id="settlement_rep" onchange="renderSalesSettlement()"><option value="all">全部業務</option></select>
+                    <label>指定業務：</label><select id="settlement_rep" onchange="renderSalesSettlement()"><option value="all">全部</option></select>
                     <button class="btn btn-excel" style="margin-left:auto;" onclick="exportSalesSettlementExcel()"><i class="fas fa-file-excel"></i> 下載本月獎金結算表 (Excel)</button>
                 </div>
                 <div class="table-responsive" style="margin-top:15px; border-top:2px solid #e2e8f0; padding-top:15px;">
@@ -1205,9 +1202,9 @@ function renderSalesSettlement() {
     }
     
     let prefix = `${y}-${String(m).padStart(2,'0')}`;
-    let activeReps = salesStaffData;
+    let activeReps = typeof salesStaffData !== 'undefined' ? salesStaffData : [];
     if (rep !== 'all') {
-        activeReps = salesStaffData.filter(s => s.name === rep);
+        activeReps = activeReps.filter(s => s.name === rep);
     }
     
     let h = '';
@@ -1598,7 +1595,7 @@ function fillFilters() {
     let staffH = '<option value="全部人員">'; staffData.filter(s => s.status==='在職').forEach(s => staffH += `<option value="${s.name}">`); if(el('list_staff')) el('list_staff').innerHTML = staffH; 
     let ftStaffH = '<option value="全部員工">'; ftStaffData.filter(s => s.status==='在職').forEach(s => ftStaffH += `<option value="${s.name}">`); if(el('list_ft_staff')) el('list_ft_staff').innerHTML = ftStaffH; 
     let supH = '<option value="全部">'; supplierData.forEach(s => supH += `<option value="${s.name}">`); if(el('list_supplier')) el('list_supplier').innerHTML = supH; 
-    let slRepH = '<option value="all">全體業務總覽</option>'; salesStaffData.forEach(s => slRepH += `<option value="${s.name}">${s.name}</option>`); if(el('dash_sales_rep_select')) el('dash_sales_rep_select').innerHTML = slRepH; if(el('sl_rep')) el('sl_rep').innerHTML = slRepH.replace('全體業務總覽','全部'); if(el('settlement_rep')) el('settlement_rep').innerHTML = slRepH.replace('全體業務總覽','全部業務');
+    let slRepH = '<option value="all">全體業務總覽</option>'; salesStaffData.forEach(s => slRepH += `<option value="${s.name}">${s.name}</option>`); if(el('dash_sales_rep_select')) el('dash_sales_rep_select').innerHTML = slRepH; if(el('sl_rep')) el('sl_rep').innerHTML = slRepH.replace('全體業務總覽','全部'); if(el('settlement_rep')) el('settlement_rep').innerHTML = slRepH.replace('全體業務總覽','全部');
     let listSalesStaff = ''; salesStaffData.forEach(s => listSalesStaff += `<option value="${s.name}">`); if(el('list_sales_staff')) el('list_sales_staff').innerHTML = listSalesStaff;
 }
 
@@ -2302,8 +2299,7 @@ function delTalent(i) {
 }
 
 function clearTalentForm() { 
-    document.querySelectorAll('#page-talent .grid inp
-ut').forEach(i => i.value = ''); 
+    document.querySelectorAll('#page-talent .grid input').forEach(i => i.value = ''); 
     el('tp_status').value = '待聯絡'; 
     editTalentIndex = -1; 
     el('btnUpdateTalent').style.display = 'none'; 
@@ -2311,7 +2307,8 @@ ut').forEach(i => i.value = '');
 }
 
 function renderPoint() { 
-    const c = el('point_filter_company').value.trim();
+    cons
+t c = el('point_filter_company').value.trim();
     let l = custData.filter(x => (!c || c === '全部' || x.name === c)); 
     const {pagedList, total, totalPages} = getPagedData(l, 'point'); 
     let h = '';
