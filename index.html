@@ -2790,16 +2790,21 @@ function renderSalesSettlement() {
         
         let rowId = 'det_' + s.name + '_' + Date.now() + Math.floor(Math.random()*1000);
         
-        let detHtml = '<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; font-weight:normal; color:#475569; margin-bottom:5px;">';
-        detHtml += '<div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">簽約日</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">客戶名稱</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">類型</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">單筆業績金額</div>';
+        let detHtml = '<div style="display:grid; grid-template-columns:1fr 1.5fr 1fr 1.2fr 1.2fr; gap:10px; font-weight:normal; color:#475569; margin-bottom:5px; align-items:center;">';
+        detHtml += '<div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">簽約日</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">客戶名稱</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">類型</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px; text-align:right;">單筆業績金額</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px; text-align:right;">產生之抽成獎金</div>';
         
         if (repContracts.length === 0) {
             detHtml += '<div style="grid-column:1/-1; padding-top:10px; text-align:center;">無任何合約紀錄</div>';
         } else {
             repContracts.forEach(c => {
-                let typeStr = c.status === '續約' ? '<span style="color:#059669;">續約</span>' : '<span style="color:#2563eb;">新客</span>';
+                let isRenew = c.status === '續約';
+                let typeStr = isRenew ? '<span style="color:#059669; font-weight:bold; background:#d1fae5; padding:2px 8px; border-radius:4px;">續約</span>' : '<span style="color:#2563eb; font-weight:bold; background:#dbeafe; padding:2px 8px; border-radius:4px;">新客</span>';
                 let amtStr = Number(c.price) || 0;
-                detHtml += `<div style="padding-top:5px;">${c.date||'-'}</div><div style="padding-top:5px;">${c.customer||'-'}</div><div style="padding-top:5px;">${typeStr}</div><div style="padding-top:5px;">$${amtStr.toLocaleString()}</div>`;
+                let singleBonus = isRenew ? (amtStr * renewRate) : (amtStr * newRate);
+                let bonusLabel = isRenew ? '續約抽成' : '新客抽成';
+                let bonusColor = isRenew ? '#059669' : '#2563eb';
+                
+                detHtml += `<div style="padding-top:8px;">${c.date||'-'}</div><div style="padding-top:8px;">${c.customer||'-'}</div><div style="padding-top:8px;">${typeStr}</div><div style="padding-top:8px; text-align:right;">$${amtStr.toLocaleString()}</div><div style="padding-top:8px; text-align:right; color:${bonusColor}; font-weight:bold;"><span style="font-size:12px; font-weight:normal; color:#94a3b8; margin-right:5px;">(${bonusLabel})</span>$${Math.round(singleBonus).toLocaleString()}</div>`;
             });
         }
         detHtml += '</div>';
