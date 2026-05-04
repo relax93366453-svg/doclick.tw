@@ -555,6 +555,7 @@
                                 <th style="color:#059669;">續約獎金</th>
                                 <th style="color:#f59e0b;">超額獎勵</th>
                                 <th style="color:#ef4444; font-size:15px;">應發總額</th>
+                                <th style="color:#64748b;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="salesSettlementTable"></tbody>
@@ -1533,7 +1534,7 @@ function renderFtAttendTable() {
         h += `<tr><td><b style="color:#1e3a8a;">${item.staff}</b></td><td>${item.date}</td><td><span class="badge ${typeColor}">${item.record_type}</span></td><td>${timeStr}</td><td><b style="color:#059669;">${item.hours||0} h</b></td><td>${statusStr}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editFtAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delFtAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
     });
     
-    el('ftAttendTable').innerHTML = h || '<tr><td colspan="7" style="text-align:center;">無出勤紀錄</td></tr>';
+    el('ftAttendTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">無出勤紀錄</td></tr>';
     renderPagination('ft_attend', total, totalPages);
 }
 
@@ -1729,7 +1730,7 @@ function generateFtPayslipPDF_Single(staffName) {
     const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">` : ''; 
     let [y, m] = fM.split('-');
     
-    let c = `<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #3b82f6;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#1e3a8a;">愜易居有限公司 - 正職薪資明細單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>員工姓名：</strong> ${staffName}<br><strong>結算月份：</strong> ${y} 年 ${m} 月</td><td style="text-align:right;"><strong>入帳帳戶：</strong><br>${si.bank||''} ${si.bank_branch||''}<br>${si.bank_acc||''}</td></tr></table><table class="summary-table" style="width:100%;margin-bottom:20px;border:1px solid #bfdbfe;"><tr><td>本薪<br><strong style="font-size:24px;color:#1e293b;">${baseSal}</strong></td><td>請假扣款<br><strong style="font-size:24px;color:#ef4444;">-${Math.round(leaveDeduct)}</strong></td><td>加班津貼<br><strong style="font-size:24px;color:#059669;">+${Math.round(overtimePay)}</strong></td><td>代扣保費<br><strong style="font-size:24px;color:#ef4444;">-${lDeduct+hDeduct}</strong></td><td style="background:#eff6ff;">實發薪資<br><strong style="font-size:28px;color:#1d4ed8;">${net}</strong></td></tr></table><div style="font-weight:bold;margin-bottom:10px;color:#333;"><i class="fas fa-list"></i> 本月出勤明細 (${totalWorkHours.toFixed(1)} h)</div><table style="width:100%;border-collapse:collapse;text-align:center;font-size:12px;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>類型</th><th>打卡時間</th><th>假別</th><th>時數</th><th>增減金額</th><th>備註/原因</th></tr></thead><tbody>${ah||'<tr><td colspan="7">無出勤打卡紀錄</td></tr>'}</tbody></table><div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+    let c = `<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #3b82f6;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#1e3a8a;">愜易居有限公司 - 正職薪資明細單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>員工姓名：</strong> ${staffName}<br><strong>結算月份：</strong> ${y} 年 ${m} 月</td><td style="text-align:right;"><strong>入帳帳戶：</strong><br>${si.bank||''} ${si.bank_branch||''}<br>${si.bank_acc||''}</td></tr></table><table class="summary-table" style="width:100%;margin-bottom:20px;border:1px solid #bfdbfe;"><tr><td>本薪<br><strong style="font-size:24px;color:#1e293b;">${baseSal}</strong></td><td>請假扣款<br><strong style="font-size:24px;color:#ef4444;">-${Math.round(leaveDeduct)}</strong></td><td>加班津貼<br><strong style="font-size:24px;color:#059669;">+${Math.round(overtimePay)}</strong></td><td>代扣保費<br><strong style="font-size:24px;color:#ef4444;">-${lDeduct+hDeduct}</strong></td><td style="background:#eff6ff;">實發薪資<br><strong style="font-size:28px;color:#1d4ed8;">${net}</strong></td></tr></table><div style="font-weight:bold;margin-bottom:10px;color:#333;"><i class="fas fa-list"></i> 本月出勤明細 (${totalWorkHours.toFixed(1)} h)</div><table style="width:100%;border-collapse:collapse;text-align:center;font-size:12px;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>類型</th><th>打卡時間</th><th>假別</th><th>時數</th><th>增減金額</th><th>備註/原因</th></tr></thead><tbody>${ah||'<tr><td colspan="8">無出勤打卡紀錄</td></tr>'}</tbody></table><div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
     
     openPreview(`${staffName}_${y}年${m}月薪資單`, c, si.drive||'', staffName); 
 }
@@ -2192,7 +2193,7 @@ function showBoss() {
         
         h += `<tr><td>${c.coop}</td><td>${c.name}</td><td>${latest}</td><td>${tp.toFixed(1)}</td><td>${used.toFixed(1)}</td><td><b class="${rm < 0 ? 'red' : (rm < 50 ? 'yellow' : 'green')}">${rm.toFixed(1)}</b></td><td>${rm < 0 ? '透支' : (rm < 50 ? '偏低' : '正常')}</td></tr>`; 
     });
-    el('bossTable').innerHTML = h || '<tr><td colspan="7" style="text-align:center;">無資料</td></tr>'; 
+    el('bossTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('boss', total, totalPages); 
     
     setTimeout(() => { renderBossChart(); }, 100);
@@ -2331,7 +2332,8 @@ function generateStatementPDF() {
 
 function renderSalary() { 
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value; 
-    calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
+    calcul
+ateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
     
  
    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
@@ -2473,7 +2475,7 @@ function exportAllStaffHoursSummary() {
     summary.sort((a,b) => parseFloat(a.hoursNeeded === '-' ? 9999 : a.hoursNeeded) - parseFloat(b.hoursNeeded === '-' ? 9999 : b.hoursNeeded));
     
     let tb = document.createElement('table');
-    let head = `<thead><tr><th colspan="7" style="font-size:20px;font-weight:bold;text-align:center;">愜易居 - 在職人員 時薪升級進度總表</th></tr><tr><th>人員姓名</th><th>目前計薪方案</th><th>生涯累積總工時</th><th>目前時薪</th><th>下一階門檻 (h)</th><th>下一階時薪</th><th>距離升級尚需 (h)</th></tr></thead><tbody>`;
+    let head = `<thead><tr><th colspan="8" style="font-size:20px;font-weight:bold;text-align:center;">愜易居 - 在職人員 時薪升級進度總表</th></tr><tr><th>人員姓名</th><th>目前計薪方案</th><th>生涯累積總工時</th><th>目前時薪</th><th>下一階門檻 (h)</th><th>下一階時薪</th><th>距離升級尚需 (h)</th></tr></thead><tbody>`;
     let body = '';
     
     summary.forEach(s => {
@@ -2728,7 +2730,7 @@ function clearSalesStaffForm() {
 function renderSalesSettlement() {
     let y = el('settlement_year').value, m = el('settlement_month').value, rep = el('settlement_rep').value;
     if(y==='all' || m==='all') { 
-        el('salesSettlementTable').innerHTML = '<tr><td colspan="7" style="text-align:center;">請選擇結算年份與月份</td></tr>'; 
+        el('salesSettlementTable').innerHTML = '<tr><td colspan="8" style="text-align:center;">請選擇結算年份與月份</td></tr>'; 
         return; 
     }
     
@@ -2785,6 +2787,23 @@ function renderSalesSettlement() {
         
         let cColor = compRate >= 100 ? '#10b981' : (compRate >= 80 ? '#f59e0b' : '#ef4444');
         
+        
+        let rowId = 'det_' + s.name + '_' + Date.now() + Math.floor(Math.random()*1000);
+        
+        let detHtml = '<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; font-weight:normal; color:#475569; margin-bottom:5px;">';
+        detHtml += '<div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">簽約日</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">客戶名稱</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">類型</div><div style="font-weight:bold; border-bottom:1px solid #cbd5e1; padding-bottom:5px;">單筆業績金額</div>';
+        
+        if (repContracts.length === 0) {
+            detHtml += '<div style="grid-column:1/-1; padding-top:10px; text-align:center;">無任何合約紀錄</div>';
+        } else {
+            repContracts.forEach(c => {
+                let typeStr = c.status === '續約' ? '<span style="color:#059669;">續約</span>' : '<span style="color:#2563eb;">新客</span>';
+                let amtStr = Number(c.price) || 0;
+                detHtml += `<div style="padding-top:5px;">${c.date||'-'}</div><div style="padding-top:5px;">${c.customer||'-'}</div><div style="padding-top:5px;">${typeStr}</div><div style="padding-top:5px;">$${amtStr.toLocaleString()}</div>`;
+            });
+        }
+        detHtml += '</div>';
+
         h += `<tr>
             <td><b style="color:#1e293b;">${s.name}</b></td>
             <td>$${totalSales.toLocaleString()}</td>
@@ -2793,10 +2812,13 @@ function renderSalesSettlement() {
             <td style="color:#059669;">$${baseRenewBonus.toLocaleString()}</td>
             <td style="color:#f59e0b;">$${excessBonus.toLocaleString()}</td>
             <td><b style="color:#ef4444; font-size:16px;">$${Math.round(totalBonus).toLocaleString()}</b></td>
+            <td><button class="btn btn-sm" style="background:#e2e8f0; color:#475569; padding:5px 10px;" onclick="let e=document.getElementById('${rowId}'); e.style.display = e.style.display==='none'?'table-row':'none';"><i class="fas fa-search"></i> 查看明細</button></td>
         </tr>`;
+        h += `<tr id="${rowId}" style="display:none; background:#f8fafc;"><td colspan="8" style="padding:15px; text-align:left; border-left:4px solid #8b5cf6;">${detHtml}</td></tr>`;
+        
     });
     
-    el('salesSettlementTable').innerHTML = h || '<tr><td colspan="7" style="text-align:center;">無業務資料</td></tr>';
+    el('salesSettlementTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">無業務資料</td></tr>';
 }
 
 function exportSalesSettlementExcel() {
