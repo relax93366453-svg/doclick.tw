@@ -2569,10 +2569,12 @@ function renderDashboard() {
         let tp = contractData.filter(x => x.customer === c.name).reduce((s, i) => s + (+i.point||0), 0);
         let used = attendData.filter(x => x.company === c.name).reduce((s, i) => s + getItemDeductPoints(i), 0);
         let rm = tp - used;
+        // 專案計費客戶不計入點數統計與警示
+        if (c.billing_mode === '專案') { ptGe50++; return; }
         if(rm >= 50) ptGe50++;
         else {
             ptLt50++;
-            alertHtml += `<tr><td>${c.name}</td><td><b style="color:#ef4444;">${rm.toFixed(1)}</b></td><td>-</td></tr>`;
+            alertHtml += `<tr><td>${c.name}</td><td><b style="color:#ef4444;">${rm.toFixed(1)}</b></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('customer'); setTimeout(()=>{ el('cust_filter_company').value='${c.name}'; renderCustTable(); }, 300);"><i class="fas fa-search"></i> 查看</button></td></tr>`;
         }
     });
     if(el('dash_point_ge50')) el('dash_point_ge50').textContent = ptGe50;
