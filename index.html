@@ -2565,6 +2565,7 @@ function renderDashboard() {
 
     let ptGe50 = 0, ptLt50 = 0;
     let alertHtml = '';
+    let alertList = [];
     custData.filter(c => c.coop === '正合作').forEach(c => {
         let tp = contractData.filter(x => x.customer === c.name).reduce((s, i) => s + (+i.point||0), 0);
         let used = attendData.filter(x => x.company === c.name).reduce((s, i) => s + getItemDeductPoints(i), 0);
@@ -2572,10 +2573,11 @@ function renderDashboard() {
         // 專案計費客戶不計入點數統計與警示
         if (c.billing_mode === '專案') { ptGe50++; return; }
         if(rm >= 50) ptGe50++;
-        else {
-            ptLt50++;
-            alertHtml += `<tr><td>${c.name}</td><td><b style="color:#ef4444;">${rm.toFixed(1)}</b></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('customer'); setTimeout(()=>{ el('cust_filter_company').value='${c.name}'; renderCustTable(); }, 300);"><i class="fas fa-search"></i> 查看</button></td></tr>`;
-        }
+        else { ptLt50++; alertList.push({ name: c.name, rm }); }
+    });
+    alertList.sort((a, b) => a.rm - b.rm);
+    alertList.forEach(({ name, rm }) => {
+        alertHtml += `<tr><td>${name}</td><td><b style="color:#ef4444;">${rm.toFixed(1)}</b></td><td><button class="btn-sm btn-warning" onclick="showAdminPage('customer'); setTimeout(()=>{ el('cust_filter_company').value='${name}'; renderCustTable(); }, 300);"><i class="fas fa-search"></i> 查看</button></td></tr>`;
     });
     if(el('dash_point_ge50')) el('dash_point_ge50').textContent = ptGe50;
     if(el('dash_point_lt50')) el('dash_point_lt50').textContent = ptLt50;
