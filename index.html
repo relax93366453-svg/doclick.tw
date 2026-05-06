@@ -8,7 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css" media="print" onload="this.media='all'; this.onload=null;" crossorigin="anonymous">
     
     <style>
         /* 基礎排版與滾動條 */
@@ -53,8 +54,8 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat;
-            background-color: #1e293b;
+            background: url('https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2069&auto=format&fit=crop') center/cover no-repeat, linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0f4c32 100%);
+            background-color: #0f172a;
             position: fixed;
             top: 0;
             left: 0;
@@ -248,7 +249,9 @@
         <div class="login-box">
             <div class="login-logo-container">
                 <img id="login-logo-img" src="">
-                <i class="fas fa-leaf" id="login-logo-icon"></i>
+                <svg id="login-logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:55px;height:55px;fill:#2d9d5c;" aria-hidden="true">
+  <path d="M272 96c-78.6 0-145.1 51.5-167.7 122.5c33.6-17 71.5-26.5 111.7-26.5h88c8.8 0 16 7.2 16 16s-7.2 16-16 16H288 216c-102.9 0-192 68.1-208 160c0 0 0 .1 0 .1L0 416H16c53 0 101.4-21.4 136.2-56.1C178.5 441.9 240.5 480 312 480c94.9 0 176.1-55.4 216-136.1c.2-.5 .4-1 .6-1.4c15.6-31.6 24.4-67.1 24.4-104.5C553 141 424.9 96 272 96z"/>
+</svg>
             </div>
             <h1 style="margin-top:10px;">愜易居管理系統</h1>
             <div class="pro-badge">專業企業版</div>
@@ -267,7 +270,7 @@
                 <label>登入密碼</label>
                 <input type="password" id="login_pwd" placeholder="請輸入密碼">
             </div>
-            <button class="btn-login" onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> 登 入 系 統</button>
+            <button class="btn-login" onclick="handleLogin()">🔐 登 入 系 統</button>
         </div>
     </div>
 
@@ -2279,9 +2282,8 @@ function renderBill() {
     
     let gl = {};
     l.forEach(i => {
-        let rm = (i.remark||'').replace('跨階前(自動時間拆分)','').replace('升級後(自動時間拆分)','').trim();
-        let k = `${i.date}_${i.staff}_${i.service}_${rm}`;
-        if(!gl[k]) gl[k] = {...i, remark: rm, cH: 0, cP: 0};
+        let k = `${i.date}_${i.staff}_${i.service}`;
+        if(!gl[k]) gl[k] = {...i, cH: 0, cP: 0};
         gl[k].cH += getItemClockHours(i); 
         gl[k].cP += getItemDeductPoints(i);
     });
@@ -2290,7 +2292,7 @@ function renderBill() {
     const {pagedList, total, totalPages} = getPagedData(fl, 'bill');
     let h = ''; 
     pagedList.forEach(item => { 
-        h += `<tr><td>${item.date}</td><td>${item.staff}</td><td>${item.service ? (item.remark ? item.service + '(' + item.remark + ')' : item.service) : '-'}</td><td>${item.cH.toFixed(1)}</td><td>${item.cP}</td></tr>`; 
+        h += `<tr><td>${item.date}</td><td>${item.staff}</td><td>${item.service || '-'}</td><td>${item.cH.toFixed(1)}</td><td>${item.cP}</td></tr>`; 
     }); 
     el('billTable').innerHTML = h || '<tr><td colspan="5" style="text-align:center;">無紀錄</td></tr>'; 
     renderPagination('bill', total, totalPages); 
@@ -2367,9 +2369,8 @@ function generateStatementPDF() {
     
     let gl = {};
     atsRaw.forEach(i => {
-        let rm = (i.remark||'').replace('跨階前(自動時間拆分)','').replace('升級後(自動時間拆分)','').trim();
-        let k = `${i.date}_${i.staff}_${i.service}_${rm}`;
-        if(!gl[k]) gl[k] = {...i, remark: rm, cH: 0, cP: 0};
+        let k = `${i.date}_${i.staff}_${i.service}`;
+        if(!gl[k]) gl[k] = {...i, cH: 0, cP: 0};
         gl[k].cH += getItemClockHours(i); 
         gl[k].cP += getItemDeductPoints(i);
     });
@@ -2380,7 +2381,7 @@ function generateStatementPDF() {
     if(ats.length > 0) { 
         ats.forEach(i => { 
             periodDeducted += i.cP; 
-            ah += `<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service ? (i.remark ? i.service + '(' + i.remark + ')' : i.service) : '-'}</td><td>${i.cH.toFixed(1)}</td><td>${i.cP}</td></tr>`; 
+            ah += `<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service || '-'}</td><td>${i.cH.toFixed(1)}</td><td>${i.cP}</td></tr>`; 
         });
     } else { 
         ah = `<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`; 
@@ -2916,6 +2917,27 @@ function exportSalesSettlementExcel() {
     showToast('✅ 匯出成功');
 }
 
+</script>
+
+<script>
+// Font Awesome icon fallback check
+document.addEventListener("DOMContentLoaded", function() {
+    setTimeout(function() {
+        var testEl = document.createElement("i");
+        testEl.className = "fas fa-leaf";
+        testEl.style.position = "absolute";
+        testEl.style.visibility = "hidden";
+        document.body.appendChild(testEl);
+        var w = testEl.getBoundingClientRect().width;
+        document.body.removeChild(testEl);
+        if (!w || w === 0) {
+            var icon = document.getElementById("login-logo-icon");
+            if (icon) icon.style.display = "none";
+            var emoji = document.getElementById("login-logo-emoji");
+            if (emoji) emoji.style.display = "inline";
+        }
+    }, 800);
+});
 </script>
 </body>
 </html>
