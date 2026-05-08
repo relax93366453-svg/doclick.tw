@@ -614,6 +614,14 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbywZSMycd8za6Nllo9F0jkGuygqalO8N6AKX20bNXR1RWCXEGU5BGHMlpet-fo-oPJY-Q/exec';
 const el = id => document.getElementById(id);
 
+// ✅ 每 60 秒自動從雲端同步一次（確保看到同事最新資料）
+setInterval(() => {
+    const role = localStorage.getItem('loginRole');
+    if (role === 'admin' || role === 'staff') {
+        loadDataFromCloud(false);
+    }
+}, 60000);
+
 function showToast(m, err = false) { 
     const t = el('toast'); 
     if(!t) return; 
