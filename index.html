@@ -274,6 +274,16 @@
                 <label>登入密碼</label>
                 <input type="password" id="login_pwd" placeholder="請輸入密碼">
             </div>
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin:10px 0 14px;text-align:left;font-size:12px;color:#475569;line-height:1.7;">
+                <b style="color:#1e293b;">預設登入帳密</b><br>
+                老闆／管理員：admin / 1234<br>
+                人資專區：hr / 1234<br>
+                業務專區：sales / 1234
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                <button type="button" onclick="quickLogin('hr','schedule')" style="border:1px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;border-radius:8px;padding:10px;font-weight:800;cursor:pointer;">直接看排班</button>
+                <button type="button" onclick="quickLogin('admin','dashboard')" style="border:1px solid #bbf7d0;background:#f0fdf4;color:#15803d;border-radius:8px;padding:10px;font-weight:800;cursor:pointer;">管理員登入</button>
+            </div>
             <button class="btn-login" onclick="handleLogin()">🔐 登 入 系 統</button>
         </div>
     </div>
@@ -872,6 +882,28 @@ function applyWorkspaceTheme(workspace) {
     }
 }
 
+function quickLogin(type='hr', targetPage='schedule') {
+    if(type === 'hr') {
+        localStorage.setItem('loginRole','admin');
+        localStorage.setItem('sysRole','hr');
+        localStorage.setItem('workspace','hr');
+        localStorage.setItem('adminPage', targetPage || 'schedule');
+    } else if(type === 'sales') {
+        localStorage.setItem('loginRole','admin');
+        localStorage.setItem('sysRole','sales');
+        localStorage.setItem('workspace','sales');
+        localStorage.setItem('adminPage', targetPage || 'dashboard');
+    } else {
+        localStorage.setItem('loginRole','admin');
+        localStorage.setItem('sysRole','admin');
+        localStorage.setItem('workspace','business');
+        localStorage.setItem('adminPage', targetPage || 'dashboard');
+    }
+    restoreLoginState();
+    setTimeout(()=>{ try { showAdminPage(localStorage.getItem('adminPage') || targetPage || 'dashboard'); } catch(e){} }, 80);
+    showToast('✅ 已登入');
+}
+
 function handleLogin() {
     const role = el('login_role').value, acc = el('login_acc').value.trim(), pwd = el('login_pwd').value.trim();
     if(!acc || !pwd) return showToast('請輸入帳密', true);
@@ -882,15 +914,15 @@ function handleLogin() {
     
     if (role === 'admin') {
         if ((acc === sAA && pwd === sAP) || (acc === 'admin' && pwd === 'doclick888')) { 
-            localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','admin'); localStorage.setItem('workspace','business'); 
+            localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','admin'); localStorage.setItem('workspace','business'); localStorage.setItem('adminPage','dashboard'); 
             restoreLoginState(); showToast('老闆登入成功'); 
         } 
         else if ((acc === sHA && pwd === sHP) || (acc === 'hr' && pwd === 'doclick888')) { 
-            localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','hr'); localStorage.setItem('workspace','hr'); 
+            localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','hr'); localStorage.setItem('workspace','hr'); localStorage.setItem('adminPage','schedule'); 
             restoreLoginState(); showToast('人資登入成功'); 
         } 
         else if ((acc === sSA && pwd === sSP) || (acc === 'sales' && pwd === 'doclick888')) { 
-            localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','sales'); localStorage.setItem('workspace','sales'); 
+            localStorage.setItem('loginRole','admin'); localStorage.setItem('sysRole','sales'); localStorage.setItem('workspace','sales'); localStorage.setItem('adminPage','dashboard'); 
             restoreLoginState(); showToast('業務登入成功'); 
         } 
         else { showToast('帳密錯誤', true); }
