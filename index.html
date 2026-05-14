@@ -267,6 +267,24 @@
         .schedule-modal-form label{display:block;font-size:12px;color:#475569;font-weight:900;margin-bottom:5px;}
         .schedule-modal-form input{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;}
         .schedule-modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:20px;}
+        .schedule-board .time-head,.schedule-board .time-cell{position:sticky;left:0;z-index:5;background:#fff;min-width:74px;width:74px;box-shadow:1px 0 0 #e2e8f0;font-weight:900;}
+        .schedule-board .time-head{z-index:7;background:#f8fafc!important;color:#475569;}
+        .schedule-board .slot-cell{height:74px;min-width:62px;cursor:pointer;background:#fff;padding:6px;transition:.15s;vertical-align:top;}
+        .schedule-board .slot-cell:hover{background:#f8fafc;box-shadow:inset 0 0 0 2px #93c5fd;}
+        .slot-cell-content{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;}
+        .slot-staff-pill{display:inline-flex;align-items:center;max-width:100%;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .slot-count{display:inline-block;background:#e0f2fe;color:#0369a1;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:900;margin-bottom:2px;}
+        .slot-empty{color:#cbd5e1;font-size:11px;font-weight:700;}
+        .schedule-note-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 14px;color:#1e40af;font-size:13px;font-weight:800;}
+        .schedule-staff-check-panel{grid-column:1/-1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;max-height:220px;overflow:auto;}
+        .schedule-staff-check-title{font-size:12px;font-weight:900;color:#334155;margin-bottom:8px;}
+        .schedule-staff-check-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+        .schedule-staff-check-item{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #dbe7f5;border-radius:10px;padding:8px 10px;font-size:13px;font-weight:800;color:#334155;cursor:pointer;}
+        .schedule-staff-check-item:hover{border-color:#93c5fd;background:#eff6ff;}
+        .schedule-staff-check-item input{width:auto!important;margin:0;}
+        .schedule-conflict-box{grid-column:1/-1;display:none;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:800;line-height:1.6;}
+        @media(max-width:700px){.schedule-staff-check-grid{grid-template-columns:1fr;}}
+
         @media(max-width:900px){.schedule-kpi-grid{grid-template-columns:1fr 1fr}.schedule-controls-panel{grid-template-columns:1fr}.modal-shift-grid{grid-template-columns:1fr 1fr}}
         @media(max-width:600px){.schedule-kpi-grid,.schedule-modal-form,.modal-shift-grid{grid-template-columns:1fr}}
 
@@ -550,7 +568,7 @@
                         <div class="schedule-title-wrap">
                             <div style="font-size:12px;color:#64748b;font-weight:800;">目前位置</div>
                             <h2>智慧排班</h2>
-                            <p>支援不同人員、不同日期、不同上下班時間；每格都能單獨編輯排班與休假。</p>
+                            <p>改為依公司篩選後，用「日期 × 時段」方式排人；每一格可安排多位人員。</p>
                         </div>
                         <div class="schedule-actions">
                             <select id="sch_company_select" onchange="renderScheduleTable()"><option value="">全部公司</option></select>
@@ -565,36 +583,33 @@
                     </div>
 
                     <div class="schedule-kpi-grid">
-                        <div class="schedule-kpi"><div class="mini-icon"><i class="fas fa-users"></i></div><div class="kpi-label">排班人數</div><div class="kpi-value" id="sch_kpi_staff">0 人</div></div>
-                        <div class="schedule-kpi"><div class="mini-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">本月總工時</div><div class="kpi-value" id="sch_kpi_hours">0 小時</div></div>
-                        <div class="schedule-kpi"><div class="mini-icon"><i class="fas fa-bed"></i></div><div class="kpi-label">本月休假</div><div class="kpi-value" id="sch_kpi_rest">0 格</div></div>
-                        <div class="schedule-kpi red"><div class="mini-icon"><i class="fas fa-calendar-times"></i></div><div class="kpi-label">違規提醒</div><div class="kpi-value" id="sch_kpi_warn">0 筆</div></div>
+                        <div class="schedule-kpi"><div class="mini-icon"><i class="fas fa-users"></i></div><div class="kpi-label">已排人數</div><div class="kpi-value" id="sch_kpi_staff">0 人</div></div>
+                        <div class="schedule-kpi"><div class="mini-icon"><i class="fas fa-clock"></i></div><div class="kpi-label">已排人時</div><div class="kpi-value" id="sch_kpi_hours">0 小時</div></div>
+                        <div class="schedule-kpi"><div class="mini-icon"><i class="fas fa-bed"></i></div><div class="kpi-label">已排時段</div><div class="kpi-value" id="sch_kpi_rest">0 格</div></div>
+                        <div class="schedule-kpi red"><div class="mini-icon"><i class="fas fa-calendar-times"></i></div><div class="kpi-label">提醒</div><div class="kpi-value" id="sch_kpi_warn">0 筆</div></div>
                     </div>
 
                     <div class="schedule-controls-panel">
                         <div>
-                            <div style="font-size:14px;font-weight:900;color:#0f172a;margin-bottom:10px;">班別圖例</div>
+                            <div style="font-size:14px;font-weight:900;color:#0f172a;margin-bottom:10px;">排班方式說明</div>
                             <div class="schedule-legend">
-                                <span class="shift-pill shift-rest">休假</span>
-                                <span class="shift-pill shift-early">早班 09:00-18:00</span>
-                                <span class="shift-pill shift-mid">午班 12:00-21:00</span>
-                                <span class="shift-pill shift-night">晚班 15:00-00:00</span>
-                                <span class="shift-pill shift-inside">內場 10:00-19:00</span>
-                                <span class="shift-pill shift-custom">自訂 10:00-18:00</span>
+                                <span class="shift-pill shift-early">上方是日期 / 月份</span>
+                                <span class="shift-pill shift-mid">左側是 07:00～23:00</span>
+                                <span class="shift-pill shift-night">每格可安排多位人員</span>
+                                <span class="shift-pill shift-custom">例：5/14 08:00 可排 秋XX、林XX</span>
                             </div>
                             <div id="schedule_company_info" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;padding:12px;border-radius:10px;margin-top:12px;color:#475569;font-size:13px;"></div>
                         </div>
                         <div class="schedule-rule-box">
-                            <div style="font-size:14px;font-weight:900;color:#0f172a;margin-bottom:8px;">工時與休假規則</div>
-                            <label>單月最高工時</label><input type="number" id="sch_rule_max_hours" value="184" oninput="renderScheduleTable()">
-                            <label>單月最低休假天數</label><input type="number" id="sch_rule_min_rest" value="8" oninput="renderScheduleTable()">
+                            <div style="font-size:14px;font-weight:900;color:#0f172a;margin-bottom:8px;">排班提示</div>
+                            <div class="schedule-note-box">先選公司，再直接點表格儲存該時段要上的人員。<br>系統會依目前公司 + 日期 + 時段來排人。</div>
                         </div>
                     </div>
 
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 10px;">
                         <div>
-                            <h3 id="sch_month_title" style="font-size:18px;font-weight:900;color:#0f172a;margin:0;">月排班表</h3>
-                            <div style="font-size:12px;color:#64748b;font-weight:700;">每格顯示「班別＋時間」，點擊格子可編輯該員工當天上下班時間。</div>
+                            <h3 id="sch_month_title" style="font-size:18px;font-weight:900;color:#0f172a;margin:0;">月時段排班表</h3>
+                            <div style="font-size:12px;color:#64748b;font-weight:700;">上方顯示月份日期，左側顯示 07:00～23:00；點擊格子即可設定該公司該時段的人員。</div>
                         </div>
                         <div style="font-size:12px;color:#64748b;font-weight:900;">提示：可先選公司，再依不同公司需求安排不同人員。</div>
                     </div>
@@ -605,35 +620,31 @@
                             <tbody id="scheduleTable"></tbody>
                         </table>
                     </div>
-                    <div id="scheduleWarningBox"></div>
+                    <div id="scheduleWarningBox" style="display:none;"></div>
                 </div>
 
                 <div class="schedule-modal-backdrop" id="scheduleEditModal">
                     <div class="schedule-modal">
                         <div class="schedule-modal-head">
                             <div>
-                                <h3>編輯班別時間</h3>
-                                <div class="schedule-modal-sub" id="sch_modal_sub">請選擇員工與日期</div>
+                                <h3>編輯時段排班</h3>
+                                <div class="schedule-modal-sub" id="sch_modal_sub">請選擇公司、日期與時段，再輸入排班人員</div>
                             </div>
                             <button class="switch-role-btn" onclick="closeScheduleModal()">關閉</button>
                         </div>
-                        <div class="modal-shift-grid">
-                            <button type="button" class="modal-shift-option shift-rest" onclick="selectSchedulePreset('休假')">休假<span class="small">休假</span></button>
-                            <button type="button" class="modal-shift-option shift-early" onclick="selectSchedulePreset('早班')">早班<span class="small">09:00-18:00</span></button>
-                            <button type="button" class="modal-shift-option shift-mid" onclick="selectSchedulePreset('午班')">午班<span class="small">12:00-21:00</span></button>
-                            <button type="button" class="modal-shift-option shift-night" onclick="selectSchedulePreset('晚班')">晚班<span class="small">15:00-00:00</span></button>
-                            <button type="button" class="modal-shift-option shift-inside" onclick="selectSchedulePreset('內場')">內場<span class="small">10:00-19:00</span></button>
-                            <button type="button" class="modal-shift-option shift-custom" onclick="selectSchedulePreset('自訂')">自訂<span class="small">自由設定時間</span></button>
-                        </div>
                         <div class="schedule-modal-form">
-                            <div><label>公司</label><input list="list_cust" id="sch_modal_company" placeholder="選擇或輸入公司"></div>
-                            <div><label>員工</label><input list="list_staff" id="sch_modal_staff" placeholder="選擇員工"></div>
-                            <div><label>日期</label><input type="date" id="sch_modal_date"></div>
-                            <div><label>班別</label><input id="sch_modal_shift" placeholder="例：早班、晚班、休假、自訂"></div>
-                            <div><label>上班時間</label><input type="time" id="sch_modal_start" onchange="calcScheduleModalHours()"></div>
-                            <div><label>下班時間</label><input type="time" id="sch_modal_end" onchange="calcScheduleModalHours()"></div>
-                            <div><label>當日工時</label><input id="sch_modal_hours" readonly></div>
-                            <div><label>工作地點</label><input id="sch_modal_location" placeholder="可填現場地址"></div>
+                            <div><label>公司</label><input list="list_cust" id="sch_modal_company" placeholder="選擇或輸入公司" oninput="previewScheduleConflicts()"></div>
+                            <div><label>日期</label><input type="date" id="sch_modal_date" onchange="previewScheduleConflicts()"></div>
+                            <div><label>時段</label><input type="time" id="sch_modal_start" step="3600" onchange="syncScheduleEndTime();previewScheduleConflicts()"></div>
+                            <div><label>結束時間</label><input type="time" id="sch_modal_end" readonly></div>
+                            <div style="grid-column:1/-1;"><label>排班人員（可多位）</label><input list="list_staff" id="sch_modal_staff" placeholder="可手打，也可用下方勾選；例：秋XX、林XX" oninput="syncScheduleStaffChecksFromInput();previewScheduleConflicts();"></div>
+                            <div class="schedule-staff-check-panel">
+                                <div class="schedule-staff-check-title">勾選排班人員</div>
+                                <div class="schedule-staff-check-grid" id="sch_staff_check_grid"></div>
+                            </div>
+                            <div class="schedule-conflict-box" id="sch_conflict_box"></div>
+                            <div><label>此格時數</label><input id="sch_modal_hours" readonly value="1"></div>
+                            <div><label>需求 / 補充</label><input id="sch_modal_location" placeholder="例：需要2人、清飛、現場集合點"></div>
                             <div style="grid-column:1/-1;"><label>備註</label><input id="sch_modal_remark" placeholder="現場注意事項、窗口電話、特殊需求"></div>
                         </div>
                         <div class="schedule-modal-actions">
@@ -1588,15 +1599,34 @@ function refreshScheduleCompanyOptions(){
     sel.innerHTML='<option value="">全部公司</option>'+names.map(n=>`<option value="${n}">${n}</option>`).join('');
     if(names.includes(cur))sel.value=cur;
 }
-function getScheduleStaffRows(){
-    const company=getScheduleCompany(),y=getScheduleYear(),m=getScheduleMonth(),ym=`${y}-${pad2(m)}-`;
-    const base=[...(staffData||[]).filter(x=>!x.status||x.status==='在職').map(x=>x.name),...(ftStaffData||[]).filter(x=>!x.status||x.status==='在職').map(x=>x.name)].filter(Boolean);
-    const inMonth=[];(scheduleData||[]).forEach(x=>{if(company&&x.company!==company)return;if(!String(x.date||'').startsWith(ym))return;getScheduleStaffList(x.staffs).forEach(n=>inMonth.push(n));});
-    return [...new Set([...base,...inMonth])].filter(Boolean);
+function getScheduleTimeSlots(){return Array.from({length:17},(_,i)=>`${pad2(i+7)}:00`);}
+function getScheduleStaffRows(){return [];}
+function findDirectScheduleSlot(company,date,time){
+    return (scheduleData||[]).find(x=>String(x.date||'')===date&&String(x.company||'')===String(company||'')&&String(x.start||'')===String(time||''));
 }
-function findScheduleForCell(staff,date){
-    const company=getScheduleCompany();
-    return (scheduleData||[]).find(x=>String(x.date||'')===date&&(!company||x.company===company)&&getScheduleStaffList(x.staffs).includes(staff));
+function timeToMinutes(t){if(!t)return 0;const [h,m]=String(t).split(':').map(Number);return (h||0)*60+(m||0);}
+function getScheduleNextHour(time){const mins=timeToMinutes(time)+60;const h=Math.floor((mins%(24*60))/60);const m=mins%60;return `${pad2(h)}:${pad2(m)}`;}
+function scheduleEntryCoversTime(entry,time){
+    if(!entry||entry.shift==='休假'||!entry.start||!entry.end)return false;
+    let start=timeToMinutes(entry.start),end=timeToMinutes(entry.end),check=timeToMinutes(time);
+    if(end<=start)end+=24*60;
+    if(check<start && end>24*60)check+=24*60;
+    return check>=start && check<end;
+}
+function getScheduleAssignments(company,date,time){
+    const direct=findDirectScheduleSlot(company,date,time);
+    if(direct){
+        return getScheduleStaffList(direct.staffs).map(n=>({name:n,source:'direct',entry:direct}));
+    }
+    const items=[];
+    (scheduleData||[]).forEach(entry=>{
+        if(String(entry.date||'')!==String(date||''))return;
+        if(String(entry.company||'')!==String(company||''))return;
+        if(!scheduleEntryCoversTime(entry,time))return;
+        getScheduleStaffList(entry.staffs).forEach(n=>items.push({name:n,source:'range',entry}));
+    });
+    const seen=new Set();
+    return items.filter(it=>{if(seen.has(it.name))return false;seen.add(it.name);return true;});
 }
 function renderScheduleCompanyInfo(){
     const company=getScheduleCompany(),box=el('schedule_company_info');if(!box)return;
@@ -1606,65 +1636,150 @@ function renderScheduleCompanyInfo(){
 }
 function renderScheduleTable(){
     initScheduleSelectors();refreshScheduleCompanyOptions();renderScheduleCompanyInfo();
-    const y=getScheduleYear(),m=getScheduleMonth(),days=new Date(y,m,0).getDate(),week=['日','一','二','三','四','五','六'],staffRows=getScheduleStaffRows();
-    if(el('sch_month_title'))el('sch_month_title').innerText=`${y} 年 ${m} 月排班表`;
-    let head='<tr><th class="staff-head">員工</th>';
+    const y=getScheduleYear(),m=getScheduleMonth(),days=new Date(y,m,0).getDate(),week=['日','一','二','三','四','五','六'],company=getScheduleCompany(),times=getScheduleTimeSlots();
+    if(el('sch_month_title'))el('sch_month_title').innerText=`${y} 年 ${m} 月時段排班表`;
+    let head='<tr><th class="time-head">時段</th>';
     for(let d=1;d<=days;d++){const wd=new Date(y,m-1,d).getDay();head+=`<th class="day-head ${wd===0||wd===6?'weekend':''}"><span class="num">${d}</span><span class="week">${week[wd]}</span></th>`;}
-    head+='<th class="monthly-total">月統計</th></tr>';if(el('scheduleTableHead'))el('scheduleTableHead').innerHTML=head;
-    let body='',totalHours=0,totalRest=0,warnCount=0;const maxHours=Number(el('sch_rule_max_hours')?el('sch_rule_max_hours').value:184)||184,minRest=Number(el('sch_rule_min_rest')?el('sch_rule_min_rest').value:8)||8;
-    staffRows.forEach(staff=>{
-        let rowHours=0,rowRest=0,cells='';
+    head+='</tr>';
+    if(el('scheduleTableHead'))el('scheduleTableHead').innerHTML=head;
+
+    let body='';
+    let assignedHourCount=0,filledCells=0;
+    const uniqueStaff=new Set();
+
+    times.forEach(time=>{
+        let row=`<tr><td class="time-cell">${time}</td>`;
         for(let d=1;d<=days;d++){
-            const date=dateYMD(y,m,d),item=findScheduleForCell(staff,date),safeStaff=String(staff).replace(/'/g,"\\'");
-            if(item){
-                const shift=item.shift||'自訂',start=item.start||'',end=item.end||'',hrs=Number(item.hours)||calcScheduleHoursByTime(start,end)||0;
-                rowHours+=hrs;if(shift==='休假')rowRest++;
-                cells+=`<td class="schedule-cell" onclick="openScheduleCell('${safeStaff}','${date}')"><div class="shift-card ${scheduleCellClass(shift)}"><div class="code">${scheduleCellCode(shift)}</div><div class="time">${start||'休假'}${end?`<br>${end}`:''}</div><div class="hours">${hrs?hrs+'h':'休假'}</div></div></td>`;
-            }else cells+=`<td class="schedule-cell" onclick="openScheduleCell('${safeStaff}','${date}')"></td>`;
+            const date=dateYMD(y,m,d);
+            const assignments=company?getScheduleAssignments(company,date,time):[];
+            if(assignments.length){
+                filledCells++;
+                assignedHourCount+=assignments.length;
+                assignments.forEach(a=>uniqueStaff.add(a.name));
+                const names=assignments.map(a=>`<span class="slot-staff-pill">${a.name}</span>`).join('');
+                row+=`<td class="slot-cell" onclick="openScheduleCell('', '${date}', '${time}')"><div class="slot-cell-content"><span class="slot-count">${assignments.length} 人</span>${names}</div></td>`;
+            }else{
+                row+=`<td class="slot-cell" onclick="openScheduleCell('', '${date}', '${time}')"><div class="slot-empty">＋ 排人</div></td>`;
+            }
         }
-        totalHours+=rowHours;totalRest+=rowRest;if(rowHours>maxHours||rowRest<minRest)warnCount++;
-        body+=`<tr><td class="staff-cell">${staff}</td>${cells}<td class="monthly-total"><span class="pill-total">${rowHours} 小時<br>${rowRest} 天休</span></td></tr>`;
+        row+='</tr>';
+        body+=row;
     });
-    if(!staffRows.length)body=`<tr><td colspan="${days+2}" style="padding:35px;text-align:center;color:#64748b;">尚未建立員工資料，請先到人事資料庫新增人員。</td></tr>`;
     if(el('scheduleTable'))el('scheduleTable').innerHTML=body;
-    if(el('sch_kpi_staff'))el('sch_kpi_staff').innerText=`${staffRows.length} 人`;if(el('sch_kpi_hours'))el('sch_kpi_hours').innerText=`${totalHours} 小時`;if(el('sch_kpi_rest'))el('sch_kpi_rest').innerText=`${totalRest} 格`;if(el('sch_kpi_warn'))el('sch_kpi_warn').innerText=`${warnCount} 筆`;
-    if(el('scheduleWarningBox'))el('scheduleWarningBox').innerHTML=warnCount?`<div class="schedule-warning"><i class="fas fa-exclamation-triangle"></i> 有員工工時超過 ${maxHours} 小時或休假少於 ${minRest} 天</div>`:'';
+    if(el('sch_kpi_staff'))el('sch_kpi_staff').innerText=`${uniqueStaff.size} 人`;
+    if(el('sch_kpi_hours'))el('sch_kpi_hours').innerText=`${assignedHourCount} 人時`;
+    if(el('sch_kpi_rest'))el('sch_kpi_rest').innerText=`${filledCells} 格`;
+    if(el('sch_kpi_warn'))el('sch_kpi_warn').innerText=company?'0 筆':'請先選公司';
+    if(el('scheduleWarningBox'))el('scheduleWarningBox').innerHTML='';
 }
-function openScheduleCell(staff,date){
-    initScheduleSelectors();const company=getScheduleCompany()||((custData||[])[0]?.name||'內部排班'),today=new Date();
+function syncScheduleEndTime(){
+    const start=el('sch_modal_start')?el('sch_modal_start').value:'';
+    if(el('sch_modal_end'))el('sch_modal_end').value=start?getScheduleNextHour(start):'';
+    if(el('sch_modal_hours'))el('sch_modal_hours').value=start?1:0;
+}
+
+function getAllScheduleStaffNames(){
+    return [...new Set([...(staffData||[]).filter(x=>!x.status||x.status==='在職').map(x=>x.name),...(ftStaffData||[]).filter(x=>!x.status||x.status==='在職').map(x=>x.name)].filter(Boolean))].sort();
+}
+function renderScheduleStaffCheckboxes(selectedNames){
+    const grid=el('sch_staff_check_grid'); if(!grid)return;
+    const selected=new Set((selectedNames||[]).filter(Boolean));
+    const names=getAllScheduleStaffNames();
+    if(!names.length){grid.innerHTML='<div style="color:#64748b;font-weight:800;">尚未建立員工資料</div>';return;}
+    grid.innerHTML=names.map((name,i)=>`<label class="schedule-staff-check-item"><input type="checkbox" class="sch_staff_check" value="${String(name).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" ${selected.has(name)?'checked':''} onchange="syncScheduleStaffInputFromChecks();previewScheduleConflicts();">${name}</label>`).join('');
+}
+function syncScheduleStaffInputFromChecks(){
+    const checks=[...document.querySelectorAll('.sch_staff_check:checked')].map(x=>x.value).filter(Boolean);
+    if(el('sch_modal_staff'))el('sch_modal_staff').value=checks.join('、');
+}
+function syncScheduleStaffChecksFromInput(){
+    const selected=new Set(getScheduleStaffList(el('sch_modal_staff')?el('sch_modal_staff').value:''));
+    document.querySelectorAll('.sch_staff_check').forEach(c=>c.checked=selected.has(c.value));
+}
+function findScheduleConflicts(company,date,start,staffList){
+    const conflicts=[];
+    (scheduleData||[]).forEach(entry=>{
+        if(String(entry.date||'')!==String(date||''))return;
+        if(String(entry.start||'')!==String(start||''))return;
+        if(String(entry.company||'')===String(company||''))return;
+        const entryStaff=getScheduleStaffList(entry.staffs);
+        staffList.forEach(n=>{if(entryStaff.includes(n))conflicts.push({staff:n,company:entry.company||'其他公司',time:entry.start||start});});
+    });
+    return conflicts;
+}
+function previewScheduleConflicts(){
+    const box=el('sch_conflict_box'); if(!box)return;
+    const company=el('sch_modal_company')?el('sch_modal_company').value.trim():'';
+    const date=el('sch_modal_date')?el('sch_modal_date').value:'';
+    const start=el('sch_modal_start')?el('sch_modal_start').value:'';
+    const staffList=getScheduleStaffList(el('sch_modal_staff')?el('sch_modal_staff').value:'');
+    const conflicts=findScheduleConflicts(company,date,start,staffList);
+    if(!conflicts.length){box.style.display='none';box.innerHTML='';return conflicts;}
+    box.style.display='block';
+    box.innerHTML='<b>排班衝突提醒：</b><br>'+conflicts.map(c=>`${c.staff} 已在 ${c.company} 的 ${c.time} 排班`).join('<br>');
+    return conflicts;
+}
+
+function openScheduleCell(staff,date,time){
+    initScheduleSelectors();
+    const company=getScheduleCompany()||((custData||[])[0]?.name||'內部排班');
+    const today=new Date();
     const targetDate=date||dateYMD(getScheduleYear()||today.getFullYear(),getScheduleMonth()||today.getMonth()+1,today.getDate());
-    const targetStaff=staff||((staffData||[]).find(x=>!x.status||x.status==='在職')?.name||(ftStaffData||[]).find(x=>!x.status||x.status==='在職')?.name||'');
-    const item=targetStaff?findScheduleForCell(targetStaff,targetDate):null;
-    el('sch_modal_company').value=item?.company||company;el('sch_modal_staff').value=targetStaff;el('sch_modal_date').value=targetDate;el('sch_modal_shift').value=item?.shift||'';el('sch_modal_start').value=item?.start||'';el('sch_modal_end').value=item?.end||'';el('sch_modal_hours').value=item?.hours||0;el('sch_modal_location').value=item?.location||'';el('sch_modal_remark').value=item?.remark||'';
-    if(el('sch_modal_sub'))el('sch_modal_sub').innerText=`${targetStaff||'請選員工'}｜${targetDate}`;document.querySelectorAll('.modal-shift-option').forEach(b=>b.classList.remove('active'));if(item?.shift)document.querySelectorAll('.modal-shift-option').forEach(b=>{if(b.textContent.includes(item.shift))b.classList.add('active');});
+    const targetTime=time||'07:00';
+    const direct=findDirectScheduleSlot(company,targetDate,targetTime);
+    const aggregated=getScheduleAssignments(company,targetDate,targetTime);
+    el('sch_modal_company').value=direct?.company||company;
+    el('sch_modal_date').value=targetDate;
+    el('sch_modal_start').value=direct?.start||targetTime;
+    el('sch_modal_end').value=direct?.end||getScheduleNextHour(targetTime);
+    el('sch_modal_staff').value=direct?.staffs||aggregated.map(x=>x.name).join('、');
+    renderScheduleStaffCheckboxes(getScheduleStaffList(el('sch_modal_staff').value));
+    setTimeout(previewScheduleConflicts,0);
+    el('sch_modal_hours').value=1;
+    el('sch_modal_location').value=direct?.location||'';
+    el('sch_modal_remark').value=direct?.remark||'';
+    if(el('sch_modal_sub'))el('sch_modal_sub').innerText=`${company}｜${targetDate}｜${targetTime}`;
     const modal=el('scheduleEditModal');if(modal)modal.style.display='flex';
 }
 function closeScheduleModal(){const modal=el('scheduleEditModal');if(modal)modal.style.display='none';}
-function selectSchedulePreset(type){const p=getShiftPreset(type);el('sch_modal_shift').value=type;el('sch_modal_start').value=p.start;el('sch_modal_end').value=p.end;el('sch_modal_hours').value=p.hours;document.querySelectorAll('.modal-shift-option').forEach(b=>b.classList.toggle('active',b.textContent.includes(type)));}
+function selectSchedulePreset(type){}
 function saveScheduleCell(){
-    const company=el('sch_modal_company').value.trim(),staff=el('sch_modal_staff').value.trim(),date=el('sch_modal_date').value,shift=el('sch_modal_shift').value.trim()||'自訂',start=el('sch_modal_start').value,end=el('sch_modal_end').value,hours=shift==='休假'?0:(Number(el('sch_modal_hours').value)||calcScheduleHoursByTime(start,end));
-    if(!company||!staff||!date)return showToast('請輸入公司、員工與日期',true);if(shift!=='休假'&&(!start||!end))return showToast('非休假班別請輸入上下班時間',true);
-    const oldIndex=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&x.company===company&&getScheduleStaffList(x.staffs).includes(staff));
-    const obj={company,date,shift,start,end,hours,need:1,staffs:staff,status:shift==='休假'?'休假':'已排滿',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
+    const company=el('sch_modal_company').value.trim();
+    const date=el('sch_modal_date').value;
+    const start=el('sch_modal_start').value;
+    const end=el('sch_modal_end').value||getScheduleNextHour(start);
+    const staffList=getScheduleStaffList(el('sch_modal_staff').value).filter(Boolean);
+    if(!company||!date||!start)return showToast('請輸入公司、日期與時段',true);
+    if(!staffList.length)return showToast('請至少輸入一位排班人員',true);
+    const conflicts=findScheduleConflicts(company,date,start,staffList);
+    if(conflicts.length){
+        const msg='以下人員同日同時段已在其他公司排班：\n'+conflicts.map(c=>`${c.staff}：${c.company} ${c.time}`).join('\n')+'\n\n仍要儲存嗎？';
+        if(!confirm(msg))return;
+    }
+    const oldIndex=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&String(x.company||'')===company&&String(x.start||'')===start);
+    const obj={company,date,shift:'時段排班',start,end,hours:1,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
     if(oldIndex>=0)scheduleData[oldIndex]={...scheduleData[oldIndex],...obj};else scheduleData.push(obj);
-    saveAll();closeScheduleModal();renderScheduleTable();showToast('✅ 排班格已儲存');
+    saveAll();closeScheduleModal();renderScheduleTable();showToast('✅ 時段排班已儲存');
 }
 function deleteScheduleCell(){
-    const company=el('sch_modal_company').value.trim(),staff=el('sch_modal_staff').value.trim(),date=el('sch_modal_date').value;
-    const idx=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&x.company===company&&getScheduleStaffList(x.staffs).includes(staff));
-    if(idx<0){closeScheduleModal();return;}if(!confirm('確定刪除此格排班？'))return;scheduleData.splice(idx,1);saveAll();closeScheduleModal();renderScheduleTable();showToast('已刪除此格');
+    const company=el('sch_modal_company').value.trim(),date=el('sch_modal_date').value,start=el('sch_modal_start').value;
+    const idx=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&String(x.company||'')===company&&String(x.start||'')===start);
+    if(idx<0){closeScheduleModal();return;}
+    if(!confirm('確定刪除此時段排班？'))return;
+    scheduleData.splice(idx,1);saveAll();closeScheduleModal();renderScheduleTable();showToast('已刪除此格');
 }
-function addSchedule(){openScheduleCell('','');}
-function editSchedule(i){const d=scheduleData[i];if(!d)return;if(el('sch_company_select'))el('sch_company_select').value=d.company||'';openScheduleCell(getScheduleStaffList(d.staffs)[0]||'',d.date||'');}
+function addSchedule(){openScheduleCell('','', '07:00');}
+function editSchedule(i){const d=scheduleData[i];if(!d)return;if(el('sch_company_select'))el('sch_company_select').value=d.company||'';openScheduleCell('',d.date||'',d.start||'07:00');}
 function updateSchedule(){saveScheduleCell();}
 function delSchedule(i){if(!confirm('確定刪除此筆排班？'))return;scheduleData.splice(i,1);saveAll();renderScheduleTable();showToast('已刪除');}
 function clearScheduleForm(){initScheduleSelectors();closeScheduleModal();renderScheduleTable();}
 function createAttendFromSchedule(){
     const company=getScheduleCompany(),y=getScheduleYear(),m=getScheduleMonth(),ym=`${y}-${pad2(m)}-`;
-    const list=(scheduleData||[]).filter(d=>(!company||d.company===company)&&String(d.date||'').startsWith(ym)&&d.shift!=='休假'&&getScheduleStaffList(d.staffs).length);
-    if(!list.length)return showToast('本月沒有可轉入的排班',true);if(!confirm(`確定將本月 ${list.length} 格排班轉成派遣記錄？`))return;
-    list.forEach(d=>getScheduleStaffList(d.staffs).forEach(n=>attendData.push({company:d.company,staff:n,date:d.date,service:d.shift||'排班派遣',am_s:d.start,am_e:d.end,pm_s:'',pm_e:'',salary_hours:d.hours||'',deduct_points:d.hours||'',project_fee:0,special_hourly:'',remark:`由智慧排班轉入：${d.remark||''}`})));
-    saveAll();showToast(`✅ 已轉入 ${list.length} 筆派遣記錄`);
+    const list=(scheduleData||[]).filter(d=>(!company||d.company===company)&&String(d.date||'').startsWith(ym)&&getScheduleStaffList(d.staffs).length);
+    if(!list.length)return showToast('本月沒有可轉入的排班',true);
+    if(!confirm(`確定將本月 ${list.length} 格排班轉成派遣記錄？`))return;
+    list.forEach(d=>getScheduleStaffList(d.staffs).forEach(n=>attendData.push({company:d.company,staff:n,date:d.date,service:d.shift||'排班派遣',am_s:d.start,am_e:d.end,pm_s:'',pm_e:'',salary_hours:d.hours||1,deduct_points:d.hours||1,project_fee:0,special_hourly:'',remark:`由智慧排班轉入：${d.remark||''}`})));
+    saveAll();showToast(`✅ 已轉入 ${list.length} 格排班`);
 }
 
 function showAdminPage(p) { 
