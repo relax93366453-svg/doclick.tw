@@ -810,18 +810,19 @@ function setupGlobalNavigation() {
 // ================= 初始加載 =================
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        // 若曾打開舊修正版留下預設 1234，改回原本的 0000；自訂密碼不影響。
+        // 若曾打開舊修正版留下預設 1234 或 admin/hr/sales，改回原本的 0000；自訂帳密不影響。
         ['adminPwd','hrPwd','salesPwd'].forEach(k => { try { if(decPwd(localStorage.getItem(k)||'') === '1234') setPwd(k, '0000'); } catch(e){} });
+        [['adminAcc','admin'],['hrAcc','hr'],['salesAcc','sales']].forEach(([k,oldDefault]) => { try { if(!localStorage.getItem(k) || localStorage.getItem(k) === oldDefault) localStorage.setItem(k, '0000'); } catch(e){} });
         standardizeData();
         if(el('config_price_table')) el('config_price_table').value = JSON.stringify(priceTable, null, 2);
         
-        if(el('setting_boss_acc')) el('setting_boss_acc').value = localStorage.getItem('adminAcc')||'admin'; 
-        if(el('setting_boss_pwd')) el('setting_boss_pwd').value = localStorage.getItem('adminPwd')||'0000';
-        if(el('setting_hr_acc')) el('setting_hr_acc').value = localStorage.getItem('hrAcc')||'hr'; 
-        if(el('setting_hr_pwd')) el('setting_hr_pwd').value = localStorage.getItem('hrPwd')||'0000';
-        if(el('setting_sales_acc')) el('setting_sales_acc').value = localStorage.getItem('salesAcc')||'sales'; 
-        if(el('setting_sales_pwd')) el('setting_sales_pwd').value = localStorage.getItem('salesPwd')||'0000';
-        if(el('setting_sys_pin')) el('setting_sys_pin').value = localStorage.getItem('adminPin')||'8888';
+        if(el('setting_admin_acc')) el('setting_admin_acc').value = localStorage.getItem('adminAcc')||'0000'; 
+        if(el('setting_admin_pwd')) el('setting_admin_pwd').value = getPwd('adminPwd','0000');
+        if(el('setting_hr_acc')) el('setting_hr_acc').value = localStorage.getItem('hrAcc')||'0000'; 
+        if(el('setting_hr_pwd')) el('setting_hr_pwd').value = getPwd('hrPwd','0000');
+        if(el('setting_sales_acc')) el('setting_sales_acc').value = localStorage.getItem('salesAcc')||'0000'; 
+        if(el('setting_sales_pwd')) el('setting_sales_pwd').value = getPwd('salesPwd','0000');
+        if(el('setting_sys_pin')) el('setting_sys_pin').value = getPwd('adminPin','8888');
         
         renderPricePlanOptions(); updateLogoPreview(); renderPortalConfigUI(); applyPortalConfigToStaff(); renderServiceTypes();
         updateSystemClock(); setInterval(updateSystemClock, 1000);
@@ -899,10 +900,21 @@ function quickLogin(type='hr', targetPage='schedule') {
 function handleLogin() {
     const role = el('login_role').value, acc = el('login_acc').value.trim(), pwd = el('login_pwd').value.trim();
     if(!acc || !pwd) return showToast('請輸入帳密', true);
+
+    // 原本帳密都是 0000：固定保留，不受舊版 localStorage 或雲端設定影響。
+    if (role === 'admin' && acc === '0000' && pwd === '0000') {
+        localStorage.setItem('loginRole','admin');
+        localStorage.setItem('sysRole','admin');
+        localStorage.setItem('workspace','hr');
+        localStorage.setItem('adminPage','schedule');
+        restoreLoginState();
+        showToast('登入成功');
+        return;
+    }
     
-    const sAA = localStorage.getItem('adminAcc') || 'admin'; const sAP = getPwd('adminPwd', '0000');
-    const sHA = localStorage.getItem('hrAcc') || 'hr'; const sHP = getPwd('hrPwd', '0000');
-    const sSA = localStorage.getItem('salesAcc') || 'sales'; const sSP = getPwd('salesPwd', '0000');
+    const sAA = localStorage.getItem('adminAcc') || '0000'; const sAP = getPwd('adminPwd', '0000');
+    const sHA = localStorage.getItem('hrAcc') || '0000'; const sHP = getPwd('hrPwd', '0000');
+    const sSA = localStorage.getItem('salesAcc') || '0000'; const sSP = getPwd('salesPwd', '0000');
     
     if (role === 'admin') {
         if ((acc === sAA && pwd === sAP) || (acc === 'admin' && pwd === 'doclick888')) { 
@@ -981,11 +993,11 @@ function getPwd(key, def) { const v = localStorage.getItem(key); return v ? decP
 function setPwd(key, val) { if(val) localStorage.setItem(key, encPwd(val)); }
 
 function getSysConfigPayload() { 
-    return { adminAcc: localStorage.getItem('adminAcc')||'admin', adminPwd: getPwd('adminPwd','0000'), hrAcc: localStorage.getItem('hrAcc')||'hr', hrPwd: getPwd('hrPwd','0000'), salesAcc: localStorage.getItem('salesAcc')||'sales', salesPwd: getPwd('salesPwd','0000'), adminPin: getPwd('adminPin','8888'), priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo')||'', pdfLogo: localStorage.getItem('pdfLogo')||'', loginBg: localStorage.getItem('loginBg')||'' }; 
+    return { adminAcc: localStorage.getItem('adminAcc')||'0000', adminPwd: getPwd('adminPwd','0000'), hrAcc: localStorage.getItem('hrAcc')||'0000', hrPwd: getPwd('hrPwd','0000'), salesAcc: localStorage.getItem('salesAcc')||'0000', salesPwd: getPwd('salesPwd','0000'), adminPin: getPwd('adminPin','8888'), priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo')||'', pdfLogo: localStorage.getItem('pdfLogo')||'', loginBg: localStorage.getItem('loginBg')||'' }; 
 }
 
 function savePasswords() { 
-    const aa = el('setting_boss_acc').value.trim(), ap = el('setting_boss_pwd').value.trim(), ha = el('setting_hr_acc').value.trim(), hp = el('setting_hr_pwd').value.trim(), sa = el('setting_sales_acc').value.trim(), sp = el('setting_sales_pwd').value.trim(), pin = el('setting_sys_pin').value.trim(); 
+    const aa = el('setting_admin_acc').value.trim(), ap = el('setting_admin_pwd').value.trim(), ha = el('setting_hr_acc').value.trim(), hp = el('setting_hr_pwd').value.trim(), sa = el('setting_sales_acc').value.trim(), sp = el('setting_sales_pwd').value.trim(), pin = el('setting_sys_pin').value.trim(); 
     if(aa) localStorage.setItem('adminAcc', aa); if(ap) setPwd('adminPwd', ap); if(ha) localStorage.setItem('hrAcc', ha); if(hp) setPwd('hrPwd', hp); if(sa) localStorage.setItem('salesAcc', sa); if(sp) setPwd('salesPwd', sp); if(pin) setPwd('adminPin', pin); 
     saveAllSilently(); showToast('✅ 同步成功'); 
 }
@@ -1310,8 +1322,8 @@ function loadDataFromCloud(forceRender=false) {
     fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{
         let nA=0;
         if(r.sysConfig){
-            if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_boss_acc'))el('setting_boss_acc').value=r.sysConfig.adminAcc;}
-            if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_boss_pwd'))el('setting_boss_pwd').value=r.sysConfig.adminPwd;}
+            if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_admin_acc'))el('setting_admin_acc').value=r.sysConfig.adminAcc;}
+            if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_admin_pwd'))el('setting_admin_pwd').value=r.sysConfig.adminPwd;}
             if(r.sysConfig.hrAcc){localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(el('setting_hr_acc'))el('setting_hr_acc').value=r.sysConfig.hrAcc;}
             if(r.sysConfig.hrPwd){localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(el('setting_hr_pwd'))el('setting_hr_pwd').value=r.sysConfig.hrPwd;}
             if(r.sysConfig.salesAcc){localStorage.setItem('salesAcc',r.sysConfig.salesAcc);if(el('setting_sales_acc'))el('setting_sales_acc').value=r.sysConfig.salesAcc;}
