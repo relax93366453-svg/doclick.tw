@@ -592,7 +592,7 @@
                             <select id="sch_month" onchange="renderScheduleTable()"></select>
                             <button class="switch-role-btn" onclick="setScheduleCurrentMonth()"><i class="fas fa-calendar-day"></i> 回到本月</button>
                             <button class="switch-role-btn" onclick="renderScheduleTable()"><i class="fas fa-sync-alt"></i> 重整本月</button>
-                            <button class="switch-role-btn" onclick="exportExcel('scheduleTableBox','智慧排班月表')"><i class="fas fa-download"></i> 匯出月排班</button>
+                            <button class="switch-role-btn" onclick="exportScheduleFilledExcel()"><i class="fas fa-download"></i> 匯出月排班</button>
                             <button class="switch-role-btn" onclick="createAttendFromSchedule()"><i class="fas fa-clock"></i> 轉派遣記錄</button>
                             <button class="btn btn-success" onclick="openScheduleCell('', '')" style="margin:0;"><i class="fas fa-plus"></i> 新增排班</button>
                         </div>
@@ -1927,6 +1927,42 @@ function editSchedule(i){const d=scheduleData[i];if(!d)return;if(el('sch_company
 function updateSchedule(){saveScheduleCell();}
 function delSchedule(i){if(!confirm('確定刪除此筆排班？'))return;scheduleData.splice(i,1);saveAll();renderScheduleTable();showToast('已刪除');}
 function clearScheduleForm(){initScheduleSelectors();closeScheduleModal();renderScheduleTable();}
+
+function exportScheduleFilledExcel(){
+    const company=getScheduleCompany(), y=getScheduleYear(), m=getScheduleMonth(), ym=`${y}-${pad2(m)}-`;
+    const week=['日','一','二','三','四','五','六'];
+    const rows=[];
+    const list=(scheduleData||[]).filter(d=>(!company||d.company===company)&&String(d.date||'').startsWith(ym)&&getScheduleStaffList(d.staffs).length)
+        .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.start||'').localeCompare(String(b.start||'')) || String(a.company||'').localeCompare(String(b.company||'')));
+    list.forEach(d=>{
+        const names=getScheduleStaffList(d.staffs);
+        const breakHours=parseScheduleBreakHours(d.breakHours)||calcScheduleBreakHours(d.breakStart,d.breakEnd,d.start,d.end)||0;
+        const hours=Number(d.hours)||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours)||0;
+        const weekday=d.date ? week[new Date(d.date).getDay()] : '';
+        names.forEach(name=>{
+            rows.push({
+                '公司': d.company||'',
+                '日期': d.date||'',
+                '星期': weekday?`星期${weekday}`:'',
+                '人員': name,
+                '上班時間': d.start||'',
+                '下班時間': d.end||'',
+                '休息時數': breakHours?formatScheduleHours(breakHours):'',
+                '實際工時': formatScheduleHours(hours),
+                '需求/補充': d.location||'',
+                '備註': d.remark||''
+            });
+        });
+    });
+    if(!rows.length)return showToast('本月沒有已填寫的排班可匯出',true);
+    const ws=XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:18},{wch:12},{wch:8},{wch:12},{wch:10},{wch:10},{wch:10},{wch:10},{wch:28},{wch:32}];
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'已填排班');
+    XLSX.writeFile(wb,`智慧排班_已填資料_${company||'全部公司'}_${y}-${pad2(m)}.xlsx`);
+    showToast('✅ 已匯出有填寫的排班資料');
+}
+
 function createAttendFromSchedule(){
     const company=getScheduleCompany(),y=getScheduleYear(),m=getScheduleMonth(),ym=`${y}-${pad2(m)}-`;
     const list=(scheduleData||[]).filter(d=>(!company||d.company===company)&&String(d.date||'').startsWith(ym)&&getScheduleStaffList(d.staffs).length);
