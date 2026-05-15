@@ -602,8 +602,7 @@
                             <select id="sch_month" onchange="renderScheduleTable()"></select>
                             <button class="switch-role-btn" onclick="setScheduleCurrentMonth()"><i class="fas fa-calendar-day"></i> 回到本月</button>
                             <button class="switch-role-btn" onclick="renderScheduleTable()"><i class="fas fa-sync-alt"></i> 重整本月</button>
-                            <button class="switch-role-btn" onclick="manualCloudSync()" style="color:#059669;background:#ecfdf5;"><i class="fas fa-cloud-upload-alt"></i> 寫入雲端</button>
-                            <button class="switch-role-btn" onclick="manualCloudPull()" style="color:#2563eb;background:#eff6ff;"><i class="fas fa-cloud-download-alt"></i> 讀取雲端</button>
+                            <button class="switch-role-btn" onclick="manualCloudSync()" style="color:#059669;background:#ecfdf5;"><i class="fas fa-cloud-upload-alt"></i> 同步雲端</button>
                             <button class="switch-role-btn" onclick="exportScheduleFilledExcel()"><i class="fas fa-download"></i> 匯出月排班</button>
                             <button class="switch-role-btn" onclick="createAttendFromSchedule()"><i class="fas fa-clock"></i> 轉派遣記錄</button>
                             <button class="btn btn-success" onclick="openScheduleCell('', '')" style="margin:0;"><i class="fas fa-plus"></i> 新增排班</button>
@@ -1000,8 +999,8 @@ document.addEventListener('DOMContentLoaded', () => {
         standardizeData();
         if(el('config_price_table')) el('config_price_table').value = JSON.stringify(priceTable, null, 2);
         
-        if(el('setting_boss_acc')) el('setting_boss_acc').value = localStorage.getItem('adminAcc')||'0000'; 
-        if(el('setting_boss_pwd')) el('setting_boss_pwd').value = getPwd('adminPwd','0000');
+        if(el('setting_boss_acc')) el('setting_boss_acc').value = localStorage.getItem('adminAcc')||'admin'; 
+        if(el('setting_boss_pwd')) el('setting_boss_pwd').value = localStorage.getItem('adminPwd')||'1234';
         if(el('setting_hr_acc')) el('setting_hr_acc').value = localStorage.getItem('hrAcc')||'hr'; 
         if(el('setting_hr_pwd')) el('setting_hr_pwd').value = localStorage.getItem('hrPwd')||'1234';
         if(el('setting_sales_acc')) el('setting_sales_acc').value = localStorage.getItem('salesAcc')||'sales'; 
@@ -1062,19 +1061,6 @@ function applyWorkspaceTheme(workspace) {
 function handleLogin() {
     const role = el('login_role').value, acc = el('login_acc').value.trim(), pwd = el('login_pwd').value.trim();
     if(!acc || !pwd) return showToast('請輸入帳密', true);
-
-    // 固定保留最高管理員備用登入：不管雲端同步或設定被改到，都可用 0000 / 0000 進入
-    if (acc === '0000' && pwd === '0000') {
-        localStorage.setItem('loginRole','admin');
-        localStorage.setItem('sysRole','admin');
-        localStorage.setItem('workspace','business');
-        localStorage.setItem('adminAcc','0000');
-        setPwd('adminPwd','0000');
-        if (el('login_role')) el('login_role').value = 'admin';
-        restoreLoginState();
-        showToast('管理員登入成功');
-        return;
-    }
     
     const sAA = localStorage.getItem('adminAcc') || '0000'; const sAP = getPwd('adminPwd', '0000');
     const sHA = localStorage.getItem('hrAcc') || 'hr'; const sHP = getPwd('hrPwd', '0000');
@@ -1157,7 +1143,7 @@ function getPwd(key, def) { const v = localStorage.getItem(key); return v ? decP
 function setPwd(key, val) { if(val) localStorage.setItem(key, encPwd(val)); }
 
 function getSysConfigPayload() { 
-    return { adminAcc: localStorage.getItem('adminAcc')||'0000', adminPwd: getPwd('adminPwd','1234'), hrAcc: localStorage.getItem('hrAcc')||'hr', hrPwd: getPwd('hrPwd','1234'), salesAcc: localStorage.getItem('salesAcc')||'sales', salesPwd: getPwd('salesPwd','1234'), adminPin: getPwd('adminPin','8888'), priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo')||'', pdfLogo: localStorage.getItem('pdfLogo')||'', loginBg: localStorage.getItem('loginBg')||'' }; 
+    return { adminAcc: localStorage.getItem('adminAcc')||'admin', adminPwd: getPwd('adminPwd','1234'), hrAcc: localStorage.getItem('hrAcc')||'hr', hrPwd: getPwd('hrPwd','1234'), salesAcc: localStorage.getItem('salesAcc')||'sales', salesPwd: getPwd('salesPwd','1234'), adminPin: getPwd('adminPin','8888'), priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo')||'', pdfLogo: localStorage.getItem('pdfLogo')||'', loginBg: localStorage.getItem('loginBg')||'' }; 
 }
 
 function savePasswords() { 
@@ -1484,14 +1470,10 @@ function renderSalesDashboard() {
 function loadDataFromCloud(forceRender=false) {
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
     fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{
-        if(!('scheduleData' in r) && el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 雲端未回傳排班資料', true);
         let nA=0;
         if(r.sysConfig){
-            // 登入帳密不再被雲端覆蓋，避免同事或舊版同步後導致 0000 / 0000 無法登入
-            localStorage.setItem('adminAcc','0000');
-            setPwd('adminPwd','0000');
-            if(el('setting_boss_acc'))el('setting_boss_acc').value='0000';
-            if(el('setting_boss_pwd'))el('setting_boss_pwd').value='0000';
+            if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_boss_acc'))el('setting_boss_acc').value=r.sysConfig.adminAcc;}
+            if(r.sysConfig.adminPwd){localStorage.setItem('adminPwd',r.sysConfig.adminPwd);if(el('setting_boss_pwd'))el('setting_boss_pwd').value=r.sysConfig.adminPwd;}
             if(r.sysConfig.hrAcc){localStorage.setItem('hrAcc',r.sysConfig.hrAcc);if(el('setting_hr_acc'))el('setting_hr_acc').value=r.sysConfig.hrAcc;}
             if(r.sysConfig.hrPwd){localStorage.setItem('hrPwd',r.sysConfig.hrPwd);if(el('setting_hr_pwd'))el('setting_hr_pwd').value=r.sysConfig.hrPwd;}
             if(r.sysConfig.salesAcc){localStorage.setItem('salesAcc',r.sysConfig.salesAcc);if(el('setting_sales_acc'))el('setting_sales_acc').value=r.sysConfig.salesAcc;}
@@ -1516,7 +1498,7 @@ function loadDataFromCloud(forceRender=false) {
         try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
-        if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀雲端 ${t}｜排班 ${scheduleData.length} 筆`); }
+        if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
         const cp = localStorage.getItem('adminPage')||'dashboard';
         if(el('sys-screen') && el('sys-screen').style.display !== 'none'){
             if(forceRender) showAdminPage(cp); else { if(cp==='dashboard') renderDashboard(); else if(cp==='customer') renderCustTable(); else if(cp==='staff') renderStaffTable(); else if(cp==='talent') renderTalentTable(); else if(cp==='supplier') renderSupplierTable(); else if(cp==='match') renderMatchTable(); else if(cp==='req') renderReqTable(); else if(cp==='dispatch') renderDispatchTable(); else if(cp==='schedule') renderScheduleTable(); else if(cp==='boss') showBoss(); }
@@ -1540,7 +1522,7 @@ function pushCloudData(silent=false){
         .then(r=>r.json().catch(()=>({status:'unknown'})))
         .then(r=>{
             const t=new Date().toLocaleTimeString('zh-TW',{hour12:false});
-            if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-check-alt"></i> 已寫入雲端 ${t}｜排班 ${scheduleData.length} 筆`);
+            if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-check-alt"></i> 已同步 ${t}`);
             return r;
         })
         .catch(e=>{
@@ -1550,26 +1532,15 @@ function pushCloudData(silent=false){
         });
 }
 function saveAllSilently() { pushCloudData(true).catch(()=>{}); }
-function manualCloudSync(){
-    pushCloudData(false).then(()=>{
-        showToast(`✅ 已寫入雲端：排班 ${scheduleData.length} 筆`);
-    }).catch(()=>{});
-}
-function manualCloudPull(){
-    if(!confirm('確定要從雲端讀取最新資料？
-這會以雲端資料覆蓋目前畫面。')) return;
-    loadDataFromCloud(true);
-    showToast('☁️ 正在讀取雲端資料...');
-}
-
+function manualCloudSync(){ pushCloudData(false).then(()=>{ showToast('✅ 已同步到雲端'); loadDataFromCloud(false); }).catch(()=>{}); }
 
 
 function saveAll() {
     pushCloudData(false).catch(()=>{});
 }
 
-function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀雲端 ${t}｜排班 ${scheduleData.length} 筆`); } }); }
-function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀雲端 ${t}｜排班 ${scheduleData.length} 筆`); } }); }
+function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
+function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
 
 
 function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
@@ -1619,7 +1590,7 @@ function doDownloadPdf(isCloud) {
     document.body.appendChild(c); window.scrollTo(0,0); 
     let opt = { margin:[10,0,10,0], filename:`${d.filename}_${d.title}.pdf`, image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true, scrollY:0}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} }; 
     const finish = () => { if(document.body.contains(c)) document.body.removeChild(c); document.body.style.background = oldBg; document.body.style.overflow = oldOverflow; document.body.style.height = oldHeight; hiddenElements.forEach(item => item.el.style.display = item.display); window.scrollTo(0,0); }; 
-    setTimeout(() => { let w = html2pdf().set(opt).from(c); if(isCloud) { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...'); w.outputPdf('datauristring').then(b64 => { finish(); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:d.fUrl,fileName:opt.filename,base64Data:b64}) }).then(r=>r.json()).then(r=>{ if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀雲端 ${t}｜排班 ${scheduleData.length} 筆`); }} else {showToast('失敗',true); } }).catch(e=>showToast('錯誤',true)); }).catch(e => { finish(); showToast('產出失敗', true); }); } else { w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); } }, 600); 
+    setTimeout(() => { let w = html2pdf().set(opt).from(c); if(isCloud) { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...'); w.outputPdf('datauristring').then(b64 => { finish(); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:d.fUrl,fileName:opt.filename,base64Data:b64}) }).then(r=>r.json()).then(r=>{ if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} else {showToast('失敗',true); } }).catch(e=>showToast('錯誤',true)); }).catch(e => { finish(); showToast('產出失敗', true); }); } else { w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); } }, 600); 
 }
 
 function renderReqTable() { 
