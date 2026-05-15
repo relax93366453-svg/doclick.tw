@@ -596,11 +596,13 @@
                             <p>改為依公司篩選後，用「日期 × 時段」方式排人；每一格可安排多位人員。</p>
                         </div>
                         <div class="schedule-actions">
-                            <select id="sch_company_select" onchange="renderScheduleTable()"><option value="">全部公司</option></select>
+                            <select id="sch_company_select" onchange="syncScheduleCompanySearchFromSelect(); renderScheduleTable()"><option value="">全部公司</option></select>
+                            <input list="list_cust" id="sch_company_search" placeholder="手打搜尋公司" oninput="applyScheduleCompanySearch(false)" onchange="applyScheduleCompanySearch(true)" onkeydown="if(event.key==='Enter'){applyScheduleCompanySearch(true)}" style="width:190px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-weight:700;">
                             <select id="sch_year" onchange="renderScheduleTable()"></select>
                             <select id="sch_month" onchange="renderScheduleTable()"></select>
                             <button class="switch-role-btn" onclick="setScheduleCurrentMonth()"><i class="fas fa-calendar-day"></i> 回到本月</button>
                             <button class="switch-role-btn" onclick="renderScheduleTable()"><i class="fas fa-sync-alt"></i> 重整本月</button>
+                            <button class="switch-role-btn" onclick="manualCloudSync()" style="color:#059669;background:#ecfdf5;"><i class="fas fa-cloud-upload-alt"></i> 同步雲端</button>
                             <button class="switch-role-btn" onclick="exportScheduleFilledExcel()"><i class="fas fa-download"></i> 匯出月排班</button>
                             <button class="switch-role-btn" onclick="createAttendFromSchedule()"><i class="fas fa-clock"></i> 轉派遣記錄</button>
                             <button class="btn btn-success" onclick="openScheduleCell('', '')" style="margin:0;"><i class="fas fa-plus"></i> 新增排班</button>
@@ -1504,13 +1506,37 @@ function loadDataFromCloud(forceRender=false) {
     }).catch(e=>{ if(el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線',true); });
 }
 
-function saveAllSilently() { fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, sysConfig:getSysConfigPayload()}), headers:{'Content-Type':'text/plain;charset=utf-8'} }); }
+function buildCloudPayload(){
+    standardizeData();
+    return {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, sysConfig:getSysConfigPayload(), updatedAt:new Date().toISOString()};
+}
+function saveLocalData(){
+    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); } catch(e) {}
+}
+function pushCloudData(silent=false){
+    const payload=buildCloudPayload();
+    saveLocalData();
+    if(!SCRIPT_URL){ if(el('sync-status')) updateSyncStatus('<i class="fas fa-save"></i> 本機'); return Promise.resolve({status:'local'}); }
+    if(!silent && el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步中...');
+    return fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify(payload), headers:{'Content-Type':'text/plain;charset=utf-8'} })
+        .then(r=>r.json().catch(()=>({status:'unknown'})))
+        .then(r=>{
+            const t=new Date().toLocaleTimeString('zh-TW',{hour12:false});
+            if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-check-alt"></i> 已同步 ${t}`);
+            return r;
+        })
+        .catch(e=>{
+            if(el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 同步失敗',true);
+            if(!silent) showToast('❌ 雲端同步失敗，請確認是否允許網路存取', true);
+            throw e;
+        });
+}
+function saveAllSilently() { pushCloudData(true).catch(()=>{}); }
+function manualCloudSync(){ pushCloudData(false).then(()=>{ showToast('✅ 已同步到雲端'); loadDataFromCloud(false); }).catch(()=>{}); }
+
 
 function saveAll() {
-    standardizeData();
-    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); } catch(e) {}
-    if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 存...');
-    fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, sysConfig:getSysConfigPayload()}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ if(r.status === 'success' && el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }).catch(e=>{ if(el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 失敗',true); });
+    pushCloudData(false).catch(()=>{});
 }
 
 function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
@@ -1614,7 +1640,35 @@ const scheduleShiftPresets={
 };
 function pad2(n){return String(n).padStart(2,'0');}
 function dateYMD(y,m,d){return `${y}-${pad2(m)}-${pad2(d)}`;}
-function getScheduleCompany(){return (el('sch_company_select')?el('sch_company_select').value.trim():'')||'';}
+function getAllScheduleCompanyNames(){
+    return [...new Set([...(custData||[]).map(x=>x.name),...(dispatchData||[]).map(x=>x.company),...(scheduleData||[]).map(x=>x.company)].filter(Boolean))].sort();
+}
+function getScheduleCompany(){
+    const search = el('sch_company_search') ? el('sch_company_search').value.trim() : '';
+    const select = el('sch_company_select') ? el('sch_company_select').value.trim() : '';
+    const names = getAllScheduleCompanyNames();
+    if(search && names.includes(search)) return search;
+    return select || '';
+}
+function syncScheduleCompanySearchFromSelect(){
+    const sel=el('sch_company_select'), inp=el('sch_company_search');
+    if(sel&&inp) inp.value = sel.value || '';
+}
+function applyScheduleCompanySearch(force=false){
+    const inp=el('sch_company_search'), sel=el('sch_company_select');
+    if(!inp||!sel)return;
+    const v=inp.value.trim();
+    const names=getAllScheduleCompanyNames();
+    if(!v){ sel.value=''; renderScheduleTable(); return; }
+    const exact=names.find(n=>n===v);
+    if(exact){ sel.value=exact; renderScheduleTable(); return; }
+    if(force){
+        const hit=names.find(n=>n.includes(v));
+        if(hit){ inp.value=hit; sel.value=hit; renderScheduleTable(); }
+        else showToast('找不到這間公司，請先到客戶資料新增', true);
+    }
+}
+
 function getScheduleYear(){return Number(el('sch_year')?el('sch_year').value:new Date().getFullYear())||new Date().getFullYear();}
 function getScheduleMonth(){return Number(el('sch_month')?el('sch_month').value:new Date().getMonth()+1)||new Date().getMonth()+1;}
 function getShiftPreset(shift){return scheduleShiftPresets[shift]||scheduleShiftPresets['自訂'];}
@@ -1631,10 +1685,17 @@ function initScheduleSelectors(){
 }
 function setScheduleCurrentMonth(){initScheduleSelectors();const n=new Date();el('sch_year').value=n.getFullYear();el('sch_month').value=n.getMonth()+1;renderScheduleTable();}
 function refreshScheduleCompanyOptions(){
-    const sel=el('sch_company_select');if(!sel)return;const cur=sel.value;
-    const names=[...new Set([...(custData||[]).map(x=>x.name),...(dispatchData||[]).map(x=>x.company),...(scheduleData||[]).map(x=>x.company)].filter(Boolean))].sort();
+    const sel=el('sch_company_select');if(!sel)return;const cur=getScheduleCompany();
+    const names=getAllScheduleCompanyNames();
     sel.innerHTML='<option value="">全部公司</option>'+names.map(n=>`<option value="${n}">${n}</option>`).join('');
-    if(names.includes(cur))sel.value=cur;
+    if(names.includes(cur)) sel.value=cur; else sel.value='';
+    const inp=el('sch_company_search');
+    if(inp && names.includes(cur)) inp.value=cur;
+    const dl=el('list_cust');
+    if(dl){
+        const existing=[...dl.querySelectorAll('option')].map(o=>o.value);
+        names.forEach(n=>{ if(!existing.includes(n)){ const o=document.createElement('option'); o.value=n; dl.appendChild(o); } });
+    }
 }
 function getScheduleTimeSlots(){return Array.from({length:17},(_,i)=>`${pad2(i+7)}:00`);}
 function getScheduleStaffRows(){return [];}
