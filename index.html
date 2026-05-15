@@ -1674,11 +1674,11 @@ function findDirectScheduleSlot(company,date,time){
 }
 function getScheduleAssignments(company,date,time){
     const items=[];
-    (scheduleData||[]).forEach(entry=>{
+    (scheduleData||[]).forEach((entry, entryIndex)=>{
         if(String(entry.date||'')!==String(date||''))return;
         if(String(entry.company||'')!==String(company||''))return;
         if(!scheduleEntryCoversTime(entry,time))return;
-        getScheduleStaffList(entry.staffs).forEach(n=>items.push({name:n,entry,isStart:String(entry.start||'')===String(time||'')}));
+        getScheduleStaffList(entry.staffs).forEach(n=>items.push({name:n,entry,entryIndex,isStart:String(entry.start||'')===String(time||'')}));
     });
     return items;
 }
@@ -1687,7 +1687,8 @@ function schedulePersonCard(a){
     const e=a.entry||{};
     const hours=Number(e.hours)||calcScheduleNetHours(e.start,e.end,e.breakStart,e.breakEnd,e.breakHours);
     const breakText=parseScheduleBreakHours(e.breakHours)?`<div class="p-break">休 ${formatScheduleHours(e.breakHours)}h</div>`:((e.breakStart&&e.breakEnd)?`<div class="p-break">休 ${e.breakStart}-${e.breakEnd}</div>`:'');
-    return `<div class="slot-person-card ${a.isStart?'':'continue'}" title="${a.name} ${e.start||''}-${e.end||''}">
+    const idx=Number.isInteger(a.entryIndex)?a.entryIndex:-1;
+    return `<div class="slot-person-card ${a.isStart?'':'continue'}" title="${a.name} ${e.start||''}-${e.end||''}" onclick="event.stopPropagation(); openScheduleEntryByIndex(${idx});">
         <div class="p-name">${a.name}</div>
         <div class="p-time">${e.start||''}-${e.end||''}</div>
         ${breakText}
@@ -1828,13 +1829,42 @@ function previewScheduleConflicts(){
     box.innerHTML='<b>排班衝突提醒：</b><br>'+conflicts.map(c=>`${c.staff} 已在 ${c.company} 的 ${c.time} 排班`).join('<br>');
     return conflicts;
 }
+let currentScheduleEditIndex = -1;
+function fillScheduleModalFromEntry(entry, entryIndex){
+    currentScheduleEditIndex = Number.isInteger(entryIndex) ? entryIndex : -1;
+    if(!entry)return;
+    if(el('sch_company_select')){refreshScheduleCompanyOptions();el('sch_company_select').value=entry.company||'';}
+    el('sch_modal_company').value=entry.company||'';
+    el('sch_modal_date').value=entry.date||'';
+    el('sch_modal_start').value=entry.start||'';
+    el('sch_modal_end').value=entry.end||'';
+    if(el('sch_modal_break_start'))el('sch_modal_break_start').value=entry.breakStart||'';
+    if(el('sch_modal_break_end'))el('sch_modal_break_end').value=entry.breakEnd||'';
+    if(el('sch_modal_break_hours'))el('sch_modal_break_hours').value=entry.breakHours||'';
+    el('sch_modal_staff').value=entry.staffs||'';
+    renderScheduleStaffCheckboxes(getScheduleStaffList(entry.staffs||''));
+    calcScheduleModalSlotHours();
+    setTimeout(previewScheduleConflicts,0);
+    el('sch_modal_location').value=entry.location||'';
+    el('sch_modal_remark').value=entry.remark||'';
+    if(el('sch_modal_sub'))el('sch_modal_sub').innerText=`${entry.company||''}｜${entry.date||''}｜${entry.start||''}`;
+    const modal=el('scheduleEditModal');if(modal)modal.style.display='flex';
+}
+function openScheduleEntryByIndex(index){
+    index=Number(index);
+    if(!Number.isInteger(index)||!scheduleData||!scheduleData[index])return;
+    fillScheduleModalFromEntry(scheduleData[index], index);
+}
 function openScheduleCell(staff,date,time){
+    currentScheduleEditIndex = -1;
     initScheduleSelectors();
     const company=getScheduleCompany()||((custData||[])[0]?.name||'內部排班');
     const today=new Date();
     const targetDate=date||dateYMD(getScheduleYear()||today.getFullYear(),getScheduleMonth()||today.getMonth()+1,today.getDate());
     const targetTime=time||'07:00';
     const direct=findScheduleEntryForSlot(company,targetDate,targetTime);
+    const directIndex=direct?(scheduleData||[]).indexOf(direct):-1;
+    if(directIndex>=0)currentScheduleEditIndex=directIndex;
     const aggregated=getScheduleAssignments(company,targetDate,targetTime);
     el('sch_modal_company').value=direct?.company||company;
     el('sch_modal_date').value=targetDate;
@@ -1867,23 +1897,24 @@ function saveScheduleCell(){
     if(!company||!date||!start||!end)return showToast('請輸入公司、日期與開始/結束時間',true);
     if(!hours||hours<=0)return showToast('請確認上下班與休息時間；實際工時不可為 0',true);
     if(!staffList.length)return showToast('請至少輸入一位排班人員',true);
-    const existing=findScheduleEntryForSlot(company,date,start);
+    const existing=(currentScheduleEditIndex>=0 && scheduleData[currentScheduleEditIndex]) ? scheduleData[currentScheduleEditIndex] : findScheduleEntryForSlot(company,date,start);
     const conflicts=findScheduleConflicts(company,date,start,end,staffList,existing);
     if(conflicts.length){
         const msg='以下人員同日同時段已在其他公司排班：\n'+conflicts.map(c=>`${c.staff}：${c.company} ${c.time}`).join('\n')+'\n\n仍要儲存嗎？';
         if(!confirm(msg))return;
     }
-    const oldIndex=(scheduleData||[]).findIndex(x=>x===existing);
+    const oldIndex=(currentScheduleEditIndex>=0 && scheduleData[currentScheduleEditIndex]) ? currentScheduleEditIndex : (scheduleData||[]).findIndex(x=>x===existing);
     const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,breakHours,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
     if(oldIndex>=0)scheduleData[oldIndex]={...scheduleData[oldIndex],...obj};else scheduleData.push(obj);
+    currentScheduleEditIndex = -1;
     saveAll();closeScheduleModal();renderScheduleTable();showToast('✅ 時段排班已儲存');
 }
 function deleteScheduleCell(){
     const company=el('sch_modal_company').value.trim(),date=el('sch_modal_date').value,start=el('sch_modal_start').value;
-    const idx=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&String(x.company||'')===company&&String(x.start||'')===start);
+    const idx=(currentScheduleEditIndex>=0 && scheduleData[currentScheduleEditIndex]) ? currentScheduleEditIndex : (scheduleData||[]).findIndex(x=>String(x.date||'')===date&&String(x.company||'')===company&&String(x.start||'')===start);
     if(idx<0){closeScheduleModal();return;}
     if(!confirm('確定刪除此筆排班？'))return;
-    scheduleData.splice(idx,1);saveAll();closeScheduleModal();renderScheduleTable();showToast('已刪除此筆');
+    scheduleData.splice(idx,1);currentScheduleEditIndex=-1;saveAll();closeScheduleModal();renderScheduleTable();showToast('已刪除此筆');
 }
 function addQuickSchedule(){
     const selectedCompany=getScheduleCompany();
