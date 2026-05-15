@@ -602,7 +602,8 @@
                             <select id="sch_month" onchange="renderScheduleTable()"></select>
                             <button class="switch-role-btn" onclick="setScheduleCurrentMonth()"><i class="fas fa-calendar-day"></i> 回到本月</button>
                             <button class="switch-role-btn" onclick="renderScheduleTable()"><i class="fas fa-sync-alt"></i> 重整本月</button>
-                            <button class="switch-role-btn" onclick="manualCloudSync()" style="color:#059669;background:#ecfdf5;"><i class="fas fa-cloud-upload-alt"></i> 同步雲端</button>
+                            <button class="switch-role-btn" onclick="manualCloudSync()" style="color:#059669;background:#ecfdf5;"><i class="fas fa-cloud-upload-alt"></i> 寫入雲端</button>
+                            <button class="switch-role-btn" onclick="manualCloudPull()" style="color:#2563eb;background:#eff6ff;"><i class="fas fa-cloud-download-alt"></i> 讀取雲端</button>
                             <button class="switch-role-btn" onclick="exportScheduleFilledExcel()"><i class="fas fa-download"></i> 匯出月排班</button>
                             <button class="switch-role-btn" onclick="createAttendFromSchedule()"><i class="fas fa-clock"></i> 轉派遣記錄</button>
                             <button class="btn btn-success" onclick="openScheduleCell('', '')" style="margin:0;"><i class="fas fa-plus"></i> 新增排班</button>
@@ -1470,6 +1471,7 @@ function renderSalesDashboard() {
 function loadDataFromCloud(forceRender=false) {
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
     fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{
+        if(!('scheduleData' in r) && el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 雲端未回傳排班資料', true);
         let nA=0;
         if(r.sysConfig){
             if(r.sysConfig.adminAcc){localStorage.setItem('adminAcc',r.sysConfig.adminAcc);if(el('setting_boss_acc'))el('setting_boss_acc').value=r.sysConfig.adminAcc;}
@@ -1498,7 +1500,7 @@ function loadDataFromCloud(forceRender=false) {
         try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
-        if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
+        if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀雲端 ${t}｜排班 ${scheduleData.length} 筆`); }
         const cp = localStorage.getItem('adminPage')||'dashboard';
         if(el('sys-screen') && el('sys-screen').style.display !== 'none'){
             if(forceRender) showAdminPage(cp); else { if(cp==='dashboard') renderDashboard(); else if(cp==='customer') renderCustTable(); else if(cp==='staff') renderStaffTable(); else if(cp==='talent') renderTalentTable(); else if(cp==='supplier') renderSupplierTable(); else if(cp==='match') renderMatchTable(); else if(cp==='req') renderReqTable(); else if(cp==='dispatch') renderDispatchTable(); else if(cp==='schedule') renderScheduleTable(); else if(cp==='boss') showBoss(); }
@@ -1522,7 +1524,7 @@ function pushCloudData(silent=false){
         .then(r=>r.json().catch(()=>({status:'unknown'})))
         .then(r=>{
             const t=new Date().toLocaleTimeString('zh-TW',{hour12:false});
-            if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-check-alt"></i> 已同步 ${t}`);
+            if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-check-alt"></i> 已寫入雲端 ${t}｜排班 ${scheduleData.length} 筆`);
             return r;
         })
         .catch(e=>{
@@ -1532,15 +1534,26 @@ function pushCloudData(silent=false){
         });
 }
 function saveAllSilently() { pushCloudData(true).catch(()=>{}); }
-function manualCloudSync(){ pushCloudData(false).then(()=>{ showToast('✅ 已同步到雲端'); loadDataFromCloud(false); }).catch(()=>{}); }
+function manualCloudSync(){
+    pushCloudData(false).then(()=>{
+        showToast(`✅ 已寫入雲端：排班 ${scheduleData.length} 筆`);
+    }).catch(()=>{});
+}
+function manualCloudPull(){
+    if(!confirm('確定要從雲端讀取最新資料？
+這會以雲端資料覆蓋目前畫面。')) return;
+    loadDataFromCloud(true);
+    showToast('☁️ 正在讀取雲端資料...');
+}
+
 
 
 function saveAll() {
     pushCloudData(false).catch(()=>{});
 }
 
-function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
-function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
+function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀雲端 ${t}｜排班 ${scheduleData.length} 筆`); } }); }
+function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀雲端 ${t}｜排班 ${scheduleData.length} 筆`); } }); }
 
 
 function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
@@ -1590,7 +1603,7 @@ function doDownloadPdf(isCloud) {
     document.body.appendChild(c); window.scrollTo(0,0); 
     let opt = { margin:[10,0,10,0], filename:`${d.filename}_${d.title}.pdf`, image:{type:'jpeg',quality:1}, html2canvas:{scale:2, useCORS:true, scrollY:0}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} }; 
     const finish = () => { if(document.body.contains(c)) document.body.removeChild(c); document.body.style.background = oldBg; document.body.style.overflow = oldOverflow; document.body.style.height = oldHeight; hiddenElements.forEach(item => item.el.style.display = item.display); window.scrollTo(0,0); }; 
-    setTimeout(() => { let w = html2pdf().set(opt).from(c); if(isCloud) { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...'); w.outputPdf('datauristring').then(b64 => { finish(); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:d.fUrl,fileName:opt.filename,base64Data:b64}) }).then(r=>r.json()).then(r=>{ if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');} else {showToast('失敗',true); } }).catch(e=>showToast('錯誤',true)); }).catch(e => { finish(); showToast('產出失敗', true); }); } else { w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); } }, 600); 
+    setTimeout(() => { let w = html2pdf().set(opt).from(c); if(isCloud) { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...'); w.outputPdf('datauristring').then(b64 => { finish(); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'savePDF',folderUrl:d.fUrl,fileName:opt.filename,base64Data:b64}) }).then(r=>r.json()).then(r=>{ if(r.status==='success'){showToast('🚀 已歸檔'); if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀雲端 ${t}｜排班 ${scheduleData.length} 筆`); }} else {showToast('失敗',true); } }).catch(e=>showToast('錯誤',true)); }).catch(e => { finish(); showToast('產出失敗', true); }); } else { w.save().then(()=>{ finish(); showToast('✅ 下載完成！'); }).catch(e => { finish(); showToast('產出失敗', true); }); } }, 600); 
 }
 
 function renderReqTable() { 
