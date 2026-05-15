@@ -245,6 +245,7 @@
         .day-head{min-width:58px;height:58px;}
         .day-head .num{display:block;font-size:13px;color:#64748b;}
         .day-head .week{display:block;font-size:12px;}
+        .day-head .day-count{display:inline-block;margin-top:4px;background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:999px;padding:1px 7px;font-size:10px;font-weight:900;line-height:1.4;}
         .day-head.weekend{background:#fff1f2;color:#ef4444;}
         .schedule-cell{height:92px;min-width:58px;cursor:pointer;background:#fff;padding:5px;transition:.15s;}
         .schedule-cell:hover{background:#f8fafc;box-shadow:inset 0 0 0 2px #93c5fd;}
@@ -285,7 +286,7 @@
         .schedule-note-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 14px;color:#1e40af;font-size:13px;font-weight:800;}
         .schedule-quick-panel{background:#fff;border:1px solid #dbe7f5;border-radius:16px;padding:16px;margin:14px 0;box-shadow:0 4px 12px rgba(15,23,42,.03);}
         .schedule-quick-title{display:flex;align-items:center;gap:8px;color:#0f172a;font-size:15px;font-weight:900;margin-bottom:12px;}
-        .schedule-quick-form{display:grid;grid-template-columns:1.1fr 1.1fr .9fr .75fr .75fr .75fr .75fr .75fr auto;gap:10px;align-items:end;}
+        .schedule-quick-form{display:grid;grid-template-columns:1.1fr 1.1fr .9fr .75fr .75fr .75fr .75fr auto;gap:10px;align-items:end;}
         .schedule-quick-form label{display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:5px;}
         .schedule-quick-form input{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:10px;font-size:13px;background:#fff;}
         .schedule-quick-hint{font-size:12px;color:#64748b;font-weight:700;margin-top:8px;}
@@ -612,13 +613,12 @@
                             <div><label>日期</label><input type="text" id="sch_quick_date" placeholder="2026/05/18" onblur="normalizeQuickScheduleDate()"></div>
                             <div><label>上班</label><input type="time" id="sch_quick_start" step="900" placeholder="08:00" oninput="updateQuickScheduleHours()"></div>
                             <div><label>下班</label><input type="time" id="sch_quick_end" step="900" placeholder="12:30" oninput="updateQuickScheduleHours()"></div>
-                            <div><label>休息開始</label><input type="time" id="sch_quick_break_start" step="900" placeholder="12:00" oninput="updateQuickScheduleHours()"></div>
-                            <div><label>休息結束</label><input type="time" id="sch_quick_break_end" step="900" placeholder="13:00" oninput="updateQuickScheduleHours()"></div>
+                            <div><label>休息時數</label><input type="number" id="sch_quick_break_hours" step="0.5" min="0" placeholder="例：1 或 1.5" oninput="updateQuickScheduleHours()"></div>
                             <div><label>實際工時</label><input id="sch_quick_hours" readonly placeholder="自動"></div>
                             <button class="btn btn-success" onclick="addQuickSchedule()" style="margin:0;height:40px;"><i class="fas fa-plus"></i> 加入</button>
                             <div class="quick-full" style="grid-column:1/-1;"><label>備註</label><input id="sch_quick_remark" placeholder="可填需求、地點、窗口"></div>
                         </div>
-                        <div class="schedule-quick-hint">例如：徐繼崑 / 2026/05/18 / 08:00～12:30；若有休息可填 12:00～13:00。下方格子會以人員卡片顯示完整時間與實際工時。</div>
+                        <div class="schedule-quick-hint">例如：徐繼崑 / 2026/05/18 / 08:00～12:30；若有休息可直接填休息時數，例如 1 或 1.5。下方格子會以人員卡片顯示完整時間、休息與實際工時。</div>
                     </div>
 
                     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 10px;">
@@ -652,8 +652,7 @@
                             <div><label>日期</label><input type="date" id="sch_modal_date" onchange="previewScheduleConflicts()"></div>
                             <div><label>上班時間</label><input type="time" id="sch_modal_start" step="900" onchange="calcScheduleModalSlotHours();previewScheduleConflicts()"></div>
                             <div><label>下班時間</label><input type="time" id="sch_modal_end" step="900" onchange="calcScheduleModalSlotHours();previewScheduleConflicts()"></div>
-                            <div><label>休息開始</label><input type="time" id="sch_modal_break_start" step="900" onchange="calcScheduleModalSlotHours();previewScheduleConflicts()"></div>
-                            <div><label>休息結束</label><input type="time" id="sch_modal_break_end" step="900" onchange="calcScheduleModalSlotHours();previewScheduleConflicts()"></div>
+                            <div><label>休息時數</label><input type="number" id="sch_modal_break_hours" step="0.5" min="0" placeholder="例：1 或 1.5" oninput="calcScheduleModalSlotHours();previewScheduleConflicts()"></div>
                             <div><label>實際工時</label><input id="sch_modal_hours" readonly value="0"></div>
                             <div><label>需求 / 補充</label><input id="sch_modal_location" placeholder="例：需要2人、清飛、現場集合點"></div>
                             <div style="grid-column:1/-1;"><label>排班人員（可多位）</label><input list="list_staff" id="sch_modal_staff" placeholder="可手打，也可用下方勾選；例：秋XX、林XX" oninput="syncScheduleStaffChecksFromInput();previewScheduleConflicts();"></div>
@@ -1649,9 +1648,14 @@ function calcScheduleBreakHours(breakStart,breakEnd,start,end){
     const overlap=Math.max(0,Math.min(e,be)-Math.max(s,bs));
     return overlap/60;
 }
-function calcScheduleNetHours(start,end,breakStart,breakEnd){
+function parseScheduleBreakHours(v){
+    if(v===undefined||v===null||String(v).trim()==='')return 0;
+    const n=parseFloat(String(v).replace('小時','').replace('h','').trim());
+    return isNaN(n)?0:Math.max(0,n);
+}
+function calcScheduleNetHours(start,end,breakStart,breakEnd,breakHours){
     const work=calcScheduleRangeHours(start,end);
-    const rest=calcScheduleBreakHours(breakStart,breakEnd,start,end);
+    const rest=parseScheduleBreakHours(breakHours)||calcScheduleBreakHours(breakStart,breakEnd,start,end);
     return Math.max(0,Number((work-rest).toFixed(2)));
 }
 function formatScheduleHours(h){
@@ -1678,11 +1682,11 @@ function getScheduleAssignments(company,date,time){
     });
     return items;
 }
-function scheduleEntryKey(entry){return [entry.company||'',entry.date||'',entry.start||'',entry.end||'',entry.breakStart||'',entry.breakEnd||'',entry.staffs||''].join('|');}
+function scheduleEntryKey(entry){return [entry.company||'',entry.date||'',entry.start||'',entry.end||'',entry.breakStart||'',entry.breakEnd||'',entry.breakHours||'',entry.staffs||''].join('|');}
 function schedulePersonCard(a){
     const e=a.entry||{};
-    const hours=Number(e.hours)||calcScheduleNetHours(e.start,e.end,e.breakStart,e.breakEnd);
-    const breakText=(e.breakStart&&e.breakEnd)?`<div class="p-break">休 ${e.breakStart}-${e.breakEnd}</div>`:'';
+    const hours=Number(e.hours)||calcScheduleNetHours(e.start,e.end,e.breakStart,e.breakEnd,e.breakHours);
+    const breakText=parseScheduleBreakHours(e.breakHours)?`<div class="p-break">休 ${formatScheduleHours(e.breakHours)}h</div>`:((e.breakStart&&e.breakEnd)?`<div class="p-break">休 ${e.breakStart}-${e.breakEnd}</div>`:'');
     return `<div class="slot-person-card ${a.isStart?'':'continue'}" title="${a.name} ${e.start||''}-${e.end||''}">
         <div class="p-name">${a.name}</div>
         <div class="p-time">${e.start||''}-${e.end||''}</div>
@@ -1696,13 +1700,25 @@ function renderScheduleCompanyInfo(){
     const cust=(custData||[]).find(x=>x.name===company)||{},related=(dispatchData||[]).filter(x=>x.company===company&&x.status!=='已完成');
     box.style.display='block';box.innerHTML=`<b><i class="fas fa-building"></i> ${company}</b><br>工作地址：${cust.work_addr||cust.addr||'尚未建立'}　｜　聯絡人：${cust.user||'-'}　｜　電話：${cust.tel||'-'}<br>目前待派發案件：${related.length} 筆；可依此公司需求安排不同人員與時段。`;
 }
+function getScheduleDayStaffCount(company,date){
+    const people=new Set();
+    (scheduleData||[]).forEach(entry=>{
+        if(String(entry.date||'')!==String(date||''))return;
+        if(company && String(entry.company||'')!==String(company))return;
+        getScheduleStaffList(entry.staffs).forEach(n=>people.add(n));
+    });
+    return people.size;
+}
 function renderScheduleTable(){
     initScheduleSelectors();refreshScheduleCompanyOptions();renderScheduleCompanyInfo();
     if(el('sch_quick_company') && !el('sch_quick_company').value && getScheduleCompany())el('sch_quick_company').value=getScheduleCompany();
     const y=getScheduleYear(),m=getScheduleMonth(),days=new Date(y,m,0).getDate(),week=['日','一','二','三','四','五','六'],company=getScheduleCompany(),times=getScheduleTimeSlots();
     if(el('sch_month_title'))el('sch_month_title').innerText=`${y} 年 ${m} 月時段排班表`;
     let head='<tr><th class="time-head">時段</th>';
-    for(let d=1;d<=days;d++){const wd=new Date(y,m-1,d).getDay();head+=`<th class="day-head ${wd===0||wd===6?'weekend':''}"><span class="num">${d}</span><span class="week">${week[wd]}</span></th>`;}
+    for(let d=1;d<=days;d++){
+        const wd=new Date(y,m-1,d).getDay(),date=dateYMD(y,m,d),dayPeople=company?getScheduleDayStaffCount(company,date):0;
+        head+=`<th class="day-head ${wd===0||wd===6?'weekend':''}"><span class="num">${d}</span><span class="week">${week[wd]}</span>${dayPeople?`<span class="day-count">${dayPeople}人</span>`:''}</th>`;
+    }
     head+='</tr>';
     if(el('scheduleTableHead'))el('scheduleTableHead').innerHTML=head;
     let body='';
@@ -1727,7 +1743,7 @@ function renderScheduleTable(){
         if(!String(d.date||'').startsWith(`${y}-${pad2(m)}-`))return;
         const names=getScheduleStaffList(d.staffs);if(!names.length)return;
         realCells++;
-        const hours=Number(d.hours)||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd)||0;
+        const hours=Number(d.hours)||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours)||0;
         names.forEach(n=>realStaff.add(n));
         realPersonHours+=hours*names.length;
     });
@@ -1743,7 +1759,8 @@ function calcScheduleModalSlotHours(){
     const end=el('sch_modal_end')?el('sch_modal_end').value:'';
     const bs=el('sch_modal_break_start')?el('sch_modal_break_start').value:'';
     const be=el('sch_modal_break_end')?el('sch_modal_break_end').value:'';
-    const hours=calcScheduleNetHours(start,end,bs,be);
+    const bh=el('sch_modal_break_hours')?el('sch_modal_break_hours').value:'';
+    const hours=calcScheduleNetHours(start,end,bs,be,bh);
     if(el('sch_modal_hours'))el('sch_modal_hours').value=formatScheduleHours(hours);
     return hours;
 }
@@ -1752,7 +1769,8 @@ function updateQuickScheduleHours(){
     const end=el('sch_quick_end')?el('sch_quick_end').value:'';
     const bs=el('sch_quick_break_start')?el('sch_quick_break_start').value:'';
     const be=el('sch_quick_break_end')?el('sch_quick_break_end').value:'';
-    const hours=calcScheduleNetHours(start,end,bs,be);
+    const bh=el('sch_quick_break_hours')?el('sch_quick_break_hours').value:'';
+    const hours=calcScheduleNetHours(start,end,bs,be,bh);
     if(el('sch_quick_hours'))el('sch_quick_hours').value=hours?formatScheduleHours(hours):'';
     return hours;
 }
@@ -1824,6 +1842,7 @@ function openScheduleCell(staff,date,time){
     el('sch_modal_end').value=direct?.end||getScheduleNextHour(targetTime);
     if(el('sch_modal_break_start'))el('sch_modal_break_start').value=direct?.breakStart||'';
     if(el('sch_modal_break_end'))el('sch_modal_break_end').value=direct?.breakEnd||'';
+    if(el('sch_modal_break_hours'))el('sch_modal_break_hours').value=direct?.breakHours||'';
     el('sch_modal_staff').value=direct?.staffs||aggregated.map(x=>x.name).join('、');
     renderScheduleStaffCheckboxes(getScheduleStaffList(el('sch_modal_staff').value));
     calcScheduleModalSlotHours();
@@ -1842,7 +1861,8 @@ function saveScheduleCell(){
     const end=el('sch_modal_end').value;
     const breakStart=el('sch_modal_break_start')?el('sch_modal_break_start').value:'';
     const breakEnd=el('sch_modal_break_end')?el('sch_modal_break_end').value:'';
-    const hours=calcScheduleNetHours(start,end,breakStart,breakEnd);
+    const breakHours=el('sch_modal_break_hours')?el('sch_modal_break_hours').value:'';
+    const hours=calcScheduleNetHours(start,end,breakStart,breakEnd,breakHours);
     const staffList=getScheduleStaffList(el('sch_modal_staff').value).filter(Boolean);
     if(!company||!date||!start||!end)return showToast('請輸入公司、日期與開始/結束時間',true);
     if(!hours||hours<=0)return showToast('請確認上下班與休息時間；實際工時不可為 0',true);
@@ -1854,7 +1874,7 @@ function saveScheduleCell(){
         if(!confirm(msg))return;
     }
     const oldIndex=(scheduleData||[]).findIndex(x=>x===existing);
-    const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
+    const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,breakHours,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
     if(oldIndex>=0)scheduleData[oldIndex]={...scheduleData[oldIndex],...obj};else scheduleData.push(obj);
     saveAll();closeScheduleModal();renderScheduleTable();showToast('✅ 時段排班已儲存');
 }
@@ -1875,9 +1895,10 @@ function addQuickSchedule(){
     const end=el('sch_quick_end')?el('sch_quick_end').value:'';
     const breakStart=el('sch_quick_break_start')?el('sch_quick_break_start').value:'';
     const breakEnd=el('sch_quick_break_end')?el('sch_quick_break_end').value:'';
+    const breakHours=el('sch_quick_break_hours')?el('sch_quick_break_hours').value:'';
     const remark=el('sch_quick_remark')?el('sch_quick_remark').value.trim():'';
     const staffList=getScheduleStaffList(staffRaw);
-    const hours=calcScheduleNetHours(start,end,breakStart,breakEnd);
+    const hours=calcScheduleNetHours(start,end,breakStart,breakEnd,breakHours);
     if(!company)return showToast('請先選擇或輸入公司',true);
     if(!staffList.length)return showToast('請輸入人員姓名',true);
     if(!date||!start||!end)return showToast('請輸入日期、上班與下班時間',true);
@@ -1887,8 +1908,8 @@ function addQuickSchedule(){
         const msg='以下人員同日同時段已在其他公司排班：\n'+conflicts.map(c=>`${c.staff}：${c.company} ${c.time}`).join('\n')+'\n\n仍要加入嗎？';
         if(!confirm(msg))return;
     }
-    const oldIndex=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&String(x.company||'')===company&&String(x.start||'')===start&&String(x.end||'')===end&&String(x.breakStart||'')===breakStart&&String(x.breakEnd||'')===breakEnd);
-    const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:'',remark};
+    const oldIndex=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&String(x.company||'')===company&&String(x.start||'')===start&&String(x.end||'')===end&&String(x.breakStart||'')===breakStart&&String(x.breakEnd||'')===breakEnd&&String(x.breakHours||'')===String(breakHours||''));
+    const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,breakHours,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:'',remark};
     if(oldIndex>=0){
         const oldStaff=getScheduleStaffList(scheduleData[oldIndex].staffs);
         const merged=[...new Set([...oldStaff,...staffList])];
@@ -1911,7 +1932,7 @@ function createAttendFromSchedule(){
     const list=(scheduleData||[]).filter(d=>(!company||d.company===company)&&String(d.date||'').startsWith(ym)&&getScheduleStaffList(d.staffs).length);
     if(!list.length)return showToast('本月沒有可轉入的排班',true);
     if(!confirm(`確定將本月 ${list.length} 筆排班轉成派遣記錄？`))return;
-    list.forEach(d=>getScheduleStaffList(d.staffs).forEach(n=>attendData.push({company:d.company,staff:n,date:d.date,service:d.shift||'排班派遣',am_s:d.start,am_e:d.end,pm_s:d.breakStart||'',pm_e:d.breakEnd||'',salary_hours:d.hours||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd),deduct_points:d.hours||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd),project_fee:0,special_hourly:'',remark:`由智慧排班轉入：${d.remark||''}`})));
+    list.forEach(d=>getScheduleStaffList(d.staffs).forEach(n=>attendData.push({company:d.company,staff:n,date:d.date,service:d.shift||'排班派遣',am_s:d.start,am_e:d.end,pm_s:d.breakStart||'',pm_e:d.breakEnd||'',salary_hours:d.hours||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours),deduct_points:d.hours||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours),project_fee:0,special_hourly:'',remark:`由智慧排班轉入：${d.remark||''}`})));
     saveAll();showToast(`✅ 已轉入 ${list.length} 筆排班`);
 }
 
