@@ -618,8 +618,8 @@
                         <div class="schedule-modal-form">
                             <div><label>公司</label><input list="list_cust" id="sch_modal_company" placeholder="選擇或輸入公司" oninput="previewScheduleConflicts()"></div>
                             <div><label>日期</label><input type="date" id="sch_modal_date" onchange="previewScheduleConflicts()"></div>
-                            <div><label>時段</label><input type="time" id="sch_modal_start" step="3600" onchange="syncScheduleEndTime();previewScheduleConflicts()"></div>
-                            <div><label>結束時間</label><input type="time" id="sch_modal_end" readonly></div>
+                            <div><label>時段</label><input type="time" id="sch_modal_start" step="1800" onchange="syncScheduleEndTime();previewScheduleConflicts()"></div>
+                            <div><label>結束時間</label><input type="time" id="sch_modal_end" step="1800" onchange="calcScheduleModalSlotHours();previewScheduleConflicts()"></div>
                             <div style="grid-column:1/-1;"><label>排班人員（可多位）</label><input list="list_staff" id="sch_modal_staff" placeholder="可手打，也可用下方勾選；例：秋XX、林XX" oninput="syncScheduleStaffChecksFromInput();previewScheduleConflicts();"></div>
                             <div class="schedule-staff-check-panel">
                                 <div class="schedule-staff-check-title">勾選排班人員</div>
@@ -1648,17 +1648,36 @@ function renderScheduleTable(){
         row+='</tr>';
         body+=row;
     });
+    const ym=`${y}-${pad2(m)}-`;
+    let realPersonHours=0; const realStaff=new Set(); let realCells=0;
+    (scheduleData||[]).forEach(d=>{
+        if(company && d.company!==company)return;
+        if(!String(d.date||'').startsWith(ym))return;
+        const names=getScheduleStaffList(d.staffs);
+        if(!names.length)return;
+        realCells++;
+        names.forEach(n=>realStaff.add(n));
+        realPersonHours += (Number(d.hours)||calcScheduleHoursByTime(d.start,d.end)||0) * names.length;
+    });
     if(el('scheduleTable'))el('scheduleTable').innerHTML=body;
-    if(el('sch_kpi_staff'))el('sch_kpi_staff').innerText=`${uniqueStaff.size} 人`;
-    if(el('sch_kpi_hours'))el('sch_kpi_hours').innerText=`${assignedHourCount} 人時`;
-    if(el('sch_kpi_rest'))el('sch_kpi_rest').innerText=`${filledCells} 格`;
+    if(el('sch_kpi_staff'))el('sch_kpi_staff').innerText=`${realStaff.size} 人`;
+    if(el('sch_kpi_hours'))el('sch_kpi_hours').innerText=`${realPersonHours} 人時`;
+    if(el('sch_kpi_rest'))el('sch_kpi_rest').innerText=`${realCells} 格`;
     if(el('sch_kpi_warn'))el('sch_kpi_warn').innerText=company?'0 筆':'請先選公司';
     if(el('scheduleWarningBox'))el('scheduleWarningBox').innerHTML='';
 }
+function calcScheduleModalSlotHours(){
+    const start=el('sch_modal_start')?el('sch_modal_start').value:'';
+    const end=el('sch_modal_end')?el('sch_modal_end').value:'';
+    const hours=calcScheduleHoursByTime(start,end);
+    if(el('sch_modal_hours'))el('sch_modal_hours').value=hours||0;
+    return hours||0;
+}
 function syncScheduleEndTime(){
     const start=el('sch_modal_start')?el('sch_modal_start').value:'';
-    if(el('sch_modal_end'))el('sch_modal_end').value=start?getScheduleNextHour(start):'';
-    if(el('sch_modal_hours'))el('sch_modal_hours').value=start?1:0;
+    const endInput=el('sch_modal_end');
+    if(endInput && start && !endInput.value)endInput.value=getScheduleNextHour(start);
+    calcScheduleModalSlotHours();
 }
 
 function getAllScheduleStaffNames(){
@@ -1718,7 +1737,7 @@ function openScheduleCell(staff,date,time){
     el('sch_modal_staff').value=direct?.staffs||aggregated.map(x=>x.name).join('、');
     renderScheduleStaffCheckboxes(getScheduleStaffList(el('sch_modal_staff').value));
     setTimeout(previewScheduleConflicts,0);
-    el('sch_modal_hours').value=1;
+    calcScheduleModalSlotHours();
     el('sch_modal_location').value=direct?.location||'';
     el('sch_modal_remark').value=direct?.remark||'';
     if(el('sch_modal_sub'))el('sch_modal_sub').innerText=`${company}｜${targetDate}｜${targetTime}`;
@@ -1731,8 +1750,10 @@ function saveScheduleCell(){
     const date=el('sch_modal_date').value;
     const start=el('sch_modal_start').value;
     const end=el('sch_modal_end').value||getScheduleNextHour(start);
+    const hours=calcScheduleHoursByTime(start,end);
     const staffList=getScheduleStaffList(el('sch_modal_staff').value).filter(Boolean);
-    if(!company||!date||!start)return showToast('請輸入公司、日期與時段',true);
+    if(!company||!date||!start||!end)return showToast('請輸入公司、日期與開始/結束時間',true);
+    if(!hours||hours<=0)return showToast('結束時間需晚於開始時間；例如 12:00 到 12:30 會計算 0.5 小時',true);
     if(!staffList.length)return showToast('請至少輸入一位排班人員',true);
     const conflicts=findScheduleConflicts(company,date,start,staffList);
     if(conflicts.length){
@@ -1740,7 +1761,7 @@ function saveScheduleCell(){
         if(!confirm(msg))return;
     }
     const oldIndex=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&String(x.company||'')===company&&String(x.start||'')===start);
-    const obj={company,date,shift:'時段排班',start,end,hours:1,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
+    const obj={company,date,shift:'時段排班',start,end,hours:hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
     if(oldIndex>=0)scheduleData[oldIndex]={...scheduleData[oldIndex],...obj};else scheduleData.push(obj);
     saveAll();closeScheduleModal();renderScheduleTable();showToast('✅ 時段排班已儲存');
 }
