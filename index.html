@@ -290,6 +290,15 @@
         .schedule-quick-form label{display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:5px;}
         .schedule-quick-form input{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:10px;font-size:13px;background:#fff;}
         .schedule-quick-hint{font-size:12px;color:#64748b;font-weight:700;margin-top:8px;}
+        .schedule-filled-panel{background:#fff;border:1px solid #dbe7f5;border-radius:16px;padding:16px;margin:14px 0;box-shadow:0 4px 12px rgba(15,23,42,.03);}
+        .schedule-filled-title{display:flex;align-items:center;gap:8px;color:#0f172a;font-size:15px;font-weight:900;margin-bottom:10px;}
+        .schedule-filled-panel table{width:100%;min-width:920px;border-collapse:collapse;font-size:13px;background:#fff;}
+        .schedule-filled-panel th{background:#f8fafc;color:#334155;font-weight:900;padding:10px;border-bottom:1px solid #e2e8f0;text-align:left;}
+        .schedule-filled-panel td{padding:10px;border-bottom:1px solid #e2e8f0;color:#334155;}
+        .schedule-filled-empty{padding:18px;color:#64748b;font-weight:800;text-align:center;background:#f8fafc;border-radius:10px;}
+        .schedule-mini-del{background:#ef4444;color:#fff;border:0;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:900;cursor:pointer;}
+        .schedule-mini-edit{background:#3b82f6;color:#fff;border:0;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:900;cursor:pointer;margin-right:6px;}
+
         @media(max-width:1100px){.schedule-quick-form{grid-template-columns:1fr 1fr}.schedule-quick-form .quick-full{grid-column:1/-1}}
 
         .schedule-staff-check-panel{grid-column:1/-1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px;max-height:220px;overflow:auto;}
@@ -635,6 +644,18 @@
                             <tbody id="scheduleTable"></tbody>
                         </table>
                     </div>
+
+                    <div class="schedule-filled-panel">
+                        <div class="schedule-filled-title"><i class="fas fa-list-check"></i> 已填排班資料清單</div>
+                        <div class="schedule-quick-hint" style="margin-bottom:10px;">如果有一筆打錯，可以在這裡直接按「刪除」。此清單會依照上方公司、年份、月份篩選。</div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead><tr><th>日期</th><th>公司</th><th>人員</th><th>上班</th><th>下班</th><th>休息</th><th>工時</th><th>備註</th><th>操作</th></tr></thead>
+                                <tbody id="scheduleFilledList"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <div id="scheduleWarningBox" style="display:none;"></div>
                 </div>
 
@@ -1754,6 +1775,48 @@ function renderScheduleTable(){
     if(el('sch_kpi_rest'))el('sch_kpi_rest').innerText=`${realCells} 筆`;
     if(el('sch_kpi_warn'))el('sch_kpi_warn').innerText=company?'0 筆':'請先選公司';
     if(el('scheduleWarningBox'))el('scheduleWarningBox').innerHTML='';
+    renderScheduleFilledList();
+}
+function renderScheduleFilledList(){
+    const tbody=el('scheduleFilledList');
+    if(!tbody)return;
+    const company=getScheduleCompany(), y=getScheduleYear(), m=getScheduleMonth(), ym=`${y}-${pad2(m)}-`;
+    const list=(scheduleData||[])
+        .map((d,index)=>({...d,index}))
+        .filter(d=>(!company||d.company===company)&&String(d.date||'').startsWith(ym)&&getScheduleStaffList(d.staffs).length)
+        .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.start||'').localeCompare(String(b.start||'')) || String(a.company||'').localeCompare(String(b.company||'')) || String(a.staffs||'').localeCompare(String(b.staffs||'')));
+    if(!list.length){
+        tbody.innerHTML=`<tr><td colspan="9"><div class="schedule-filled-empty">本月目前沒有已填排班資料</div></td></tr>`;
+        return;
+    }
+    tbody.innerHTML=list.map(d=>{
+        const breakHours=parseScheduleBreakHours(d.breakHours)||calcScheduleBreakHours(d.breakStart,d.breakEnd,d.start,d.end)||0;
+        const restText=breakHours?`${formatScheduleHours(breakHours)} 小時`:(d.breakStart&&d.breakEnd?`${d.breakStart}-${d.breakEnd}`:'');
+        const hours=Number(d.hours)||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours)||0;
+        return `<tr>
+            <td>${d.date||''}</td>
+            <td>${d.company||''}</td>
+            <td style="font-weight:900;color:#1d4ed8;">${d.staffs||''}</td>
+            <td>${d.start||''}</td>
+            <td>${d.end||''}</td>
+            <td>${restText||'-'}</td>
+            <td>${formatScheduleHours(hours)}h</td>
+            <td>${d.remark||''}</td>
+            <td><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">編輯</button><button class="schedule-mini-del" onclick="deleteScheduleEntryFromList(${d.index})">刪除</button></td>
+        </tr>`;
+    }).join('');
+}
+function deleteScheduleEntryFromList(index){
+    index=Number(index);
+    if(!Number.isInteger(index)||!scheduleData||!scheduleData[index])return showToast('找不到這筆排班資料',true);
+    const d=scheduleData[index];
+    const label=`${d.date||''} ${d.company||''} ${d.staffs||''} ${d.start||''}-${d.end||''}`;
+    if(!confirm(`確定刪除這筆排班？\n${label}`))return;
+    scheduleData.splice(index,1);
+    currentScheduleEditIndex=-1;
+    saveAll();
+    renderScheduleTable();
+    showToast('✅ 已刪除此筆排班');
 }
 function calcScheduleModalSlotHours(){
     const start=el('sch_modal_start')?el('sch_modal_start').value:'';
