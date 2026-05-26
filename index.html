@@ -408,6 +408,7 @@
                 <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('match')"><i class="fas fa-people-arrows"></i> 派工媒合平台</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('schedule')"><i class="fas fa-calendar-alt"></i> 公司排班管理</a></li>
+                <li class="ws-hr"><a onclick="showAdminPage('clock_overview')"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('ft_salary')"><i class="fas fa-money-check-alt"></i> 正職薪資結算</a></li>
@@ -433,6 +434,7 @@
                     <button onclick="switchWorkspaceDirect('hr')" class="switch-role-btn workspace-direct-btn" data-ws="hr"><i class="fas fa-users-cog"></i> 人事員工區</button>
                     <button onclick="switchWorkspaceDirect('sales')" class="switch-role-btn workspace-direct-btn" data-ws="sales"><i class="fas fa-briefcase"></i> 業務開發區</button>
                     <button onclick="openStaffClockSystem()" class="switch-role-btn" style="color:#fff;background:#2d9d5c;border-color:#2d9d5c;"><i class="fas fa-fingerprint"></i> 員工打卡系統</button>
+                    <button onclick="showAdminPage('clock_overview')" class="switch-role-btn" style="color:#fff;background:#0ea5e9;border-color:#0ea5e9;"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</button>
                     <span id="sync-status"><i class="fas fa-cloud"></i> 系統就緒</span>
                     <span id="current-time" class="sys-time">載入中...</span>
                     <button onclick="logout()" class="btn" style="background:#64748b; margin:0;"><i class="fas fa-sign-out-alt"></i> 登出</button>
@@ -796,6 +798,34 @@
     
             
 
+
+            <div class="page" id="page-clock_overview">
+                <div class="page-title"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</div>
+                <div class="filter-bar">
+                    <label>日期：</label><input type="date" id="clock_overview_date" onchange="renderClockOverview()">
+                    <label>公司：</label><input list="list_cust" id="clock_overview_company" placeholder="全部公司 / 手打搜尋" oninput="renderClockOverview()">
+                    <label>人員：</label><input list="list_staff" id="clock_overview_staff" placeholder="全部人員 / 手打搜尋" oninput="renderClockOverview()">
+                    <button class="btn btn-clear-filter" onclick="clearClockOverviewFilters()"><i class="fas fa-broom"></i> 清除</button>
+                    <button class="btn btn-excel" onclick="exportClockOverviewExcel()"><i class="fas fa-file-excel"></i> 匯出打卡總覽</button>
+                </div>
+                <div class="dashboard-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px;">
+                    <div class="dash-card primary"><i class="fas fa-calendar-check dash-icon"></i><div class="label">今日排班</div><div class="num blue" id="clock_kpi_total">0</div></div>
+                    <div class="dash-card warning"><i class="fas fa-user-clock dash-icon"></i><div class="label">未打卡</div><div class="num yellow" id="clock_kpi_none">0</div></div>
+                    <div class="dash-card primary"><i class="fas fa-person-walking dash-icon"></i><div class="label">上班中</div><div class="num blue" id="clock_kpi_in">0</div></div>
+                    <div class="dash-card success"><i class="fas fa-circle-check dash-icon"></i><div class="label">已完成</div><div class="num green" id="clock_kpi_done">0</div></div>
+                    <div class="dash-card danger"><i class="fas fa-triangle-exclamation dash-icon"></i><div class="label">異常回報</div><div class="num red" id="clock_kpi_abnormal">0</div></div>
+                </div>
+                <div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:12px 14px;margin-bottom:15px;font-size:13px;font-weight:700;">
+                    說明：主管端可在這裡看每位員工當日排班、上班打卡、下班打卡與異常回報。打卡完成後建議先審核，再轉入正式派遣紀錄與薪資。
+                </div>
+                <div class="table-responsive">
+                    <table id="clockOverviewTableBox">
+                        <thead><tr><th>狀態</th><th>日期</th><th>公司</th><th>人員</th><th>排班時間</th><th>休息</th><th>上班打卡</th><th>下班打卡</th><th>實際工時</th><th>異常/備註</th><th>操作</th></tr></thead>
+                        <tbody id="clockOverviewTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
     <div class="staff-container" id="staff-screen">
         <div class="sidebar" style="background: #2d9d5c;">
             <div class="sidebar-header" style="border-bottom: 1px solid #4ade80;">
@@ -918,6 +948,7 @@ let reqData = safeJSONParse('reqData',[]);
 let dispatchData = safeJSONParse('dispatchData',[]);
 let salesStaffData = safeJSONParse('salesStaffData',[]);
 let scheduleData = safeJSONParse('scheduleData',[]);
+let staffClockData = safeJSONParse('staffClockData',[]);
 
 let loginLogoBase64 = localStorage.getItem('loginLogo') || '';
 let pdfLogoBase64 = localStorage.getItem('pdfLogo') || '';
@@ -1562,26 +1593,26 @@ function loadDataFromCloud(forceRender=false) {
             const hH = String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名'); const dR = hH ? fm.slice(1) : fm;
             dR.forEach(row => { if(Array.isArray(row)){ let n=String(row[1]||'').trim(), t=String(row[4]||row[2]||'').trim(), l=String(row[5]||'').trim(); let y=String(row[8]||'').trim(), e=String(row[9]||'').trim(), loc=String(row[10]||'').trim(); let s=String(row[11]||'').trim(), rl=String(row[22]||row[12]||'').trim(), dt=String(row[0]||'').trim(); let ex=[]; if(l) ex.push('Line:'+l); if(y) ex.push('年資:'+y); if(e) ex.push('經歷:'+e); if(n && n!=='' && !n.includes('全名') && !n.includes('姓名')) { if(!r.talentData.some(t => String(t.name).trim() === n)){ r.talentData.push({ name:n, tel:t, source:'Google表單', location:loc, shift:s, role:rl, status:'待聯絡', eval:'', resume:'', exp:ex.join(' | '), date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0] }); nA++; } } } });
         }
-        if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData;
+        if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData; if(r.staffClockData) staffClockData=r.staffClockData; if(r.staffClockData) staffClockData=r.staffClockData;
         invalidateCustBillingMap();
         standardizeData();
-        try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); } catch(e) {}
+        try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
         if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
         const cp = localStorage.getItem('adminPage')||'dashboard';
         if(el('sys-screen') && el('sys-screen').style.display !== 'none'){
-            if(forceRender) showAdminPage(cp); else { if(cp==='dashboard') renderDashboard(); else if(cp==='customer') renderCustTable(); else if(cp==='staff') renderStaffTable(); else if(cp==='talent') renderTalentTable(); else if(cp==='supplier') renderSupplierTable(); else if(cp==='match') renderMatchTable(); else if(cp==='req') renderReqTable(); else if(cp==='dispatch') renderDispatchTable(); else if(cp==='schedule') renderScheduleTable(); else if(cp==='boss') showBoss(); }
+            if(forceRender) showAdminPage(cp); else { if(cp==='dashboard') renderDashboard(); else if(cp==='customer') renderCustTable(); else if(cp==='staff') renderStaffTable(); else if(cp==='talent') renderTalentTable(); else if(cp==='supplier') renderSupplierTable(); else if(cp==='match') renderMatchTable(); else if(cp==='req') renderReqTable(); else if(cp==='dispatch') renderDispatchTable(); else if(cp==='schedule') renderScheduleTable(); else if(cp==='clock_overview') renderClockOverview(); else if(cp==='boss') showBoss(); }
         }
     }).catch(e=>{ if(el('sync-status')) updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 離線',true); });
 }
 
 function buildCloudPayload(){
     standardizeData();
-    return {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, sysConfig:getSysConfigPayload(), updatedAt:new Date().toISOString()};
+    return {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, staffClockData, sysConfig:getSysConfigPayload(), updatedAt:new Date().toISOString()};
 }
 function saveLocalData(){
-    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); } catch(e) {}
+    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); } catch(e) {}
 }
 function pushCloudData(silent=false){
     const payload=buildCloudPayload();
@@ -1613,17 +1644,17 @@ function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class
 function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
 
 
-function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, staffClockData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
 
 function restoreData(i) {
     if(!i.files || !i.files[0]) return; const rd = new FileReader();
     rd.onload = function(e) {
         try {
             const r = JSON.parse(e.target.result);
-            if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; if(r.talentData) talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData;
+            if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; if(r.talentData) talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData; if(r.staffClockData) staffClockData=r.staffClockData;
             if(r.sysConfig) { if(r.sysConfig.loginLogo) localStorage.setItem('loginLogo',r.sysConfig.loginLogo); if(r.sysConfig.pdfLogo) localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo); if(r.sysConfig.loginBg) localStorage.setItem('loginBg',r.sysConfig.loginBg); if(r.sysConfig.priceTable) localStorage.setItem('priceTable',r.sysConfig.priceTable); if(r.sysConfig.adminAcc) localStorage.setItem('adminAcc',r.sysConfig.adminAcc); if(r.sysConfig.adminPwd) localStorage.setItem('adminPwd',r.sysConfig.adminPwd); if(r.sysConfig.hrAcc) localStorage.setItem('hrAcc',r.sysConfig.hrAcc); if(r.sysConfig.hrPwd) localStorage.setItem('hrPwd',r.sysConfig.hrPwd); if(r.sysConfig.salesAcc) localStorage.setItem('salesAcc',r.sysConfig.salesAcc); if(r.sysConfig.salesPwd) localStorage.setItem('salesPwd',r.sysConfig.salesPwd); if(r.sysConfig.adminPin) localStorage.setItem('adminPin',r.sysConfig.adminPin); if(r.sysConfig.portalConf) localStorage.setItem('portalConf',r.sysConfig.portalConf); }
             standardizeData();
-            localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData));
+            localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData));
             fillFilters(); 
             showAdminPage(localStorage.getItem('adminPage')||'dashboard');
             saveAll(); 
@@ -2197,6 +2228,100 @@ function createAttendFromSchedule(){
     saveAll();showToast(`✅ 已轉入 ${list.length} 筆排班`);
 }
 
+
+function todayYMD(){return new Date().toISOString().split('T')[0];}
+function getClockDate(){return (el('clock_overview_date')&&el('clock_overview_date').value)||todayYMD();}
+function normalizeTimeStr(v){return String(v||'').trim();}
+function clockTimeToMin(t){if(!t)return 0; const p=String(t).split(':'); return (Number(p[0])||0)*60+(Number(p[1])||0);}
+function clockHoursBetween(s,e){if(!s||!e)return 0; let a=clockTimeToMin(s), b=clockTimeToMin(e); if(b<a)b+=1440; return Math.max(0,(b-a)/60);}
+function initClockOverviewFilters(){
+    if(el('clock_overview_date') && !el('clock_overview_date').value) el('clock_overview_date').value=todayYMD();
+    fillFilters();
+}
+function clearClockOverviewFilters(){
+    if(el('clock_overview_date')) el('clock_overview_date').value=todayYMD();
+    if(el('clock_overview_company')) el('clock_overview_company').value='';
+    if(el('clock_overview_staff')) el('clock_overview_staff').value='';
+    renderClockOverview();
+}
+function getScheduleRowsForClockOverview(){
+    const date=getClockDate(), companyFilter=(el('clock_overview_company')?.value||'').trim(), staffFilter=(el('clock_overview_staff')?.value||'').trim();
+    const rows=[];
+    (scheduleData||[]).forEach(s=>{
+        if(String(s.date||'')!==date) return;
+        if(companyFilter && companyFilter!=='全部' && !String(s.company||'').includes(companyFilter)) return;
+        const names=getScheduleStaffList(s.staffs||'');
+        names.forEach(name=>{
+            if(staffFilter && staffFilter!=='全部人員' && !String(name||'').includes(staffFilter)) return;
+            rows.push({company:s.company||'', staff:name, date:s.date, start:s.start||'', end:s.end||'', restHours:Number(s.restHours||0)||0, hours:Number(s.hours||0)||0, remark:s.remark||'', location:s.location||''});
+        });
+    });
+    rows.sort((a,b)=>(a.start||'').localeCompare(b.start||'') || (a.company||'').localeCompare(b.company||'') || (a.staff||'').localeCompare(b.staff||''));
+    return rows;
+}
+function findClockRecord(row){
+    return (staffClockData||[]).find(c=>String(c.date||'')===String(row.date||'') && String(c.staff||'')===String(row.staff||'') && String(c.company||'')===String(row.company||'') && (!row.start || String(c.scheduleStart||c.start||'')===String(row.start||''))) || null;
+}
+function getClockStatus(row, rec){
+    if(rec && (rec.reportType || rec.status==='異常回報')) return '異常回報';
+    if(!rec || !rec.clockIn) return '未打卡';
+    if(rec.clockIn && !rec.clockOut) return '上班中';
+    if(rec.clockIn && rec.clockOut) return rec.status==='已確認' ? '已確認' : '待審核';
+    return '未打卡';
+}
+function clockBadge(status){
+    if(status==='未打卡') return '<span class="badge badge-yellow">未打卡</span>';
+    if(status==='上班中') return '<span class="badge badge-blue">上班中</span>';
+    if(status==='已確認') return '<span class="badge badge-green">已確認</span>';
+    if(status==='異常回報') return '<span class="badge badge-red">異常回報</span>';
+    return '<span class="badge badge-blue">待審核</span>';
+}
+function renderClockOverview(){
+    if(!el('clockOverviewTable')) return;
+    const rows=getScheduleRowsForClockOverview();
+    let html='', k={total:rows.length, none:0, inside:0, done:0, abnormal:0};
+    rows.forEach((row,idx)=>{
+        const rec=findClockRecord(row), status=getClockStatus(row,rec);
+        if(status==='未打卡') k.none++; else if(status==='上班中') k.inside++; else if(status==='異常回報') k.abnormal++; else if(status==='已確認'||status==='待審核') k.done++;
+        const inT=rec?.clockIn||'', outT=rec?.clockOut||'';
+        const realH=(inT&&outT)?Math.max(0,clockHoursBetween(inT,outT)-(Number(row.restHours)||0)):'';
+        const note=[rec?.reportType, rec?.remark, row.remark].filter(Boolean).join(' / ');
+        html+=`<tr><td>${clockBadge(status)}</td><td>${row.date}</td><td>${row.company}</td><td><b>${row.staff}</b></td><td>${row.start||'-'}～${row.end||'-'}</td><td>${row.restHours?row.restHours+'h':'-'}</td><td>${inT||'-'}</td><td>${outT||'-'}</td><td>${realH!==''?realH.toFixed(1)+'h':'-'}</td><td>${note||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-excel" onclick="quickClockAdmin(${idx},'in')">補上班</button> <button class="btn-sm btn-warning" onclick="quickClockAdmin(${idx},'out')">補下班</button> <button class="btn-sm btn-success" onclick="confirmClockToAttend(${idx})">確認轉派遣</button></td></tr>`;
+    });
+    el('clockOverviewTable').innerHTML=html||'<tr><td colspan="11" style="text-align:center;padding:25px;color:#64748b;font-weight:800;">這天沒有排班資料</td></tr>';
+    if(el('clock_kpi_total')) el('clock_kpi_total').textContent=k.total;
+    if(el('clock_kpi_none')) el('clock_kpi_none').textContent=k.none;
+    if(el('clock_kpi_in')) el('clock_kpi_in').textContent=k.inside;
+    if(el('clock_kpi_done')) el('clock_kpi_done').textContent=k.done;
+    if(el('clock_kpi_abnormal')) el('clock_kpi_abnormal').textContent=k.abnormal;
+}
+function quickClockAdmin(rowIndex,type){
+    const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
+    let rec=findClockRecord(row);
+    if(!rec){ rec={id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2), company:row.company, staff:row.staff, date:row.date, scheduleStart:row.start, scheduleEnd:row.end, restHours:row.restHours, status:'待審核'}; staffClockData.push(rec); }
+    const now=new Date(); const t=now.toTimeString().slice(0,5);
+    const val=prompt(type==='in'?'請輸入上班打卡時間':'請輸入下班打卡時間', type==='in'?(rec.clockIn||row.start||t):(rec.clockOut||row.end||t));
+    if(!val) return;
+    if(type==='in') rec.clockIn=val; else rec.clockOut=val;
+    rec.status='待審核'; rec.updatedAt=new Date().toISOString();
+    saveAll(); renderClockOverview(); showToast('✅ 已更新打卡時間');
+}
+function confirmClockToAttend(rowIndex){
+    const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
+    const rec=findClockRecord(row);
+    if(!rec || !rec.clockIn || !rec.clockOut) return showToast('需有上班與下班打卡，才能轉派遣紀錄', true);
+    const exist=(attendData||[]).some(a=>a.company===row.company && a.staff===row.staff && a.date===row.date && String(a.remark||'').includes('由員工打卡確認'));
+    if(exist && !confirm('這筆似乎已經轉過派遣紀錄，還要再新增一次嗎？')) return;
+    const hours=Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0));
+    attendData.push({company:row.company,staff:row.staff,date:row.date,service:'排班派遣',am_s:rec.clockIn,am_e:rec.clockOut,pm_s:'',pm_e:'',salary_hours:Number(hours.toFixed(1)),deduct_points:Number(hours.toFixed(1)),project_fee:0,special_hourly:'',remark:'由員工打卡確認轉入'});
+    rec.status='已確認'; rec.confirmedAt=new Date().toISOString();
+    saveAll(); renderClockOverview(); showToast('✅ 已確認並轉入派遣紀錄');
+}
+function exportClockOverviewExcel(){
+    const rows=getScheduleRowsForClockOverview().map(row=>{const rec=findClockRecord(row); const status=getClockStatus(row,rec); const realH=(rec?.clockIn&&rec?.clockOut)?Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)):''; return {'狀態':status,'日期':row.date,'公司':row.company,'人員':row.staff,'排班時間':`${row.start||''}-${row.end||''}`,'休息':row.restHours||0,'上班打卡':rec?.clockIn||'','下班打卡':rec?.clockOut||'','實際工時':realH===''?'':Number(realH.toFixed(1)),'備註':[rec?.reportType,rec?.remark,row.remark].filter(Boolean).join(' / ')};});
+    const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'員工打卡總覽'); XLSX.writeFile(wb,`員工打卡總覽_${getClockDate()}.xlsx`);
+}
+
 function showAdminPage(p) { 
     try { 
         let sysRole = localStorage.getItem('sysRole') || 'admin'; 
@@ -2205,7 +2330,7 @@ function showAdminPage(p) {
             let pin = prompt('🔒 系統安全鎖：\n請輸入高階管理密碼以解鎖設定頁面：\n(若未更改過，預設為 8888)'); 
             if(pin !== (localStorage.getItem('adminPin') || '8888')) { showToast('安全碼錯誤，拒絕存取', true); return; } 
         } 
-        if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','ft_attend','ft_salary','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
+        if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','clock_overview','ft_attend','ft_salary','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
         if(sysRole === 'sales' && !['dashboard','customer','req','dispatch'].includes(p)) return showToast('無權限訪問', true); 
         if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch','sales_settlement'].includes(p)) return showToast('無權限訪問', true); 
         
@@ -2222,7 +2347,8 @@ function showAdminPage(p) {
         if(p==='talent') { clearTalentForm(); renderTalentTable(); } 
         if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); } 
         if(p==='match') { clearMatchForm(); renderMatchTable(); } 
-        if(p==='schedule') { clearScheduleForm(); renderScheduleTable(); } 
+        if(p==='schedule') { clearScheduleForm(); renderScheduleTable(); }
+        if(p==='clock_overview') { initClockOverviewFilters(); renderClockOverview(); } 
         if(p==='req') { clearReqForm(); renderReqTable(); } 
         if(p==='dispatch') { clearDispatchForm(); renderDispatchTable(); }
         if(p==='sales_staff') { clearSalesStaffForm(); renderSalesStaffTable(); }
