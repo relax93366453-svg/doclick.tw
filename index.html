@@ -389,6 +389,36 @@
             #mobile-menu-btn { display: block; }
             .quick-actions button { flex: 1 1 100%; margin-bottom: 10px !important; }
         }
+    
+
+        /* ===== 完整正式版：員工端打卡入口與總覽版面修正 ===== */
+        #page-clock_overview{
+            padding-top:12px!important;
+            margin-top:0!important;
+            min-height:auto!important;
+            height:auto!important;
+        }
+        #page-clock_overview .page-title{margin:0 0 12px 0!important;}
+        #page-clock_overview .filter-bar{margin-top:0!important;margin-bottom:12px!important;}
+        #page-clock_overview .dashboard-grid{margin-top:0!important;margin-bottom:12px!important;}
+        .clock-hero,.clock-banner,.clock-empty-space,.staff-clock-hero,.staff-clock-spacer{display:none!important;height:0!important;min-height:0!important;margin:0!important;padding:0!important;}
+        .staff-clock-wrap{display:grid;grid-template-columns:1.15fr .85fr;gap:18px;align-items:start;}
+        .staff-clock-card{background:#fff;border:1px solid #dbe7f5;border-radius:16px;padding:18px;box-shadow:0 4px 14px rgba(15,23,42,.04);margin-bottom:14px;}
+        .staff-clock-card.today{border-top:4px solid #10b981;}
+        .staff-clock-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;}
+        .staff-clock-title h3{margin:0;color:#0f172a;font-size:17px;font-weight:900;}
+        .staff-clock-meta{font-size:13px;color:#64748b;font-weight:800;line-height:1.7;}
+        .staff-clock-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+        .staff-clock-actions button{margin:0!important;}
+        .staff-clock-status{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900;}
+        .staff-clock-status.none{background:#fef3c7;color:#92400e;}
+        .staff-clock-status.in{background:#dbeafe;color:#1d4ed8;}
+        .staff-clock-status.done{background:#dcfce7;color:#166534;}
+        .staff-clock-status.abnormal{background:#fee2e2;color:#991b1b;}
+        .staff-clock-empty{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:14px;padding:24px;text-align:center;color:#64748b;font-weight:900;}
+        .staff-clock-tips{background:#eff6ff;border-left:4px solid #3b82f6;border-radius:12px;padding:16px;color:#334155;line-height:1.9;font-size:14px;}
+        @media(max-width:900px){.staff-clock-wrap{grid-template-columns:1fr;}}
+
     </style>
 </head>
 <body>
@@ -896,10 +926,11 @@
                 <h1 style="color: white;"><i class="fas fa-user-circle"></i> 員工專區</h1>
             </div>
             <ul class="sidebar-nav">
-                <li><a onclick="showStaffPage('home', this)" class="active" style="color:white;"><i class="fas fa-bullhorn"></i> 規範注意</a></li>
-                <li><a onclick="showStaffPage('profile', this)" style="color:white;"><i class="fas fa-id-card"></i> 基本資料</a></li>
-                <li><a onclick="showStaffPage('records', this)" style="color:white;"><i class="fas fa-history"></i> 派遣記錄</a></li>
+                <li><a onclick="showStaffPage('clock', this)" class="active" style="color:white;"><i class="fas fa-fingerprint"></i> 今日排班 / 打卡</a></li>
+                <li><a onclick="showStaffPage('records', this)" style="color:white;"><i class="fas fa-history"></i> 我的派遣記錄</a></li>
                 <li><a onclick="showStaffPage('mypay', this)" style="color:white;"><i class="fas fa-wallet"></i> 薪資下載</a></li>
+                <li><a onclick="showStaffPage('profile', this)" style="color:white;"><i class="fas fa-id-card"></i> 基本資料</a></li>
+                <li><a onclick="showStaffPage('home', this)" style="color:white;"><i class="fas fa-bullhorn"></i> 規範注意</a></li>
                 <li><a onclick="showStaffPage('about', this)" style="color:white;"><i class="fas fa-building"></i> 關於公司</a></li>
                 <li><a onclick="showStaffPage('links', this)" style="color:white;"><i class="fas fa-link"></i> 常用連結</a></li>
                 <li><a onclick="logout()" style="color:#ffcccb;margin-top:30px;"><i class="fas fa-sign-out-alt"></i> 登出</a></li>
@@ -917,7 +948,31 @@
                     <span id="staff-current-time" class="sys-time">載入中...</span>
                 </div>
             </div>
-            <div class="page active" id="staff-page-home"><div class="page-title"><i class="fas fa-clipboard-list"></i> 規範注意事項</div><div class="rules-box" style="border-left:4px solid #ef4444; background:#fef2f2; padding:20px; border-radius:8px; margin-bottom:20px;"><h3 id="staff_r1_title" style="color:#dc2626; margin-bottom:10px;"></h3><div id="staff_r1_content" style="color:#475569; line-height:1.8;"></div></div><div class="rules-box" style="border-left:4px solid #3b82f6; background:#eff6ff; padding:20px; border-radius:8px;"><h3 id="staff_r2_title" style="color:#2563eb; margin-bottom:10px;"></h3><div id="staff_r2_content" style="color:#475569; line-height:1.8;"></div></div></div>
+            
+            <div class="page active" id="staff-page-clock">
+                <div class="page-title"><i class="fas fa-fingerprint"></i> 今日排班 / 打卡</div>
+                <div class="staff-clock-wrap">
+                    <div>
+                        <div id="staffClockTodayList"></div>
+                        <div class="staff-clock-card">
+                            <div class="staff-clock-title"><h3><i class="fas fa-list-check"></i> 我的打卡紀錄</h3></div>
+                            <div class="table-responsive"><table style="background:white;width:100%;min-width:650px;"><thead><tr><th>日期</th><th>公司</th><th>排班</th><th>上班</th><th>下班</th><th>狀態</th><th>備註</th></tr></thead><tbody id="staffClockHistoryTable"></tbody></table></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="staff-clock-card today">
+                            <div class="staff-clock-title"><h3><i class="fas fa-circle-info"></i> 打卡說明</h3></div>
+                            <div class="staff-clock-tips">
+                                1. 上班到現場後，請點「上班打卡」。<br>
+                                2. 下班離場前，請點「下班打卡」。<br>
+                                3. 忘記打卡、臨時加班、提早下班或排班時間不對，請點「異常回報」。<br>
+                                4. 打卡紀錄會先送主管審核，確認後才會轉入正式派遣紀錄與薪資。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page" id="staff-page-home"><div class="page-title"><i class="fas fa-clipboard-list"></i> 規範注意事項</div><div class="rules-box" style="border-left:4px solid #ef4444; background:#fef2f2; padding:20px; border-radius:8px; margin-bottom:20px;"><h3 id="staff_r1_title" style="color:#dc2626; margin-bottom:10px;"></h3><div id="staff_r1_content" style="color:#475569; line-height:1.8;"></div></div><div class="rules-box" style="border-left:4px solid #3b82f6; background:#eff6ff; padding:20px; border-radius:8px;"><h3 id="staff_r2_title" style="color:#2563eb; margin-bottom:10px;"></h3><div id="staff_r2_content" style="color:#475569; line-height:1.8;"></div></div></div>
             <div class="page" id="staff-page-profile"><div class="page-title"><i class="fas fa-id-card"></i> 個人資料</div><div class="grid" style="background:#f8fafc; padding:20px; border-radius:12px; margin-bottom:20px; border:1px solid #e2e8f0;"><div><label>姓名</label><p style="font-weight:bold; font-size:16px;" id="staff-profile-name">-</p></div><div><label>電話</label><p style="font-weight:bold; font-size:16px;" id="staff-profile-tel">-</p></div><div><label>身分證</label><p style="font-weight:bold; font-size:16px;" id="staff-profile-id">-</p></div><div><label>系統帳號</label><p style="font-weight:bold; font-size:16px;" id="staff-profile-acc">-</p></div></div><div class="checklist-box" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:25px;"><div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between;"><div>身分證正反面</div><div id="staff_status_id"></div></div><div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between;"><div>存摺封面</div><div id="staff_status_bank"></div></div><div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between;"><div>勞動契約</div><div id="staff_status_contract"></div></div><div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between;"><div>履歷表</div><div id="staff_status_resume"></div></div></div><div style="text-align:center; padding:30px; background:#eff6ff; border:2px dashed #93c5fd; border-radius:12px;"><button class="btn btn-excel" onclick="openStaffDrive()"><i class="fas fa-folder-open"></i> 雲端資料夾</button></div></div>
             <div class="page" id="staff-page-records"><div class="page-title"><i class="fas fa-history"></i> 歷史記錄</div><div class="table-responsive"><table style="background: white; width:100%;"><thead><tr><th>出勤日期</th><th>客戶/公司</th><th>服務項目</th><th>結算工時</th><th>備註</th></tr></thead><tbody id="staffRecordsTable"></tbody></table></div></div>
             <div class="page" id="staff-page-mypay"><div class="page-title"><i class="fas fa-wallet"></i> 薪資單下載</div><div class="filter-bar"><select id="staff_my_year" onchange="renderStaffMyPay()"></select><select id="staff_my_month" onchange="renderStaffMyPay()"></select><button class="btn btn-success" onclick="staffDownloadPayslip()">預覽/下載 薪資單</button></div><div class="table-responsive"><table style="background: white;"><thead><tr><th>日期</th><th>公司/類別</th><th>項目/假別</th><th>出勤工時</th></tr></thead><tbody id="staffMyPayTable"></tbody></table></div></div>
@@ -1225,7 +1280,7 @@ function restoreLoginState() {
         } else if(r === 'staff') {
             el('staff-screen').style.display='flex'; el('sys-screen').style.display='none';
             if(!currentLoginStaff) { currentLoginStaff = staffData.find(x => x && String(x.account||'').trim() === String(a||'').trim()) || ftStaffData.find(x => x && String(x.account||'').trim() === String(a||'').trim()); }
-            initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage')||'home');
+            initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage')||'clock');
         }
     } catch(e) { console.error(e); el('login-screen').style.display='flex'; }
 }
@@ -3750,6 +3805,151 @@ function initStaffFrontend() {
     renderStaffRecords(); 
     renderStaffMyPayFilters(); 
     renderStaffMyPay();
+    if(typeof renderStaffClockPage === 'function') renderStaffClockPage();
+}
+
+
+
+function getStaffScheduleRowsForToday(){
+    if(!currentLoginStaff) return [];
+    const staffName = currentLoginStaff.name || '';
+    const today = todayYMD();
+    const rows = [];
+    (scheduleData || []).forEach(s => {
+        if(String(s.date||'') !== today) return;
+        const names = getScheduleStaffList(s.staffs || s.staff || '');
+        if(!names.includes(staffName)) return;
+        rows.push({
+            company:s.company||'',
+            staff:staffName,
+            date:s.date,
+            start:s.start||'',
+            end:s.end||'',
+            restHours:Number(s.restHours||s.breakHours||0)||0,
+            hours:Number(s.hours||0)||0,
+            remark:s.remark||'',
+            location:s.location||''
+        });
+    });
+    rows.sort((a,b)=>(a.start||'').localeCompare(b.start||''));
+    return rows;
+}
+function findStaffClockRecord(row){
+    return (staffClockData||[]).find(c =>
+        String(c.date||'') === String(row.date||'') &&
+        String(c.staff||'') === String(row.staff||'') &&
+        String(c.company||'') === String(row.company||'') &&
+        String(c.scheduleStart||c.start||'') === String(row.start||'')
+    ) || null;
+}
+function ensureStaffClockRecord(row){
+    let rec = findStaffClockRecord(row);
+    if(!rec){
+        rec = {
+            id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+            company:row.company,
+            staff:row.staff,
+            date:row.date,
+            scheduleStart:row.start,
+            scheduleEnd:row.end,
+            restHours:row.restHours,
+            status:'未打卡',
+            createdAt:new Date().toISOString()
+        };
+        staffClockData.push(rec);
+    }
+    return rec;
+}
+function getStaffClockStatus(rec){
+    if(!rec || !rec.clockIn) return '未打卡';
+    if(rec.status === '異常回報') return '異常回報';
+    if(rec.status === '退回補充') return '退回補充';
+    if(rec.status === '已轉派遣紀錄') return '已轉派遣紀錄';
+    if(rec.clockIn && !rec.clockOut) return '上班中';
+    if(rec.clockIn && rec.clockOut) return '待審核';
+    return rec.status || '未打卡';
+}
+function staffClockBadgeText(status){
+    const cls = status==='未打卡' ? 'none' : status==='上班中' ? 'in' : status==='異常回報' ? 'abnormal' : 'done';
+    return `<span class="staff-clock-status ${cls}"><i class="fas fa-circle"></i>${status}</span>`;
+}
+function renderStaffClockPage(){
+    if(!currentLoginStaff) return;
+    const rows = getStaffScheduleRowsForToday();
+    const box = el('staffClockTodayList');
+    if(box){
+        if(!rows.length){
+            box.innerHTML = `<div class="staff-clock-empty"><i class="fas fa-calendar-day"></i><br>今天目前沒有排班資料</div>`;
+        }else{
+            box.innerHTML = rows.map((row,idx)=>{
+                const rec = findStaffClockRecord(row);
+                const status = getStaffClockStatus(rec);
+                return `<div class="staff-clock-card today">
+                    <div class="staff-clock-title">
+                        <h3>${row.company}</h3>
+                        ${staffClockBadgeText(status)}
+                    </div>
+                    <div class="staff-clock-meta">
+                        日期：${row.date}<br>
+                        排班時間：<b>${row.start||'-'}～${row.end||'-'}</b><br>
+                        休息時數：${row.restHours ? row.restHours + ' 小時' : '無'}<br>
+                        上班打卡：${rec?.clockIn || '-'}　｜　下班打卡：${rec?.clockOut || '-'}<br>
+                        備註：${[row.location,row.remark,rec?.reportType,rec?.remark].filter(Boolean).join(' / ') || '-'}
+                    </div>
+                    <div class="staff-clock-actions">
+                        <button class="btn btn-success" onclick="staffClockAction(${idx},'in')"><i class="fas fa-play"></i> 上班打卡</button>
+                        <button class="btn btn-warning" onclick="staffClockAction(${idx},'out')"><i class="fas fa-stop"></i> 下班打卡</button>
+                        <button class="btn btn-pdf" onclick="staffClockReport(${idx})"><i class="fas fa-triangle-exclamation"></i> 異常回報</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+    }
+    renderStaffClockHistory();
+}
+function staffClockAction(rowIndex,type){
+    const rows = getStaffScheduleRowsForToday();
+    const row = rows[rowIndex];
+    if(!row) return showToast('找不到排班資料', true);
+    const rec = ensureStaffClockRecord(row);
+    const now = new Date();
+    const time = now.toTimeString().slice(0,5);
+    if(type === 'in'){
+        if(rec.clockIn && !confirm('已經有上班打卡時間，是否覆蓋？')) return;
+        rec.clockIn = time;
+        rec.status = '上班中';
+    }else{
+        if(!rec.clockIn && !confirm('尚未上班打卡，仍要記錄下班打卡嗎？')) return;
+        if(rec.clockOut && !confirm('已經有下班打卡時間，是否覆蓋？')) return;
+        rec.clockOut = time;
+        rec.status = '待審核';
+    }
+    rec.updatedAt = new Date().toISOString();
+    saveAll();
+    renderStaffClockPage();
+    showToast(type==='in' ? '✅ 上班打卡成功' : '✅ 下班打卡成功，待主管審核');
+}
+function staffClockReport(rowIndex){
+    const rows = getStaffScheduleRowsForToday();
+    const row = rows[rowIndex];
+    if(!row) return showToast('找不到排班資料', true);
+    const rec = ensureStaffClockRecord(row);
+    const type = prompt('請輸入異常原因：忘記打卡、臨時加班、提早下班、排班時間不對、其他備註');
+    if(!type) return;
+    rec.status = '異常回報';
+    rec.reportType = type;
+    rec.updatedAt = new Date().toISOString();
+    saveAll();
+    renderStaffClockPage();
+    showToast('已送出異常回報');
+}
+function renderStaffClockHistory(){
+    const tb = el('staffClockHistoryTable');
+    if(!tb || !currentLoginStaff) return;
+    const rows = (staffClockData||[]).filter(c => c.staff === currentLoginStaff.name)
+        .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))
+        .slice(0,50);
+    tb.innerHTML = rows.map(r=>`<tr><td>${r.date||'-'}</td><td>${r.company||'-'}</td><td>${r.scheduleStart||'-'}～${r.scheduleEnd||'-'}</td><td>${r.clockIn||'-'}</td><td>${r.clockOut||'-'}</td><td>${getStaffClockStatus(r)}</td><td>${[r.reportType,r.returnReason,r.remark].filter(Boolean).join(' / ')||'-'}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;font-weight:800;">尚無打卡紀錄</td></tr>';
 }
 
 function showStaffPage(p, a) { 
@@ -3759,6 +3959,7 @@ function showStaffPage(p, a) {
     document.querySelectorAll('#staff-screen .sidebar-nav a').forEach(x => x.classList.remove('active')); 
     if(a) a.classList.add('active'); 
     localStorage.setItem('staffPage', p);
+    if(p === 'clock') renderStaffClockPage();
 }
 
 function renderStaffRecords() { 
