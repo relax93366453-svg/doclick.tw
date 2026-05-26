@@ -315,6 +315,43 @@
         @media(max-width:900px){.schedule-kpi-grid{grid-template-columns:1fr 1fr}.schedule-controls-panel{grid-template-columns:1fr}.modal-shift-grid{grid-template-columns:1fr 1fr}}
         @media(max-width:600px){.schedule-kpi-grid,.schedule-modal-form,.modal-shift-grid{grid-template-columns:1fr}}
 
+
+
+        /* ===== 員工打卡總覽版面壓縮：移除上方大空白 ===== */
+        #page-clock_overview{
+            margin-top:0!important;
+            padding-top:18px!important;
+            min-height:auto!important;
+        }
+        #page-clock_overview .page-title{
+            margin-bottom:12px!important;
+            padding-bottom:10px!important;
+        }
+        #page-clock_overview .filter-bar{
+            margin-top:0!important;
+            margin-bottom:14px!important;
+            padding:12px 16px!important;
+        }
+        #page-clock_overview .dashboard-grid{
+            margin-top:0!important;
+            margin-bottom:14px!important;
+            gap:12px!important;
+        }
+        #page-clock_overview .dash-card{
+            padding:16px 18px!important;
+        }
+        #page-clock_overview .dash-card .num{
+            font-size:30px!important;
+        }
+        .workspace-direct-btn.active{
+            background:#1d4ed8!important;
+            color:#fff!important;
+            border-color:#1d4ed8!important;
+        }
+        #sync-status{
+            white-space:nowrap;
+        }
+
         @media (max-width: 768px) {
             .sidebar { left: -260px; transition: 0.3s all ease; z-index: 9999; }
             .sidebar.open { left: 0; box-shadow: 10px 0 25px rgba(0,0,0,0.3); }
@@ -430,6 +467,7 @@
                 <div></div>
                 <div class="header-actions">
                     <button onclick="window.location.reload();" class="switch-role-btn" style="color:#059669;background:#ecfdf5;"><i class="fas fa-sync-alt"></i> 重新整理</button>
+                    <button onclick="manualCloudRead()" class="switch-role-btn" style="color:#0ea5e9;background:#eff6ff;"><i class="fas fa-cloud-download-alt"></i> 立即讀取</button>
                     <button onclick="switchWorkspaceDirect('business')" class="switch-role-btn workspace-direct-btn" data-ws="business"><i class="fas fa-chart-pie"></i> 營業管理區</button>
                     <button onclick="switchWorkspaceDirect('hr')" class="switch-role-btn workspace-direct-btn" data-ws="hr"><i class="fas fa-users-cog"></i> 人事員工區</button>
                     <button onclick="switchWorkspaceDirect('sales')" class="switch-role-btn workspace-direct-btn" data-ws="sales"><i class="fas fa-briefcase"></i> 業務開發區</button>
@@ -825,6 +863,7 @@
                 </div>
             </div>
 
+
     <div class="staff-container" id="staff-screen">
         <div class="sidebar" style="background: #2d9d5c;">
             <div class="sidebar-header" style="border-bottom: 1px solid #4ade80;">
@@ -863,13 +902,22 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQhw1qjHYKLdMk19Xosh_SBbIFM-WlT4Ue5e4_m_KpEKiK5n5-FxGsRq5oakUJxO8O6Q/exec';
 const el = id => document.getElementById(id);
 
-// ✅ 每 60 秒自動從雲端同步一次（確保看到同事最新資料）
+// ✅ 每 15 秒自動讀取雲端資料：同事新增/修改後，這邊不用手動重新整理
+function isUserTypingOrEditing(){
+    const a = document.activeElement;
+    if(!a) return false;
+    const tag = (a.tagName || '').toUpperCase();
+    return ['INPUT','TEXTAREA','SELECT'].includes(tag);
+}
 setInterval(() => {
     const role = localStorage.getItem('loginRole');
-    if (role === 'admin' || role === 'staff') {
-        loadDataFromCloud(false);
+    if (!(role === 'admin' || role === 'staff')) return;
+    if (isUserTypingOrEditing()) {
+        if (el('sync-status')) updateSyncStatus('<i class="fas fa-keyboard"></i> 輸入中，暫停自動讀取');
+        return;
     }
-}, 60000);
+    loadDataFromCloud(false);
+}, 15000);
 
 function showToast(m, err = false) { 
     const t = el('toast'); 
@@ -1598,7 +1646,7 @@ function loadDataFromCloud(forceRender=false) {
         try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
-        if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
+        if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`);
         const cp = localStorage.getItem('adminPage')||'dashboard';
         if(el('sys-screen') && el('sys-screen').style.display !== 'none'){
             if(forceRender) showAdminPage(cp); else { if(cp==='dashboard') renderDashboard(); else if(cp==='customer') renderCustTable(); else if(cp==='staff') renderStaffTable(); else if(cp==='talent') renderTalentTable(); else if(cp==='supplier') renderSupplierTable(); else if(cp==='match') renderMatchTable(); else if(cp==='req') renderReqTable(); else if(cp==='dispatch') renderDispatchTable(); else if(cp==='schedule') renderScheduleTable(); else if(cp==='clock_overview') renderClockOverview(); else if(cp==='boss') showBoss(); }
@@ -1633,13 +1681,14 @@ function pushCloudData(silent=false){
 }
 function saveAllSilently() { pushCloudData(true).catch(()=>{}); }
 function manualCloudSync(){ pushCloudData(false).then(()=>{ showToast('✅ 已同步到雲端'); loadDataFromCloud(false); }).catch(()=>{}); }
+function manualCloudRead(){ if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 讀取雲端...'); loadDataFromCloud(false); showToast('✅ 已讀取雲端最新資料'); }
 
 
 function saveAll() {
     pushCloudData(false).catch(()=>{});
 }
 
-function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
+function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`); }); }
 function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
 
 
