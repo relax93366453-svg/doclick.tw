@@ -128,13 +128,7 @@
         #sync-status { font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; }
         .switch-role-btn { background: #fff; color: #3b82f6; border: 1px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .switch-role-btn:hover { background: #f8fafc; }
-        .workspace-direct-group{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#fff;padding:4px;border:1px solid #dbe7f5;border-radius:10px;}
-        .workspace-direct-btn{border:0;background:#f8fafc;color:#475569;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:900;cursor:pointer;transition:.15s;}
-        .workspace-direct-btn:hover{background:#eff6ff;color:#2563eb;}
-        .workspace-direct-btn.active-business{background:#d1fae5;color:#047857;}
-        .workspace-direct-btn.active-hr{background:#dbeafe;color:#1d4ed8;}
-        .workspace-direct-btn.active-sales{background:#ede9fe;color:#6d28d9;}
-        .workspace-direct-group.locked{display:none!important;}
+        .workspace-direct-btn.active{background:#dbeafe!important;color:#1d4ed8!important;border-color:#93c5fd!important;box-shadow:0 2px 8px rgba(37,99,235,.12);}
 
         
         /* 頁面內容區塊 */
@@ -435,12 +429,10 @@
                 <div></div>
                 <div class="header-actions">
                     <button onclick="window.location.reload();" class="switch-role-btn" style="color:#059669;background:#ecfdf5;"><i class="fas fa-sync-alt"></i> 重新整理</button>
-                    <div id="workspace-direct-group" class="workspace-direct-group">
-                        <button type="button" id="btn-ws-business" class="workspace-direct-btn" onclick="setWorkspace('business')"><i class="fas fa-chart-line"></i> 營業管理區</button>
-                        <button type="button" id="btn-ws-hr" class="workspace-direct-btn" onclick="setWorkspace('hr')"><i class="fas fa-users-cog"></i> 人事員工區</button>
-                        <button type="button" id="btn-ws-sales" class="workspace-direct-btn" onclick="setWorkspace('sales')"><i class="fas fa-briefcase"></i> 業務開發區</button>
-                    </div>
-                    <button onclick="loadDataFromCloud(false,true)" class="switch-role-btn"><i class="fas fa-cloud-download-alt"></i> 立即讀取</button>
+                    <button onclick="switchWorkspaceDirect('business')" class="switch-role-btn workspace-direct-btn" data-ws="business"><i class="fas fa-chart-pie"></i> 營業管理區</button>
+                    <button onclick="switchWorkspaceDirect('hr')" class="switch-role-btn workspace-direct-btn" data-ws="hr"><i class="fas fa-users-cog"></i> 人事員工區</button>
+                    <button onclick="switchWorkspaceDirect('sales')" class="switch-role-btn workspace-direct-btn" data-ws="sales"><i class="fas fa-briefcase"></i> 業務開發區</button>
+                    <button onclick="openStaffClockSystem()" class="switch-role-btn" style="color:#fff;background:#2d9d5c;border-color:#2d9d5c;"><i class="fas fa-fingerprint"></i> 員工打卡系統</button>
                     <span id="sync-status"><i class="fas fa-cloud"></i> 系統就緒</span>
                     <span id="current-time" class="sys-time">載入中...</span>
                     <button onclick="logout()" class="btn" style="background:#64748b; margin:0;"><i class="fas fa-sign-out-alt"></i> 登出</button>
@@ -826,6 +818,7 @@
             <div class="page-header">
                 <h2>歡迎，<span id="staff-welcome-name"></span>！</h2>
                 <div class="header-actions">
+                    <button onclick="backToAdminSystem()" class="switch-role-btn" id="btnBackAdminFromStaff" style="color:#2563eb;background:#eff6ff;"><i class="fas fa-arrow-left"></i> 回後台管理</button>
                     <button onclick="window.location.reload();" class="switch-role-btn" style="color:#059669;background:#ecfdf5;"><i class="fas fa-sync-alt"></i> 重新整理</button>
                     <span id="staff-current-time" class="sys-time">載入中...</span>
                 </div>
@@ -841,7 +834,13 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQhw1qjHYKLdMk19Xosh_SBbIFM-WlT4Ue5e4_m_KpEKiK5n5-FxGsRq5oakUJxO8O6Q/exec';
 const el = id => document.getElementById(id);
 
-// ✅ 自動雲端更新已由 startAutoCloudRefresh() 控制（每 15 秒，輸入中不刷新）
+// ✅ 每 60 秒自動從雲端同步一次（確保看到同事最新資料）
+setInterval(() => {
+    const role = localStorage.getItem('loginRole');
+    if (role === 'admin' || role === 'staff') {
+        loadDataFromCloud(false);
+    }
+}, 60000);
 
 function showToast(m, err = false) { 
     const t = el('toast'); 
@@ -1022,7 +1021,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         loadDataFromCloud(); 
         setupGlobalNavigation();
-        startAutoCloudRefresh();
     } catch (err) { 
         el('login-screen').style.display='flex'; 
     } finally { 
@@ -1058,10 +1056,12 @@ function applyWorkspaceTheme(workspace) {
         if(el('workspace-toggle-btn')) el('workspace-toggle-btn').innerHTML = '<i class="fas fa-exchange-alt"></i> 切換至人事區';
     }
     
-    // 嚴格權限：非管理員不顯示三區直接切換
-    const wg = el('workspace-direct-group');
-    if(wg) wg.classList.toggle('locked', sysRole !== 'admin');
-    if(typeof updateWorkspaceButtons === 'function') updateWorkspaceButtons();
+    // 嚴格權限隱藏切換按鈕
+    if(sysRole !== 'admin') {
+        if(el('workspace-toggle-btn')) el('workspace-toggle-btn').style.display = 'none';
+    } else {
+        if(el('workspace-toggle-btn')) el('workspace-toggle-btn').style.display = 'inline-block';
+    }
 }
 
 function handleLogin() {
@@ -1116,6 +1116,7 @@ function restoreLoginState() {
             }
             
             applyWorkspaceTheme(currentWorkspace);
+            if(typeof updateWorkspaceDirectButtons === 'function') updateWorkspaceDirectButtons();
             fillFilters(); showAdminPage(localStorage.getItem('adminPage')||'dashboard');
         } else if(r === 'staff') {
             el('staff-screen').style.display='flex'; el('sys-screen').style.display='none';
@@ -1125,24 +1126,76 @@ function restoreLoginState() {
     } catch(e) { console.error(e); el('login-screen').style.display='flex'; }
 }
 
-function updateWorkspaceButtons(){
-    ['business','hr','sales'].forEach(w=>{
-        const b=el('btn-ws-'+w); if(!b) return;
-        b.classList.remove('active-business','active-hr','active-sales');
-        if(currentWorkspace===w) b.classList.add('active-'+w);
+function updateWorkspaceDirectButtons(){
+    document.querySelectorAll('.workspace-direct-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.ws === currentWorkspace);
     });
 }
-function setWorkspace(workspace){
-    currentWorkspace = workspace || 'business';
+
+function switchWorkspaceDirect(ws) {
+    currentWorkspace = ws || 'business';
     localStorage.setItem('workspace', currentWorkspace);
+    if(currentWorkspace === 'hr') localStorage.setItem('sysRole','hr');
+    else if(currentWorkspace === 'sales') localStorage.setItem('sysRole','sales');
+    else localStorage.setItem('sysRole','admin');
     applyWorkspaceTheme(currentWorkspace);
-    updateWorkspaceButtons();
+    updateWorkspaceDirectButtons();
     showAdminPage('dashboard');
 }
+
+function openStaffClockSystem() {
+    try {
+        const r = localStorage.getItem('loginRole');
+        if(r !== 'admin') return showToast('請先用管理員身分登入', true);
+
+        // 後台快速查看員工端：優先帶第一位在職人員，避免員工頁空白
+        if(!currentLoginStaff) {
+            currentLoginStaff =
+                (staffData || []).find(x => x && (!x.status || x.status === '在職')) ||
+                (ftStaffData || []).find(x => x && (!x.status || x.status === '在職')) ||
+                (staffData || [])[0] ||
+                (ftStaffData || [])[0] ||
+                null;
+        }
+
+        if(!currentLoginStaff) {
+            return showToast('目前尚未建立員工資料，請先到人事員工區新增人員', true);
+        }
+
+        el('sys-screen').style.display = 'none';
+        el('staff-screen').style.display = 'flex';
+        if(typeof initStaffFrontend === 'function') initStaffFrontend();
+        if(typeof showStaffPage === 'function') showStaffPage('home');
+        showToast('已切換至員工打卡系統');
+    } catch(e) {
+        console.error(e);
+        showToast('切換員工打卡系統失敗', true);
+    }
+}
+
+function backToAdminSystem() {
+    try {
+        if(localStorage.getItem('loginRole') !== 'admin') return;
+        el('staff-screen').style.display = 'none';
+        el('sys-screen').style.display = 'flex';
+        currentLoginStaff = null;
+        applyWorkspaceTheme(currentWorkspace || localStorage.getItem('workspace') || 'business');
+        updateWorkspaceDirectButtons();
+        showAdminPage(localStorage.getItem('adminPage') || 'dashboard');
+    } catch(e) {
+        console.error(e);
+        window.location.reload();
+    }
+}
+
 function toggleWorkspace() {
-    if(currentWorkspace === 'business') { setWorkspace('hr'); }
-    else if(currentWorkspace === 'hr') { setWorkspace('sales'); }
-    else { setWorkspace('business'); }
+    if(currentWorkspace === 'business') { currentWorkspace = 'hr'; }
+    else if(currentWorkspace === 'hr') { currentWorkspace = 'sales'; }
+    else { currentWorkspace = 'business'; }
+    localStorage.setItem('workspace', currentWorkspace);
+    applyWorkspaceTheme(currentWorkspace);
+    updateWorkspaceDirectButtons();
+    showAdminPage('dashboard');
 }
 
 function logout() { localStorage.removeItem('loginRole'); localStorage.removeItem('loginAcc'); localStorage.removeItem('sysRole'); localStorage.removeItem('workspace'); window.location.reload(); }
@@ -1484,18 +1537,8 @@ function renderSalesDashboard() {
     }
 }
 
-function isUserActivelyEditing(){
-    const a=document.activeElement;
-    if(!a) return false;
-    const tag=(a.tagName||'').toUpperCase();
-    return ['INPUT','TEXTAREA','SELECT'].includes(tag) && !a.disabled && !a.readOnly;
-}
-function loadDataFromCloud(forceRender=false, autoMode=false) {
-    if(autoMode && isUserActivelyEditing()){
-        if(el('sync-status')) updateSyncStatus('<i class="fas fa-keyboard"></i> 輸入中，暫停自動更新');
-        return;
-    }
-    if(el('sync-status')) updateSyncStatus(autoMode?'<i class="fas fa-spinner fa-spin"></i> 自動讀取雲端...':'<i class="fas fa-spinner fa-spin"></i> 同步...');
+function loadDataFromCloud(forceRender=false) {
+    if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
     fetch(SCRIPT_URL).then(res=>res.json()).then(r=>{
         let nA=0;
         if(r.sysConfig){
@@ -1525,7 +1568,7 @@ function loadDataFromCloud(forceRender=false, autoMode=false) {
         try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
-        if(el('sync-status')) { const t=new Date().toLocaleTimeString('zh-TW',{hour12:false}); updateSyncStatus(`<i class="fas fa-cloud-check-alt"></i> 已讀取 ${t}｜15秒自動更新`); }
+        if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
         const cp = localStorage.getItem('adminPage')||'dashboard';
         if(el('sys-screen') && el('sys-screen').style.display !== 'none'){
             if(forceRender) showAdminPage(cp); else { if(cp==='dashboard') renderDashboard(); else if(cp==='customer') renderCustTable(); else if(cp==='staff') renderStaffTable(); else if(cp==='talent') renderTalentTable(); else if(cp==='supplier') renderSupplierTable(); else if(cp==='match') renderMatchTable(); else if(cp==='req') renderReqTable(); else if(cp==='dispatch') renderDispatchTable(); else if(cp==='schedule') renderScheduleTable(); else if(cp==='boss') showBoss(); }
@@ -1560,13 +1603,6 @@ function pushCloudData(silent=false){
 }
 function saveAllSilently() { pushCloudData(true).catch(()=>{}); }
 function manualCloudSync(){ pushCloudData(false).then(()=>{ showToast('✅ 已同步到雲端'); loadDataFromCloud(false); }).catch(()=>{}); }
-function startAutoCloudRefresh(){
-    if(window.__autoCloudRefreshTimer) clearInterval(window.__autoCloudRefreshTimer);
-    window.__autoCloudRefreshTimer = setInterval(()=>{
-        const role = localStorage.getItem('loginRole');
-        if(role === 'admin' || role === 'staff') loadDataFromCloud(false, true);
-    },15000);
-}
 
 
 function saveAll() {
@@ -3452,6 +3488,7 @@ function renderDashboard() {
 }
 
 function initStaffFrontend() {
+    if(el('btnBackAdminFromStaff')) el('btnBackAdminFromStaff').style.display = localStorage.getItem('loginRole') === 'admin' ? 'inline-block' : 'none';
     if(!currentLoginStaff) return;
     if(el('staff-welcome-name')) el('staff-welcome-name').textContent = currentLoginStaff.name || '';
     if(el('staff-profile-name')) el('staff-profile-name').textContent = currentLoginStaff.name || '-';
