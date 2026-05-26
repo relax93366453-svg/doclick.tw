@@ -313,6 +313,28 @@
         @media(max-width:900px){.schedule-kpi-grid{grid-template-columns:1fr 1fr}.schedule-controls-panel{grid-template-columns:1fr}.modal-shift-grid{grid-template-columns:1fr 1fr}}
         @media(max-width:600px){.schedule-kpi-grid,.schedule-modal-form,.modal-shift-grid{grid-template-columns:1fr}}
 
+
+        /* ====== 員工打卡專區 ====== */
+        .staff-clock-hero{background:#ffffff;border:1px solid #dbe7f5;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 4px 12px rgba(15,23,42,.04);}
+        .staff-clock-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:12px;}
+        .staff-clock-card{background:#f8fbff;border:1px solid #dbe7f5;border-radius:14px;padding:15px;box-shadow:0 3px 8px rgba(15,23,42,.03);}
+        .staff-clock-card h4{font-size:15px;color:#0f172a;margin:0 0 8px;font-weight:900;}
+        .staff-clock-meta{font-size:13px;color:#475569;line-height:1.8;font-weight:700;}
+        .staff-clock-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+        .clock-btn{border:none;border-radius:10px;padding:10px 14px;color:#fff;font-size:13px;font-weight:900;cursor:pointer;}
+        .clock-btn.in{background:#10b981;}
+        .clock-btn.out{background:#f59e0b;}
+        .clock-btn.disabled{background:#94a3b8;cursor:not-allowed;}
+        .clock-status-pill{display:inline-block;border-radius:999px;padding:3px 9px;font-size:12px;font-weight:900;}
+        .clock-status-none{background:#f1f5f9;color:#475569;}
+        .clock-status-in{background:#dcfce7;color:#166534;}
+        .clock-status-done{background:#dbeafe;color:#1d4ed8;}
+        .staff-exception-form{display:grid;grid-template-columns:1fr 1fr;gap:14px;background:#fff;border:1px solid #dbe7f5;border-radius:16px;padding:18px;}
+        .staff-exception-form label{font-size:13px;color:#475569;font-weight:900;margin-bottom:5px;display:block;}
+        .staff-exception-form input,.staff-exception-form select,.staff-exception-form textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;}
+        .staff-exception-form textarea{min-height:90px;resize:vertical;}
+        @media(max-width:700px){.staff-exception-form{grid-template-columns:1fr;}}
+
         @media (max-width: 768px) {
             .sidebar { left: -260px; transition: 0.3s all ease; z-index: 9999; }
             .sidebar.open { left: 0; box-shadow: 10px 0 25px rgba(0,0,0,0.3); }
@@ -806,7 +828,12 @@
                 <h1 style="color: white;"><i class="fas fa-user-circle"></i> 員工專區</h1>
             </div>
             <ul class="sidebar-nav">
-                <li><a onclick="showStaffPage('home', this)" class="active" style="color:white;"><i class="fas fa-bullhorn"></i> 規範注意</a></li>
+                <li><a onclick="showStaffPage('today', this)" class="active" style="color:white;"><i class="fas fa-calendar-day"></i> 今日排班</a></li>
+                <li><a onclick="showStaffPage('clockin', this)" style="color:white;"><i class="fas fa-play-circle"></i> 上班打卡</a></li>
+                <li><a onclick="showStaffPage('clockout', this)" style="color:white;"><i class="fas fa-stop-circle"></i> 下班打卡</a></li>
+                <li><a onclick="showStaffPage('clockrecords', this)" style="color:white;"><i class="fas fa-list-check"></i> 我的打卡紀錄</a></li>
+                <li><a onclick="showStaffPage('exception', this)" style="color:white;"><i class="fas fa-triangle-exclamation"></i> 異常回報</a></li>
+                <li><a onclick="showStaffPage('home', this)" style="color:white;"><i class="fas fa-bullhorn"></i> 規範注意</a></li>
                 <li><a onclick="showStaffPage('profile', this)" style="color:white;"><i class="fas fa-id-card"></i> 基本資料</a></li>
                 <li><a onclick="showStaffPage('records', this)" style="color:white;"><i class="fas fa-history"></i> 派遣記錄</a></li>
                 <li><a onclick="showStaffPage('mypay', this)" style="color:white;"><i class="fas fa-wallet"></i> 薪資下載</a></li>
@@ -826,7 +853,45 @@
                     <span id="staff-current-time" class="sys-time">載入中...</span>
                 </div>
             </div>
-            <div class="page active" id="staff-page-home"><div class="page-title"><i class="fas fa-clipboard-list"></i> 規範注意事項</div><div class="rules-box" style="border-left:4px solid #ef4444; background:#fef2f2; padding:20px; border-radius:8px; margin-bottom:20px;"><h3 id="staff_r1_title" style="color:#dc2626; margin-bottom:10px;"></h3><div id="staff_r1_content" style="color:#475569; line-height:1.8;"></div></div><div class="rules-box" style="border-left:4px solid #3b82f6; background:#eff6ff; padding:20px; border-radius:8px;"><h3 id="staff_r2_title" style="color:#2563eb; margin-bottom:10px;"></h3><div id="staff_r2_content" style="color:#475569; line-height:1.8;"></div></div></div>
+            
+            <div class="page active" id="staff-page-today">
+                <div class="page-title"><i class="fas fa-calendar-day"></i> 今日排班</div>
+                <div class="staff-clock-hero">
+                    <div style="font-weight:900;color:#0f172a;margin-bottom:6px;">今日排班與打卡狀態</div>
+                    <div style="font-size:13px;color:#64748b;font-weight:700;">只顯示你自己的排班。從官方 LINE 點進來後，登入即可查看與打卡。</div>
+                    <div id="staffTodayScheduleCards" class="staff-clock-grid"></div>
+                </div>
+            </div>
+            <div class="page" id="staff-page-clockin">
+                <div class="page-title"><i class="fas fa-play-circle"></i> 上班打卡</div>
+                <div class="staff-clock-hero">
+                    <div style="font-weight:900;color:#0f172a;margin-bottom:6px;">請選擇今日排班後按「上班打卡」</div>
+                    <div id="staffClockInCards" class="staff-clock-grid"></div>
+                </div>
+            </div>
+            <div class="page" id="staff-page-clockout">
+                <div class="page-title"><i class="fas fa-stop-circle"></i> 下班打卡</div>
+                <div class="staff-clock-hero">
+                    <div style="font-weight:900;color:#0f172a;margin-bottom:6px;">已上班未下班的紀錄會顯示在這裡</div>
+                    <div id="staffClockOutCards" class="staff-clock-grid"></div>
+                </div>
+            </div>
+            <div class="page" id="staff-page-clockrecords">
+                <div class="page-title"><i class="fas fa-list-check"></i> 我的打卡紀錄</div>
+                <div class="table-responsive"><table style="background:white;width:100%;"><thead><tr><th>日期</th><th>公司</th><th>排班時間</th><th>上班打卡</th><th>下班打卡</th><th>狀態</th><th>備註</th></tr></thead><tbody id="staffClockRecordsTable"></tbody></table></div>
+            </div>
+            <div class="page" id="staff-page-exception">
+                <div class="page-title"><i class="fas fa-triangle-exclamation"></i> 異常回報</div>
+                <div class="staff-exception-form">
+                    <div><label>日期</label><input type="date" id="staff_ex_date"></div>
+                    <div><label>異常類型</label><select id="staff_ex_type"><option>忘記打卡</option><option>臨時加班</option><option>提早下班</option><option>排班時間不對</option><option>其他備註</option></select></div>
+                    <div style="grid-column:1/-1;"><label>說明</label><textarea id="staff_ex_note" placeholder="請簡單說明原因，例如：今天臨時加班到 18:30，請主管確認。"></textarea></div>
+                    <div style="grid-column:1/-1;text-align:right;"><button class="btn btn-warning" onclick="submitStaffException()"><i class="fas fa-paper-plane"></i> 送出異常回報</button></div>
+                </div>
+                <div style="margin-top:16px;" class="table-responsive"><table style="background:white;width:100%;"><thead><tr><th>日期</th><th>類型</th><th>說明</th><th>狀態</th></tr></thead><tbody id="staffExceptionTable"></tbody></table></div>
+            </div>
+
+            <div class="page" id="staff-page-home"><div class="page-title"><i class="fas fa-clipboard-list"></i> 規範注意事項</div><div class="rules-box" style="border-left:4px solid #ef4444; background:#fef2f2; padding:20px; border-radius:8px; margin-bottom:20px;"><h3 id="staff_r1_title" style="color:#dc2626; margin-bottom:10px;"></h3><div id="staff_r1_content" style="color:#475569; line-height:1.8;"></div></div><div class="rules-box" style="border-left:4px solid #3b82f6; background:#eff6ff; padding:20px; border-radius:8px;"><h3 id="staff_r2_title" style="color:#2563eb; margin-bottom:10px;"></h3><div id="staff_r2_content" style="color:#475569; line-height:1.8;"></div></div></div>
             <div class="page" id="staff-page-profile"><div class="page-title"><i class="fas fa-id-card"></i> 個人資料</div><div class="grid" style="background:#f8fafc; padding:20px; border-radius:12px; margin-bottom:20px; border:1px solid #e2e8f0;"><div><label>姓名</label><p style="font-weight:bold; font-size:16px;" id="staff-profile-name">-</p></div><div><label>電話</label><p style="font-weight:bold; font-size:16px;" id="staff-profile-tel">-</p></div><div><label>身分證</label><p style="font-weight:bold; font-size:16px;" id="staff-profile-id">-</p></div><div><label>系統帳號</label><p style="font-weight:bold; font-size:16px;" id="staff-profile-acc">-</p></div></div><div class="checklist-box" style="display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:25px;"><div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between;"><div>身分證正反面</div><div id="staff_status_id"></div></div><div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between;"><div>存摺封面</div><div id="staff_status_bank"></div></div><div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between;"><div>勞動契約</div><div id="staff_status_contract"></div></div><div style="background:#fff; padding:15px; border-radius:8px; border:1px solid #e2e8f0; display:flex; justify-content:space-between;"><div>履歷表</div><div id="staff_status_resume"></div></div></div><div style="text-align:center; padding:30px; background:#eff6ff; border:2px dashed #93c5fd; border-radius:12px;"><button class="btn btn-excel" onclick="openStaffDrive()"><i class="fas fa-folder-open"></i> 雲端資料夾</button></div></div>
             <div class="page" id="staff-page-records"><div class="page-title"><i class="fas fa-history"></i> 歷史記錄</div><div class="table-responsive"><table style="background: white; width:100%;"><thead><tr><th>出勤日期</th><th>客戶/公司</th><th>服務項目</th><th>結算工時</th><th>備註</th></tr></thead><tbody id="staffRecordsTable"></tbody></table></div></div>
             <div class="page" id="staff-page-mypay"><div class="page-title"><i class="fas fa-wallet"></i> 薪資單下載</div><div class="filter-bar"><select id="staff_my_year" onchange="renderStaffMyPay()"></select><select id="staff_my_month" onchange="renderStaffMyPay()"></select><button class="btn btn-success" onclick="staffDownloadPayslip()">預覽/下載 薪資單</button></div><div class="table-responsive"><table style="background: white;"><thead><tr><th>日期</th><th>公司/類別</th><th>項目/假別</th><th>出勤工時</th></tr></thead><tbody id="staffMyPayTable"></tbody></table></div></div>
@@ -922,6 +987,8 @@ let dispatchData = safeJSONParse('dispatchData',[]);
 let salesStaffData = safeJSONParse('salesStaffData',[]);
 let scheduleData = safeJSONParse('scheduleData',[]);
 let salaryDeductData = safeJSONParse('salaryDeductData',[]);
+let clockData = safeJSONParse('clockData',[]);
+let clockExceptionData = safeJSONParse('clockExceptionData',[]);
 
 let loginLogoBase64 = localStorage.getItem('loginLogo') || '';
 let pdfLogoBase64 = localStorage.getItem('pdfLogo') || '';
@@ -1124,7 +1191,7 @@ function restoreLoginState() {
         } else if(r === 'staff') {
             el('staff-screen').style.display='flex'; el('sys-screen').style.display='none';
             if(!currentLoginStaff) { currentLoginStaff = staffData.find(x => x && String(x.account||'').trim() === String(a||'').trim()) || ftStaffData.find(x => x && String(x.account||'').trim() === String(a||'').trim()); }
-            initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage')||'home');
+            initStaffFrontend(); showStaffPage(localStorage.getItem('staffPage')||'today');
         }
     } catch(e) { console.error(e); el('login-screen').style.display='flex'; }
 }
@@ -1507,10 +1574,10 @@ function loadDataFromCloud(forceRender=false) {
             const hH = String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名'); const dR = hH ? fm.slice(1) : fm;
             dR.forEach(row => { if(Array.isArray(row)){ let n=String(row[1]||'').trim(), t=String(row[4]||row[2]||'').trim(), l=String(row[5]||'').trim(); let y=String(row[8]||'').trim(), e=String(row[9]||'').trim(), loc=String(row[10]||'').trim(); let s=String(row[11]||'').trim(), rl=String(row[22]||row[12]||'').trim(), dt=String(row[0]||'').trim(); let ex=[]; if(l) ex.push('Line:'+l); if(y) ex.push('年資:'+y); if(e) ex.push('經歷:'+e); if(n && n!=='' && !n.includes('全名') && !n.includes('姓名')) { if(!r.talentData.some(t => String(t.name).trim() === n)){ r.talentData.push({ name:n, tel:t, source:'Google表單', location:loc, shift:s, role:rl, status:'待聯絡', eval:'', resume:'', exp:ex.join(' | '), date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0] }); nA++; } } } });
         }
-        if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData; if(r.salaryDeductData) salaryDeductData=r.salaryDeductData; if(r.salaryDeductData) salaryDeductData=r.salaryDeductData;
+        if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData; if(r.salaryDeductData) salaryDeductData=r.salaryDeductData; if(r.clockData) clockData=r.clockData; if(r.clockExceptionData) clockExceptionData=r.clockExceptionData; if(r.clockData) clockData=r.clockData; if(r.clockExceptionData) clockExceptionData=r.clockExceptionData;
         invalidateCustBillingMap();
         standardizeData();
-        try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData)); } catch(e) {}
+        try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData)); localStorage.setItem('clockData',JSON.stringify(clockData)); localStorage.setItem('clockExceptionData',JSON.stringify(clockExceptionData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
         if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
@@ -1523,10 +1590,10 @@ function loadDataFromCloud(forceRender=false) {
 
 function buildCloudPayload(){
     standardizeData();
-    return {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, salaryDeductData, sysConfig:getSysConfigPayload(), updatedAt:new Date().toISOString()};
+    return {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, salaryDeductData, clockData, clockExceptionData, sysConfig:getSysConfigPayload(), updatedAt:new Date().toISOString()};
 }
 function saveLocalData(){
-    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData)); } catch(e) {}
+    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData)); localStorage.setItem('clockData',JSON.stringify(clockData)); localStorage.setItem('clockExceptionData',JSON.stringify(clockExceptionData)); } catch(e) {}
 }
 function pushCloudData(silent=false){
     const payload=buildCloudPayload();
@@ -1558,7 +1625,7 @@ function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class
 function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
 
 
-function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, salaryDeductData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, salaryDeductData, clockData, clockExceptionData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
 
 function restoreData(i) {
     if(!i.files || !i.files[0]) return; const rd = new FileReader();
@@ -3502,6 +3569,7 @@ function initStaffFrontend() {
     renderStaffRecords(); 
     renderStaffMyPayFilters(); 
     renderStaffMyPay();
+    renderStaffClockPages();
 }
 
 function showStaffPage(p, a) { 
@@ -3511,6 +3579,7 @@ function showStaffPage(p, a) {
     document.querySelectorAll('#staff-screen .sidebar-nav a').forEach(x => x.classList.remove('active')); 
     if(a) a.classList.add('active'); 
     localStorage.setItem('staffPage', p);
+    if(['today','clockin','clockout','clockrecords','exception'].includes(p)) renderStaffClockPages();
 }
 
 function renderStaffRecords() { 
@@ -3567,6 +3636,121 @@ function staffDownloadPayslip() {
 function openStaffDrive() { 
     if(currentLoginStaff && currentLoginStaff.drive) window.open(currentLoginStaff.drive, '_blank'); 
     else showToast('尚未建立雲端資料夾', true);
+}
+
+
+// ============ 員工打卡 / 官方 LINE 入口 ============
+function staffNameSafe(){ return currentLoginStaff ? String(currentLoginStaff.name||'').trim() : ''; }
+function todayYMD(){ return new Date().toISOString().slice(0,10); }
+function parseHHMMToMinutes(v){ if(!v) return 0; const p=String(v).split(':').map(Number); return (p[0]||0)*60+(p[1]||0); }
+function scheduleCoversDateForStaff(item, staffName, date){
+    if(!item || String(item.date||'')!==String(date||'')) return false;
+    return getScheduleStaffList(item.staffs).includes(staffName);
+}
+function getStaffSchedulesByDate(date){
+    const n=staffNameSafe();
+    if(!n) return [];
+    return (scheduleData||[]).filter(x=>scheduleCoversDateForStaff(x,n,date)).sort((a,b)=>String(a.start||'').localeCompare(String(b.start||'')));
+}
+function staffScheduleKey(s){ return [s.company||'',s.date||'',s.start||'',s.end||'',staffNameSafe()].join('|'); }
+function findClockBySchedule(s){
+    const key=staffScheduleKey(s);
+    return (clockData||[]).find(x=>x.scheduleKey===key && x.staff===staffNameSafe());
+}
+function formatClockTime(dt){
+    if(!dt) return '-';
+    try{return new Date(dt).toLocaleTimeString('zh-TW',{hour12:false,hour:'2-digit',minute:'2-digit'});}catch(e){return dt;}
+}
+function staffScheduleStatus(clock){
+    if(!clock) return '<span class="clock-status-pill clock-status-none">尚未打卡</span>';
+    if(clock.clockIn && !clock.clockOut) return '<span class="clock-status-pill clock-status-in">已上班</span>';
+    if(clock.clockIn && clock.clockOut) return '<span class="clock-status-pill clock-status-done">待主管確認</span>';
+    return '<span class="clock-status-pill clock-status-none">尚未打卡</span>';
+}
+function buildStaffScheduleCard(s, mode){
+    const c=findClockBySchedule(s);
+    const rest = Number(s.restHours||0);
+    const hours = Number(s.hours||0);
+    let actions='';
+    if(mode==='in'){
+        actions = c ? `<button class="clock-btn disabled" disabled>${c.clockOut?'已完成':'已打上班卡'}</button>` : `<button class="clock-btn in" onclick="staffClockIn('${staffScheduleKey(s).replace(/'/g,"\\'")}')"><i class="fas fa-play"></i> 上班打卡</button>`;
+    }else if(mode==='out'){
+        actions = (c&&c.clockIn&&!c.clockOut) ? `<button class="clock-btn out" onclick="staffClockOut('${staffScheduleKey(s).replace(/'/g,"\\'")}')"><i class="fas fa-stop"></i> 下班打卡</button>` : `<button class="clock-btn disabled" disabled>${c&&c.clockOut?'已完成':'尚未上班打卡'}</button>`;
+    }else{
+        actions = `<button class="clock-btn in" onclick="showStaffPage('clockin')">上班打卡</button><button class="clock-btn out" onclick="showStaffPage('clockout')">下班打卡</button>`;
+    }
+    return `<div class="staff-clock-card">
+        <h4>${s.company||'-'}</h4>
+        <div class="staff-clock-meta">
+            日期：${s.date||'-'}<br>
+            排班：${s.start||'-'}–${s.end||'-'}<br>
+            休息：${rest||0} 小時｜工時：${hours||0}h<br>
+            狀態：${staffScheduleStatus(c)}<br>
+            ${c?`上班：${formatClockTime(c.clockIn)}｜下班：${formatClockTime(c.clockOut)}`:''}
+        </div>
+        <div class="staff-clock-actions">${actions}</div>
+    </div>`;
+}
+function renderStaffClockPages(){
+    if(!currentLoginStaff) return;
+    const d=todayYMD();
+    if(el('staff_ex_date') && !el('staff_ex_date').value) el('staff_ex_date').value=d;
+    const todaySchedules=getStaffSchedulesByDate(d);
+    const empty='<div class="schedule-filled-empty" style="grid-column:1/-1;">今天尚無排班</div>';
+    if(el('staffTodayScheduleCards')) el('staffTodayScheduleCards').innerHTML = todaySchedules.map(s=>buildStaffScheduleCard(s,'today')).join('') || empty;
+    if(el('staffClockInCards')) el('staffClockInCards').innerHTML = todaySchedules.map(s=>buildStaffScheduleCard(s,'in')).join('') || empty;
+    const active=todaySchedules.filter(s=>{const c=findClockBySchedule(s); return c&&c.clockIn&&!c.clockOut;});
+    if(el('staffClockOutCards')) el('staffClockOutCards').innerHTML = active.map(s=>buildStaffScheduleCard(s,'out')).join('') || '<div class="schedule-filled-empty" style="grid-column:1/-1;">目前沒有待下班打卡的紀錄</div>';
+    renderStaffClockRecords();
+    renderStaffExceptions();
+}
+function staffClockIn(scheduleKey){
+    const s=(scheduleData||[]).find(x=>staffScheduleKey(x)===scheduleKey);
+    if(!s) return showToast('找不到此排班',true);
+    if(findClockBySchedule(s)) return showToast('此排班已經打過上班卡',true);
+    clockData.push({id:'CLK'+Date.now(),scheduleKey,staff:staffNameSafe(),company:s.company,date:s.date,start:s.start,end:s.end,plannedHours:Number(s.hours||0),clockIn:new Date().toISOString(),clockOut:'',status:'已上班',source:'員工打卡',remark:''});
+    saveAll();
+    renderStaffClockPages();
+    showToast('✅ 上班打卡成功');
+}
+function staffClockOut(scheduleKey){
+    const s=(scheduleData||[]).find(x=>staffScheduleKey(x)===scheduleKey);
+    if(!s) return showToast('找不到此排班',true);
+    const c=findClockBySchedule(s);
+    if(!c||!c.clockIn) return showToast('請先上班打卡',true);
+    if(c.clockOut) return showToast('此排班已完成下班打卡',true);
+    c.clockOut=new Date().toISOString();
+    c.status='待主管確認';
+    c.remark='由員工打卡自動產生，待主管確認';
+    createAttendDraftFromClock(c);
+    saveAll();
+    renderStaffClockPages();
+    showToast('✅ 下班打卡成功，已建立派遣紀錄草稿');
+}
+function createAttendDraftFromClock(c){
+    const exists=(attendData||[]).some(x=>x.clockId===c.id);
+    if(exists) return;
+    attendData.push({company:c.company,staff:c.staff,date:c.date,service:'排班派遣',am_s:c.start,am_e:c.end,pm_s:'',pm_e:'',salary_hours:c.plannedHours||'',deduct_points:c.plannedHours||'',project_fee:0,special_hourly:'',remark:'待主管確認：由員工打卡自動產生',clockId:c.id,approval_status:'待審核'});
+}
+function renderStaffClockRecords(){
+    if(!el('staffClockRecordsTable')||!currentLoginStaff) return;
+    const rows=(clockData||[]).filter(x=>x.staff===staffNameSafe()).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,80);
+    el('staffClockRecordsTable').innerHTML = rows.map(x=>`<tr><td>${x.date||'-'}</td><td>${x.company||'-'}</td><td>${x.start||'-'}–${x.end||'-'}</td><td>${formatClockTime(x.clockIn)}</td><td>${formatClockTime(x.clockOut)}</td><td>${x.status||'-'}</td><td>${x.remark||'-'}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">尚無打卡紀錄</td></tr>';
+}
+function submitStaffException(){
+    if(!currentLoginStaff) return;
+    const date=el('staff_ex_date').value||todayYMD(), type=el('staff_ex_type').value, note=el('staff_ex_note').value.trim();
+    if(!note) return showToast('請填寫異常說明',true);
+    clockExceptionData.push({id:'EX'+Date.now(),staff:staffNameSafe(),date,type,note,status:'待主管確認',createdAt:new Date().toISOString()});
+    el('staff_ex_note').value='';
+    saveAll();
+    renderStaffExceptions();
+    showToast('✅ 異常回報已送出');
+}
+function renderStaffExceptions(){
+    if(!el('staffExceptionTable')||!currentLoginStaff) return;
+    const rows=(clockExceptionData||[]).filter(x=>x.staff===staffNameSafe()).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))).slice(0,50);
+    el('staffExceptionTable').innerHTML = rows.map(x=>`<tr><td>${x.date||'-'}</td><td>${x.type||'-'}</td><td>${x.note||'-'}</td><td>${x.status||'-'}</td></tr>`).join('') || '<tr><td colspan="4" style="text-align:center;">尚無異常回報</td></tr>';
 }
 
 // ============ 業務人員管理 ============
