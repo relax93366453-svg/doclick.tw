@@ -419,6 +419,15 @@
         .staff-clock-tips{background:#eff6ff;border-left:4px solid #3b82f6;border-radius:12px;padding:16px;color:#334155;line-height:1.9;font-size:14px;}
         @media(max-width:900px){.staff-clock-wrap{grid-template-columns:1fr;}}
 
+
+        /* ===== GPS打卡與主管審核欄位 ===== */
+        .gps-badge{display:inline-block;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;text-decoration:none;white-space:nowrap;}
+        .gps-badge.missing{background:#fff1f2;color:#be123c;border-color:#fecaca;}
+        .device-text{font-size:11px;color:#64748b;line-height:1.45;max-width:180px;white-space:normal;word-break:break-all;}
+        .staff-clock-gps{margin-top:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 10px;font-size:12px;color:#475569;line-height:1.7;}
+        .gps-warning{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:12px;font-weight:900;}
+        .clock-overview-table th,.clock-overview-table td{vertical-align:top;}
+
     </style>
 </head>
 <body>
@@ -905,8 +914,8 @@
                     說明：主管端可在這裡看每位員工當日排班、上班打卡、下班打卡與異常回報。打卡完成後建議先審核，再轉入正式派遣紀錄與薪資。
                 </div>
                 <div class="table-responsive">
-                    <table id="clockOverviewTableBox">
-                        <thead><tr><th>狀態</th><th>日期</th><th>公司</th><th>人員</th><th>排班時間</th><th>休息</th><th>上班打卡</th><th>下班打卡</th><th>實際工時</th><th>異常/備註</th><th>操作</th></tr></thead>
+                    <table id="clockOverviewTableBox" class="clock-overview-table">
+                        <thead><tr><th>狀態</th><th>日期</th><th>公司</th><th>人員</th><th>排班時間</th><th>休息</th><th>上班打卡</th><th>上班GPS</th><th>下班打卡</th><th>下班GPS</th><th>裝置資訊</th><th>實際工時</th><th>異常/備註</th><th>操作</th></tr></thead>
                         <tbody id="clockOverviewTable"></tbody>
                     </table>
                 </div>
@@ -2382,7 +2391,7 @@ function getScheduleRowsForClockOverview(){
         const names=getScheduleStaffList(s.staffs||'');
         names.forEach(name=>{
             if(staffFilter && staffFilter!=='全部人員' && !String(name||'').includes(staffFilter)) return;
-            rows.push({company:s.company||'', staff:name, date:s.date, start:s.start||'', end:s.end||'', restHours:Number(s.restHours||0)||0, hours:Number(s.hours||0)||0, remark:s.remark||'', location:s.location||''});
+            rows.push({company:s.company||'', staff:name, date:s.date, start:s.start||'', end:s.end||'', restHours:Number(s.restHours||s.breakHours||0)||0, hours:Number(s.hours||0)||0, remark:s.remark||'', location:s.location||''});
         });
     });
     rows.sort((a,b)=>(a.start||'').localeCompare(b.start||'') || (a.company||'').localeCompare(b.company||'') || (a.staff||'').localeCompare(b.staff||''));
@@ -2409,6 +2418,27 @@ function clockBadge(status){
     if(status==='異常回報') return '<span class="badge badge-red">異常回報</span>';
     return '<span class="badge badge-blue">待審核</span>';
 }
+function formatGpsText(gps){
+    if(!gps || gps.lat===undefined || gps.lng===undefined) return '未提供定位';
+    const acc = gps.accuracy!==undefined && gps.accuracy!==null ? `±${Math.round(gps.accuracy)}m` : '';
+    return `${Number(gps.lat).toFixed(6)}, ${Number(gps.lng).toFixed(6)} ${acc}`.trim();
+}
+function gpsMapUrl(gps){
+    if(!gps || gps.lat===undefined || gps.lng===undefined) return '';
+    return `https://www.google.com/maps?q=${encodeURIComponent(gps.lat+','+gps.lng)}`;
+}
+function gpsCell(gps){
+    if(!gps || gps.lat===undefined || gps.lng===undefined) return '<span class="gps-badge missing">未提供定位</span>';
+    return `<a class="gps-badge" target="_blank" href="${gpsMapUrl(gps)}">查看地圖<br><span style="font-weight:700;">${formatGpsText(gps)}</span></a>`;
+}
+function getDeviceText(rec){
+    const d = rec?.device || {};
+    const ua = d.userAgent || rec?.userAgent || '';
+    const platform = d.platform || '';
+    const lang = d.language || '';
+    const shortUA = ua.length>90 ? ua.slice(0,90)+'...' : ua;
+    return [platform, lang, shortUA].filter(Boolean).join('<br>') || '-';
+}
 function renderClockOverview(){
     if(!el('clockOverviewTable')) return;
     const rows=getScheduleRowsForClockOverview();
@@ -2419,10 +2449,10 @@ function renderClockOverview(){
         const inT=rec?.clockIn||'', outT=rec?.clockOut||'';
         const calcH=(inT&&outT)?Math.max(0,clockHoursBetween(inT,outT)-(Number(row.restHours)||0)):'';
         const realH=(rec && rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcH;
-        const note=[rec?.reportType, rec?.returnReason, rec?.remark, row.remark].filter(Boolean).join(' / ');
-        html+=`<tr><td>${clockBadge(status)}</td><td>${row.date}</td><td>${row.company}</td><td><b>${row.staff}</b></td><td>${row.start||'-'}～${row.end||'-'}</td><td>${row.restHours?row.restHours+'h':'-'}</td><td>${inT||'-'}</td><td>${outT||'-'}</td><td>${realH!==''?Number(realH).toFixed(1)+'h':'-'}</td><td>${note||'-'}</td><td style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn-sm btn-excel" onclick="quickClockAdmin(${idx},'in')">補上班</button><button class="btn-sm btn-warning" onclick="quickClockAdmin(${idx},'out')">補下班</button><button class="btn-sm" style="background:#8b5cf6;color:white;border:0;border-radius:6px;" onclick="editClockHours(${idx})">修改工時</button><button class="btn-sm" style="background:#f59e0b;color:white;border:0;border-radius:6px;" onclick="returnClockForInfo(${idx})">退回補充</button><button class="btn-sm btn-pdf" onclick="markClockAbnormal(${idx})">標記異常</button><button class="btn-sm btn-success" onclick="confirmClockToAttend(${idx})">確認轉派遣</button><button class="btn-sm" style="background:#64748b;color:white;border:0;border-radius:6px;" onclick="deleteClockRecord(${idx})">刪除</button></td></tr>`;
+        const note=[rec?.gpsWarning, rec?.reportType, rec?.returnReason, rec?.remark, row.remark].filter(Boolean).join(' / ');
+        html+=`<tr><td>${clockBadge(status)}</td><td>${row.date}</td><td>${row.company}</td><td><b>${row.staff}</b></td><td>${row.start||'-'}～${row.end||'-'}</td><td>${row.restHours?row.restHours+'h':'-'}</td><td>${inT||'-'}</td><td>${gpsCell(rec?.inGps)}</td><td>${outT||'-'}</td><td>${gpsCell(rec?.outGps)}</td><td><div class="device-text">${getDeviceText(rec)}</div></td><td>${realH!==''?Number(realH).toFixed(1)+'h':'-'}</td><td>${note||'-'}</td><td style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn-sm btn-excel" onclick="quickClockAdmin(${idx},'in')">補上班</button><button class="btn-sm btn-warning" onclick="quickClockAdmin(${idx},'out')">補下班</button><button class="btn-sm" style="background:#8b5cf6;color:white;border:0;border-radius:6px;" onclick="editClockHours(${idx})">修改工時</button><button class="btn-sm" style="background:#f59e0b;color:white;border:0;border-radius:6px;" onclick="returnClockForInfo(${idx})">退回補充</button><button class="btn-sm btn-pdf" onclick="markClockAbnormal(${idx})">標記異常</button><button class="btn-sm btn-success" onclick="confirmClockToAttend(${idx})">確認轉派遣</button><button class="btn-sm" style="background:#64748b;color:white;border:0;border-radius:6px;" onclick="deleteClockRecord(${idx})">刪除</button></td></tr>`;
     });
-    el('clockOverviewTable').innerHTML=html||'<tr><td colspan="11" style="text-align:center;padding:25px;color:#64748b;font-weight:800;">這天沒有排班資料</td></tr>';
+    el('clockOverviewTable').innerHTML=html||'<tr><td colspan="14" style="text-align:center;padding:25px;color:#64748b;font-weight:800;">這天沒有排班資料</td></tr>';
     if(el('clock_kpi_total')) el('clock_kpi_total').textContent=k.total;
     if(el('clock_kpi_none')) el('clock_kpi_none').textContent=k.none;
     if(el('clock_kpi_in')) el('clock_kpi_in').textContent=k.inside;
@@ -2444,26 +2474,27 @@ function confirmClockToAttend(rowIndex){
     const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
     const rec=findClockRecord(row);
     if(!rec || !rec.clockIn || !rec.clockOut) return showToast('需有上班與下班打卡，才能轉派遣紀錄', true);
+    if(!rec.inGps || !rec.outGps){ if(!confirm('這筆缺少上班或下班 GPS 定位，仍要轉派遣紀錄嗎？')) return; }
     if(rec.status==='已轉派遣紀錄' && !confirm('這筆已經轉過派遣紀錄，還要再轉一次嗎？')) return;
     const exist=(attendData||[]).some(a=>a.company===row.company && a.staff===row.staff && a.date===row.date && String(a.remark||'').includes('由員工打卡確認'));
     if(exist && !confirm('這筆似乎已經轉過派遣紀錄，還要再新增一次嗎？')) return;
     const calcHours=Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0));
     const hours=(rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcHours;
-    attendData.push({company:row.company,staff:row.staff,date:row.date,service:'排班派遣',am_s:rec.clockIn,am_e:rec.clockOut,pm_s:'',pm_e:'',salary_hours:Number(hours.toFixed(1)),deduct_points:Number(hours.toFixed(1)),project_fee:0,special_hourly:'',remark:'由員工打卡確認轉入'});
-    rec.status='已轉派遣紀錄'; rec.confirmedAt=new Date().toISOString(); rec.confirmedHours=Number(hours.toFixed(1));
-    saveAll(); renderClockOverview(); showToast('✅ 已確認並轉入派遣紀錄');
+    attendData.push({company:row.company,staff:row.staff,date:row.date,service:'排班派遣',am_s:rec.clockIn,am_e:rec.clockOut,pm_s:'',pm_e:'',salary_hours:Number(hours.toFixed(1)),deduct_points:Number(hours.toFixed(1)),project_fee:0,special_hourly:'',remark:`由員工打卡確認轉入｜上班GPS:${formatGpsText(rec.inGps)}｜下班GPS:${formatGpsText(rec.outGps)}${rec.gpsWarning?'｜'+rec.gpsWarning:''}`});
+    rec.status='已轉派遣紀錄'; rec.updatedAt=new Date().toISOString();
+    saveAll(); renderClockOverview(); showToast('✅ 已轉入正式派遣紀錄');
 }
 function editClockHours(rowIndex){
     const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
     let rec=findClockRecord(row);
-    if(!rec){ rec={id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2), company:row.company, staff:row.staff, date:row.date, scheduleStart:row.start, scheduleEnd:row.end, restHours:row.restHours, status:'待審核'}; staffClockData.push(rec); }
+    if(!rec){ rec={id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2), company:row.company, staff:row.staff, date:row.date, scheduleStart:row.start, scheduleEnd:row.end, restHours:row.restHours}; staffClockData.push(rec); }
     const calc=(rec.clockIn&&rec.clockOut)?Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)):(Number(row.hours)||0);
-    const val=prompt('請輸入主管確認後的實際工時', rec.overrideHours??calc.toFixed(1));
+    const val=prompt('請輸入主管確認後的實際工時', rec.overrideHours!==undefined?rec.overrideHours:calc.toFixed(1));
     if(val===null) return;
-    const n=Number(val);
-    if(isNaN(n) || n<0) return showToast('工時格式錯誤', true);
-    rec.overrideHours=n; rec.status='待審核'; rec.updatedAt=new Date().toISOString();
-    saveAll(); renderClockOverview(); showToast('✅ 已修改實際工時');
+    const num=Number(val);
+    if(isNaN(num)||num<0) return showToast('請輸入正確工時', true);
+    rec.overrideHours=num; rec.status='待審核'; rec.updatedAt=new Date().toISOString();
+    saveAll(); renderClockOverview(); showToast('已修改實際工時');
 }
 function returnClockForInfo(rowIndex){
     const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
@@ -2478,7 +2509,7 @@ function markClockAbnormal(rowIndex){
     const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
     let rec=findClockRecord(row);
     if(!rec){ rec={id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2), company:row.company, staff:row.staff, date:row.date, scheduleStart:row.start, scheduleEnd:row.end, restHours:row.restHours}; staffClockData.push(rec); }
-    const reason=prompt('請輸入異常原因，例如：忘記打卡、遲到、早退、排班時間不對', rec.reportType||'');
+    const reason=prompt('請輸入異常原因，例如：忘記打卡、遲到、早退、GPS位置不符、排班時間不對', rec.reportType||'');
     if(!reason) return;
     rec.status='異常回報'; rec.reportType=reason; rec.updatedAt=new Date().toISOString();
     saveAll(); renderClockOverview(); showToast('已標記異常');
@@ -2487,15 +2518,15 @@ function deleteClockRecord(rowIndex){
     const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
     const rec=findClockRecord(row);
     if(!rec) return showToast('這筆目前沒有打卡紀錄可刪除', true);
-    if(!confirm(`確定刪除 ${row.staff} ${row.date} 的打卡紀錄？
-只會刪除打卡紀錄，不會刪除原本排班。`)) return;
+    if(!confirm(`確定刪除 ${row.staff} ${row.date} 的打卡紀錄？\n只會刪除打卡紀錄，不會刪除原本排班。`)) return;
     staffClockData=(staffClockData||[]).filter(c=>c.id!==rec.id);
     saveAll(); renderClockOverview(); showToast('已刪除打卡紀錄');
 }
 function exportClockOverviewExcel(){
-    const rows=getScheduleRowsForClockOverview().map(row=>{const rec=findClockRecord(row); const status=getClockStatus(row,rec); const calcH=(rec?.clockIn&&rec?.clockOut)?Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)):''; const realH=(rec && rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcH; return {'狀態':status,'日期':row.date,'公司':row.company,'人員':row.staff,'排班時間':`${row.start||''}-${row.end||''}`,'休息':row.restHours||0,'上班打卡':rec?.clockIn||'','下班打卡':rec?.clockOut||'','實際工時':realH===''?'':Number(realH.toFixed(1)),'備註':[rec?.reportType,rec?.returnReason,rec?.remark,row.remark].filter(Boolean).join(' / ')};});
+    const rows=getScheduleRowsForClockOverview().map(row=>{const rec=findClockRecord(row); const status=getClockStatus(row,rec); const calcH=(rec?.clockIn&&rec?.clockOut)?Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)):''; const realH=(rec && rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcH; return {'狀態':status,'日期':row.date,'公司':row.company,'人員':row.staff,'排班時間':`${row.start||''}-${row.end||''}`,'休息':row.restHours||0,'上班打卡':rec?.clockIn||'','上班GPS':formatGpsText(rec?.inGps),'下班打卡':rec?.clockOut||'','下班GPS':formatGpsText(rec?.outGps),'裝置資訊':(rec?.device?.userAgent||rec?.userAgent||''),'實際工時':realH===''?'':Number(realH.toFixed(1)),'備註':[rec?.gpsWarning,rec?.reportType,rec?.returnReason,rec?.remark,row.remark].filter(Boolean).join(' / ')};});
     const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'員工打卡總覽'); XLSX.writeFile(wb,`員工打卡總覽_${getClockDate()}.xlsx`);
 }
+
 
 function showAdminPage(p) { 
     try { 
@@ -3873,6 +3904,28 @@ function staffClockBadgeText(status){
     const cls = status==='未打卡' ? 'none' : status==='上班中' ? 'in' : status==='異常回報' ? 'abnormal' : 'done';
     return `<span class="staff-clock-status ${cls}"><i class="fas fa-circle"></i>${status}</span>`;
 }
+function getBrowserDeviceInfo(){
+    return {
+        userAgent:navigator.userAgent || '',
+        platform:navigator.platform || '',
+        language:navigator.language || '',
+        screen:`${window.screen?.width||''}x${window.screen?.height||''}`,
+        capturedAt:new Date().toISOString()
+    };
+}
+function requestGpsPosition(){
+    return new Promise((resolve)=>{
+        if(!navigator.geolocation){
+            resolve({ok:false, error:'此裝置或瀏覽器不支援GPS定位'});
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            pos=>resolve({ok:true, gps:{lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy,ts:new Date().toISOString()}}),
+            err=>resolve({ok:false, error:err.message || '無法取得GPS定位'}),
+            {enableHighAccuracy:true, timeout:15000, maximumAge:0}
+        );
+    });
+}
 function renderStaffClockPage(){
     if(!currentLoginStaff) return;
     const rows = getStaffScheduleRowsForToday();
@@ -3884,6 +3937,11 @@ function renderStaffClockPage(){
             box.innerHTML = rows.map((row,idx)=>{
                 const rec = findStaffClockRecord(row);
                 const status = getStaffClockStatus(rec);
+                const gpsInfo = rec ? `<div class="staff-clock-gps">
+                        上班定位：${rec.inGps ? `<a target="_blank" href="${gpsMapUrl(rec.inGps)}">${formatGpsText(rec.inGps)}</a>` : '未提供'}<br>
+                        下班定位：${rec.outGps ? `<a target="_blank" href="${gpsMapUrl(rec.outGps)}">${formatGpsText(rec.outGps)}</a>` : '未提供'}<br>
+                        裝置：${(rec.device?.platform||'')}${rec.device?.language ? '｜'+rec.device.language : ''}
+                    </div>` : '';
                 return `<div class="staff-clock-card today">
                     <div class="staff-clock-title">
                         <h3>${row.company}</h3>
@@ -3894,8 +3952,10 @@ function renderStaffClockPage(){
                         排班時間：<b>${row.start||'-'}～${row.end||'-'}</b><br>
                         休息時數：${row.restHours ? row.restHours + ' 小時' : '無'}<br>
                         上班打卡：${rec?.clockIn || '-'}　｜　下班打卡：${rec?.clockOut || '-'}<br>
-                        備註：${[row.location,row.remark,rec?.reportType,rec?.remark].filter(Boolean).join(' / ') || '-'}
+                        備註：${[row.location,row.remark,rec?.gpsWarning,rec?.reportType,rec?.remark].filter(Boolean).join(' / ') || '-'}
                     </div>
+                    ${gpsInfo}
+                    ${rec?.gpsWarning ? `<div class="gps-warning"><i class="fas fa-triangle-exclamation"></i> ${rec.gpsWarning}</div>` : ''}
                     <div class="staff-clock-actions">
                         <button class="btn btn-success" onclick="staffClockAction(${idx},'in')"><i class="fas fa-play"></i> 上班打卡</button>
                         <button class="btn btn-warning" onclick="staffClockAction(${idx},'out')"><i class="fas fa-stop"></i> 下班打卡</button>
@@ -3907,37 +3967,56 @@ function renderStaffClockPage(){
     }
     renderStaffClockHistory();
 }
-function staffClockAction(rowIndex,type){
+async function staffClockAction(rowIndex,type){
     const rows = getStaffScheduleRowsForToday();
     const row = rows[rowIndex];
     if(!row) return showToast('找不到排班資料', true);
     const rec = ensureStaffClockRecord(row);
     const now = new Date();
     const time = now.toTimeString().slice(0,5);
-    if(type === 'in'){
-        if(rec.clockIn && !confirm('已經有上班打卡時間，是否覆蓋？')) return;
-        rec.clockIn = time;
-        rec.status = '上班中';
-    }else{
+
+    if(type === 'in' && rec.clockIn && !confirm('已經有上班打卡時間，是否覆蓋？')) return;
+    if(type === 'out'){
         if(!rec.clockIn && !confirm('尚未上班打卡，仍要記錄下班打卡嗎？')) return;
         if(rec.clockOut && !confirm('已經有下班打卡時間，是否覆蓋？')) return;
+    }
+
+    showToast('正在取得GPS定位，請允許瀏覽器定位權限...');
+    const loc = await requestGpsPosition();
+    const device = getBrowserDeviceInfo();
+
+    if(type === 'in'){
+        rec.clockIn = time;
+        rec.inGps = loc.ok ? loc.gps : null;
+        rec.inGpsError = loc.ok ? '' : loc.error;
+        rec.status = loc.ok ? '上班中' : '異常回報';
+    }else{
         rec.clockOut = time;
-        rec.status = '待審核';
+        rec.outGps = loc.ok ? loc.gps : null;
+        rec.outGpsError = loc.ok ? '' : loc.error;
+        rec.status = loc.ok ? '待審核' : '異常回報';
+    }
+    rec.device = device;
+    rec.userAgent = device.userAgent;
+    rec.gpsWarning = loc.ok ? '' : `未提供GPS定位：${loc.error || '定位失敗'}`;
+    if(!loc.ok){
+        rec.reportType = rec.reportType || '未提供GPS定位';
     }
     rec.updatedAt = new Date().toISOString();
     saveAll();
     renderStaffClockPage();
-    showToast(type==='in' ? '✅ 上班打卡成功' : '✅ 下班打卡成功，待主管審核');
+    showToast(type==='in' ? (loc.ok?'✅ 上班打卡成功':'⚠️ 上班打卡已記錄，但未取得GPS，已標記異常') : (loc.ok?'✅ 下班打卡成功，待主管審核':'⚠️ 下班打卡已記錄，但未取得GPS，已標記異常'));
 }
 function staffClockReport(rowIndex){
     const rows = getStaffScheduleRowsForToday();
     const row = rows[rowIndex];
     if(!row) return showToast('找不到排班資料', true);
     const rec = ensureStaffClockRecord(row);
-    const type = prompt('請輸入異常原因：忘記打卡、臨時加班、提早下班、排班時間不對、其他備註');
+    const type = prompt('請輸入異常原因：忘記打卡、臨時加班、提早下班、排班時間不對、GPS定位異常、其他備註');
     if(!type) return;
     rec.status = '異常回報';
     rec.reportType = type;
+    rec.device = getBrowserDeviceInfo();
     rec.updatedAt = new Date().toISOString();
     saveAll();
     renderStaffClockPage();
@@ -3949,8 +4028,9 @@ function renderStaffClockHistory(){
     const rows = (staffClockData||[]).filter(c => c.staff === currentLoginStaff.name)
         .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))
         .slice(0,50);
-    tb.innerHTML = rows.map(r=>`<tr><td>${r.date||'-'}</td><td>${r.company||'-'}</td><td>${r.scheduleStart||'-'}～${r.scheduleEnd||'-'}</td><td>${r.clockIn||'-'}</td><td>${r.clockOut||'-'}</td><td>${getStaffClockStatus(r)}</td><td>${[r.reportType,r.returnReason,r.remark].filter(Boolean).join(' / ')||'-'}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;font-weight:800;">尚無打卡紀錄</td></tr>';
+    tb.innerHTML = rows.map(r=>`<tr><td>${r.date||'-'}</td><td>${r.company||'-'}</td><td>${r.scheduleStart||'-'}～${r.scheduleEnd||'-'}</td><td>${r.clockIn||'-'}</td><td>${r.clockOut||'-'}</td><td>${getStaffClockStatus(r)}</td><td>${[r.gpsWarning,r.reportType,r.returnReason,r.remark].filter(Boolean).join(' / ')||'-'}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;font-weight:800;">尚無打卡紀錄</td></tr>';
 }
+
 
 function showStaffPage(p, a) { 
     document.querySelectorAll('#staff-screen .page').forEach(x => x.classList.remove('active'));
