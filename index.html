@@ -813,7 +813,7 @@
             
             <div class="page sys-auth" id="page-bill"><div class="page-title"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="bill_filter_company" placeholder="手打搜尋公司" oninput="resetPage('bill'); renderBill()"><label>結算週期</label><select id="bill_cycle" onchange="toggleBillManualDate(); renderBill()"><option value="26">26日至25日 (預設)</option><option value="1">1日至31日 (全日曆月)</option><option value="manual">自訂區間 (手動選擇)</option></select><span id="bill_manual_dates" style="display:none; align-items:center; gap:8px;"><input type="date" id="bill_start_date" onchange="renderBill()"> ~ <input type="date" id="bill_end_date" onchange="renderBill()"></span><label class="bill-ym-label">年</label><select id="bill_filter_year" class="bill-ym-label" onchange="renderBill()"></select><label class="bill-ym-label">月</label><select id="bill_filter_month" class="bill-ym-label" onchange="renderBill()"></select><button class="btn btn-clear-filter" onclick="clearFilters('bill')"><i class="fas fa-broom"></i> 清除搜尋</button></div><button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button><button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="billTableBox"><thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody id="billTable"></tbody></table></div></div>
             
-            <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select><button class="btn btn-clear-filter" onclick="clearFilters('salary')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div id="sal_milestoneRedBox" style="display:none; background:#fef2f2; border-left:5px solid #ef4444; border-radius:8px; padding:15px; margin-bottom:15px; border-right:1px solid #fecaca; border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;"><h4 style="color:#b91c1c; margin-bottom:10px; font-size:15px;"><i class="fas fa-trophy"></i> 累積工時里程碑達成日</h4><div id="sal_milestoneContent" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button><button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時累計矩陣總表 (含歷史分年)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>專案金</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
+            <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select><button class="btn btn-clear-filter" onclick="clearFilters('salary')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div id="sal_milestoneRedBox" style="display:none; background:#fef2f2; border-left:5px solid #ef4444; border-radius:8px; padding:15px; margin-bottom:15px; border-right:1px solid #fecaca; border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;"><h4 style="color:#b91c1c; margin-bottom:10px; font-size:15px;"><i class="fas fa-trophy"></i> 累積工時里程碑達成日</h4><div id="sal_milestoneContent" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDeductOverrideBox" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 15px;margin:10px 0 12px;align-items:end;gap:12px;flex-wrap:wrap;"><div style="font-weight:900;color:#9a3412;margin-right:6px;"><i class="fas fa-edit"></i> 本期勞健保扣款</div><div><label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣勞保</label><input id="sal_override_labor" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></div><div><label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣健保</label><input id="sal_override_health" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></div><button class="btn btn-warning" style="margin:0;" onclick="saveSalaryDeductOverride()"><i class="fas fa-save"></i> 儲存本期扣款</button><button class="btn" style="background:#64748b;margin:0;" onclick="clearSalaryDeductOverride()"><i class="fas fa-undo"></i> 用人員預設</button><div style="font-size:12px;color:#64748b;font-weight:700;">空白＝沿用人員資料；輸入 0＝本期不扣。</div></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button><button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時累計矩陣總表 (含歷史分年)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>專案金</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
             
             <div class="page" id="page-talent"><div class="page-title"><i class="fas fa-address-card"></i> 人才招募庫</div><div style="margin-bottom: 20px;"><a href="https://forms.gle/7upE2RREx46o8Kpm8" target="_blank" class="btn" style="background:#3b82f6; text-decoration:none; display:inline-block;"><i class="fas fa-external-link-alt"></i> 前往填寫 Google 人才表單</a></div><div class="grid"><div><label>姓名 *</label><input id="tp_name"></div><div><label>電話</label><input id="tp_tel"></div><div><label>來源</label><input id="tp_source"></div><div><label>地區</label><input id="tp_location"></div><div><label>班別</label><input id="tp_shift"></div><div><label>職務</label><input id="tp_role"></div><div><label>狀態</label><select id="tp_status"><option>待聯絡</option><option>已聯絡</option><option>已錄取</option><option>淘汰</option></select></div><div><label>評價</label><input id="tp_eval"></div><div style="grid-column:span 2;"><label>履歷連結</label><input id="tp_resume"></div><div style="grid-column:span 2;"><label>備註</label><input id="tp_exp"></div></div><button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" id="btnUpdateTalent" onclick="updateTalent()" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋：</label><input type="text" id="tp_filter_role" oninput="resetPage('talent'); renderTalentTable()"><label>狀態：</label><select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select><button class="btn btn-clear-filter" onclick="clearFilters('talent')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button><button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')">匯出全部</button></div><div class="table-responsive"><table id="talentTableBox"><thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>地區</th><th>班別</th><th>職務</th><th>狀態</th><th>評價</th><th>履歷</th><th>建檔日</th><th>操作</th></tr></thead><tbody id="talentTable"></tbody></table></div></div>
             
@@ -1086,6 +1086,7 @@ let dispatchData = safeJSONParse('dispatchData',[]);
 let salesStaffData = safeJSONParse('salesStaffData',[]);
 let scheduleData = safeJSONParse('scheduleData',[]);
 let staffClockData = safeJSONParse('staffClockData',[]);
+let salaryDeductData = safeJSONParse('salaryDeductData',[]);
 
 let loginLogoBase64 = localStorage.getItem('loginLogo') || '';
 let pdfLogoBase64 = localStorage.getItem('pdfLogo') || '';
@@ -1730,10 +1731,10 @@ function loadDataFromCloud(forceRender=false) {
             const hH = String(fm[0][0]).includes('時間')||String(fm[0][1]).includes('姓名'); const dR = hH ? fm.slice(1) : fm;
             dR.forEach(row => { if(Array.isArray(row)){ let n=String(row[1]||'').trim(), t=String(row[4]||row[2]||'').trim(), l=String(row[5]||'').trim(); let y=String(row[8]||'').trim(), e=String(row[9]||'').trim(), loc=String(row[10]||'').trim(); let s=String(row[11]||'').trim(), rl=String(row[22]||row[12]||'').trim(), dt=String(row[0]||'').trim(); let ex=[]; if(l) ex.push('Line:'+l); if(y) ex.push('年資:'+y); if(e) ex.push('經歷:'+e); if(n && n!=='' && !n.includes('全名') && !n.includes('姓名')) { if(!r.talentData.some(t => String(t.name).trim() === n)){ r.talentData.push({ name:n, tel:t, source:'Google表單', location:loc, shift:s, role:rl, status:'待聯絡', eval:'', resume:'', exp:ex.join(' | '), date:dt.split('T')[0].split(' ')[0]||new Date().toISOString().split('T')[0] }); nA++; } } } });
         }
-        if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData; if(r.staffClockData) staffClockData=r.staffClockData; if(r.staffClockData) staffClockData=r.staffClockData;
+        if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData; if(r.staffClockData) staffClockData=r.staffClockData; if(r.salaryDeductData) salaryDeductData=r.salaryDeductData; if(r.staffClockData) staffClockData=r.staffClockData;
         invalidateCustBillingMap();
         standardizeData();
-        try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); } catch(e) {}
+        try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
         if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`);
@@ -1746,10 +1747,10 @@ function loadDataFromCloud(forceRender=false) {
 
 function buildCloudPayload(){
     standardizeData();
-    return {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, staffClockData, sysConfig:getSysConfigPayload(), updatedAt:new Date().toISOString()};
+    return {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, staffClockData, salaryDeductData, sysConfig:getSysConfigPayload(), updatedAt:new Date().toISOString()};
 }
 function saveLocalData(){
-    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); } catch(e) {}
+    try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData)); } catch(e) {}
 }
 function pushCloudData(silent=false){
     const payload=buildCloudPayload();
@@ -1782,17 +1783,17 @@ function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class
 function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
 
 
-function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, staffClockData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+function backupAllData() { const d = {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, staffClockData, salaryDeductData, sysConfig:getSysConfigPayload()}; const b = new Blob([JSON.stringify(d)], {type:'application/json'}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `愜易居備份_${new Date().getTime()}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
 
 function restoreData(i) {
     if(!i.files || !i.files[0]) return; const rd = new FileReader();
     rd.onload = function(e) {
         try {
             const r = JSON.parse(e.target.result);
-            if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; if(r.talentData) talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData; if(r.staffClockData) staffClockData=r.staffClockData;
+            if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData) attendData=r.attendData; if(r.ftStaffData) ftStaffData=r.ftStaffData; if(r.ftAttendData) ftAttendData=r.ftAttendData; if(r.talentData) talentData=r.talentData; if(r.supplierData) supplierData=r.supplierData; if(r.matchData) matchData=r.matchData; if(r.reqData) reqData=r.reqData; if(r.dispatchData) dispatchData=r.dispatchData; if(r.salesStaffData) salesStaffData=r.salesStaffData; if(r.scheduleData) scheduleData=r.scheduleData; if(r.staffClockData) staffClockData=r.staffClockData; if(r.salaryDeductData) salaryDeductData=r.salaryDeductData;
             if(r.sysConfig) { if(r.sysConfig.loginLogo) localStorage.setItem('loginLogo',r.sysConfig.loginLogo); if(r.sysConfig.pdfLogo) localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo); if(r.sysConfig.loginBg) localStorage.setItem('loginBg',r.sysConfig.loginBg); if(r.sysConfig.priceTable) localStorage.setItem('priceTable',r.sysConfig.priceTable); if(r.sysConfig.adminAcc) localStorage.setItem('adminAcc',r.sysConfig.adminAcc); if(r.sysConfig.adminPwd) localStorage.setItem('adminPwd',r.sysConfig.adminPwd); if(r.sysConfig.hrAcc) localStorage.setItem('hrAcc',r.sysConfig.hrAcc); if(r.sysConfig.hrPwd) localStorage.setItem('hrPwd',r.sysConfig.hrPwd); if(r.sysConfig.salesAcc) localStorage.setItem('salesAcc',r.sysConfig.salesAcc); if(r.sysConfig.salesPwd) localStorage.setItem('salesPwd',r.sysConfig.salesPwd); if(r.sysConfig.adminPin) localStorage.setItem('adminPin',r.sysConfig.adminPin); if(r.sysConfig.portalConf) localStorage.setItem('portalConf',r.sysConfig.portalConf); }
             standardizeData();
-            localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData));
+            localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData));
             fillFilters(); 
             showAdminPage(localStorage.getItem('adminPage')||'dashboard');
             saveAll(); 
@@ -3547,26 +3548,69 @@ function generateStatementPDF() {
     openPreview('對帳單', c, ci ? ci.drive : '', cb);
 }
 
+
+function salaryDeductKey(staff, y, m){return `${String(staff||'').trim()}_${String(y||'')}_${String(m||'').padStart(2,'0')}`;}
+function getSalaryDeductOverride(staff, y, m){
+    const key = salaryDeductKey(staff,y,m);
+    return (salaryDeductData||[]).find(x => x.key === key) || null;
+}
+function getSalaryDeductAmounts(staff, y, m, staffInfo){
+    const o = getSalaryDeductOverride(staff,y,m);
+    const defaultLabor = Number(staffInfo?.labor) || 0;
+    const defaultHealth = Number(staffInfo?.health) || 0;
+    const labor = o && o.labor !== '' && o.labor !== undefined && o.labor !== null ? Number(o.labor) || 0 : defaultLabor;
+    const health = o && o.health !== '' && o.health !== undefined && o.health !== null ? Number(o.health) || 0 : defaultHealth;
+    return { labor, health, override:o, defaultLabor, defaultHealth };
+}
+function syncSalaryDeductInputs(staff, y, m){
+    const o = getSalaryDeductOverride(staff,y,m);
+    if(el('sal_override_labor')) el('sal_override_labor').value = o ? o.labor : '';
+    if(el('sal_override_health')) el('sal_override_health').value = o ? o.health : '';
+}
+function saveSalaryDeductOverride(){
+    const staff = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value;
+    if(!staff || staff === '全部人員' || y === 'all' || m === 'all') return showToast('請先選擇人員與年月', true);
+    const laborRaw = el('sal_override_labor') ? el('sal_override_labor').value.trim() : '';
+    const healthRaw = el('sal_override_health') ? el('sal_override_health').value.trim() : '';
+    const key = salaryDeductKey(staff,y,m);
+    salaryDeductData = (salaryDeductData||[]).filter(x => x.key !== key);
+    if(laborRaw !== '' || healthRaw !== ''){
+        const si = staffData.find(x=>x.name===staff)||{};
+        salaryDeductData.push({key, staff, year:String(y), month:String(m).padStart(2,'0'), labor:laborRaw, health:healthRaw, defaultLabor:Number(si.labor)||0, defaultHealth:Number(si.health)||0, updatedAt:new Date().toISOString()});
+    }
+    saveAll();
+    renderSalary();
+    showToast('✅ 本期勞健保扣款已儲存');
+}
+function clearSalaryDeductOverride(){
+    const staff = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value;
+    if(!staff || staff === '全部人員' || y === 'all' || m === 'all') return showToast('請先選擇人員與年月', true);
+    const key = salaryDeductKey(staff,y,m);
+    salaryDeductData = (salaryDeductData||[]).filter(x => x.key !== key);
+    if(el('sal_override_labor')) el('sal_override_labor').value='';
+    if(el('sal_override_health')) el('sal_override_health').value='';
+    saveAll();
+    renderSalary();
+    showToast('已改回使用人員資料預設扣款');
+}
+function getStaffTotalHoursUntil(staff, endDate){
+    return (attendData||[]).filter(x => x.staff === staff && (!endDate || String(x.date||'') <= String(endDate))).reduce((sum,x)=>sum+getItemSalaryHours(x),0);
+}
+
 function renderSalary() { 
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value; 
     calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
-    
- 
-   let l = attendData.filt
-er(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
+    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
     l.sort((a,b) => new Date(a.date) - new Date(b.date)); 
-    
     const {pagedList, total, totalPages} = getPagedData(l, 'salary'); 
     let h = ''; 
     let sumH = 0, sumAmt = 0;
-    
     l.forEach(item => { 
         const pH = getItemSalaryHours(item); 
         sumH += pH; 
         let fee = Number(item.project_fee) || 0;
         sumAmt += fee > 0 ? fee : parseFloat((pH * getHistoricalRate(item)).toFixed(1));
     });
-    
     pagedList.forEach(item => { 
         const pH = getItemSalaryHours(item); 
         const hr = getHistoricalRate(item); 
@@ -3575,23 +3619,28 @@ er(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod
         const hrDisplay = item.special_hourly ? `<span class="badge badge-yellow">${hr} (特)</span>` : (fee > 0 ? '-' : hr); 
         h += `<tr><td>${item.staff}</td><td>${item.date}</td><td>${item.company}</td><td>${item.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hrDisplay}</td><td style="color:#ea580c;">${fee>0?fee:"-"}</td><td>${amt}</td></tr>`; 
     });
-    
     el('salaryTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">無紀錄</td></tr>'; 
     renderPagination('salary', total, totalPages); 
-    
     if(s && s !== '全部人員' && y !== 'all' && m !== 'all') { 
         const si = staffData.find(x => x.name === s) || {};
-        let lb = Number(si.labor) || 0, hl = Number(si.health) || 0; 
+        const deduct = getSalaryDeductAmounts(s, y, m, si);
+        const lb = deduct.labor, hl = deduct.health;
+        syncSalaryDeductInputs(s, y, m);
         el('salLabor').textContent = lb; 
         el('salHealth').textContent = hl; 
         el('salNet').textContent = Math.round(sumAmt - lb - hl); 
         el('salDetailResult').style.display = 'block';
-        
+        if(el('salDeductOverrideBox')) el('salDeductOverrideBox').style.display = 'flex';
         let pm = parseInt(m) - 1, py = parseInt(y); 
         if(pm === 0) { pm = 12; py -= 1; } 
-        el('salResult').innerHTML = `[${s}] ${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25 結算：<br><span style="color:#059669;">總工時：${sumH.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#d97706;">應發金額：${sumAmt.toFixed(1)} 元</span>`; 
+        const periodEndDate = `${y}-${String(m).padStart(2,'0')}-25`;
+        const cumulativeHours = getStaffTotalHoursUntil(s, periodEndDate);
+        el('salResult').innerHTML = `[${s}] ${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25 結算：<br><span style="color:#059669;">本月結算工時：${sumH.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#2563eb;">截至本期累積工時：${cumulativeHours.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#d97706;">應發金額：${sumAmt.toFixed(1)} 元</span>`; 
     } else { 
         el('salDetailResult').style.display = 'none'; 
+        if(el('salDeductOverrideBox')) el('salDeductOverrideBox').style.display = 'none';
+        if(el('sal_override_labor')) el('sal_override_labor').value='';
+        if(el('sal_override_health')) el('sal_override_health').value='';
         el('salResult').innerHTML = ''; 
     } 
 }
@@ -3599,32 +3648,29 @@ er(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod
 function generatePayslipPDF() { 
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(!s || s === '全部人員' || y === 'all' || m === 'all') return showToast('請選人員與年月', true); 
-    
-   
- let pm = parseInt(m) - 1, py = parseInt(y); 
+    let pm = parseInt(m) - 1, py = parseInt(y); 
     if(pm === 0) { pm = 12; py -= 1; } 
     let ptxt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25`; 
-    
+    const periodEndDate = `${y}-${String(m).padStart(2,'0')}-25`;
+    const cumulativeHours = getStaffTotalHoursUntil(s, periodEndDate);
     let ats = attendData.filter(x => x.staff === s && isDispatchPayrollPeriod(x.date, y, m)).sort((a,b) => new Date(a.date) - new Date(b.date)); 
     if(ats.length === 0) return showToast('無紀錄', true);
-    
     const si = staffData.find(x => x.name === s) || {}; 
-    let tAmt = 0, ah = ''; 
-    
+    let tAmt = 0, tHours = 0, ah = ''; 
     ats.forEach(i => { 
         let pH = getItemSalaryHours(i); 
+        tHours += pH;
         let hy = getHistoricalRate(i); 
         let fee = Number(i.project_fee) || 0;
         let exactAmt = fee > 0 ? fee : parseFloat((pH * hy).toFixed(1)); 
         tAmt += exactAmt; 
         ah += `<tr><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${fee>0?'專案':hy}</td><td>${exactAmt}</td></tr>`; 
     });
-    
-    let lb = Number(si.labor) || 0, hl = Number(si.health) || 0; 
+    const deduct = getSalaryDeductAmounts(s, y, m, si);
+    let lb = deduct.labor, hl = deduct.health;
     let net = Math.round(tAmt - lb - hl); 
     const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">` : ''; 
-    
-    let c = `<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #f59e0b;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#d97706;">愜易居有限公司 - 薪資明細單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>人員姓名：</strong> ${s}<br><strong>結算期間：</strong> ${ptxt}</td><td style="text-align:right;"><strong>入帳帳戶：</strong><br>${si.bank||''} ${si.bank_branch||''}<br>${si.bank_acc||''}</td></tr></table><table class="summary-table" style="width:100%;margin-bottom:20px;border:1px solid #fde68a;"><tr><td>應發總額<br><strong style="font-size:24px;color:#1e293b;">${tAmt.toFixed(1)}</strong></td><td>代扣勞保<br><strong style="font-size:24px;color:#ef4444;">-${lb}</strong></td><td>代扣健保<br><strong style="font-size:24px;color:#ef4444;">-${hl}</strong></td><td style="background:#fffbeb;">實付金額<br><strong style="font-size:28px;color:#d97706;">${net}</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>公司</th><th>服務</th><th>工時</th><th>時薪/專案</th><th>金額</th></tr></thead><tbody>${ah}</tbody></table><div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+    let c = `<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #f59e0b;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#d97706;">愜易居有限公司 - 薪資明細單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>人員姓名：</strong> ${s}<br><strong>結算期間：</strong> ${ptxt}<br><strong>本月結算工時：</strong> ${tHours.toFixed(1)} h<br><strong>截至本期累積工時：</strong> ${cumulativeHours.toFixed(1)} h</td><td style="text-align:right;"><strong>入帳帳戶：</strong><br>${si.bank||''} ${si.bank_branch||''}<br>${si.bank_acc||''}</td></tr></table><table class="summary-table" style="width:100%;margin-bottom:20px;border:1px solid #fde68a;"><tr><td>本月結算工時<br><strong style="font-size:24px;color:#059669;">${tHours.toFixed(1)} h</strong></td><td>截至本期累積工時<br><strong style="font-size:24px;color:#2563eb;">${cumulativeHours.toFixed(1)} h</strong></td><td>應發總額<br><strong style="font-size:24px;color:#1e293b;">${tAmt.toFixed(1)}</strong></td><td>本期代扣勞保<br><strong style="font-size:24px;color:#ef4444;">-${lb}</strong></td><td>本期代扣健保<br><strong style="font-size:24px;color:#ef4444;">-${hl}</strong></td><td style="background:#fffbeb;">實付金額<br><strong style="font-size:28px;color:#d97706;">${net}</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>公司</th><th>服務</th><th>工時</th><th>時薪/專案</th><th>金額</th></tr></thead><tbody>${ah}</tbody></table><div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
     openPreview(`${s}的薪資單`, c, si.drive||'', s); 
 }
 
