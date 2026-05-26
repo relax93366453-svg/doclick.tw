@@ -433,7 +433,6 @@
                     <button onclick="switchWorkspaceDirect('business')" class="switch-role-btn workspace-direct-btn" data-ws="business"><i class="fas fa-chart-pie"></i> 營業管理區</button>
                     <button onclick="switchWorkspaceDirect('hr')" class="switch-role-btn workspace-direct-btn" data-ws="hr"><i class="fas fa-users-cog"></i> 人事員工區</button>
                     <button onclick="switchWorkspaceDirect('sales')" class="switch-role-btn workspace-direct-btn" data-ws="sales"><i class="fas fa-briefcase"></i> 業務開發區</button>
-                    <button onclick="openStaffClockSystem()" class="switch-role-btn" style="color:#fff;background:#2d9d5c;border-color:#2d9d5c;"><i class="fas fa-fingerprint"></i> 員工打卡系統</button>
                     <button onclick="showAdminPage('clock_overview')" class="switch-role-btn" style="color:#fff;background:#0ea5e9;border-color:#0ea5e9;"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</button>
                     <span id="sync-status"><i class="fas fa-cloud"></i> 系統就緒</span>
                     <span id="current-time" class="sys-time">載入中...</span>
@@ -2263,6 +2262,8 @@ function findClockRecord(row){
     return (staffClockData||[]).find(c=>String(c.date||'')===String(row.date||'') && String(c.staff||'')===String(row.staff||'') && String(c.company||'')===String(row.company||'') && (!row.start || String(c.scheduleStart||c.start||'')===String(row.start||''))) || null;
 }
 function getClockStatus(row, rec){
+    if(rec && rec.status==='已轉派遣紀錄') return '已轉派遣紀錄';
+    if(rec && rec.status==='退回補充') return '退回補充';
     if(rec && (rec.reportType || rec.status==='異常回報')) return '異常回報';
     if(!rec || !rec.clockIn) return '未打卡';
     if(rec.clockIn && !rec.clockOut) return '上班中';
@@ -2273,6 +2274,8 @@ function clockBadge(status){
     if(status==='未打卡') return '<span class="badge badge-yellow">未打卡</span>';
     if(status==='上班中') return '<span class="badge badge-blue">上班中</span>';
     if(status==='已確認') return '<span class="badge badge-green">已確認</span>';
+    if(status==='已轉派遣紀錄') return '<span class="badge badge-green">已轉派遣</span>';
+    if(status==='退回補充') return '<span class="badge badge-yellow">退回補充</span>';
     if(status==='異常回報') return '<span class="badge badge-red">異常回報</span>';
     return '<span class="badge badge-blue">待審核</span>';
 }
@@ -2284,9 +2287,10 @@ function renderClockOverview(){
         const rec=findClockRecord(row), status=getClockStatus(row,rec);
         if(status==='未打卡') k.none++; else if(status==='上班中') k.inside++; else if(status==='異常回報') k.abnormal++; else if(status==='已確認'||status==='待審核') k.done++;
         const inT=rec?.clockIn||'', outT=rec?.clockOut||'';
-        const realH=(inT&&outT)?Math.max(0,clockHoursBetween(inT,outT)-(Number(row.restHours)||0)):'';
-        const note=[rec?.reportType, rec?.remark, row.remark].filter(Boolean).join(' / ');
-        html+=`<tr><td>${clockBadge(status)}</td><td>${row.date}</td><td>${row.company}</td><td><b>${row.staff}</b></td><td>${row.start||'-'}～${row.end||'-'}</td><td>${row.restHours?row.restHours+'h':'-'}</td><td>${inT||'-'}</td><td>${outT||'-'}</td><td>${realH!==''?realH.toFixed(1)+'h':'-'}</td><td>${note||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-excel" onclick="quickClockAdmin(${idx},'in')">補上班</button> <button class="btn-sm btn-warning" onclick="quickClockAdmin(${idx},'out')">補下班</button> <button class="btn-sm btn-success" onclick="confirmClockToAttend(${idx})">確認轉派遣</button></td></tr>`;
+        const calcH=(inT&&outT)?Math.max(0,clockHoursBetween(inT,outT)-(Number(row.restHours)||0)):'';
+        const realH=(rec && rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcH;
+        const note=[rec?.reportType, rec?.returnReason, rec?.remark, row.remark].filter(Boolean).join(' / ');
+        html+=`<tr><td>${clockBadge(status)}</td><td>${row.date}</td><td>${row.company}</td><td><b>${row.staff}</b></td><td>${row.start||'-'}～${row.end||'-'}</td><td>${row.restHours?row.restHours+'h':'-'}</td><td>${inT||'-'}</td><td>${outT||'-'}</td><td>${realH!==''?Number(realH).toFixed(1)+'h':'-'}</td><td>${note||'-'}</td><td style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn-sm btn-excel" onclick="quickClockAdmin(${idx},'in')">補上班</button><button class="btn-sm btn-warning" onclick="quickClockAdmin(${idx},'out')">補下班</button><button class="btn-sm" style="background:#8b5cf6;color:white;border:0;border-radius:6px;" onclick="editClockHours(${idx})">修改工時</button><button class="btn-sm" style="background:#f59e0b;color:white;border:0;border-radius:6px;" onclick="returnClockForInfo(${idx})">退回補充</button><button class="btn-sm btn-pdf" onclick="markClockAbnormal(${idx})">標記異常</button><button class="btn-sm btn-success" onclick="confirmClockToAttend(${idx})">確認轉派遣</button><button class="btn-sm" style="background:#64748b;color:white;border:0;border-radius:6px;" onclick="deleteClockRecord(${idx})">刪除</button></td></tr>`;
     });
     el('clockOverviewTable').innerHTML=html||'<tr><td colspan="11" style="text-align:center;padding:25px;color:#64748b;font-weight:800;">這天沒有排班資料</td></tr>';
     if(el('clock_kpi_total')) el('clock_kpi_total').textContent=k.total;
@@ -2310,15 +2314,56 @@ function confirmClockToAttend(rowIndex){
     const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
     const rec=findClockRecord(row);
     if(!rec || !rec.clockIn || !rec.clockOut) return showToast('需有上班與下班打卡，才能轉派遣紀錄', true);
+    if(rec.status==='已轉派遣紀錄' && !confirm('這筆已經轉過派遣紀錄，還要再轉一次嗎？')) return;
     const exist=(attendData||[]).some(a=>a.company===row.company && a.staff===row.staff && a.date===row.date && String(a.remark||'').includes('由員工打卡確認'));
     if(exist && !confirm('這筆似乎已經轉過派遣紀錄，還要再新增一次嗎？')) return;
-    const hours=Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0));
+    const calcHours=Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0));
+    const hours=(rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcHours;
     attendData.push({company:row.company,staff:row.staff,date:row.date,service:'排班派遣',am_s:rec.clockIn,am_e:rec.clockOut,pm_s:'',pm_e:'',salary_hours:Number(hours.toFixed(1)),deduct_points:Number(hours.toFixed(1)),project_fee:0,special_hourly:'',remark:'由員工打卡確認轉入'});
-    rec.status='已確認'; rec.confirmedAt=new Date().toISOString();
+    rec.status='已轉派遣紀錄'; rec.confirmedAt=new Date().toISOString(); rec.confirmedHours=Number(hours.toFixed(1));
     saveAll(); renderClockOverview(); showToast('✅ 已確認並轉入派遣紀錄');
 }
+function editClockHours(rowIndex){
+    const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
+    let rec=findClockRecord(row);
+    if(!rec){ rec={id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2), company:row.company, staff:row.staff, date:row.date, scheduleStart:row.start, scheduleEnd:row.end, restHours:row.restHours, status:'待審核'}; staffClockData.push(rec); }
+    const calc=(rec.clockIn&&rec.clockOut)?Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)):(Number(row.hours)||0);
+    const val=prompt('請輸入主管確認後的實際工時', rec.overrideHours??calc.toFixed(1));
+    if(val===null) return;
+    const n=Number(val);
+    if(isNaN(n) || n<0) return showToast('工時格式錯誤', true);
+    rec.overrideHours=n; rec.status='待審核'; rec.updatedAt=new Date().toISOString();
+    saveAll(); renderClockOverview(); showToast('✅ 已修改實際工時');
+}
+function returnClockForInfo(rowIndex){
+    const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
+    let rec=findClockRecord(row);
+    if(!rec){ rec={id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2), company:row.company, staff:row.staff, date:row.date, scheduleStart:row.start, scheduleEnd:row.end, restHours:row.restHours}; staffClockData.push(rec); }
+    const reason=prompt('請輸入退回原因，例如：請補上班打卡、請補下班打卡、請說明異常');
+    if(!reason) return;
+    rec.status='退回補充'; rec.returnReason=reason; rec.updatedAt=new Date().toISOString();
+    saveAll(); renderClockOverview(); showToast('已退回補充');
+}
+function markClockAbnormal(rowIndex){
+    const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
+    let rec=findClockRecord(row);
+    if(!rec){ rec={id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2), company:row.company, staff:row.staff, date:row.date, scheduleStart:row.start, scheduleEnd:row.end, restHours:row.restHours}; staffClockData.push(rec); }
+    const reason=prompt('請輸入異常原因，例如：忘記打卡、遲到、早退、排班時間不對', rec.reportType||'');
+    if(!reason) return;
+    rec.status='異常回報'; rec.reportType=reason; rec.updatedAt=new Date().toISOString();
+    saveAll(); renderClockOverview(); showToast('已標記異常');
+}
+function deleteClockRecord(rowIndex){
+    const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
+    const rec=findClockRecord(row);
+    if(!rec) return showToast('這筆目前沒有打卡紀錄可刪除', true);
+    if(!confirm(`確定刪除 ${row.staff} ${row.date} 的打卡紀錄？
+只會刪除打卡紀錄，不會刪除原本排班。`)) return;
+    staffClockData=(staffClockData||[]).filter(c=>c.id!==rec.id);
+    saveAll(); renderClockOverview(); showToast('已刪除打卡紀錄');
+}
 function exportClockOverviewExcel(){
-    const rows=getScheduleRowsForClockOverview().map(row=>{const rec=findClockRecord(row); const status=getClockStatus(row,rec); const realH=(rec?.clockIn&&rec?.clockOut)?Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)):''; return {'狀態':status,'日期':row.date,'公司':row.company,'人員':row.staff,'排班時間':`${row.start||''}-${row.end||''}`,'休息':row.restHours||0,'上班打卡':rec?.clockIn||'','下班打卡':rec?.clockOut||'','實際工時':realH===''?'':Number(realH.toFixed(1)),'備註':[rec?.reportType,rec?.remark,row.remark].filter(Boolean).join(' / ')};});
+    const rows=getScheduleRowsForClockOverview().map(row=>{const rec=findClockRecord(row); const status=getClockStatus(row,rec); const calcH=(rec?.clockIn&&rec?.clockOut)?Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)):''; const realH=(rec && rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcH; return {'狀態':status,'日期':row.date,'公司':row.company,'人員':row.staff,'排班時間':`${row.start||''}-${row.end||''}`,'休息':row.restHours||0,'上班打卡':rec?.clockIn||'','下班打卡':rec?.clockOut||'','實際工時':realH===''?'':Number(realH.toFixed(1)),'備註':[rec?.reportType,rec?.returnReason,rec?.remark,row.remark].filter(Boolean).join(' / ')};});
     const ws=XLSX.utils.json_to_sheet(rows); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'員工打卡總覽'); XLSX.writeFile(wb,`員工打卡總覽_${getClockDate()}.xlsx`);
 }
 
