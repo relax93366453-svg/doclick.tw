@@ -1550,6 +1550,11 @@ let bonusRulesData = safeJSONParse('bonusRulesData', { tier1: 80, tier2: 100, ti
 
 // ── 共用：依規則與累積時數計算時薪 ──
 
+const NEW_SALARY_START_DATE = '2026-05-01';
+function isBeforeNewSalarySystem(dateStr){
+    if(!dateStr) return false;
+    return String(dateStr).slice(0,10) < NEW_SALARY_START_DATE;
+}
 function deriveSalaryCalcRule(staffOrRule){
     const rule = typeof staffOrRule === 'string' ? staffOrRule : (staffOrRule?.salary_rule || '');
     const saved = typeof staffOrRule === 'object' ? (staffOrRule?.salary_calc_rule || '') : '';
@@ -1560,32 +1565,61 @@ function deriveSalaryCalcRule(staffOrRule){
     if(rule.includes('接案') || rule.includes('自訂')) return '接案/自訂';
     return '新制級距';
 }
-function calcWageByRule(rule, hours, agreed, customHourly, calcRule) {
+
+// 2026/05/01以前：保護歷史薪資，用原計薪方案計算，不用新制回頭重算
+function calcLegacyWageByRule(rule, hours, agreed, customHourly) {
+    const custom = Number(customHourly) || 0;
+    if(String(rule||'').includes('自訂') || String(rule||'').includes('接案')) return custom || 0;
+    let w = 210;
+    if(String(rule||'').includes('114年標準') || String(rule||'').includes('標準階梯')) {
+        if(hours <= 175) w = 210;
+        else if(hours <= 350) w = 220;
+        else if(hours <= 525) w = 230;
+        else if(hours <= 700) w = 240;
+        else w = agreed ? 250 : 240;
+    } else if(String(rule||'').includes('早期約') || String(rule||'').includes('245起跳')) {
+        if(hours <= 700) w = 245;
+        else w = agreed ? 250 : 245;
+    } else if(String(rule||'').includes('固定205')) {
+        if(hours <= 350) w = 205;
+        else if(hours <= 700) w = 220;
+        else w = agreed ? 250 : 220;
+    } else if(String(rule||'').includes('固定220')) {
+        if(hours <= 350) w = 220;
+        else if(hours <= 700) w = 245;
+        else w = agreed ? 250 : 245;
+    } else if(String(rule||'').includes('特殊225') || String(rule||'').includes('特殊案例')) {
+        if(custom > 0) return custom;
+        if(hours <= 350) w = 225;
+        else if(hours <= 700) w = 245;
+        else w = agreed ? 250 : 245;
+    }
+    return w || 210;
+}
+
+// 2026/05/01起：新制規則計算
+function calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule) {
     const actualRule = calcRule || deriveSalaryCalcRule(rule);
     const custom = Number(customHourly) || 0;
     if(actualRule === '接案/自訂' || String(rule||'').includes('接案')) return custom || 0;
 
-    // 新制級距：其他人員全部依累積總時數所在區間計薪
     if(actualRule === '新制級距') {
         if(hours <= 175) return 210;
         if(hours <= 350) return 220;
         if(hours <= 525) return 230;
         if(hours <= 700) return 240;
-        return agreed ? 250 : 240; // 701h 以上仍需考核 / 備註同意後調 250
+        return agreed ? 250 : 240;
     }
 
-    // 早期固定220特例：滿351小時後調 245，作為舊制度特例保留
     if(actualRule === '早期固定220特例') {
         return hours >= 351 ? 245 : 220;
     }
 
-    // 高薪保留制：早期約 245-250 維持原規則，不被新制往下拉
     if(actualRule === '高薪保留制') {
         if(custom >= 245) return custom;
         return hours > 700 && agreed ? 250 : 245;
     }
 
-    // 特殊案例維持：優先使用人員資料自訂時薪，未填才沿用原特殊225邏輯
     if(actualRule === '特殊案例維持') {
         if(custom > 0) return custom;
         if(hours <= 350) return 225;
@@ -1594,6 +1628,17 @@ function calcWageByRule(rule, hours, agreed, customHourly, calcRule) {
     }
 
     return 210;
+}
+
+function calcWageByDate(rule, hours, agreed, customHourly, calcRule, dateStr){
+    if(isBeforeNewSalarySystem(dateStr)) {
+        return calcLegacyWageByRule(rule, hours, agreed, customHourly);
+    }
+    return calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule);
+}
+
+function calcWageByRule(rule, hours, agreed, customHourly, calcRule) {
+    return calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule);
 }
 
 // ── 共用：依規則取得下一個升級門檻資訊 ──
@@ -1647,11 +1692,16 @@ function getHistoricalRate(item) {
     if(item.special_hourly) return Number(item.special_hourly);
     const si = staffData.find(x=>x.name===item.staff); if(!si) return 210;
     let staffRecords = attendData.map((r, i) => ({ record: r, idx: i })).filter(r => r.record.staff === item.staff).sort((a, b) => new Date(a.record.date) - new Date(b.record.date) || a.idx - b.idx);
-    let h = 0; for (let sr of staffRecords) { h += getItemSalaryHours(sr.record); h = Math.round(h * 10) / 10; if (sr.record === item) break; }
+    let h = 0;
+    for (let sr of staffRecords) {
+        h += getItemSalaryHours(sr.record);
+        h = Math.round(h * 10) / 10;
+        if (sr.record === item) break;
+    }
     const rule = si.salary_rule || '114年標準';
     const calcRule = si.salary_calc_rule || deriveSalaryCalcRule(si);
     const agreed = (si.remark||'').includes('已同意調薪');
-    return calcWageByRule(rule, h, agreed, si.hourly, calcRule);
+    return calcWageByDate(rule, h, agreed, si.hourly, calcRule, item.date);
 }
 
 function checkHourlyUpgradeAlert() {
@@ -1666,8 +1716,8 @@ function checkHourlyUpgradeAlert() {
     const rule = si.salary_rule || '114年標準'; const calcRule = si.salary_calc_rule || deriveSalaryCalcRule(si); const agreed = (si.remark||'').includes('已同意調薪');
     
     // 用共用函數取得目前與升級後時薪，計算是否跨階
-    const oW = calcWageByRule(rule, cH, agreed, si.hourly, calcRule);
-    const nW = calcWageByRule(rule, cH + hInp, agreed, si.hourly, calcRule);
+    const oW = calcWageByDate(rule, cH, agreed, si.hourly, calcRule, dInp);
+    const nW = calcWageByDate(rule, cH + hInp, agreed, si.hourly, calcRule, dInp);
     const { nextTier: th } = getNextTierInfo(rule, cH, agreed, si.hourly, calcRule);
     
     if(th && th !== 'FIXED' && cH < th && cH + hInp > th && oW !== nW) {
