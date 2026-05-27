@@ -2072,6 +2072,177 @@ function doNativePrint() { let d = window.currentPdfData; let w = window.open(''
   </div>
 </div>
 
+
+<style id="staffEditReliableStyle">
+#staffReliableEditBackdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:1000000;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#staffReliableEditBackdrop.show{display:flex!important}
+.staff-reliable-modal{width:min(1060px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:22px;box-shadow:0 28px 90px rgba(15,23,42,.35);padding:24px;border:1px solid #dbe4f0}
+.staff-reliable-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:16px}
+.staff-reliable-head h3{margin:0;font-size:20px;font-weight:900;color:#0f172a}
+.staff-reliable-head p{margin:4px 0 0;color:#64748b;font-size:13px;font-weight:700}
+.staff-reliable-close{border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:12px;padding:9px 16px;font-weight:800;cursor:pointer}
+.staff-reliable-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;background:#fafafa;border:1px solid #e2e8f0;border-radius:16px;padding:18px}
+.staff-reliable-grid label{display:block;margin-bottom:5px;font-size:12px;font-weight:900;color:#475569}
+.staff-reliable-grid input,.staff-reliable-grid select{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font-size:13px;background:#fff}
+.staff-reliable-section{grid-column:1/-1;margin-top:8px;padding-top:12px;border-top:1px solid #e2e8f0;text-align:center;font-weight:900;color:#0f172a}
+.staff-reliable-checks{grid-column:1/-1;background:#fffbeb;border:1px dashed #f59e0b;border-radius:12px;padding:13px;display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.staff-reliable-checks label{display:flex;align-items:center;gap:6px;margin:0}
+.staff-reliable-checks input{width:auto}
+.staff-reliable-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:18px}
+@media(max-width:900px){.staff-reliable-grid{grid-template-columns:1fr}.staff-reliable-modal{padding:16px;border-radius:18px}}
+</style>
+
+
+<script id="staffEditReliablePatch">
+(function(){
+  function $id(id){ return document.getElementById(id); }
+  function ensureReliableModal(){
+    if($id('staffReliableEditBackdrop')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'staffReliableEditBackdrop';
+    wrap.onclick = function(e){ if(e.target === wrap) closeReliableStaffModal(); };
+    wrap.innerHTML = `
+      <div class="staff-reliable-modal" role="dialog" aria-modal="true">
+        <div class="staff-reliable-head">
+          <div>
+            <h3><i class="fas fa-user-pen"></i> 編輯派遣人員</h3>
+            <p id="sfm_subtitle">修改完成後按「儲存修改」。</p>
+          </div>
+          <button type="button" class="staff-reliable-close" onclick="closeReliableStaffModal()">關閉</button>
+        </div>
+        <div class="staff-reliable-grid">
+          <div><label>姓名 *</label><input id="sfm_name"></div>
+          <div><label>電話</label><input id="sfm_tel"></div>
+          <div><label>身份證</label><input id="sfm_id"></div>
+          <div><label>生日 (例:80/01/01)</label><input id="sfm_birthday" placeholder="例:80/01/01"></div>
+          <div><label>地址</label><input id="sfm_addr"></div>
+          <div><label>狀態</label><select id="sfm_status"><option>在職</option><option>離職</option></select></div>
+
+          <div><label>登入帳號</label><input id="sfm_account"></div>
+          <div><label>登入密碼</label><input id="sfm_pwd" type="text"></div>
+          <div><label>計薪方案</label><select id="sfm_salary_rule">
+            <option value="114年標準">114年標準(210-250)</option>
+            <option value="早期約">早期約(245-250)</option>
+            <option value="固定205">固定(無機車205)</option>
+            <option value="固定220">固定(有機車220)</option>
+            <option value="特殊225">特殊案例(225起跳)</option>
+            <option value="接案">接案/時薪自訂</option>
+            <option value="接案(固定月薪)">接案(固定專案金)</option>
+          </select></div>
+          <div><label>自訂時薪</label><input id="sfm_hourly" type="number"></div>
+
+          <div class="staff-reliable-section"><i class="fas fa-university"></i> 銀行帳戶資料</div>
+          <div><label>銀行名稱</label><input id="sfm_bank"></div>
+          <div><label>分行名稱</label><input id="sfm_bank_branch"></div>
+          <div><label>銀行帳號</label><input id="sfm_bank_acc"></div>
+
+          <div class="staff-reliable-section"><i class="fas fa-notes-medical"></i> 勞健保設定區</div>
+          <div><label>加保狀態</label><select id="sfm_ins_status">
+            <option value="勞健雙保">勞健雙保</option><option value="僅勞保">僅勞保</option>
+            <option value="僅健保">僅健保</option><option value="都不保">都不保</option>
+          </select></div>
+          <div><label>勞保起保日期</label><input id="sfm_ins_date" type="date"></div>
+          <div><label>依附眷屬人數</label><input id="sfm_ins_deps" type="number" min="0"></div>
+          <div><label>特殊補助身分</label><select id="sfm_ins_subsidy">
+            <option value="無">一般(無補助)</option>
+            <option value="身障(輕度)減免25%">身障(輕度)減免25%</option>
+            <option value="身障(中度)減免50%">身障(中度)減免50%</option>
+            <option value="身障(重度)全額免除">身障(重度)全額免除</option>
+            <option value="其他專案補助">其他專案補助</option>
+          </select></div>
+          <div><label>實際代扣勞保(元)</label><input id="sfm_labor" type="number"></div>
+          <div><label>實際代扣健保(元)</label><input id="sfm_health" type="number"></div>
+
+          <div class="staff-reliable-section"><i class="fas fa-folder"></i> 檔案與備註</div>
+          <div style="grid-column:1/-1"><label>雲端資料夾</label><input id="sfm_drive"></div>
+          <div style="grid-column:1/-1"><label>備註</label><input id="sfm_remark"></div>
+          <div class="staff-reliable-checks">
+            <label><input type="checkbox" id="sfm_doc_id"> 身分證</label>
+            <label><input type="checkbox" id="sfm_doc_bank"> 存摺</label>
+            <label><input type="checkbox" id="sfm_doc_contract"> 契約</label>
+            <label><input type="checkbox" id="sfm_doc_resume"> 履歷</label>
+          </div>
+        </div>
+        <div class="staff-reliable-actions">
+          <button class="btn" style="background:#64748b;margin:0" onclick="closeReliableStaffModal()"><i class="fas fa-times"></i> 取消</button>
+          <button class="btn btn-warning" style="margin:0" onclick="saveReliableStaffModal()"><i class="fas fa-save"></i> 儲存修改</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+  }
+
+  function getIndexFromButton(btn){
+    let raw = btn.getAttribute('data-staff-index');
+    if(raw !== null && raw !== '') return Number(raw);
+    const tr = btn.closest('tr');
+    if(!tr) return -1;
+    const name = (tr.children[0] && tr.children[0].innerText || '').trim();
+    const tel = (tr.children[1] && tr.children[1].innerText || '').trim();
+    return (window.staffData || []).findIndex(x => String(x.name||'').trim() === name && (!tel || String(x.tel||'').trim() === tel));
+  }
+
+  window.openReliableStaffModal = function(i){
+    ensureReliableModal();
+    const d = (window.staffData || [])[i];
+    if(!d){ alert('找不到這筆派遣人員資料，請重新整理後再試。'); return; }
+    window.__reliableStaffEditIndex = i;
+    const map = {
+      name:'name', tel:'tel', id:'id', birthday:'birthday', addr:'addr', status:'status',
+      account:'account', pwd:'pwd', salary_rule:'salary_rule', hourly:'hourly',
+      bank:'bank', bank_branch:'bank_branch', bank_acc:'bank_acc',
+      ins_status:'ins_status', ins_date:'ins_date', ins_deps:'ins_deps', ins_subsidy:'ins_subsidy',
+      labor:'labor', health:'health', drive:'drive', remark:'remark'
+    };
+    Object.entries(map).forEach(([id,key]) => { const n=$id('sfm_'+id); if(n) n.value = d[key] ?? ''; });
+    ['doc_id','doc_bank','doc_contract','doc_resume'].forEach(k => { const n=$id('sfm_'+k); if(n) n.checked = !!d[k]; });
+    const sub=$id('sfm_subtitle');
+    if(sub) sub.innerHTML = `目前編輯：第 ${i+1} 位｜<b>${d.name || '未命名人員'}</b>`;
+    $id('staffReliableEditBackdrop').classList.add('show');
+  };
+
+  window.closeReliableStaffModal = function(){
+    const b=$id('staffReliableEditBackdrop');
+    if(b) b.classList.remove('show');
+    window.__reliableStaffEditIndex = -1;
+  };
+
+  window.saveReliableStaffModal = function(){
+    const i = Number(window.__reliableStaffEditIndex);
+    if(i < 0 || !(window.staffData || [])[i]) return;
+    const o = {
+      name:$id('sfm_name').value.trim(), tel:$id('sfm_tel').value.trim(), id:$id('sfm_id').value.trim(),
+      birthday:$id('sfm_birthday').value, addr:$id('sfm_addr').value.trim(), status:$id('sfm_status').value,
+      account:$id('sfm_account').value.trim(), pwd:$id('sfm_pwd').value.trim(),
+      salary_rule:$id('sfm_salary_rule').value, hourly:$id('sfm_hourly').value,
+      bank:$id('sfm_bank').value.trim(), bank_branch:$id('sfm_bank_branch').value.trim(), bank_acc:$id('sfm_bank_acc').value.trim(),
+      ins_status:$id('sfm_ins_status').value, ins_date:$id('sfm_ins_date').value, ins_deps:$id('sfm_ins_deps').value, ins_subsidy:$id('sfm_ins_subsidy').value,
+      labor:$id('sfm_labor').value, health:$id('sfm_health').value, drive:$id('sfm_drive').value.trim(), remark:$id('sfm_remark').value.trim(),
+      doc_id:$id('sfm_doc_id').checked, doc_bank:$id('sfm_doc_bank').checked, doc_contract:$id('sfm_doc_contract').checked, doc_resume:$id('sfm_doc_resume').checked
+    };
+    if(!o.name){ alert('請輸入姓名'); return; }
+    window.staffData[i] = {...window.staffData[i], ...o};
+    if(typeof saveAll === 'function') saveAll();
+    if(typeof renderStaffTable === 'function') renderStaffTable();
+    closeReliableStaffModal();
+    if(typeof showStaffSection === 'function') showStaffSection('edit');
+    if(typeof showToast === 'function') showToast('✅ 已更新派遣人員資料');
+  };
+
+  window.openStaffEditModal = function(i){ window.openReliableStaffModal(i); };
+  window.editStaff = function(i){ window.openReliableStaffModal(i); };
+
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && (e.target.closest('.staff-edit-trigger') || e.target.closest('button[onclick*="editStaff"]') || e.target.closest('button[onclick*="openStaffEditModal"]'));
+    if(!btn) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const idx = getIndexFromButton(btn);
+    window.openReliableStaffModal(idx);
+    return false;
+  }, true);
+})();
+</script>
+
 </body></html>`); w.document.close(); }
 function doDownloadPdf(isCloud) { 
     showToast(isCloud ? '📄 雲端上傳中...' : '📄 正在產生高畫質 PDF...'); let d = window.currentPdfData; closePreview(); 
