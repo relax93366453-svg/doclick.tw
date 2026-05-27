@@ -1401,13 +1401,19 @@ function updateWorkspaceDirectButtons(){
 function switchWorkspaceDirect(ws) {
     currentWorkspace = ws || 'business';
     localStorage.setItem('workspace', currentWorkspace);
-    // 保留原登入權限，不因切換專區而把管理員權限改成 sales/hr，避免業務功能被 sys-auth 隱藏。
-    if(localStorage.getItem('loginRole') === 'admin' && !localStorage.getItem('sysRole')) {
+    // 主管 / 管理員切換任何專區時，一律保留 admin 權限，避免業務區出現「無權限訪問」。
+    if(localStorage.getItem('loginRole') === 'admin') {
         localStorage.setItem('sysRole','admin');
     }
     applyWorkspaceTheme(currentWorkspace);
     updateWorkspaceDirectButtons();
     showAdminPage('dashboard');
+    if(currentWorkspace === 'sales') {
+        fillFilters();
+        if(typeof renderSalesDashboard === 'function') renderSalesDashboard();
+        if(typeof renderSalesStaffTable === 'function') renderSalesStaffTable();
+        if(typeof renderSalesSettlement === 'function') renderSalesSettlement();
+    }
 }
 
 function openStaffClockSystem() {
@@ -1745,7 +1751,13 @@ function renderSalesDashboard() {
     if(!container || !board) return;
     
     let activeReps = salesStaffData.filter(s => s.status === '在職');
-    let viewRep = el('dash_sales_rep_select') ? el('dash_sales_rep_select').value : 'all';
+    const repSelect = el('dash_sales_rep_select');
+    if(repSelect && repSelect.options.length <= 1) {
+        let slRepH = '<option value="all">全體業務總覽</option>';
+        salesStaffData.forEach(s => slRepH += `<option value="${s.name}">${s.name}</option>`);
+        repSelect.innerHTML = slRepH;
+    }
+    let viewRep = repSelect ? repSelect.value : 'all';
     
     let leaderboardData = [];
     
@@ -2672,11 +2684,14 @@ function showAdminPage(p) {
             if(pin !== (localStorage.getItem('adminPin') || '8888')) { showToast('安全碼錯誤，拒絕存取', true); return; } 
         } 
         if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','clock_overview','ft_attend','ft_salary','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
-        if(sysRole === 'sales' && !['dashboard','customer','req','dispatch'].includes(p)) return showToast('無權限訪問', true); 
-        if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch','sales_settlement'].includes(p)) return showToast('無權限訪問', true); 
+        if(sysRole === 'sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true);
+        if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true); 
         
         let tp=el('page-'+p); if(!tp) { p='dashboard'; tp=el('page-dashboard'); } localStorage.setItem('adminPage',p); 
-        document.querySelectorAll('#sys-screen .page').forEach(x=>x.classList.remove('active')); tp.classList.add('active'); 
+        document.querySelectorAll('#sys-screen .page').forEach(x=>x.classList.remove('active')); tp.classList.add('active');
+        if(p==='sales_staff') { fillFilters(); renderSalesStaffTable(); }
+        if(p==='sales_settlement') { fillFilters(); renderSalesSettlement(); }
+        if(currentWorkspace === 'sales' && p === 'dashboard') { fillFilters(); if(typeof renderSalesDashboard === 'function') renderSalesDashboard(); } 
         document.querySelectorAll('#sys-screen .sidebar-nav a').forEach(a=>a.classList.remove('active')); let l = document.querySelector(`a[onclick*="showAdminPage('${p}')"]`); if(l) l.classList.add('active'); 
         
         if(p==='customer') { clearCustForm(); renderCustTable(); } 
