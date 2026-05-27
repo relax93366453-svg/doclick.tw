@@ -465,6 +465,18 @@
 .ft-sub-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;margin-bottom:10px;}
 .ft-list-box{background:#fff;padding:18px;border-radius:12px;border:1px solid #e2e8f0;}
 
+
+/* 公司排班管理分頁版：保留原始快速手打、月時段總覽、點格彈窗 */
+.schedule-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 16px;}
+.schedule-tab-btn{border:1px solid #cbd5e1;background:#fff;color:#334155;padding:10px 16px;border-radius:10px;font-weight:900;cursor:pointer;transition:.2s;box-shadow:0 1px 2px rgba(15,23,42,.05);}
+.schedule-tab-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(15,23,42,.08);}
+.schedule-tab-btn.active{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 10px 24px rgba(37,99,235,.18);}
+.schedule-tab-panel{display:none;}
+.schedule-tab-panel.active{display:block;}
+.schedule-tab-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:12px 14px;margin-bottom:12px;color:#1e3a8a;font-weight:800;line-height:1.7;}
+.schedule-tab-note b{color:#1d4ed8;}
+.schedule-tab-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:900;color:#0f172a;margin:0 0 12px;}
+
 </style>
 </head>
 <body>
@@ -1361,6 +1373,82 @@ function setFtEditBanner(msg){
     else { box.style.display = 'none'; box.innerHTML = ''; }
 }
 
+
+// 公司排班管理分頁：新增排班 / 修改排班 / 排班總覽
+function setupScheduleTabs(){
+    const page = document.getElementById('page-schedule');
+    if(!page || page.dataset.tabsReady === '1') return;
+
+    const shell = page.querySelector('.schedule-page-shell');
+    if(!shell) return;
+
+    const quickPanel = shell.querySelector('.schedule-quick-panel');
+    const boardWrap = shell.querySelector('.schedule-board-wrap');
+    const filledPanel = shell.querySelector('.schedule-filled-panel');
+    const warningBox = shell.querySelector('#scheduleWarningBox');
+    const monthTitle = shell.querySelector('#sch_month_title');
+    const boardTitleBlock = monthTitle ? monthTitle.closest('div[style*="display:flex"]') : null;
+    const kpiGrid = shell.querySelector('.schedule-kpi-grid');
+
+    if(!quickPanel || !boardWrap || !filledPanel || !kpiGrid) return;
+
+    const tabs = document.createElement('div');
+    tabs.className = 'schedule-tabs';
+    tabs.innerHTML = `
+        <button type="button" id="scheduleTabNew" class="schedule-tab-btn" onclick="showScheduleTab('new')"><i class="fas fa-plus"></i> 新增排班</button>
+        <button type="button" id="scheduleTabEdit" class="schedule-tab-btn" onclick="showScheduleTab('edit')"><i class="fas fa-pen-to-square"></i> 修改排班</button>
+        <button type="button" id="scheduleTabOverview" class="schedule-tab-btn active" onclick="showScheduleTab('overview')"><i class="fas fa-calendar-alt"></i> 排班總覽</button>
+    `;
+
+    const panelNew = document.createElement('div');
+    panelNew.id = 'schedule-panel-new';
+    panelNew.className = 'schedule-tab-panel';
+    panelNew.innerHTML = `<div class="schedule-tab-note"><b>新增排班：</b>保留原本「快速手打排班」功能，可直接輸入公司、人員、日期、上下班、休息時數與備註。</div>`;
+
+    const panelEdit = document.createElement('div');
+    panelEdit.id = 'schedule-panel-edit';
+    panelEdit.className = 'schedule-tab-panel';
+    panelEdit.innerHTML = `<div class="schedule-tab-note"><b>修改排班：</b>保留原本已填排班清單，可用上方公司、年份、月份篩選；右側可直接編輯或刪除單筆排班。</div>`;
+
+    const panelOverview = document.createElement('div');
+    panelOverview.id = 'schedule-panel-overview';
+    panelOverview.className = 'schedule-tab-panel active';
+    panelOverview.innerHTML = `<div class="schedule-tab-note"><b>排班總覽：</b>保留原本月時段排班表、點格子排多人、點卡片編輯彈窗、休息時數與實際工時。</div>`;
+
+    kpiGrid.insertAdjacentElement('afterend', tabs);
+    tabs.insertAdjacentElement('afterend', panelOverview);
+    panelOverview.insertAdjacentElement('afterend', panelEdit);
+    panelEdit.insertAdjacentElement('afterend', panelNew);
+
+    panelNew.appendChild(quickPanel);
+    panelEdit.appendChild(filledPanel);
+    if(boardTitleBlock) panelOverview.appendChild(boardTitleBlock);
+    panelOverview.appendChild(boardWrap);
+    if(warningBox) panelOverview.appendChild(warningBox);
+
+    page.dataset.tabsReady = '1';
+}
+function showScheduleTab(tab){
+    setupScheduleTabs();
+    const panels = {
+        new: document.getElementById('schedule-panel-new'),
+        edit: document.getElementById('schedule-panel-edit'),
+        overview: document.getElementById('schedule-panel-overview')
+    };
+    const buttons = {
+        new: document.getElementById('scheduleTabNew'),
+        edit: document.getElementById('scheduleTabEdit'),
+        overview: document.getElementById('scheduleTabOverview')
+    };
+    Object.keys(panels).forEach(k=>{
+        if(panels[k]) panels[k].classList.toggle('active', k===tab);
+        if(buttons[k]) buttons[k].classList.toggle('active', k===tab);
+    });
+    if(tab === 'edit' && typeof renderScheduleFilledList === 'function') renderScheduleFilledList();
+    if(tab === 'overview' && typeof renderScheduleTable === 'function') renderScheduleTable();
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
         standardizeData();
@@ -1382,6 +1470,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         loadDataFromCloud(); 
         setupGlobalNavigation();
+        setupScheduleTabs();
         if(typeof showStaffSection === 'function') showStaffSection('create');
         if(typeof showFtStaffSection === 'function') showFtStaffSection('create');
     } catch (err) { 
@@ -1648,14 +1737,20 @@ function isBeforeNewSalarySystem(dateStr){
     if(!dateStr) return false;
     return String(dateStr).slice(0,10) < NEW_SALARY_START_DATE;
 }
+function isProtectedOriginalSalaryRule(rule){
+    const r = String(rule || '');
+    // 這三類是老闆確認要保留舊制，不受 2026/05/01 新制覆蓋
+    return r.includes('早期約') || r.includes('245起跳') || r.includes('固定220') || r.includes('特殊');
+}
 function deriveSalaryCalcRule(staffOrRule){
     const rule = typeof staffOrRule === 'string' ? staffOrRule : (staffOrRule?.salary_rule || '');
-    const saved = typeof staffOrRule === 'object' ? (staffOrRule?.salary_calc_rule || '') : '';
-    if(saved) return saved;
+    // 原計薪方案屬於保留舊制者，永遠優先依原方案判斷，不能被隱藏的目前規則覆蓋
     if(rule.includes('固定220')) return '早期固定220特例';
     if(rule.includes('早期約') || rule.includes('245起跳')) return '高薪保留制';
     if(rule.includes('特殊')) return '特殊案例維持';
     if(rule.includes('接案') || rule.includes('自訂')) return '接案/自訂';
+    const saved = typeof staffOrRule === 'object' ? (staffOrRule?.salary_calc_rule || '') : '';
+    if(saved) return saved;
     return '新制級距';
 }
 
@@ -1724,14 +1819,21 @@ function calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule) {
 }
 
 function calcWageByDate(rule, hours, agreed, customHourly, calcRule, dateStr){
+    // 早期約 245-250、早期固定220起跳、特殊案例：不套新制，永遠照原本約定計算
+    if(isProtectedOriginalSalaryRule(rule)) {
+        return calcLegacyWageByRule(rule, hours, agreed, customHourly);
+    }
+    // 其他人員：2026/05/01以前用原計薪方案；2026/05/01起才用新制級距
     if(isBeforeNewSalarySystem(dateStr)) {
         return calcLegacyWageByRule(rule, hours, agreed, customHourly);
     }
-    return calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule);
+    return calcNewSystemWageByRule(rule, hours, agreed, customHourly, '新制級距');
 }
 
 function calcWageByRule(rule, hours, agreed, customHourly, calcRule) {
-    return calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule);
+    // 即時顯示目前系統時薪時，也要尊重保留舊制的原計薪方案
+    if(isProtectedOriginalSalaryRule(rule)) return calcLegacyWageByRule(rule, hours, agreed, customHourly);
+    return calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule || '新制級距');
 }
 
 // ── 共用：依規則取得下一個升級門檻資訊 ──
@@ -2898,7 +3000,7 @@ function showAdminPage(p) {
         if(p==='talent') { clearTalentForm(); renderTalentTable(); } 
         if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); } 
         if(p==='match') { clearMatchForm(); renderMatchTable(); } 
-        if(p==='schedule') { clearScheduleForm(); renderScheduleTable(); }
+        if(p==='schedule') { clearScheduleForm(); setupScheduleTabs(); renderScheduleTable(); }
         if(p==='clock_overview') { initClockOverviewFilters(); renderClockOverview(); } 
         if(p==='req') { clearReqForm(); renderReqTable(); } 
         if(p==='dispatch') { clearDispatchForm(); renderDispatchTable(); }
