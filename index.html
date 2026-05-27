@@ -452,6 +452,19 @@
 .staff-doc-box{grid-column:1/-1;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;display:flex;gap:18px;flex-wrap:wrap;align-items:center;}
 @media (max-width:900px){.staff-edit-grid{grid-template-columns:1fr;}.staff-edit-modal{width:98vw;padding:16px;border-radius:18px;}.staff-edit-modal-head{flex-direction:column;}.staff-edit-modal-close{align-self:flex-end;}}
 
+
+/* 正職人員資料庫分頁優化 */
+.ft-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 18px;}
+.ft-tab-btn{border:1px solid #cbd5e1;background:#fff;color:#334155;padding:10px 16px;border-radius:10px;font-weight:800;cursor:pointer;transition:.2s;box-shadow:0 1px 2px rgba(15,23,42,.05);}
+.ft-tab-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(15,23,42,.08);}
+.ft-tab-btn.active{background:#059669;border-color:#059669;color:#fff;box-shadow:0 10px 22px rgba(5,150,105,.18);}
+.ft-panel{display:none;}
+.ft-panel.active{display:block;}
+.ft-split-note{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:12px 14px;color:#065f46;font-weight:700;margin-bottom:12px;line-height:1.7;}
+.ft-edit-banner{display:none;background:#fff7ed;border:1px solid #fdba74;border-left:5px solid #f97316;border-radius:12px;padding:12px 14px;margin-bottom:14px;color:#9a3412;font-weight:800;}
+.ft-sub-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;margin-bottom:10px;}
+.ft-list-box{background:#fff;padding:18px;border-radius:12px;border:1px solid #e2e8f0;}
+
 </style>
 </head>
 <body>
@@ -729,7 +742,68 @@
     <div id="staff-panel-edit" class="staff-panel"><div class="staff-list-box"><div class="filter-bar" style="margin-top:0;"><label>搜尋姓名：</label><input list="list_staff" id="staff_filter_name" placeholder="手打姓名搜尋" oninput="resetPage('staff'); renderStaffTable()"><label>狀態：</label><select id="staff_filter_status" onchange="resetPage('staff'); renderStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select><button class="btn btn-clear-filter" onclick="clearFilters('staff')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn" style="background:#0f766e;" onclick="showStaffSection('create')"><i class="fas fa-user-plus"></i> 新增派遣人員</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('staffTableBox','派遣人員')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div style="margin:6px 0 14px;color:#475569;font-weight:700;line-height:1.8;">點右側黃色 <b>編輯</b> 會跳出彈窗；點紅色 <b>刪除</b> 可刪除此人員資料。</div><div class="table-responsive"><table id="staffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>身份證</th><th>生日</th><th>銀行帳戶</th><th>計薪方案</th><th style="color:#2563eb;">累計工時</th><th>帳/密</th><th>代扣保費</th><th>雲端</th><th>備註</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="staffTable"></tbody></table></div></div></div>
 </div>
             
-            <div class="page" id="page-ft_staff"><div class="page-title"><i class="fas fa-user-tie"></i> 正職員工資料庫</div><div class="grid" style="background:#ecfdf5;padding:25px;border-radius:12px;border:1px solid #a7f3d0;"><div><label>正職姓名 *</label><input list="list_ft_staff" id="ft_name" required></div><div><label>電話</label><input id="ft_tel"></div><div><label>身份證字號</label><input id="ft_id"></div><div><label>生日 (例:80/01/01)</label><input type="text" id="ft_birthday" placeholder="例: 80/01/01"></div><div><label>地址</label><input id="ft_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號</label><input id="ft_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼 (預設1234)</label><input id="ft_pwd" type="password" value="1234"></div><div><label>狀態</label><select id="ft_status"><option>在職</option><option>離職</option></select></div><div><label>到職日 (特休計算)</label><input type="date" id="ft_hire_date"></div><div><label>離職日</label><input type="date" id="ft_leave_date"></div><div><label>月薪</label><input type="number" id="ft_salary" value="30000"></div><div><label>備註</label><input id="ft_remark"></div><div class="section-divider"><i class="fas fa-university"></i> 銀行帳戶資料</div><div><label>銀行名稱</label><input id="ft_bank" placeholder="例: 國泰世華"></div><div><label>分行名稱</label><input id="ft_bank_branch" placeholder="例: 林口分行"></div><div style="grid-column: span 2;"><label>銀行帳號</label><input id="ft_bank_acc" placeholder="請輸入完整帳號"></div><div><label>代扣勞保</label><input id="ft_labor" type="number" value="0"></div><div><label>代扣健保</label><input id="ft_health" type="number" value="0"></div><div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="ft_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('ft_name', 'ft_drive', '[正職]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 資料繳交</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="ft_doc_id"> 身分證</label><label><input type="checkbox" id="ft_doc_bank"> 存摺</label><label><input type="checkbox" id="ft_doc_contract"> 契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label></div></div></div><button class="btn btn-success" id="btnAddFtStaff" onclick="addFtStaff()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" onclick="updateFtStaff()" id="btnUpdateFtStaff" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#64748b;" onclick="clearFtStaffForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋姓名：</label><input list="list_ft_staff" id="ft_staff_filter_name" placeholder="手打搜尋正職" oninput="resetPage('ft_staff'); renderFtStaffTable()"><label>狀態：</label><select id="ft_staff_filter_status" onchange="resetPage('ft_staff'); renderFtStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select><button class="btn btn-clear-filter" onclick="clearFilters('ft_staff')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('ftStaffTableBox','正職員工')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>到職日</th><th>生日</th><th>銀行帳戶</th><th>帳/密</th><th>月薪</th><th>勞/健保</th><th>雲端</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div></div>
+            <div class="page" id="page-ft_staff">
+    <div class="page-title"><i class="fas fa-user-tie"></i> 正職員工資料庫</div>
+    <div class="ft-split-note">
+        已改成分頁模式：<b>新增正職人員</b> 專門新增資料、<b>修改正職人員</b> 專門搜尋 / 編輯 / 刪除，避免畫面過長不好操作。
+    </div>
+    <div class="ft-tabs">
+        <button type="button" id="ftTabCreate" class="ft-tab-btn active" onclick="showFtStaffSection('create')"><i class="fas fa-user-plus"></i> 新增正職人員</button>
+        <button type="button" id="ftTabEdit" class="ft-tab-btn" onclick="showFtStaffSection('edit')"><i class="fas fa-user-pen"></i> 修改正職人員</button>
+    </div>
+
+    <div id="ft-panel-create" class="ft-panel active">
+        <div id="ftEditBanner" class="ft-edit-banner"></div>
+        <div class="grid" style="background:#ecfdf5;padding:25px;border-radius:12px;border:1px solid #a7f3d0;">
+            <div><label>正職姓名 *</label><input list="list_ft_staff" id="ft_name" required></div>
+            <div><label>電話</label><input id="ft_tel"></div>
+            <div><label>身份證字號</label><input id="ft_id"></div>
+            <div><label>生日 (例:80/01/01)</label><input type="text" id="ft_birthday" placeholder="例: 80/01/01"></div>
+            <div><label>地址</label><input id="ft_addr"></div>
+            <div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號</label><input id="ft_account"></div>
+            <div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼 (預設1234)</label><input id="ft_pwd" type="password" value="1234"></div>
+            <div><label>狀態</label><select id="ft_status"><option>在職</option><option>離職</option></select></div>
+            <div><label>到職日 (特休計算)</label><input type="date" id="ft_hire_date"></div>
+            <div><label>離職日</label><input type="date" id="ft_leave_date"></div>
+            <div><label>月薪</label><input type="number" id="ft_salary" value="30000"></div>
+            <div><label>備註</label><input id="ft_remark"></div>
+
+            <div class="section-divider"><i class="fas fa-university"></i> 銀行帳戶資料</div>
+            <div><label>銀行名稱</label><input id="ft_bank" placeholder="例: 國泰世華"></div>
+            <div><label>分行名稱</label><input id="ft_bank_branch" placeholder="例: 林口分行"></div>
+            <div style="grid-column: span 2;"><label>銀行帳號</label><input id="ft_bank_acc" placeholder="請輸入完整帳號"></div>
+
+            <div><label>代扣勞保</label><input id="ft_labor" type="number" value="0"></div>
+            <div><label>代扣健保</label><input id="ft_health" type="number" value="0"></div>
+
+            <div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div>
+            <div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="ft_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('ft_name', 'ft_drive', '[正職]')"><i class="fas fa-magic"></i> 建立</button></div></div>
+            <div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 資料繳交</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="ft_doc_id"> 身分證</label><label><input type="checkbox" id="ft_doc_bank"> 存摺</label><label><input type="checkbox" id="ft_doc_contract"> 契約</label><label><input type="checkbox" id="ft_doc_resume"> 履歷</label></div></div>
+        </div>
+        <div class="ft-sub-actions">
+            <button class="btn btn-success" id="btnAddFtStaff" onclick="addFtStaff()"><i class="fas fa-save"></i> 儲存新增</button>
+            <button class="btn btn-warning" onclick="updateFtStaff()" id="btnUpdateFtStaff" style="display:none"><i class="fas fa-edit"></i> 修改資料</button>
+            <button class="btn" style="background:#64748b;" onclick="clearFtStaffForm()"><i class="fas fa-eraser"></i> 清空表單</button>
+            <button class="btn btn-excel" style="background:#059669;" onclick="showFtStaffSection('edit')"><i class="fas fa-table"></i> 去修改正職人員</button>
+        </div>
+    </div>
+
+    <div id="ft-panel-edit" class="ft-panel">
+        <div class="ft-list-box">
+            <div class="filter-bar" style="margin-top:0;">
+                <label>搜尋姓名：</label><input list="list_ft_staff" id="ft_staff_filter_name" placeholder="手打搜尋正職" oninput="resetPage('ft_staff'); renderFtStaffTable()">
+                <label>狀態：</label><select id="ft_staff_filter_status" onchange="resetPage('ft_staff'); renderFtStaffTable()"><option value="all">全部</option><option value="在職">在職</option><option value="離職">離職</option></select>
+                <button class="btn btn-clear-filter" onclick="clearFilters('ft_staff')"><i class="fas fa-broom"></i> 清除搜尋</button>
+                <button class="btn" style="background:#0f766e;" onclick="showFtStaffSection('create')"><i class="fas fa-user-plus"></i> 新增正職人員</button>
+                <button class="btn btn-excel" style="margin-left:auto;" onclick="exportExcel('ftStaffTableBox','正職員工')"><i class="fas fa-file-excel"></i> 匯出全部</button>
+            </div>
+            <div style="margin:6px 0 14px;color:#475569;font-weight:700;line-height:1.8;">
+                點右側 <b>編輯</b> 後，系統會自動帶入上方表單，並切回「新增正職人員」頁面讓你直接修改；點 <b>刪除</b> 可刪除此正職人員資料。
+            </div>
+            <div class="table-responsive"><table id="ftStaffTableBox"><thead><tr><th>姓名</th><th>電話</th><th>到職日</th><th>生日</th><th>銀行帳戶</th><th>帳/密</th><th>月薪</th><th>勞/健保</th><th>雲端</th><th>資料</th><th>狀態</th><th>操作</th></tr></thead><tbody id="ftStaffTable"></tbody></table></div>
+        </div>
+    </div>
+</div>
             
             <div class="page" id="page-attend"><div class="page-title"><i class="fas fa-clock"></i> 派遣記錄登記</div><div id="attend_summary" style="display:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:15px 20px; border-radius:10px; margin-bottom:20px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:15px; box-shadow:0 4px 6px rgba(0,0,0,0.02);"></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr 1.5fr;"><div><label>公司 *</label><input list="list_cust" id="attend_company" class="attend-entry" placeholder="搜尋客戶名稱" required></div><div><label>人員 *</label><input list="list_staff" id="attend_staff" class="attend-entry" placeholder="搜尋人員姓名" required oninput="checkHourlyUpgradeAlert()"></div><div><label>日期 *</label><input type="date" id="attend_date" class="attend-entry" required oninput="checkHourlyUpgradeAlert()"></div><div><label>服務類型</label><select id="attend_service" class="attend-entry"><option value="">請選擇</option></select></div><div><label>備註</label><input type="text" id="attend_remark" class="attend-entry"></div></div><div class="grid" style="grid-template-columns:repeat(8, 1fr); margin-bottom: 10px;"><div><label>上午上班</label><input type="text" id="am_s" class="attend-entry" placeholder="0830" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>上午下班</label><input type="text" id="am_e" class="attend-entry" placeholder="1200" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午上班</label><input type="text" id="pm_s" class="attend-entry" placeholder="1300" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>下午下班</label><input type="text" id="pm_e" class="attend-entry" placeholder="1700" onblur="formatTimeInput(this); calcAttendTemp()"></div><div><label>發薪工時</label><input type="number" id="attend_salary_hours" class="attend-entry" step="0.1" oninput="checkHourlyUpgradeAlert()"></div><div style="background:#f0fdf4; padding:5px; border-radius:6px; border:1px solid #bbf7d0;"><label style="color:#059669; font-weight:bold;">單次特殊時薪</label><input type="number" id="attend_special_hourly" class="attend-entry" placeholder="留空依預設"></div><div style="background:#fff7ed; padding:5px; border-radius:6px; border:1px solid #ffedd5;"><label style="color:#ea580c; font-weight:bold;">單次專案金</label><input type="number" id="attend_project_fee" class="attend-entry" placeholder="金額(不計時薪)"></div><div><label>扣除點數</label><input type="number" id="attend_deduct_points" class="attend-entry" step="0.1"></div></div><div id="attend_upgrade_alert" style="display:none; background:#fffbeb; border-left:4px solid #f59e0b; padding:15px; border-radius:8px; color:#b45309; font-size:14px; margin-bottom:20px; line-height:1.8;"></div><button class="btn btn-success" id="btnAddAttend" onclick="addAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" id="btnClearAttend" style="background:#64748b;" onclick="clearAttendForm(); document.getElementById('attend_company').focus();"><i class="fas fa-eraser"></i> 一鍵清除</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋公司：</label><input list="list_cust" id="filter_company" placeholder="手打搜尋公司" oninput="resetPage('attend'); renderAttend()"><label>年</label><select id="filter_year" onchange="resetPage('attend'); renderAttend()"></select><label>月</label><select id="filter_month" onchange="resetPage('attend'); renderAttend()"></select><label>搜尋人員：</label><input list="list_staff" id="filter_staff" placeholder="手打搜尋人員" oninput="resetPage('attend'); renderAttend()"><button class="btn btn-clear-filter" onclick="clearFilters('attend')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('attendTableBox','派遣記錄')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div id="attend_milestoneRedBox" style="display:none; background:#fef2f2; border-left:5px solid #ef4444; border-radius:8px; padding:15px; margin-bottom:15px; border-right:1px solid #fecaca; border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;"><h4 style="color:#b91c1c; margin-bottom:10px; font-size:15px;"><i class="fas fa-trophy"></i> 累積工時里程碑達成日</h4><div id="attend_milestoneContent" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div><div class="table-responsive"><table id="attendTableBox"><thead><tr><th>公司</th><th>人員</th><th>日期</th><th>服務</th><th>上午</th><th>下午</th><th>工時</th><th style="color:#2563eb;">累計工時</th><th style="color:#059669;">系統時薪</th><th>專案金</th><th>扣點</th><th>備註</th><th>操作</th></tr></thead><tbody id="attendTable"></tbody></table></div></div>
             
@@ -1269,6 +1343,24 @@ function closeStaffEditModal(){const modal=el('staffEditModal');if(modal)modal.s
 function saveStaffEditModal(){if(modalEditStaffIndex<0)return;const o={name:el('m_staff_name').value.trim(),tel:el('m_staff_tel').value.trim(),id:el('m_staff_id').value.trim(),birthday:el('m_staff_birthday').value,addr:el('m_staff_addr').value.trim(),status:el('m_staff_status').value,account:el('m_staff_account').value.trim(),pwd:el('m_staff_pwd').value.trim(),salary_rule:el('m_staff_salary_rule').value,salary_calc_rule: el('m_staff_salary_calc_rule') ? el('m_staff_salary_calc_rule').value : (staffData[modalEditStaffIndex]?.salary_calc_rule || deriveSalaryCalcRule(staffData[modalEditStaffIndex])),hourly:el('m_staff_hourly').value,bank:el('m_staff_bank').value.trim(),bank_branch:el('m_staff_bank_branch').value.trim(),bank_acc:el('m_staff_bank_acc').value.trim(),ins_status:el('m_staff_ins_status').value,ins_date:el('m_staff_ins_date').value,ins_deps:el('m_staff_ins_deps').value,ins_subsidy:el('m_staff_ins_subsidy').value,labor:el('m_staff_labor').value,health:el('m_staff_health').value,drive:el('m_staff_drive').value.trim(),remark:el('m_staff_remark').value.trim(),doc_id:el('m_staff_doc_id').checked,doc_bank:el('m_staff_doc_bank').checked,doc_contract:el('m_staff_doc_contract').checked,doc_resume:el('m_staff_doc_resume').checked};if(!o.name){alert('請輸入姓名');return;}staffData[modalEditStaffIndex]={...staffData[modalEditStaffIndex],...o};saveAll();renderStaffTable();closeStaffEditModal();showStaffSection('edit');showToast('✅ 已更新派遣人員資料');}
 window.openStaffEditModal=openStaffEditModal;window.closeStaffEditModal=closeStaffEditModal;window.saveStaffEditModal=saveStaffEditModal;
 document.addEventListener('click',function(e){const btn=e.target.closest('[data-staff-edit]');if(btn){e.preventDefault();e.stopPropagation();openStaffEditModal(btn.getAttribute('data-staff-edit'));}});
+
+function showFtStaffSection(mode){
+    const createPanel = el('ft-panel-create');
+    const editPanel = el('ft-panel-edit');
+    const createBtn = el('ftTabCreate');
+    const editBtn = el('ftTabEdit');
+    if(createPanel) createPanel.classList.toggle('active', mode === 'create');
+    if(editPanel) editPanel.classList.toggle('active', mode === 'edit');
+    if(createBtn) createBtn.classList.toggle('active', mode === 'create');
+    if(editBtn) editBtn.classList.toggle('active', mode === 'edit');
+}
+function setFtEditBanner(msg){
+    const box = el('ftEditBanner');
+    if(!box) return;
+    if(msg){ box.style.display = 'block'; box.innerHTML = msg; }
+    else { box.style.display = 'none'; box.innerHTML = ''; }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
         standardizeData();
@@ -1291,6 +1383,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDataFromCloud(); 
         setupGlobalNavigation();
         if(typeof showStaffSection === 'function') showStaffSection('create');
+        if(typeof showFtStaffSection === 'function') showFtStaffSection('create');
     } catch (err) { 
         el('login-screen').style.display='flex'; 
     } finally { 
@@ -2862,10 +2955,10 @@ function renderFtStaffTable(){
     el('ftStaffTable').innerHTML = h || '<tr><td colspan="12" style="text-align:center;">無資料</td></tr>'; renderPagination('ft_staff', total, totalPages); fillFilters(); 
 }
 function addFtStaff(){ const o = { name:el('ft_name').value.trim(), tel:el('ft_tel').value, id:el('ft_id').value, birthday:el('ft_birthday').value, addr:el('ft_addr').value, account:el('ft_account').value, pwd:el('ft_pwd').value, status:el('ft_status').value, hire_date:el('ft_hire_date').value, leave_date:el('ft_leave_date').value, salary:el('ft_salary').value, labor:el('ft_labor').value, health:el('ft_health').value, bank:el('ft_bank').value.trim(), bank_branch:el('ft_bank_branch').value.trim(), bank_acc:el('ft_bank_acc').value.trim(), drive:el('ft_drive').value, remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked }; if(!o.name) return; ftStaffData.push(o); saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 成功'); }
-function editFtStaff(i){ const d = ftStaffData[i]; el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_bank').value=d.bank||''; el('ft_bank_branch').value=d.bank_branch||''; el('ft_bank_acc').value=d.bank_acc||''; el('ft_drive').value=d.drive; el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('ft_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex = i; el('btnUpdateFtStaff').style.display = 'inline-block'; const b = el('btnAddFtStaff'); if(b) b.style.display = 'none'; }
-function updateFtStaff(){ if(editFtStaffIndex < 0) return; const o = { name:el('ft_name').value.trim(), tel:el('ft_tel').value, id:el('ft_id').value, birthday:el('ft_birthday').value, addr:el('ft_addr').value, account:el('ft_account').value, pwd:el('ft_pwd').value, status:el('ft_status').value, hire_date:el('ft_hire_date').value, leave_date:el('ft_leave_date').value, salary:el('ft_salary').value, labor:el('ft_labor').value, health:el('ft_health').value, bank:el('ft_bank').value.trim(), bank_branch:el('ft_bank_branch').value.trim(), bank_acc:el('ft_bank_acc').value.trim(), drive:el('ft_drive').value, remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked }; ftStaffData[editFtStaffIndex] = {...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showToast('✅ 修改'); }
+function editFtStaff(i){ const d = ftStaffData[i]; showFtStaffSection('create'); el('ft_name').value=d.name; el('ft_tel').value=d.tel; el('ft_id').value=d.id; el('ft_birthday').value=d.birthday; el('ft_addr').value=d.addr; el('ft_account').value=d.account; el('ft_pwd').value=d.pwd; el('ft_status').value=d.status; el('ft_hire_date').value=d.hire_date; el('ft_leave_date').value=d.leave_date; el('ft_salary').value=d.salary; el('ft_labor').value=d.labor; el('ft_health').value=d.health; el('ft_bank').value=d.bank||''; el('ft_bank_branch').value=d.bank_branch||''; el('ft_bank_acc').value=d.bank_acc||''; el('ft_drive').value=d.drive; el('ft_remark').value=d.remark; el('ft_doc_id').checked=d.doc_id; el('ft_doc_bank').checked=d.doc_bank; el('ft_doc_contract').checked=d.doc_contract; el('ft_doc_resume').checked=d.doc_resume; editFtStaffIndex = i; el('btnUpdateFtStaff').style.display = 'inline-block'; const b = el('btnAddFtStaff'); if(b) b.style.display = 'none'; setFtEditBanner('<i class="fas fa-pen-to-square"></i> 目前正在修改正職人員：<b>' + (d.name||'未命名人員') + '</b>。修改完成後按下「修改資料」。'); window.scrollTo({top:0,behavior:'smooth'}); }
+function updateFtStaff(){ if(editFtStaffIndex < 0) return; const o = { name:el('ft_name').value.trim(), tel:el('ft_tel').value, id:el('ft_id').value, birthday:el('ft_birthday').value, addr:el('ft_addr').value, account:el('ft_account').value, pwd:el('ft_pwd').value, status:el('ft_status').value, hire_date:el('ft_hire_date').value, leave_date:el('ft_leave_date').value, salary:el('ft_salary').value, labor:el('ft_labor').value, health:el('ft_health').value, bank:el('ft_bank').value.trim(), bank_branch:el('ft_bank_branch').value.trim(), bank_acc:el('ft_bank_acc').value.trim(), drive:el('ft_drive').value, remark:el('ft_remark').value, doc_id:el('ft_doc_id').checked, doc_bank:el('ft_doc_bank').checked, doc_contract:el('ft_doc_contract').checked, doc_resume:el('ft_doc_resume').checked }; ftStaffData[editFtStaffIndex] = {...ftStaffData[editFtStaffIndex], ...o}; saveAll(); renderFtStaffTable(); clearFtStaffForm(); showFtStaffSection('edit'); setFtEditBanner(''); showToast('✅ 修改'); }
 function delFtStaff(i){ if(!confirm('刪除？')) return; ftStaffData.splice(i,1); saveAll(); renderFtStaffTable(); showToast('刪除'); }
-function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid input').forEach(i => { if(i.type === 'checkbox') i.checked = false; else i.value = ''; }); el('ft_salary').value='30000'; el('ft_labor').value='0'; el('ft_health').value='0'; el('ft_pwd').value='1234'; el('ft_bank').value=''; el('ft_bank_branch').value=''; el('ft_bank_acc').value=''; el('ft_status').value='在職'; editFtStaffIndex = -1; el('btnUpdateFtStaff').style.display = 'none'; const b = el('btnAddFtStaff'); if(b) b.style.display = 'inline-block'; }
+function clearFtStaffForm(){ document.querySelectorAll('#page-ft_staff .grid input').forEach(i => { if(i.type === 'checkbox') i.checked = false; else i.value = ''; }); el('ft_salary').value='30000'; el('ft_labor').value='0'; el('ft_health').value='0'; el('ft_pwd').value='1234'; el('ft_bank').value=''; el('ft_bank_branch').value=''; el('ft_bank_acc').value=''; el('ft_status').value='在職'; editFtStaffIndex = -1; el('btnUpdateFtStaff').style.display = 'none'; const b = el('btnAddFtStaff'); if(b) b.style.display = 'inline-block'; setFtEditBanner(''); }
 
 function toggleFtaFields() {
     const t = el('fta_record_type').value;
