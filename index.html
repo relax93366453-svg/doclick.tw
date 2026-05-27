@@ -1210,12 +1210,59 @@ function setupGlobalNavigation() {
 // ================= 初始加載 =================
 
 function showStaffSection(mode){const createPanel=el('staff-panel-create'),editPanel=el('staff-panel-edit'),createBtn=el('staffTabCreate'),editBtn=el('staffTabEdit');if(createPanel)createPanel.classList.toggle('active',mode==='create');if(editPanel)editPanel.classList.toggle('active',mode==='edit');if(createBtn)createBtn.classList.toggle('active',mode==='create');if(editBtn)editBtn.classList.toggle('active',mode==='edit');}
+
+function ensureStaffEditModal(){
+    if(document.getElementById('staffEditModal')) return;
+    const div = document.createElement('div');
+    div.id = 'staffEditModal';
+    div.className = 'staff-edit-modal-backdrop';
+    div.onclick = function(event){ if(event.target === div) closeStaffEditModal(); };
+    div.innerHTML = `<div class="staff-edit-modal">
+        <div class="staff-edit-modal-head">
+            <div>
+                <h3><i class="fas fa-user-pen"></i> 編輯派遣人員</h3>
+                <p id="staffEditModalSub">請修改資料後按「儲存修改」。</p>
+            </div>
+            <button type="button" class="staff-edit-modal-close" onclick="closeStaffEditModal()">關閉</button>
+        </div>
+        <div class="staff-edit-grid">
+            <div><label>姓名 *</label><input id="m_staff_name"></div>
+            <div><label>電話</label><input id="m_staff_tel"></div>
+            <div><label>身份證</label><input id="m_staff_id"></div>
+            <div><label>生日</label><input id="m_staff_birthday" placeholder="例: 80/01/01"></div>
+            <div><label>地址</label><input id="m_staff_addr"></div>
+            <div><label>狀態</label><select id="m_staff_status"><option>在職</option><option>離職</option></select></div>
+            <div><label>登入帳號</label><input id="m_staff_account"></div>
+            <div><label>登入密碼</label><input id="m_staff_pwd" type="password"></div>
+            <div><label>計薪方案</label><select id="m_staff_salary_rule"><option value="114年標準">114年標準(210-250)</option><option value="早期約">早期約(245-250)</option><option value="固定205">固定(無機車205)</option><option value="固定220">固定(有機車220)</option><option value="特殊225">特殊案例(225起跳)</option><option value="接案">接案/時薪自訂</option><option value="接案(固定月薪)">接案(固定專案金)</option></select></div>
+            <div><label>自訂時薪</label><input id="m_staff_hourly" type="number"></div>
+            <div class="staff-edit-divider"><i class="fas fa-university"></i> 銀行帳戶資料</div>
+            <div><label>銀行名稱</label><input id="m_staff_bank"></div>
+            <div><label>分行名稱</label><input id="m_staff_bank_branch"></div>
+            <div><label>銀行帳號</label><input id="m_staff_bank_acc"></div>
+            <div class="staff-edit-divider"><i class="fas fa-notes-medical"></i> 勞健保設定區</div>
+            <div><label>加保狀態</label><select id="m_staff_ins_status"><option value="勞健雙保">勞健雙保</option><option value="僅勞保">僅勞保</option><option value="僅健保">僅健保</option><option value="都不保">都不保</option></select></div>
+            <div><label>勞保起保日期</label><input type="date" id="m_staff_ins_date"></div>
+            <div><label>依附眷屬人數</label><input type="number" id="m_staff_ins_deps" min="0"></div>
+            <div><label>特殊補助身分</label><select id="m_staff_ins_subsidy"><option value="無">一般(無補助)</option><option value="身障(輕度)減免25%">身障(輕度)減免25%</option><option value="身障(中度)減免50%">身障(中度)減免50%</option><option value="身障(重度)全額免除">身障(重度)全額免除</option><option value="其他專案補助">其他專案補助</option></select></div>
+            <div><label>實際代扣勞保(元)</label><input id="m_staff_labor" type="number"></div>
+            <div><label>實際代扣健保(元)</label><input id="m_staff_health" type="number"></div>
+            <div class="staff-edit-divider"><i class="fas fa-folder"></i> 檔案與備註</div>
+            <div class="staff-edit-wide"><label>雲端資料夾</label><input id="m_staff_drive"></div>
+            <div class="staff-edit-wide"><label>備註</label><input id="m_staff_remark"></div>
+            <div class="staff-doc-box"><b style="color:#d97706;"><i class="fas fa-tasks"></i> 到職資料繳交狀態</b><label><input type="checkbox" id="m_staff_doc_id"> 身分證</label><label><input type="checkbox" id="m_staff_doc_bank"> 存摺</label><label><input type="checkbox" id="m_staff_doc_contract"> 契約</label><label><input type="checkbox" id="m_staff_doc_resume"> 履歷</label></div>
+        </div>
+        <div class="staff-edit-actions"><button class="btn" style="background:#64748b;" onclick="closeStaffEditModal()"><i class="fas fa-times"></i> 取消</button><button class="btn btn-warning" onclick="saveStaffEditModal()"><i class="fas fa-save"></i> 儲存修改</button></div>
+    </div>`;
+    document.body.appendChild(div);
+}
+
 let modalEditStaffIndex=-1;
 function setModalValue(id,value){const node=el(id);if(node)node.value=value??'';}
 function setModalChecked(id,value){const node=el(id);if(node)node.checked=!!value;}
-function openStaffEditModal(i){i=Number(i);const d=(staffData||[])[i];if(!d){alert('找不到這筆人員資料');return;}modalEditStaffIndex=i;setModalValue('m_staff_name',d.name);setModalValue('m_staff_tel',d.tel);setModalValue('m_staff_id',d.id);setModalValue('m_staff_birthday',d.birthday);setModalValue('m_staff_addr',d.addr);setModalValue('m_staff_status',d.status||'在職');setModalValue('m_staff_account',d.account);setModalValue('m_staff_pwd',d.pwd);setModalValue('m_staff_salary_rule',d.salary_rule||'114年標準');setModalValue('m_staff_salary_calc_rule',d.salary_calc_rule||deriveSalaryCalcRule(d));setModalValue('m_staff_hourly',d.hourly||0);setModalValue('m_staff_bank',d.bank);setModalValue('m_staff_bank_branch',d.bank_branch);setModalValue('m_staff_bank_acc',d.bank_acc);setModalValue('m_staff_ins_status',d.ins_status||'勞健雙保');setModalValue('m_staff_ins_date',d.ins_date);setModalValue('m_staff_ins_deps',d.ins_deps||0);setModalValue('m_staff_ins_subsidy',d.ins_subsidy||'無');setModalValue('m_staff_labor',d.labor||0);setModalValue('m_staff_health',d.health||0);setModalValue('m_staff_drive',d.drive);setModalValue('m_staff_remark',d.remark);setModalChecked('m_staff_doc_id',d.doc_id);setModalChecked('m_staff_doc_bank',d.doc_bank);setModalChecked('m_staff_doc_contract',d.doc_contract);setModalChecked('m_staff_doc_resume',d.doc_resume);const sub=el('staffEditModalSub');if(sub)sub.innerHTML=`目前編輯第 ${i+1} 位｜<b>${d.name||'未命名人員'}</b>`;const modal=el('staffEditModal');if(modal)modal.style.display='flex';}
+function openStaffEditModal(i){ensureStaffEditModal();i=Number(i);const d=(staffData||[])[i];if(!d){alert('找不到這筆人員資料');return;}modalEditStaffIndex=i;setModalValue('m_staff_name',d.name);setModalValue('m_staff_tel',d.tel);setModalValue('m_staff_id',d.id);setModalValue('m_staff_birthday',d.birthday);setModalValue('m_staff_addr',d.addr);setModalValue('m_staff_status',d.status||'在職');setModalValue('m_staff_account',d.account);setModalValue('m_staff_pwd',d.pwd);setModalValue('m_staff_salary_rule',d.salary_rule||'114年標準');if(el('m_staff_salary_calc_rule')) setModalValue('m_staff_salary_calc_rule',d.salary_calc_rule||deriveSalaryCalcRule(d));setModalValue('m_staff_hourly',d.hourly||0);setModalValue('m_staff_bank',d.bank);setModalValue('m_staff_bank_branch',d.bank_branch);setModalValue('m_staff_bank_acc',d.bank_acc);setModalValue('m_staff_ins_status',d.ins_status||'勞健雙保');setModalValue('m_staff_ins_date',d.ins_date);setModalValue('m_staff_ins_deps',d.ins_deps||0);setModalValue('m_staff_ins_subsidy',d.ins_subsidy||'無');setModalValue('m_staff_labor',d.labor||0);setModalValue('m_staff_health',d.health||0);setModalValue('m_staff_drive',d.drive);setModalValue('m_staff_remark',d.remark);setModalChecked('m_staff_doc_id',d.doc_id);setModalChecked('m_staff_doc_bank',d.doc_bank);setModalChecked('m_staff_doc_contract',d.doc_contract);setModalChecked('m_staff_doc_resume',d.doc_resume);const sub=el('staffEditModalSub');if(sub)sub.innerHTML=`目前編輯第 ${i+1} 位｜<b>${d.name||'未命名人員'}</b>`;const modal=el('staffEditModal');if(modal)modal.style.display='flex';}
 function closeStaffEditModal(){const modal=el('staffEditModal');if(modal)modal.style.display='none';modalEditStaffIndex=-1;}
-function saveStaffEditModal(){if(modalEditStaffIndex<0)return;const o={name:el('m_staff_name').value.trim(),tel:el('m_staff_tel').value.trim(),id:el('m_staff_id').value.trim(),birthday:el('m_staff_birthday').value,addr:el('m_staff_addr').value.trim(),status:el('m_staff_status').value,account:el('m_staff_account').value.trim(),pwd:el('m_staff_pwd').value.trim(),salary_rule:el('m_staff_salary_rule').value,salary_calc_rule:el('m_staff_salary_calc_rule').value,hourly:el('m_staff_hourly').value,bank:el('m_staff_bank').value.trim(),bank_branch:el('m_staff_bank_branch').value.trim(),bank_acc:el('m_staff_bank_acc').value.trim(),ins_status:el('m_staff_ins_status').value,ins_date:el('m_staff_ins_date').value,ins_deps:el('m_staff_ins_deps').value,ins_subsidy:el('m_staff_ins_subsidy').value,labor:el('m_staff_labor').value,health:el('m_staff_health').value,drive:el('m_staff_drive').value.trim(),remark:el('m_staff_remark').value.trim(),doc_id:el('m_staff_doc_id').checked,doc_bank:el('m_staff_doc_bank').checked,doc_contract:el('m_staff_doc_contract').checked,doc_resume:el('m_staff_doc_resume').checked};if(!o.name){alert('請輸入姓名');return;}staffData[modalEditStaffIndex]={...staffData[modalEditStaffIndex],...o};saveAll();renderStaffTable();closeStaffEditModal();showStaffSection('edit');showToast('✅ 已更新派遣人員資料');}
+function saveStaffEditModal(){if(modalEditStaffIndex<0)return;const o={name:el('m_staff_name').value.trim(),tel:el('m_staff_tel').value.trim(),id:el('m_staff_id').value.trim(),birthday:el('m_staff_birthday').value,addr:el('m_staff_addr').value.trim(),status:el('m_staff_status').value,account:el('m_staff_account').value.trim(),pwd:el('m_staff_pwd').value.trim(),salary_rule:el('m_staff_salary_rule').value,salary_calc_rule: el('m_staff_salary_calc_rule') ? el('m_staff_salary_calc_rule').value : (staffData[modalEditStaffIndex]?.salary_calc_rule || deriveSalaryCalcRule(staffData[modalEditStaffIndex])),hourly:el('m_staff_hourly').value,bank:el('m_staff_bank').value.trim(),bank_branch:el('m_staff_bank_branch').value.trim(),bank_acc:el('m_staff_bank_acc').value.trim(),ins_status:el('m_staff_ins_status').value,ins_date:el('m_staff_ins_date').value,ins_deps:el('m_staff_ins_deps').value,ins_subsidy:el('m_staff_ins_subsidy').value,labor:el('m_staff_labor').value,health:el('m_staff_health').value,drive:el('m_staff_drive').value.trim(),remark:el('m_staff_remark').value.trim(),doc_id:el('m_staff_doc_id').checked,doc_bank:el('m_staff_doc_bank').checked,doc_contract:el('m_staff_doc_contract').checked,doc_resume:el('m_staff_doc_resume').checked};if(!o.name){alert('請輸入姓名');return;}staffData[modalEditStaffIndex]={...staffData[modalEditStaffIndex],...o};saveAll();renderStaffTable();closeStaffEditModal();showStaffSection('edit');showToast('✅ 已更新派遣人員資料');}
 window.openStaffEditModal=openStaffEditModal;window.closeStaffEditModal=closeStaffEditModal;window.saveStaffEditModal=saveStaffEditModal;
 document.addEventListener('click',function(e){const btn=e.target.closest('[data-staff-edit]');if(btn){e.preventDefault();e.stopPropagation();openStaffEditModal(btn.getAttribute('data-staff-edit'));}});
 document.addEventListener('DOMContentLoaded', () => {
