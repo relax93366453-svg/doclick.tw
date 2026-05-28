@@ -2272,6 +2272,87 @@ h3{margin:8px 0 0;color:#64748b;font-size:18px;}
 <div class="print-toolbar"><button onclick="window.print()">列印 / 另存 PDF</button></div>
 ${d.contentHtml}
 <script>setTimeout(function(){window.print();},500);<\/script>
+
+<style id="deduction-summary-only-patch-style">
+/* 本期扣款紀錄查詢改成摘要顯示，不顯示明細表格 */
+#deductionRecordPanel .table-responsive,
+#deductionRecordPanel .deduct-record-table{display:none!important;}
+#deductionSummaryCard{background:#fff;border:1px solid #fed7aa;border-radius:10px;padding:14px 16px;margin-top:10px;line-height:1.9;color:#0f172a;font-weight:800;}
+#deductionSummaryCard .summary-line{font-size:15px;}
+#deductionSummaryCard .money{color:#d97706;font-weight:900;}
+#deductionSummaryCard .net{color:#dc2626;font-size:18px;font-weight:900;}
+#deductionSummaryCard .hours{color:#2563eb;font-weight:900;}
+#deductionSummaryCard .deduct{color:#ef4444;font-weight:900;}
+#deductionSummaryCard .empty{color:#64748b;text-align:center;font-weight:800;padding:10px;}
+</style>
+<script id="deduction-summary-only-patch-script">
+(function(){
+  function $(id){return document.getElementById(id);}
+  function pad(n){return String(n).padStart(2,'0');}
+  function calcDeductionSummary(){
+    const panel=$('deductionRecordPanel'); if(!panel) return;
+    let box=$('deductionSummaryCard');
+    if(!box){
+      box=document.createElement('div'); box.id='deductionSummaryCard';
+      const table=panel.querySelector('.table-responsive');
+      if(table) table.insertAdjacentElement('beforebegin', box); else panel.appendChild(box);
+    }
+    const y=$('deductRecordYear')?.value || $('sal_filter_year')?.value || new Date().getFullYear();
+    const m=$('deductRecordMonth')?.value || $('sal_filter_month')?.value || (new Date().getMonth()+1);
+    const s=($('deductRecordStaff')?.value || $('sal_filter_staff')?.value || '').trim();
+    if(!s || s==='全部人員' || s==='全部員工' || y==='all' || m==='all'){
+      box.innerHTML='<div class="empty">請選擇年份、月份與人員，系統會在下方顯示本期薪資扣款摘要。</div>';
+      return;
+    }
+    if(typeof attendData==='undefined'){
+      box.innerHTML='<div class="empty">目前尚未載入派遣資料。</div>'; return;
+    }
+    const rows=(attendData||[]).filter(x=>x.staff===s && (typeof isDispatchPayrollPeriod==='function' ? isDispatchPayrollPeriod(x.date, y, m) : true));
+    if(!rows.length){
+      box.innerHTML=`<div class="empty">${s} 在 ${y}/${pad(m)} 目前沒有薪資結算紀錄。</div>`; return;
+    }
+    let sumH=0, sumAmt=0;
+    rows.forEach(item=>{
+      const h=typeof getItemSalaryHours==='function' ? getItemSalaryHours(item) : Number(item.hours||item.total_hours||0);
+      const rate=typeof getHistoricalRate==='function' ? getHistoricalRate(item) : Number(item.hourly||0);
+      const fee=Number(item.project_fee)||0;
+      sumH += Number(h)||0;
+      sumAmt += fee>0 ? fee : parseFloat(((Number(h)||0)*(Number(rate)||0)).toFixed(1));
+    });
+    const pmNum=parseInt(m)-1; let py=parseInt(y), pm=pmNum; if(pm===0){pm=12;py-=1;}
+    const periodText=`${py}/${pad(pm)}/26 ~ ${y}/${pad(m)}/25`;
+    const periodEndDate=`${y}-${pad(m)}-25`;
+    const cumulative=typeof getStaffTotalHoursUntil==='function' ? getStaffTotalHoursUntil(s, periodEndDate) : sumH;
+    const si=(typeof staffData!=='undefined' ? (staffData||[]).find(x=>x.name===s) : {}) || {};
+    const deduct=typeof getSalaryDeductAmounts==='function' ? getSalaryDeductAmounts(s, y, m, si) : {labor:Number(si.labor||0),health:Number(si.health||0)};
+    const labor=Number(deduct.labor||0), health=Number(deduct.health||0);
+    const net=Math.round(sumAmt-labor-health);
+    box.innerHTML=`
+      <div class="summary-line"><b>[${s}]</b> ${periodText} 結算：</div>
+      <div class="summary-line">本月結算工時：<span class="hours">${sumH.toFixed(1)} h</span> &nbsp; | &nbsp; 截至本期累積工時：<span class="hours">${Number(cumulative).toFixed(1)} h</span> &nbsp; | &nbsp; 應發金額：<span class="money">${sumAmt.toFixed(1)} 元</span></div>
+      <div class="summary-line">本期代扣勞保：<span class="deduct">${labor}</span></div>
+      <div class="summary-line">本期代扣健保：<span class="deduct">${health}</span></div>
+      <div class="summary-line">實付金額：<span class="net">${net} 元</span></div>
+    `;
+  }
+  const oldRender=window.renderDeductionRecordPanel;
+  window.renderDeductionRecordPanel=function(){
+    if(typeof oldRender==='function') oldRender.apply(this,arguments);
+    setTimeout(calcDeductionSummary, 0);
+  };
+  const oldEnsure=window.ensureDeductionRecordPanel;
+  window.ensureDeductionRecordPanel=function(){
+    if(typeof oldEnsure==='function') oldEnsure.apply(this,arguments);
+    const table=document.querySelector('#deductionRecordPanel .table-responsive');
+    if(table) table.style.display='none';
+    setTimeout(calcDeductionSummary, 0);
+  };
+  document.addEventListener('input', function(e){ if(e.target && ['deductRecordStaff','deductRecordYear','deductRecordMonth'].includes(e.target.id)) setTimeout(calcDeductionSummary,0);});
+  document.addEventListener('change', function(e){ if(e.target && ['deductRecordStaff','deductRecordYear','deductRecordMonth'].includes(e.target.id)) setTimeout(calcDeductionSummary,0);});
+  document.addEventListener('DOMContentLoaded', function(){setTimeout(()=>{ if(window.ensureDeductionRecordPanel) window.ensureDeductionRecordPanel(); calcDeductionSummary();},1000);});
+})();
+</script>
+
 </body>
 </html>`);
     w.document.close();
