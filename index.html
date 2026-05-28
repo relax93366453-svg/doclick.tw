@@ -1117,19 +1117,64 @@
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQhw1qjHYKLdMk19Xosh_SBbIFM-WlT4Ue5e4_m_KpEKiK5n5-FxGsRq5oakUJxO8O6Q/exec';
 const el = id => document.getElementById(id);
 
-// ✅ 每 15 秒自動讀取雲端資料：同事新增/修改後，這邊不用手動重新整理
-function isUserTypingOrEditing(){
-    if (pauseAutoCloudReadForStaffModal || isStaffEditModalOpen()) return true;
+// ✅ 安全雲端同步模式：平常每 15 秒讀取；輸入中 / 彈窗開啟 / 未儲存時暫停，避免資料被洗掉
+let __safeSyncDirty = false;
+let __safeSyncLastInputAt = 0;
+let __safeSyncPendingCloud = false;
+let __safeSyncPausedReason = '';
+function markFormDirty(reason='輸入中'){
+    __safeSyncDirty = true;
+    __safeSyncLastInputAt = Date.now();
+    __safeSyncPausedReason = reason;
+    if (el('sync-status')) updateSyncStatus('<i class="fas fa-keyboard"></i> ' + reason + '，暫停自動讀取');
+}
+function clearFormDirty(){
+    __safeSyncDirty = false;
+    __safeSyncPausedReason = '';
+    __safeSyncPendingCloud = false;
+}
+function isSafeSyncBlocked(){
+    if (typeof pauseAutoCloudReadForStaffModal !== 'undefined' && pauseAutoCloudReadForStaffModal) return '彈窗編輯中';
+    if (typeof isStaffEditModalOpen === 'function' && isStaffEditModalOpen()) return '彈窗編輯中';
+    if (__safeSyncDirty) return __safeSyncPausedReason || '有未儲存資料';
     const a = document.activeElement;
-    if(!a) return false;
-    const tag = (a.tagName || '').toUpperCase();
-    return ['INPUT','TEXTAREA','SELECT'].includes(tag);
+    if(a){
+        const tag = (a.tagName || '').toUpperCase();
+        if(['INPUT','TEXTAREA','SELECT'].includes(tag) || a.isContentEditable) return '輸入中';
+    }
+    return '';
+}
+function isUserTypingOrEditing(){ return !!isSafeSyncBlocked(); }
+function setupSafeSyncGuards(){
+    if (window.__safeSyncGuardsReady) return;
+    window.__safeSyncGuardsReady = true;
+    document.addEventListener('input', e => {
+        if (e.target && (e.target.matches('input, textarea, select') || e.target.isContentEditable)) markFormDirty('輸入中');
+    }, true);
+    document.addEventListener('change', e => {
+        if (e.target && (e.target.matches('input, textarea, select') || e.target.isContentEditable)) markFormDirty('資料已變更');
+    }, true);
+    document.addEventListener('focusin', e => {
+        if (e.target && (e.target.matches('input, textarea, select') || e.target.isContentEditable)) {
+            __safeSyncLastInputAt = Date.now();
+            if (el('sync-status')) updateSyncStatus('<i class="fas fa-keyboard"></i> 輸入中，暫停自動讀取');
+        }
+    }, true);
+    window.addEventListener('beforeunload', e => {
+        if (__safeSyncDirty) {
+            e.preventDefault();
+            e.returnValue = '你有尚未儲存的資料，確定要離開嗎？';
+            return e.returnValue;
+        }
+    });
 }
 setInterval(() => {
     const role = localStorage.getItem('loginRole');
     if (!(role === 'admin' || role === 'staff')) return;
-    if (isUserTypingOrEditing()) {
-        if (el('sync-status')) updateSyncStatus('<i class="fas fa-keyboard"></i> 輸入中，暫停自動讀取');
+    const blockedReason = isSafeSyncBlocked();
+    if (blockedReason) {
+        __safeSyncPendingCloud = true;
+        if (el('sync-status')) updateSyncStatus('<i class="fas fa-lock"></i> ' + blockedReason + '，暫停自動讀取');
         return;
     }
     loadDataFromCloud(false);
@@ -1355,8 +1400,8 @@ function isStaffEditModalOpen(){ const m=el('staffEditModal'); return !!(m && m.
 function setModalValue(id,value){const node=el(id);if(node)node.value=value??'';}
 function setModalChecked(id,value){const node=el(id);if(node)node.checked=!!value;}
 function openStaffEditModal(i){ensureStaffEditModal();i=Number(i);const d=(staffData||[])[i];if(!d){alert('找不到這筆人員資料');return;}modalEditStaffIndex=i;setModalValue('m_staff_name',d.name);setModalValue('m_staff_tel',d.tel);setModalValue('m_staff_id',d.id);setModalValue('m_staff_birthday',d.birthday);setModalValue('m_staff_addr',d.addr);setModalValue('m_staff_status',d.status||'在職');setModalValue('m_staff_account',d.account);setModalValue('m_staff_pwd',d.pwd);setModalValue('m_staff_salary_rule',d.salary_rule||'114年標準');if(el('m_staff_salary_calc_rule')) setModalValue('m_staff_salary_calc_rule',d.salary_calc_rule||deriveSalaryCalcRule(d));setModalValue('m_staff_hourly',d.hourly||0);setModalValue('m_staff_bank',d.bank);setModalValue('m_staff_bank_branch',d.bank_branch);setModalValue('m_staff_bank_acc',d.bank_acc);setModalValue('m_staff_ins_status',d.ins_status||'勞健雙保');setModalValue('m_staff_ins_date',d.ins_date);setModalValue('m_staff_ins_deps',d.ins_deps||0);setModalValue('m_staff_ins_subsidy',d.ins_subsidy||'無');setModalValue('m_staff_labor',d.labor||0);setModalValue('m_staff_health',d.health||0);setModalValue('m_staff_raise250_status',d.raise250_status||'未核准');setModalValue('m_staff_raise250_date',d.raise250_date||'');setModalValue('m_staff_raise250_by',d.raise250_by||'');setModalValue('m_staff_raise250_note',d.raise250_note||'');setModalValue('m_staff_drive',d.drive);setModalValue('m_staff_remark',d.remark);setModalChecked('m_staff_doc_id',d.doc_id);setModalChecked('m_staff_doc_bank',d.doc_bank);setModalChecked('m_staff_doc_contract',d.doc_contract);setModalChecked('m_staff_doc_resume',d.doc_resume);const sub=el('staffEditModalSub');if(sub)sub.innerHTML=`目前編輯第 ${i+1} 位｜<b>${d.name||'未命名人員'}</b>`;pauseAutoCloudReadForStaffModal=true; const modal=el('staffEditModal');if(modal)modal.style.display='flex';}
-function closeStaffEditModal(){const modal=el('staffEditModal');if(modal)modal.style.display='none';modalEditStaffIndex=-1;pauseAutoCloudReadForStaffModal=false;}
-function saveStaffEditModal(){if(modalEditStaffIndex<0)return;const o={name:el('m_staff_name').value.trim(),tel:el('m_staff_tel').value.trim(),id:el('m_staff_id').value.trim(),birthday:el('m_staff_birthday').value,addr:el('m_staff_addr').value.trim(),status:el('m_staff_status').value,account:el('m_staff_account').value.trim(),pwd:el('m_staff_pwd').value.trim(),salary_rule:el('m_staff_salary_rule').value,salary_calc_rule: el('m_staff_salary_calc_rule') ? el('m_staff_salary_calc_rule').value : (staffData[modalEditStaffIndex]?.salary_calc_rule || deriveSalaryCalcRule(staffData[modalEditStaffIndex])),hourly:el('m_staff_hourly').value,bank:el('m_staff_bank').value.trim(),bank_branch:el('m_staff_bank_branch').value.trim(),bank_acc:el('m_staff_bank_acc').value.trim(),ins_status:el('m_staff_ins_status').value,ins_date:el('m_staff_ins_date').value,ins_deps:el('m_staff_ins_deps').value,ins_subsidy:el('m_staff_ins_subsidy').value,labor:el('m_staff_labor').value,health:el('m_staff_health').value,raise250_status:el('m_staff_raise250_status')?el('m_staff_raise250_status').value:'未核准',raise250_date:el('m_staff_raise250_date')?el('m_staff_raise250_date').value:'',raise250_by:el('m_staff_raise250_by')?el('m_staff_raise250_by').value.trim():'',raise250_note:el('m_staff_raise250_note')?el('m_staff_raise250_note').value.trim():'',drive:el('m_staff_drive').value.trim(),remark:el('m_staff_remark').value.trim(),doc_id:el('m_staff_doc_id').checked,doc_bank:el('m_staff_doc_bank').checked,doc_contract:el('m_staff_doc_contract').checked,doc_resume:el('m_staff_doc_resume').checked};if(!o.name){alert('請輸入姓名');return;}staffData[modalEditStaffIndex]={...staffData[modalEditStaffIndex],...o};saveAll();renderStaffTable();closeStaffEditModal();showStaffSection('edit');showToast('✅ 已更新派遣人員資料');}
+function closeStaffEditModal(){ if(__safeSyncDirty && !confirm('你有尚未儲存的修改，確定要關閉嗎？')) return; const modal=el('staffEditModal');if(modal)modal.style.display='none';modalEditStaffIndex=-1;pauseAutoCloudReadForStaffModal=false;clearFormDirty();}
+function saveStaffEditModal(){if(modalEditStaffIndex<0)return;const o={name:el('m_staff_name').value.trim(),tel:el('m_staff_tel').value.trim(),id:el('m_staff_id').value.trim(),birthday:el('m_staff_birthday').value,addr:el('m_staff_addr').value.trim(),status:el('m_staff_status').value,account:el('m_staff_account').value.trim(),pwd:el('m_staff_pwd').value.trim(),salary_rule:el('m_staff_salary_rule').value,salary_calc_rule: el('m_staff_salary_calc_rule') ? el('m_staff_salary_calc_rule').value : (staffData[modalEditStaffIndex]?.salary_calc_rule || deriveSalaryCalcRule(staffData[modalEditStaffIndex])),hourly:el('m_staff_hourly').value,bank:el('m_staff_bank').value.trim(),bank_branch:el('m_staff_bank_branch').value.trim(),bank_acc:el('m_staff_bank_acc').value.trim(),ins_status:el('m_staff_ins_status').value,ins_date:el('m_staff_ins_date').value,ins_deps:el('m_staff_ins_deps').value,ins_subsidy:el('m_staff_ins_subsidy').value,labor:el('m_staff_labor').value,health:el('m_staff_health').value,raise250_status:el('m_staff_raise250_status')?el('m_staff_raise250_status').value:'未核准',raise250_date:el('m_staff_raise250_date')?el('m_staff_raise250_date').value:'',raise250_by:el('m_staff_raise250_by')?el('m_staff_raise250_by').value.trim():'',raise250_note:el('m_staff_raise250_note')?el('m_staff_raise250_note').value.trim():'',drive:el('m_staff_drive').value.trim(),remark:el('m_staff_remark').value.trim(),doc_id:el('m_staff_doc_id').checked,doc_bank:el('m_staff_doc_bank').checked,doc_contract:el('m_staff_doc_contract').checked,doc_resume:el('m_staff_doc_resume').checked};if(!o.name){alert('請輸入姓名');return;}staffData[modalEditStaffIndex]={...staffData[modalEditStaffIndex],...o};saveAll();renderStaffTable();clearFormDirty();closeStaffEditModal();showStaffSection('edit');showToast('✅ 已更新派遣人員資料');}
 window.openStaffEditModal=openStaffEditModal;window.closeStaffEditModal=closeStaffEditModal;window.saveStaffEditModal=saveStaffEditModal;
 document.addEventListener('click',function(e){const btn=e.target.closest('[data-staff-edit]');if(btn){e.preventDefault();e.stopPropagation();openStaffEditModal(btn.getAttribute('data-staff-edit'));}});
 
@@ -1455,6 +1500,7 @@ function showScheduleTab(tab){
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
+        setupSafeSyncGuards();
         standardizeData();
         if(el('config_price_table')) el('config_price_table').value = JSON.stringify(priceTable, null, 2);
         
@@ -2112,8 +2158,10 @@ function renderSalesDashboard() {
 }
 
 function loadDataFromCloud(forceRender=false) {
-    if ((pauseAutoCloudReadForStaffModal || isStaffEditModalOpen()) && !forceRender) {
-        if(el('sync-status')) updateSyncStatus('<i class="fas fa-lock"></i> 編輯派遣人員中，已暫停雲端讀取');
+    const blockedReason = isSafeSyncBlocked();
+    if (blockedReason && !forceRender) {
+        __safeSyncPendingCloud = true;
+        if(el('sync-status')) updateSyncStatus('<i class="fas fa-lock"></i> ' + blockedReason + '，已暫停雲端讀取');
         return;
     }
     if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步...');
@@ -2146,7 +2194,7 @@ function loadDataFromCloud(forceRender=false) {
         try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData)); } catch(e) {}
         if(nA>0 || talentData.length<pC) saveAllSilently();
         if(forceRender){ if(nA>0) alert(`匯入 ${nA} 筆`); else if(fm) alert(`無新履歷`); }
-        if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`);
+        __safeSyncPendingCloud = false; if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`);
         const cp = localStorage.getItem('adminPage')||'dashboard';
         if(el('sys-screen') && el('sys-screen').style.display !== 'none'){
             if(forceRender) showAdminPage(cp); else { if(cp==='dashboard') renderDashboard(); else if(cp==='customer') renderCustTable(); else if(cp==='staff') renderStaffTable(); else if(cp==='talent') renderTalentTable(); else if(cp==='supplier') renderSupplierTable(); else if(cp==='match') renderMatchTable(); else if(cp==='req') renderReqTable(); else if(cp==='dispatch') renderDispatchTable(); else if(cp==='schedule') renderScheduleTable(); else if(cp==='clock_overview') renderClockOverview(); else if(cp==='boss') showBoss(); }
@@ -2179,13 +2227,13 @@ function pushCloudData(silent=false){
             throw e;
         });
 }
-function saveAllSilently() { pushCloudData(true).catch(()=>{}); }
+function saveAllSilently() { pushCloudData(true).then(()=>{ clearFormDirty(); }).catch(()=>{}); }
 function manualCloudSync(){ pushCloudData(false).then(()=>{ showToast('✅ 已同步到雲端'); loadDataFromCloud(false); }).catch(()=>{}); }
-function manualCloudRead(){ if(isStaffEditModalOpen()){ showToast('請先儲存或關閉派遣人員編輯彈窗，再讀取雲端', true); return; } if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 讀取雲端...'); loadDataFromCloud(false); showToast('✅ 已讀取雲端最新資料'); }
+function manualCloudRead(){ const blockedReason = isSafeSyncBlocked(); if(blockedReason){ showToast('請先儲存目前資料，再讀取雲端（目前：' + blockedReason + '）', true); return; } if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 讀取雲端...'); loadDataFromCloud(false); showToast('✅ 已讀取雲端最新資料'); }
 
 
 function saveAll() {
-    pushCloudData(false).catch(()=>{});
+    pushCloudData(false).then(()=>{ clearFormDirty(); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud-check-alt"></i> 已儲存，恢復自動讀取'); }).catch(()=>{});
 }
 
 function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`); }); }
@@ -3537,92 +3585,6 @@ function calcAttendTemp() {
     checkHourlyUpgradeAlert(); 
 }
 
-
-function _attendTimeAddHours(timeStr, hours) {
-    if(!timeStr) return '';
-    let [h, m] = String(timeStr).split(':').map(Number);
-    if(Number.isNaN(h)) h = 0;
-    if(Number.isNaN(m)) m = 0;
-    let totalMinutes = h * 60 + m + Math.round(Number(hours || 0) * 60);
-    let nh = Math.floor(totalMinutes / 60) % 24;
-    let nm = ((totalMinutes % 60) + 60) % 60;
-    return String(nh).padStart(2,'0') + ':' + String(nm).padStart(2,'0');
-}
-
-function getAttendAutoSplitInfo(o) {
-    const hInp = Number(o.salary_hours || 0);
-    if(!o.staff || !o.date || hInp <= 0) return null;
-    if(Number(o.project_fee || 0) > 0) return null;
-    if(o.special_hourly !== undefined && String(o.special_hourly || '').trim() !== '') return null;
-
-    const si = staffData.find(x => x.name === o.staff);
-    if(!si) return null;
-
-    let staffRecords = attendData.map((r, i) => ({ record: r, idx: i }))
-        .filter(r => r.record.staff === o.staff);
-    if(editAttendIndex > -1) staffRecords = staffRecords.filter(r => r.idx !== editAttendIndex);
-    staffRecords.push({ record: { date: o.date }, idx: 999999, isCurrent: true });
-    staffRecords.sort((a, b) => new Date(a.record.date) - new Date(b.record.date) || a.idx - b.idx);
-
-    let cH = 0;
-    for (let sr of staffRecords) {
-        if(sr.isCurrent) break;
-        cH += getItemSalaryHours(sr.record);
-        cH = Math.round(cH * 10) / 10;
-    }
-
-    const rule = si.salary_rule || '114年標準';
-    const calcRule = si.salary_calc_rule || deriveSalaryCalcRule(si);
-    const agreed = typeof isRaise250Approved === 'function' ? isRaise250Approved(si) : ((si.remark||'').includes('已同意調薪'));
-    const oldWage = calcWageByDate(rule, cH, agreed, si.hourly, calcRule, o.date);
-    const newWage = calcWageByDate(rule, cH + hInp, agreed, si.hourly, calcRule, o.date);
-    const tierInfo = getNextTierInfo(rule, cH, agreed, si.hourly, calcRule);
-    const th = tierInfo ? tierInfo.nextTier : null;
-
-    if(!th || th === 'FIXED') return null;
-    if(!(cH < th && cH + hInp > th && oldWage !== newWage)) return null;
-
-    const h1 = Number((th - cH).toFixed(1));
-    const h2 = Number((hInp - h1).toFixed(1));
-    if(!(h1 > 0 && h2 > 0)) return null;
-
-    return { beforeHours:cH, threshold:th, h1, h2, oldWage, newWage };
-}
-
-function buildAttendSplitRecords(o, splitInfo) {
-    const h1 = splitInfo.h1, h2 = splitInfo.h2;
-    const amS = o.am_s, amE = o.am_e, pmS = o.pm_s, pmE = o.pm_e;
-    let amHrs = amS && amE ? Number(getHours(amS, amE)) : 0;
-
-    let r1 = {...o, salary_hours:h1, deduct_points:h1, project_fee:0, special_hourly:splitInfo.oldWage, remark:[o.remark, `跨階前：累積${splitInfo.beforeHours.toFixed(1)}→${splitInfo.threshold}h，自動拆帳`].filter(Boolean).join('｜') };
-    let r2 = {...o, salary_hours:h2, deduct_points:h2, project_fee:0, special_hourly:'', remark:[o.remark, `跨階後：${splitInfo.threshold}h後自動拆帳`].filter(Boolean).join('｜') };
-    r1.am_s = r1.am_e = r1.pm_s = r1.pm_e = '';
-    r2.am_s = r2.am_e = r2.pm_s = r2.pm_e = '';
-
-    if(amS && amE && h1 <= amHrs) {
-        r1.am_s = amS;
-        r1.am_e = _attendTimeAddHours(amS, h1);
-        r2.am_s = r1.am_e;
-        r2.am_e = amE;
-        r2.pm_s = pmS;
-        r2.pm_e = pmE;
-    } else if(pmS && pmE) {
-        r1.am_s = amS;
-        r1.am_e = amE;
-        const remainInPm = Number((h1 - amHrs).toFixed(1));
-        r1.pm_s = pmS;
-        r1.pm_e = _attendTimeAddHours(pmS, remainInPm);
-        r2.pm_s = r1.pm_e;
-        r2.pm_e = pmE;
-    } else {
-        r1.am_s = amS;
-        r1.am_e = amE;
-        r2.pm_s = pmS;
-        r2.pm_e = pmE;
-    }
-    return [r1, r2];
-}
-
 function addAttend() { 
     const o = { 
         company:el('attend_company').value.trim(), staff:el('attend_staff').value.trim(), 
@@ -3633,32 +3595,6 @@ function addAttend() {
         special_hourly:el('attend_special_hourly').value 
     }; 
     if(!o.company || !o.staff || !o.date) return;
-
-    const splitInfo = getAttendAutoSplitInfo(o);
-    if(splitInfo) {
-        const records = buildAttendSplitRecords(o, splitInfo);
-        if(editAttendIndex > -1) {
-            attendData.splice(editAttendIndex, 1, records[0], records[1]);
-            editAttendIndex = -1;
-        } else {
-            attendData.push(records[0], records[1]);
-        }
-        saveAll();
-        renderAttend();
-
-        const keepCompany = o.company;
-        const keepStaff = o.staff;
-        const keepService = o.service;
-        const keepDate = o.date;
-        clearAttendForm();
-        el('attend_company').value = keepCompany;
-        el('attend_staff').value = keepStaff;
-        el('attend_service').value = keepService;
-        el('attend_date').value = keepDate;
-        el('attend_company').focus();
-        showToast(`✅ 已自動拆帳：${splitInfo.h1}h × $${splitInfo.oldWage}，${splitInfo.h2}h × $${splitInfo.newWage}`);
-        return;
-    }
     
     if(editAttendIndex > -1) { 
         attendData[editAttendIndex] = {...attendData[editAttendIndex], ...o}; 
