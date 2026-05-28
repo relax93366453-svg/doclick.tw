@@ -2272,6 +2272,170 @@ h3{margin:8px 0 0;color:#64748b;font-size:18px;}
 <div class="print-toolbar"><button onclick="window.print()">列印 / 另存 PDF</button></div>
 ${d.contentHtml}
 <script>setTimeout(function(){window.print();},500);<\/script>
+
+<style id="deduction-record-patch-style">
+/* ===== 本期扣款紀錄查詢：安全補丁 ===== */
+#deductionRecordPanel{
+  background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px 16px;margin:14px 0;
+}
+#deductionRecordPanel h3{margin:0 0 10px;color:#9a3412;font-size:16px;font-weight:900;}
+.deduct-record-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:10px;}
+.deduct-record-filters label{font-weight:800;color:#475569;font-size:12px;display:block;margin-bottom:4px;}
+.deduct-record-filters input,.deduct-record-filters select{
+  padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;
+}
+.deduct-record-table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;}
+.deduct-record-table th,.deduct-record-table td{border-bottom:1px solid #e2e8f0;padding:9px 10px;text-align:left;font-size:13px;}
+.deduct-record-table th{background:#f8fafc;font-weight:900;color:#334155;}
+.deduct-source-manual{color:#dc2626;font-weight:900;}
+.deduct-source-default{color:#64748b;font-weight:900;}
+</style>
+
+
+<script id="deduction-record-patch-script">
+(function(){
+  const DEDUCT_KEY = 'salaryDeductionRecords_v2';
+  function $(id){ return document.getElementById(id); }
+  function nowText(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function getDeductRecords(){
+    try { return JSON.parse(localStorage.getItem(DEDUCT_KEY) || '[]'); } catch(e){ return []; }
+  }
+  function setDeductRecords(rows){
+    localStorage.setItem(DEDUCT_KEY, JSON.stringify(rows || []));
+  }
+  function currentYM(){
+    const yEl = $('sal_filter_year'), mEl = $('sal_filter_month');
+    const y = yEl ? yEl.value : new Date().getFullYear();
+    const m = mEl ? String(mEl.value || (new Date().getMonth()+1)).padStart(2,'0') : String(new Date().getMonth()+1).padStart(2,'0');
+    return `${y}-${m}`;
+  }
+  function currentStaff(){
+    const s = $('sal_filter_staff');
+    return s ? (s.value || '').trim() : '';
+  }
+  function getDefaultDeduct(staffName){
+    const arr = window.staffData || [];
+    const p = arr.find(x => x && x.name === staffName) || {};
+    return { labor: Number(p.labor || 0), health: Number(p.health || 0) };
+  }
+  function upsertDeductRecord(row){
+    const rows = getDeductRecords();
+    const idx = rows.findIndex(x => x.ym === row.ym && x.staff === row.staff);
+    if(idx >= 0) rows[idx] = {...rows[idx], ...row};
+    else rows.unshift(row);
+    setDeductRecords(rows);
+    renderDeductionRecordPanel();
+  }
+
+  // Wrap existing saveSalaryDeductOverride if present.
+  const originalSave = window.saveSalaryDeductOverride;
+  window.saveSalaryDeductOverride = function(){
+    if(typeof originalSave === 'function') originalSave.apply(this, arguments);
+    const staff = currentStaff();
+    if(!staff || staff === '全部人員' || staff === '全部員工') return;
+    const laborEl = $('sal_override_labor');
+    const healthEl = $('sal_override_health');
+    const laborRaw = laborEl ? laborEl.value : '';
+    const healthRaw = healthEl ? healthEl.value : '';
+    const def = getDefaultDeduct(staff);
+    const manual = laborRaw !== '' || healthRaw !== '';
+    const row = {
+      ym: currentYM(),
+      staff,
+      labor: laborRaw === '' ? def.labor : Number(laborRaw || 0),
+      health: healthRaw === '' ? def.health : Number(healthRaw || 0),
+      source: manual ? '手動覆寫' : '人員預設',
+      savedAt: nowText(),
+      note: manual ? '本期手動調整' : '沿用人員資料預設'
+    };
+    upsertDeductRecord(row);
+  };
+
+  const originalClear = window.clearSalaryDeductOverride;
+  window.clearSalaryDeductOverride = function(){
+    if(typeof originalClear === 'function') originalClear.apply(this, arguments);
+    const staff = currentStaff();
+    if(!staff || staff === '全部人員' || staff === '全部員工') return;
+    const def = getDefaultDeduct(staff);
+    upsertDeductRecord({
+      ym: currentYM(),
+      staff,
+      labor: def.labor,
+      health: def.health,
+      source: '人員預設',
+      savedAt: nowText(),
+      note: '已改回人員預設扣款'
+    });
+  };
+
+  window.renderDeductionRecordPanel = function(){
+    const panel = $('deductionRecordPanel');
+    if(!panel) return;
+    const y = $('deductRecordYear')?.value || '';
+    const m = $('deductRecordMonth')?.value || '';
+    const staff = ($('deductRecordStaff')?.value || '').trim();
+    let rows = getDeductRecords();
+    if(y && m) rows = rows.filter(r => r.ym === `${y}-${String(m).padStart(2,'0')}`);
+    if(staff) rows = rows.filter(r => (r.staff||'').includes(staff));
+    const body = rows.map(r => `
+      <tr>
+        <td>${r.ym || '-'}</td>
+        <td>${r.staff || '-'}</td>
+        <td>${r.labor ?? 0}</td>
+        <td>${r.health ?? 0}</td>
+        <td class="${r.source === '手動覆寫' ? 'deduct-source-manual' : 'deduct-source-default'}">${r.source || '-'}</td>
+        <td>${r.savedAt || '-'}</td>
+        <td>${r.note || '-'}</td>
+      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#64748b;">目前沒有本期扣款紀錄</td></tr>';
+    const tbody = $('deductRecordTableBody');
+    if(tbody) tbody.innerHTML = body;
+  };
+
+  window.ensureDeductionRecordPanel = function(){
+    if($('deductionRecordPanel')) return;
+    const salaryPage = $('page-salary') || document.querySelector('.page[id*="salary"]');
+    if(!salaryPage) return;
+    const thisYear = new Date().getFullYear();
+    const thisMonth = new Date().getMonth()+1;
+    const html = `
+      <div id="deductionRecordPanel">
+        <h3><i class="fas fa-receipt"></i> 本期扣款紀錄查詢</h3>
+        <div class="deduct-record-filters">
+          <div><label>年份</label><select id="deductRecordYear" onchange="renderDeductionRecordPanel()">
+            ${Array.from({length:6},(_,i)=>thisYear-2+i).map(y=>`<option value="${y}" ${y===thisYear?'selected':''}>${y}</option>`).join('')}
+          </select></div>
+          <div><label>月份</label><select id="deductRecordMonth" onchange="renderDeductionRecordPanel()">
+            ${Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}" ${m===thisMonth?'selected':''}>${m}</option>`).join('')}
+          </select></div>
+          <div><label>人員</label><input id="deductRecordStaff" placeholder="搜尋人員姓名" oninput="renderDeductionRecordPanel()"></div>
+          <button class="btn btn-clear-filter" onclick="document.getElementById('deductRecordStaff').value='';renderDeductionRecordPanel();"><i class="fas fa-broom"></i> 清除搜尋</button>
+        </div>
+        <div class="table-responsive">
+          <table class="deduct-record-table">
+            <thead><tr><th>年月</th><th>人員</th><th>本期勞保</th><th>本期健保</th><th>扣款來源</th><th>儲存時間</th><th>備註</th></tr></thead>
+            <tbody id="deductRecordTableBody"></tbody>
+          </table>
+        </div>
+      </div>`;
+    const anchor = $('salDeductOverrideBox') || $('salDetailResult') || salaryPage.firstElementChild;
+    if(anchor && anchor.parentNode) anchor.insertAdjacentHTML('afterend', html);
+    else salaryPage.insertAdjacentHTML('beforeend', html);
+    renderDeductionRecordPanel();
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(window.ensureDeductionRecordPanel, 800);
+  });
+  document.addEventListener('click', function(){
+    setTimeout(window.ensureDeductionRecordPanel, 300);
+  });
+})();
+</script>
+
 </body>
 </html>`);
     w.document.close();
@@ -3537,6 +3701,92 @@ function calcAttendTemp() {
     checkHourlyUpgradeAlert(); 
 }
 
+
+function _attendTimeAddHours(timeStr, hours) {
+    if(!timeStr) return '';
+    let [h, m] = String(timeStr).split(':').map(Number);
+    if(Number.isNaN(h)) h = 0;
+    if(Number.isNaN(m)) m = 0;
+    let totalMinutes = h * 60 + m + Math.round(Number(hours || 0) * 60);
+    let nh = Math.floor(totalMinutes / 60) % 24;
+    let nm = ((totalMinutes % 60) + 60) % 60;
+    return String(nh).padStart(2,'0') + ':' + String(nm).padStart(2,'0');
+}
+
+function getAttendAutoSplitInfo(o) {
+    const hInp = Number(o.salary_hours || 0);
+    if(!o.staff || !o.date || hInp <= 0) return null;
+    if(Number(o.project_fee || 0) > 0) return null;
+    if(o.special_hourly !== undefined && String(o.special_hourly || '').trim() !== '') return null;
+
+    const si = staffData.find(x => x.name === o.staff);
+    if(!si) return null;
+
+    let staffRecords = attendData.map((r, i) => ({ record: r, idx: i }))
+        .filter(r => r.record.staff === o.staff);
+    if(editAttendIndex > -1) staffRecords = staffRecords.filter(r => r.idx !== editAttendIndex);
+    staffRecords.push({ record: { date: o.date }, idx: 999999, isCurrent: true });
+    staffRecords.sort((a, b) => new Date(a.record.date) - new Date(b.record.date) || a.idx - b.idx);
+
+    let cH = 0;
+    for (let sr of staffRecords) {
+        if(sr.isCurrent) break;
+        cH += getItemSalaryHours(sr.record);
+        cH = Math.round(cH * 10) / 10;
+    }
+
+    const rule = si.salary_rule || '114年標準';
+    const calcRule = si.salary_calc_rule || deriveSalaryCalcRule(si);
+    const agreed = typeof isRaise250Approved === 'function' ? isRaise250Approved(si) : ((si.remark||'').includes('已同意調薪'));
+    const oldWage = calcWageByDate(rule, cH, agreed, si.hourly, calcRule, o.date);
+    const newWage = calcWageByDate(rule, cH + hInp, agreed, si.hourly, calcRule, o.date);
+    const tierInfo = getNextTierInfo(rule, cH, agreed, si.hourly, calcRule);
+    const th = tierInfo ? tierInfo.nextTier : null;
+
+    if(!th || th === 'FIXED') return null;
+    if(!(cH < th && cH + hInp > th && oldWage !== newWage)) return null;
+
+    const h1 = Number((th - cH).toFixed(1));
+    const h2 = Number((hInp - h1).toFixed(1));
+    if(!(h1 > 0 && h2 > 0)) return null;
+
+    return { beforeHours:cH, threshold:th, h1, h2, oldWage, newWage };
+}
+
+function buildAttendSplitRecords(o, splitInfo) {
+    const h1 = splitInfo.h1, h2 = splitInfo.h2;
+    const amS = o.am_s, amE = o.am_e, pmS = o.pm_s, pmE = o.pm_e;
+    let amHrs = amS && amE ? Number(getHours(amS, amE)) : 0;
+
+    let r1 = {...o, salary_hours:h1, deduct_points:h1, project_fee:0, special_hourly:splitInfo.oldWage, remark:[o.remark, `跨階前：累積${splitInfo.beforeHours.toFixed(1)}→${splitInfo.threshold}h，自動拆帳`].filter(Boolean).join('｜') };
+    let r2 = {...o, salary_hours:h2, deduct_points:h2, project_fee:0, special_hourly:'', remark:[o.remark, `跨階後：${splitInfo.threshold}h後自動拆帳`].filter(Boolean).join('｜') };
+    r1.am_s = r1.am_e = r1.pm_s = r1.pm_e = '';
+    r2.am_s = r2.am_e = r2.pm_s = r2.pm_e = '';
+
+    if(amS && amE && h1 <= amHrs) {
+        r1.am_s = amS;
+        r1.am_e = _attendTimeAddHours(amS, h1);
+        r2.am_s = r1.am_e;
+        r2.am_e = amE;
+        r2.pm_s = pmS;
+        r2.pm_e = pmE;
+    } else if(pmS && pmE) {
+        r1.am_s = amS;
+        r1.am_e = amE;
+        const remainInPm = Number((h1 - amHrs).toFixed(1));
+        r1.pm_s = pmS;
+        r1.pm_e = _attendTimeAddHours(pmS, remainInPm);
+        r2.pm_s = r1.pm_e;
+        r2.pm_e = pmE;
+    } else {
+        r1.am_s = amS;
+        r1.am_e = amE;
+        r2.pm_s = pmS;
+        r2.pm_e = pmE;
+    }
+    return [r1, r2];
+}
+
 function addAttend() { 
     const o = { 
         company:el('attend_company').value.trim(), staff:el('attend_staff').value.trim(), 
@@ -3547,6 +3797,32 @@ function addAttend() {
         special_hourly:el('attend_special_hourly').value 
     }; 
     if(!o.company || !o.staff || !o.date) return;
+
+    const splitInfo = getAttendAutoSplitInfo(o);
+    if(splitInfo) {
+        const records = buildAttendSplitRecords(o, splitInfo);
+        if(editAttendIndex > -1) {
+            attendData.splice(editAttendIndex, 1, records[0], records[1]);
+            editAttendIndex = -1;
+        } else {
+            attendData.push(records[0], records[1]);
+        }
+        saveAll();
+        renderAttend();
+
+        const keepCompany = o.company;
+        const keepStaff = o.staff;
+        const keepService = o.service;
+        const keepDate = o.date;
+        clearAttendForm();
+        el('attend_company').value = keepCompany;
+        el('attend_staff').value = keepStaff;
+        el('attend_service').value = keepService;
+        el('attend_date').value = keepDate;
+        el('attend_company').focus();
+        showToast(`✅ 已自動拆帳：${splitInfo.h1}h × $${splitInfo.oldWage}，${splitInfo.h2}h × $${splitInfo.newWage}`);
+        return;
+    }
     
     if(editAttendIndex > -1) { 
         attendData[editAttendIndex] = {...attendData[editAttendIndex], ...o}; 
