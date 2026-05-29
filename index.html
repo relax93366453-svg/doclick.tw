@@ -1782,14 +1782,14 @@ let bonusRulesData = safeJSONParse('bonusRulesData', { tier1: 80, tier2: 100, ti
 
 // ── 共用：依規則與累積時數計算時薪 ──
 
-const NEW_SALARY_START_DATE = '2026-05-01';
+const NEW_SALARY_START_DATE = '2026-06-01';
 function isBeforeNewSalarySystem(dateStr){
     if(!dateStr) return false;
     return String(dateStr).slice(0,10) < NEW_SALARY_START_DATE;
 }
 function isProtectedOriginalSalaryRule(rule){
     const r = String(rule || '');
-    // 這三類是老闆確認要保留舊制，不受 2026/05/01 新制覆蓋
+    // 這三類是老闆確認要保留舊制，不受 2026/06/01 新制覆蓋
     return r.includes('早期約') || r.includes('245起跳') || r.includes('固定220') || r.includes('特殊');
 }
 function deriveSalaryCalcRule(staffOrRule){
@@ -1804,7 +1804,7 @@ function deriveSalaryCalcRule(staffOrRule){
     return '新制級距';
 }
 
-// 2026/05/01以前：保護歷史薪資，用原計薪方案計算，不用新制回頭重算
+// 2026/06/01以前：保護歷史薪資，用原計薪方案計算，不用新制回頭重算
 function calcLegacyWageByRule(rule, hours, agreed, customHourly) {
     const custom = Number(customHourly) || 0;
     if(String(rule||'').includes('自訂') || String(rule||'').includes('接案')) return custom || 0;
@@ -1835,7 +1835,7 @@ function calcLegacyWageByRule(rule, hours, agreed, customHourly) {
     return w || 210;
 }
 
-// 2026/05/01起：新制規則計算
+// 2026/06/01起：新制規則計算
 function calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule) {
     const actualRule = calcRule || deriveSalaryCalcRule(rule);
     const custom = Number(customHourly) || 0;
@@ -1873,7 +1873,7 @@ function calcWageByDate(rule, hours, agreed, customHourly, calcRule, dateStr){
     if(isProtectedOriginalSalaryRule(rule)) {
         return calcLegacyWageByRule(rule, hours, agreed, customHourly);
     }
-    // 其他人員：2026/05/01以前用原計薪方案；2026/05/01起才用新制級距
+    // 其他人員：2026/06/01以前用原計薪方案；2026/06/01起才用新制級距
     if(isBeforeNewSalarySystem(dateStr)) {
         return calcLegacyWageByRule(rule, hours, agreed, customHourly);
     }
