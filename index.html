@@ -504,6 +504,78 @@
 /* 修正：排班異動紀錄獨立頁面顯示 */
 #page-schedule_changes.active{display:block!important;background:#fff!important;border-radius:12px!important;padding:30px!important;box-shadow:0 4px 6px -1px rgba(0,0,0,.05)!important;border:1px solid #f1f5f9!important;}
 
+
+/* ===== 人事員工區：左側選單大分類整理 ===== */
+.sidebar-nav .hr-menu-group,
+.sidebar-nav .hr-subgroup{
+    margin:4px 0;
+}
+.sidebar-nav .hr-menu-title,
+.sidebar-nav .hr-sub-title{
+    width:100%;
+    border:0;
+    background:transparent;
+    color:#475569;
+    font-weight:900;
+    text-align:left;
+    padding:13px 18px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    font-size:14px;
+    border-radius:0;
+}
+.sidebar-nav .hr-menu-title:hover,
+.sidebar-nav .hr-sub-title:hover{
+    background:#f1f5f9;
+    color:#1d4ed8;
+}
+.sidebar-nav .hr-menu-title .left,
+.sidebar-nav .hr-sub-title .left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.sidebar-nav .hr-menu-title .chev,
+.sidebar-nav .hr-sub-title .chev{
+    transition:transform .2s ease;
+    font-size:12px;
+    opacity:.75;
+}
+.sidebar-nav .hr-menu-group.open > .hr-menu-title .chev,
+.sidebar-nav .hr-subgroup.open > .hr-sub-title .chev{
+    transform:rotate(90deg);
+}
+.sidebar-nav .hr-submenu,
+.sidebar-nav .hr-submenu-2{
+    display:none;
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+.sidebar-nav .hr-menu-group.open > .hr-submenu,
+.sidebar-nav .hr-subgroup.open > .hr-submenu-2{
+    display:block;
+}
+.sidebar-nav .hr-submenu a{
+    padding-left:38px!important;
+    font-size:13px;
+}
+.sidebar-nav .hr-submenu-2 a{
+    padding-left:58px!important;
+    font-size:13px;
+}
+.sidebar-nav .hr-menu-group.open > .hr-menu-title{
+    background:#eef6ff;
+    color:#1d4ed8;
+}
+.sidebar-nav .hr-subgroup.open > .hr-sub-title{
+    background:#f8fafc;
+    color:#1d4ed8;
+}
+
 </style>
 </head>
 <body>
@@ -580,17 +652,56 @@
                 <li class="ws-business sys-auth"><a onclick="showAdminPage('settings')"><i class="fas fa-sliders-h"></i> 系統與使用者</a></li>
                 
                 <li class="ws-hr"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 人事儀表板</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('staff')"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('sales_staff')"><i class="fas fa-user-tie"></i> 業務人員管理</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('match')"><i class="fas fa-people-arrows"></i> 派工媒合平台</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('schedule')"><i class="fas fa-calendar-alt"></i> 公司排班管理</a></li>
-                <li class="ws-hr"><a onclick="openScheduleChangesPage()"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('clock_overview')"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('ft_salary')"><i class="fas fa-money-check-alt"></i> 正職薪資結算</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('talent')"><i class="fas fa-address-card"></i> 人才招募庫</a></li>
+
+                <li class="ws-hr hr-menu-group open" data-hr-group="people">
+                    <button type="button" class="hr-menu-title" onclick="toggleHrMenuGroup('people')">
+                        <span class="left"><i class="fas fa-users"></i> 人員資料管理</span><i class="fas fa-chevron-right chev"></i>
+                    </button>
+                    <ul class="hr-submenu">
+                        <li><a onclick="showAdminPage('staff')"><i class="fas fa-user-tag"></i> 派遣人員管理</a></li>
+                        <li class="hr-subgroup" data-hr-subgroup="fulltime">
+                            <button type="button" class="hr-sub-title" onclick="toggleHrSubGroup('fulltime')">
+                                <span class="left"><i class="fas fa-user-tie"></i> 正職人員管理</span><i class="fas fa-chevron-right chev"></i>
+                            </button>
+                            <ul class="hr-submenu-2">
+                                <li><a onclick="showAdminPage('ft_staff')"><i class="fas fa-id-card"></i> 正職員工資料庫</a></li>
+                                <li><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
+                                <li><a onclick="showAdminPage('ft_salary')"><i class="fas fa-money-check-alt"></i> 正職薪資結算</a></li>
+                            </ul>
+                        </li>
+                        <li><a onclick="showAdminPage('sales_staff')"><i class="fas fa-user-tie"></i> 業務人員管理</a></li>
+                    </ul>
+                </li>
+
+                <li class="ws-hr hr-menu-group open" data-hr-group="schedule">
+                    <button type="button" class="hr-menu-title" onclick="toggleHrMenuGroup('schedule')">
+                        <span class="left"><i class="fas fa-calendar-alt"></i> 排班打卡</span><i class="fas fa-chevron-right chev"></i>
+                    </button>
+                    <ul class="hr-submenu">
+                        <li><a onclick="showAdminPage('schedule')"><i class="fas fa-calendar-alt"></i> 公司排班管理</a></li>
+                        <li><a onclick="openScheduleChangesPage()"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</a></li>
+                        <li><a onclick="showAdminPage('clock_overview')"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</a></li>
+                    </ul>
+                </li>
+
+                <li class="ws-hr hr-menu-group open" data-hr-group="dispatch">
+                    <button type="button" class="hr-menu-title" onclick="toggleHrMenuGroup('dispatch')">
+                        <span class="left"><i class="fas fa-database"></i> 派發資料庫</span><i class="fas fa-chevron-right chev"></i>
+                    </button>
+                    <ul class="hr-submenu">
+                        <li><a onclick="showAdminPage('match')"><i class="fas fa-people-arrows"></i> 派工媒合平台</a></li>
+                        <li class="hr-subgroup" data-hr-subgroup="dispatch_cases">
+                            <button type="button" class="hr-sub-title" onclick="toggleHrSubGroup('dispatch_cases')">
+                                <span class="left"><i class="fas fa-tasks"></i> 待派發案件</span><i class="fas fa-chevron-right chev"></i>
+                            </button>
+                            <ul class="hr-submenu-2">
+                                <li><a onclick="showAdminDispatchCase('pending')"><i class="fas fa-hourglass-half"></i> 待完成案件</a></li>
+                                <li><a onclick="showAdminDispatchCase('done')"><i class="fas fa-check-circle"></i> 已完成案件</a></li>
+                            </ul>
+                        </li>
+                        <li><a onclick="showAdminPage('talent')"><i class="fas fa-address-card"></i> 人才招募庫</a></li>
+                    </ul>
+                </li>
                 
                 <li class="ws-sales"><a onclick="showAdminPage('dashboard')"><i class="fas fa-border-all"></i> 業務儀表板</a></li>
                 <li class="ws-sales"><a onclick="showAdminPage('customer')"><i class="fas fa-building"></i> 客戶資料庫</a></li>
@@ -969,6 +1080,7 @@
                     <label>人員</label><input list="list_staff" id="sch_change_staff" placeholder="搜尋人員" oninput="renderScheduleChangePage()">
                     <label>狀態</label><select id="sch_change_status" onchange="renderScheduleChangePage()"><option value="all">全部</option><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select>
                     <button class="btn btn-clear-filter" onclick="clearScheduleChangeFilters()"><i class="fas fa-broom"></i> 清除搜尋</button>
+                    <button class="btn btn-excel" onclick="exportScheduleChangesExcel()"><i class="fas fa-file-excel"></i> 下載異動紀錄Excel</button>
                 </div>
                 <div class="change-kpi-grid">
                     <div class="change-kpi"><div class="label">本月異動總數</div><div class="num" id="sch_change_kpi_total">0</div></div>
@@ -2550,7 +2662,14 @@ function clearReqForm() { document.querySelectorAll('#page-req .grid input').for
 
 function renderDispatchTable() { 
     const kw = el('dp_filter_keyword').value.trim().toLowerCase(); const stat = el('dp_filter_status').value; 
-    let l = dispatchData.filter(x => { let matchKw = (!kw || x.company.toLowerCase().includes(kw) || x.role.toLowerCase().includes(kw) || (x.staff||'').toLowerCase().includes(kw)); let matchStat = (stat === 'all' || x.status === stat); return matchKw && matchStat; }); 
+    const caseView = window.dispatchCaseView || '';
+    let l = dispatchData.filter(x => { 
+        let matchKw = (!kw || x.company.toLowerCase().includes(kw) || x.role.toLowerCase().includes(kw) || (x.staff||'').toLowerCase().includes(kw)); 
+        let matchStat = (stat === 'all' || x.status === stat); 
+        if(caseView === 'pending') matchStat = x.status !== '已完成';
+        if(caseView === 'done') matchStat = x.status === '已完成';
+        return matchKw && matchStat; 
+    }); 
     const {pagedList, total, totalPages} = getPagedData(l, 'dispatch'); let h = ''; 
     pagedList.forEach(item => { const idx = dispatchData.indexOf(item); let sColor = item.status==='預計派發日'?'badge-blue':(item.status==='換人等待'?'badge-red':(item.status==='二面日期'?'badge-yellow':'badge-green')); h += `<tr><td><span class="badge ${sColor}">${item.status}</span></td><td style="font-weight:bold;color:#1e293b;">${item.company}</td><td>${item.role}</td><td>${item.num}</td><td>${item.staff||'-'}</td><td>${item.tel||'-'}</td><td>${item.interview||'-'}</td><td>${item.date||'-'}</td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editDispatch(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delDispatch(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; }); 
     el('dispatchTable').innerHTML = h || '<tr><td colspan="10" style="text-align:center;">目前無待派發案件</td></tr>'; renderPagination('dispatch', total, totalPages); 
@@ -3257,11 +3376,48 @@ function openScheduleChangesPage(){
         tp.classList.add('active');
         document.querySelectorAll('#sys-screen .sidebar-nav a').forEach(a=>a.classList.remove('active'));
         const link=[...document.querySelectorAll('#sys-screen .sidebar-nav a')].find(a=>String(a.textContent||'').includes('排班異動紀錄'));
-        if(link) link.classList.add('active');
+        if(link) link.classList.add('active'); if(typeof expandHrMenuByPage==='function') expandHrMenuByPage('schedule_changes');
         if(typeof initScheduleChangeFilters==='function') initScheduleChangeFilters();
         if(typeof renderScheduleChangePage==='function') renderScheduleChangePage();
         window.scrollTo({top:0,behavior:'smooth'});
     }catch(e){console.error(e); alert('排班異動紀錄開啟失敗：'+(e.message||e));}
+}
+
+
+function toggleHrMenuGroup(name){
+    const group=document.querySelector(`.hr-menu-group[data-hr-group="${name}"]`);
+    if(group) group.classList.toggle('open');
+}
+function toggleHrSubGroup(name){
+    const group=document.querySelector(`.hr-subgroup[data-hr-subgroup="${name}"]`);
+    if(group) group.classList.toggle('open');
+}
+function expandHrMenuByPage(p){
+    const map={
+        staff:['people'], sales_staff:['people'], ft_staff:['people','fulltime'], ft_attend:['people','fulltime'], ft_salary:['people','fulltime'],
+        schedule:['schedule'], schedule_changes:['schedule'], clock_overview:['schedule'],
+        match:['dispatch'], dispatch:['dispatch','dispatch_cases'], talent:['dispatch']
+    };
+    const arr=map[p]||[];
+    document.querySelectorAll('.hr-menu-group,.hr-subgroup').forEach(g=>{
+        const key=g.getAttribute('data-hr-group') || g.getAttribute('data-hr-subgroup');
+        if(arr.includes(key)) g.classList.add('open');
+    });
+}
+function showAdminDispatchCase(mode){
+    window.dispatchCaseView = mode || '';
+    showAdminPage('dispatch');
+    setTimeout(()=>{
+        const st=el('dp_filter_status');
+        if(st) st.value = mode === 'done' ? '已完成' : 'all';
+        if(typeof resetPage==='function') resetPage('dispatch');
+        if(typeof renderDispatchTable==='function') renderDispatchTable();
+        document.querySelectorAll('#sys-screen .sidebar-nav a').forEach(a=>a.classList.remove('active'));
+        const label = mode === 'done' ? '已完成案件' : '待完成案件';
+        const link=[...document.querySelectorAll('#sys-screen .sidebar-nav a')].find(a=>String(a.textContent||'').includes(label));
+        if(link) link.classList.add('active');
+        expandHrMenuByPage('dispatch');
+    },0);
 }
 
 function showAdminPage(p) { 
@@ -3276,12 +3432,12 @@ function showAdminPage(p) {
         if(sysRole === 'sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true);
         if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true); 
         
-        let tp=el('page-'+p); if(!tp) { p='dashboard'; tp=el('page-dashboard'); } localStorage.setItem('adminPage',p); 
+        let tp=el('page-'+p); if(!tp) { p='dashboard'; tp=el('page-dashboard'); } if(p!=='dispatch') window.dispatchCaseView=''; localStorage.setItem('adminPage',p); 
         document.querySelectorAll('#sys-screen .page').forEach(x=>x.classList.remove('active')); tp.classList.add('active');
         if(p==='sales_staff') { fillFilters(); renderSalesStaffTable(); }
         if(p==='sales_settlement') { fillFilters(); renderSalesSettlement(); }
         if(currentWorkspace === 'sales' && p === 'dashboard') { fillFilters(); if(typeof renderSalesDashboard === 'function') renderSalesDashboard(); } 
-        document.querySelectorAll('#sys-screen .sidebar-nav a').forEach(a=>a.classList.remove('active')); let l = document.querySelector(`a[onclick*="showAdminPage('${p}')"]`); if(l) l.classList.add('active'); 
+        document.querySelectorAll('#sys-screen .sidebar-nav a').forEach(a=>a.classList.remove('active')); let l = document.querySelector(`a[onclick*="showAdminPage('${p}')"]`); if(l) l.classList.add('active'); if(typeof expandHrMenuByPage==='function') expandHrMenuByPage(p); 
         
         if(p==='customer') { clearCustForm(); renderCustTable(); } 
         if(p==='contract') { clearContractForm(); renderContractTable(); } 
@@ -5082,5 +5238,138 @@ document.addEventListener("DOMContentLoaded", function() {
     }, 800);
 });
 </script>
+
+<script>
+/* ===== 排班異動紀錄：最終保險修正 ===== */
+(function(){
+  const modalHtml = `
+  <div id="scheduleChangeModal" class="change-modal-backdrop" onclick="if(event.target===this){return false;}">
+    <div class="change-modal">
+      <h3><i class="fas fa-clipboard-list"></i> 排班異動紀錄</h3>
+      <div class="change-modal-sub" id="sch_change_modal_sub">選擇異動狀態與責任歸屬，系統會用來判斷是否影響員工考核、薪資與客戶扣點。</div>
+      <div class="change-form-grid">
+        <div><label>排班狀態</label><select id="sch_change_modal_status" onchange="applyScheduleChangeDefaults()"><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select></div>
+        <div><label>異動原因</label><select id="sch_change_modal_reason" onchange="applyScheduleChangeDefaults()"><option>無異動</option><option>員工臨時請假</option><option>員工病假</option><option>員工事假</option><option>員工未到 / 曠職</option><option>員工遲到</option><option>員工早退</option><option>客戶臨時取消</option><option>客戶當日不需人</option><option>客戶需求人數減少</option><option>客戶現場提早結束</option><option>主管調班</option><option>改派其他人</option><option>排班錯誤</option><option>重複排班</option><option>其他</option></select></div>
+        <div><label>責任歸屬</label><select id="sch_change_modal_owner"><option>無</option><option>員工</option><option>客戶</option><option>公司</option></select></div>
+        <div><label>是否影響考核</label><select id="sch_change_modal_assessment"><option value="否">否</option><option value="是">是</option></select></div>
+        <div><label>是否計薪</label><select id="sch_change_modal_paid"><option value="否">否</option><option value="是">是</option><option value="依實際出勤">依實際出勤</option><option value="依公司規則">依公司規則</option></select></div>
+        <div><label>是否扣客戶點數</label><select id="sch_change_modal_points"><option value="否">否</option><option value="是">是</option><option value="依合約規則">依合約規則</option></select></div>
+        <div><label>異動人員</label><input id="sch_change_modal_by" placeholder="例如：主管 / 丁丁"></div>
+        <div><label>異動時間</label><input id="sch_change_modal_time" readonly></div>
+        <div class="change-form-full"><label>異動備註</label><textarea id="sch_change_modal_remark" rows="3" placeholder="請補充原因、現場狀況或主管處理方式"></textarea></div>
+      </div>
+      <div class="change-modal-actions">
+        <button class="btn" style="background:#64748b;" onclick="closeScheduleChangeModal()">取消</button>
+        <button class="btn btn-success" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
+      </div>
+    </div>
+  </div>`;
+
+  window.ensureScheduleChangeModal = function(){
+    const existing = Array.from(document.querySelectorAll('#scheduleChangeModal'));
+    existing.slice(1).forEach(x => x.remove());
+    if(!existing[0]){
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    return document.getElementById('scheduleChangeModal');
+  };
+
+  const oldOpen = window.openScheduleChangeModal;
+  window.openScheduleChangeModal = function(index){
+    ensureScheduleChangeModal();
+    index = Number(index);
+    if(!Number.isInteger(index) || !window.scheduleData || !scheduleData[index]){
+      alert('找不到這筆排班資料，請重新整理後再試。');
+      return;
+    }
+    window.currentScheduleChangeIndex = index;
+    const d = scheduleData[index] || {};
+    const setVal = (id,val) => { const node=document.getElementById(id); if(node) node.value = val ?? ''; };
+    const sub = document.getElementById('sch_change_modal_sub');
+    if(sub) sub.innerHTML = `${d.date||''}｜${d.company||''}｜${d.staffs||d.staff||''}｜${d.start||''}-${d.end||''}`;
+    setVal('sch_change_modal_status', d.scheduleStatus || '已排班');
+    setVal('sch_change_modal_reason', d.changeReason || '無異動');
+    setVal('sch_change_modal_owner', d.responsibility || '無');
+    setVal('sch_change_modal_assessment', d.affectsAssessment || '否');
+    setVal('sch_change_modal_paid', d.isPaid || '依實際出勤');
+    setVal('sch_change_modal_points', d.deductCustomerPoints || '依合約規則');
+    setVal('sch_change_modal_by', d.changedBy || (localStorage.getItem('loginName') || ''));
+    setVal('sch_change_modal_time', d.changedAt || new Date().toLocaleString('zh-TW',{hour12:false}));
+    setVal('sch_change_modal_remark', d.changeRemark || '');
+    const modal = document.getElementById('scheduleChangeModal');
+    if(modal) modal.style.display = 'flex';
+  };
+
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('[data-schedule-change-index]');
+    if(btn){
+      e.preventDefault();
+      e.stopPropagation();
+      openScheduleChangeModal(btn.getAttribute('data-schedule-change-index'));
+    }
+  }, true);
+
+  window.exportScheduleChangesExcel = function(){
+    if(typeof initScheduleChangeFilters === 'function') initScheduleChangeFilters();
+    const list = (typeof getScheduleChangeFilteredList === 'function' ? getScheduleChangeFilteredList() : [])
+      .filter(d => !document.getElementById('sch_change_status') || document.getElementById('sch_change_status').value === 'all' || (d.scheduleStatus||'已排班') === document.getElementById('sch_change_status').value);
+
+    const rows = list.map(d => ({
+      '排班狀態': d.scheduleStatus || '已排班',
+      '日期': d.date || '',
+      '公司': d.company || '',
+      '人員': d.staffs || d.staff || '',
+      '上班': d.start || '',
+      '下班': d.end || '',
+      '工時': d.hours || '',
+      '責任歸屬': d.responsibility || '無',
+      '是否影響考核': d.affectsAssessment || '否',
+      '是否計薪': d.isPaid || '依實際出勤',
+      '是否扣客戶點數': d.deductCustomerPoints || '依合約規則',
+      '異動原因': d.changeReason || '',
+      '異動備註': d.changeRemark || '',
+      '異動時間': d.changedAt || '',
+      '異動人員': d.changedBy || ''
+    }));
+
+    if(!rows.length){
+      alert('目前沒有可匯出的排班異動資料');
+      return;
+    }
+
+    if(typeof XLSX !== 'undefined'){
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '排班異動紀錄');
+      const y = document.getElementById('sch_change_year')?.value || '';
+      const m = document.getElementById('sch_change_month')?.value || '';
+      XLSX.writeFile(wb, `排班異動紀錄_${y}_${m}.xlsx`);
+    }else{
+      const headers = Object.keys(rows[0]);
+      const csv = '\ufeff' + [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h]??'').replace(/"/g,'""')}"`).join(','))].join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = '排班異動紀錄.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+  };
+
+  const oldShowAdminPage = window.showAdminPage;
+  if(typeof oldShowAdminPage === 'function'){
+    window.showAdminPage = function(p){
+      oldShowAdminPage(p);
+      if(p === 'schedule_changes'){
+        setTimeout(function(){
+          if(typeof initScheduleChangeFilters === 'function') initScheduleChangeFilters();
+          if(typeof renderScheduleChangePage === 'function') renderScheduleChangePage();
+        }, 0);
+      }
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
