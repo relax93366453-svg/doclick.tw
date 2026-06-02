@@ -477,6 +477,29 @@
 .schedule-tab-note b{color:#1d4ed8;}
 .schedule-tab-title{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:900;color:#0f172a;margin:0 0 12px;}
 
+
+/* 排班異動紀錄 */
+.change-badge{display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;white-space:nowrap;}
+.change-normal{background:#dcfce7;color:#166534;border:1px solid #bbf7d0;}
+.change-staff{background:#fee2e2;color:#991b1b;border:1px solid #fecaca;}
+.change-client{background:#e0f2fe;color:#075985;border:1px solid #bae6fd;}
+.change-company{background:#fef3c7;color:#92400e;border:1px solid #fde68a;}
+.change-void{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;}
+.change-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100000;align-items:center;justify-content:center;padding:20px;overflow:auto;}
+.change-modal{width:min(720px,96vw);background:#fff;border-radius:22px;box-shadow:0 25px 80px rgba(15,23,42,.35);padding:24px;border:1px solid #e2e8f0;}
+.change-modal h3{margin:0;color:#0f172a;font-size:20px;font-weight:900;}
+.change-modal-sub{font-size:13px;color:#64748b;font-weight:800;margin:4px 0 16px;line-height:1.7;}
+.change-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:16px;}
+.change-form-grid label{display:block;font-size:12px;color:#475569;font-weight:900;margin-bottom:5px;}
+.change-form-grid input,.change-form-grid select,.change-form-grid textarea{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;font-size:13px;}
+.change-form-grid textarea{min-height:76px;resize:vertical;}.change-full{grid-column:1/-1;}
+.change-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:18px;}
+.schedule-mini-change{background:#7c3aed;color:#fff;border:0;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:900;cursor:pointer;margin-right:6px;}
+.change-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:12px;margin:12px 0 18px;}
+.change-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;box-shadow:0 3px 10px rgba(15,23,42,.03);}
+.change-kpi .label{font-size:12px;color:#64748b;font-weight:900;}.change-kpi .num{font-size:26px;font-weight:900;color:#0f172a;line-height:1.25;}
+@media(max-width:800px){.change-form-grid,.change-kpi-grid{grid-template-columns:1fr;}.change-full{grid-column:auto;}}
+
 </style>
 </head>
 <body>
@@ -558,6 +581,7 @@
                 <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('match')"><i class="fas fa-people-arrows"></i> 派工媒合平台</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('schedule')"><i class="fas fa-calendar-alt"></i> 公司排班管理</a></li>
+                <li class="ws-hr"><a onclick="showAdminPage('schedule_changes')"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('clock_overview')"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
@@ -885,7 +909,7 @@
                         <div class="schedule-quick-hint" style="margin-bottom:10px;">如果有一筆打錯，可以在這裡直接按「刪除」。此清單會依照上方公司、年份、月份篩選。</div>
                         <div class="table-responsive">
                             <table>
-                                <thead><tr><th>日期</th><th>公司</th><th>人員</th><th>上班</th><th>下班</th><th>休息</th><th>工時</th><th>備註</th><th>操作</th></tr></thead>
+                                <thead><tr><th>狀態</th><th>日期</th><th>公司</th><th>人員</th><th>上班</th><th>下班</th><th>休息</th><th>工時</th><th>備註</th><th>操作</th></tr></thead>
                                 <tbody id="scheduleFilledList"></tbody>
                             </table>
                         </div>
@@ -894,7 +918,35 @@
                     <div id="scheduleWarningBox" style="display:none;"></div>
                 </div>
 
-                <div class="schedule-modal-backdrop" id="scheduleEditModal">
+                
+            <div class="page" id="page-schedule_changes">
+                <div class="page-title"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</div>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 16px;color:#1e40af;font-weight:800;line-height:1.8;margin-bottom:14px;">
+                    用來分清楚排班異動責任歸屬：員工請假 / 未到會影響考核；客戶取消、主管調班、排錯班不會影響員工考核。此資料會保留在原排班資料內，不會破壞原本排班與打卡流程。
+                </div>
+                <div class="filter-bar">
+                    <label>年份</label><select id="sch_change_year" onchange="renderScheduleChangePage()"></select>
+                    <label>月份</label><select id="sch_change_month" onchange="renderScheduleChangePage()"></select>
+                    <label>公司</label><input list="list_cust" id="sch_change_company" placeholder="搜尋公司" oninput="renderScheduleChangePage()">
+                    <label>人員</label><input list="list_staff" id="sch_change_staff" placeholder="搜尋人員" oninput="renderScheduleChangePage()">
+                    <label>狀態</label><select id="sch_change_status" onchange="renderScheduleChangePage()"><option value="all">全部</option><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select>
+                    <button class="btn btn-clear-filter" onclick="clearScheduleChangeFilters()"><i class="fas fa-broom"></i> 清除搜尋</button>
+                </div>
+                <div class="change-kpi-grid">
+                    <div class="change-kpi"><div class="label">本月異動總數</div><div class="num" id="sch_change_kpi_total">0</div></div>
+                    <div class="change-kpi"><div class="label">員工責任</div><div class="num" id="sch_change_kpi_staff">0</div></div>
+                    <div class="change-kpi"><div class="label">客戶責任</div><div class="num" id="sch_change_kpi_client">0</div></div>
+                    <div class="change-kpi"><div class="label">公司內部</div><div class="num" id="sch_change_kpi_company">0</div></div>
+                </div>
+                <div class="table-responsive">
+                    <table id="scheduleChangeTableBox">
+                        <thead><tr><th>排班狀態</th><th>日期</th><th>公司</th><th>人員</th><th>排班時間</th><th>責任歸屬</th><th>是否影響考核</th><th>是否計薪</th><th>是否扣點</th><th>異動原因 / 備註</th><th>異動時間</th><th>操作</th></tr></thead>
+                        <tbody id="scheduleChangeTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+<div class="schedule-modal-backdrop" id="scheduleEditModal">
                     <div class="schedule-modal">
                         <div class="schedule-modal-head">
                             <div>
@@ -1271,7 +1323,7 @@ let editMatchIndex = -1, editReqIndex = -1, editDispatchIndex = -1, editSchedule
 
 const pageConfig = { 
     pageSize: 10, 
-    currentPage: { customer:1, contract:1, staff:1, attend:1, point:1, bill:1, salary:1, boss:1, ft_staff:1, ft_attend:1, ft_salary:1, talent:1, supplier:1, match:1, req:1, dispatch:1, sales_staff:1, schedule:1 } 
+    currentPage: { customer:1, contract:1, staff:1, attend:1, point:1, bill:1, salary:1, boss:1, ft_staff:1, ft_attend:1, ft_salary:1, talent:1, supplier:1, match:1, req:1, dispatch:1, sales_staff:1, schedule:1, schedule_changes:1 } 
 };
 
 let priceTable = safeJSONParse('priceTable', { "無購買時數":{points:0,packagePrice:0,avg:400} });
@@ -1498,6 +1550,83 @@ function showScheduleTab(tab){
 }
 
 
+
+let currentScheduleChangeIndex = -1;
+function renderScheduleChangeBadge(status){
+    status = status || '已排班';
+    const cls = status === '員工請假' || status === '異常' ? 'change-staff' : status === '客戶取消' ? 'change-client' : status === '主管調班' ? 'change-company' : status === '作廢' ? 'change-void' : 'change-normal';
+    return `<span class="change-badge ${cls}">${status}</span>`;
+}
+function initScheduleChangeFilters(){
+    const now = new Date();
+    const ySel = el('sch_change_year'), mSel = el('sch_change_month');
+    if(ySel && !ySel.options.length){
+        for(let y=now.getFullYear()-2;y<=now.getFullYear()+2;y++) ySel.innerHTML += `<option value="${y}">${y}</option>`;
+        ySel.value = getScheduleYear ? getScheduleYear() : now.getFullYear();
+    }
+    if(mSel && !mSel.options.length){
+        for(let m=1;m<=12;m++) mSel.innerHTML += `<option value="${m}">${m} 月</option>`;
+        mSel.value = getScheduleMonth ? getScheduleMonth() : now.getMonth()+1;
+    }
+}
+function getScheduleChangeFilteredList(){
+    initScheduleChangeFilters();
+    const y = el('sch_change_year') ? Number(el('sch_change_year').value) : (getScheduleYear?getScheduleYear():new Date().getFullYear());
+    const m = el('sch_change_month') ? Number(el('sch_change_month').value) : (getScheduleMonth?getScheduleMonth():new Date().getMonth()+1);
+    const ym = `${y}-${pad2(m)}-`;
+    const company = (el('sch_change_company')?.value || '').trim();
+    const staff = (el('sch_change_staff')?.value || '').trim();
+    const status = el('sch_change_status')?.value || 'all';
+    return (scheduleData||[]).map((d,index)=>({...d,index}))
+        .filter(d=>String(d.date||'').startsWith(ym))
+        .filter(d=>!company || String(d.company||'').includes(company))
+        .filter(d=>!staff || String(d.staffs||'').includes(staff))
+        .filter(d=>status==='all' || (d.scheduleStatus||'已排班')===status)
+        .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.start||'').localeCompare(String(b.start||'')) || String(a.company||'').localeCompare(String(b.company||'')));
+}
+function renderScheduleChangePage(){
+    initScheduleChangeFilters();
+    const tbody = el('scheduleChangeTable');
+    if(!tbody) return;
+    const list = getScheduleChangeFilteredList();
+    const changed = list.filter(d=>(d.scheduleStatus||'已排班')!=='已排班');
+    if(el('sch_change_kpi_total')) el('sch_change_kpi_total').innerText = changed.length;
+    if(el('sch_change_kpi_staff')) el('sch_change_kpi_staff').innerText = list.filter(d=>d.responsibility==='員工').length;
+    if(el('sch_change_kpi_client')) el('sch_change_kpi_client').innerText = list.filter(d=>d.responsibility==='客戶').length;
+    if(el('sch_change_kpi_company')) el('sch_change_kpi_company').innerText = list.filter(d=>d.responsibility==='公司').length;
+    if(!list.length){tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#64748b;font-weight:800;padding:18px;">目前沒有符合條件的排班資料</td></tr>';return;}
+    tbody.innerHTML = list.map(d=>{
+        const hours = Number(d.hours)||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours)||0;
+        const reason = d.changeReason || '-';
+        const remark = d.changeRemark ? `<div style="font-size:12px;color:#64748b;max-width:220px;white-space:normal;">${d.changeRemark}</div>` : '';
+        return `<tr><td>${renderScheduleChangeBadge(d.scheduleStatus||'已排班')}</td><td>${d.date||''}</td><td>${d.company||''}</td><td style="font-weight:900;color:#1d4ed8;">${d.staffs||''}</td><td>${d.start||''}-${d.end||''}<br><span style="font-size:11px;color:#64748b;">${formatScheduleHours(hours)}h</span></td><td>${d.responsibility||'無'}</td><td>${d.affectsAssessment||'否'}</td><td>${d.isPaid||'依實際出勤'}</td><td>${d.deductCustomerPoints||'依合約規則'}</td><td>${reason}${remark}</td><td>${d.changedAt||'-'}<br><span style="font-size:11px;color:#64748b;">${d.changedBy||''}</span></td><td><button class="schedule-mini-change" onclick="openScheduleChangeModal(${d.index})">異動</button><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">排班</button></td></tr>`;
+    }).join('');
+}
+function clearScheduleChangeFilters(){if(el('sch_change_company'))el('sch_change_company').value='';if(el('sch_change_staff'))el('sch_change_staff').value='';if(el('sch_change_status'))el('sch_change_status').value='all';renderScheduleChangePage();}
+function openScheduleChangeModal(index){
+    index = Number(index); if(!Number.isInteger(index)||!scheduleData[index])return showToast('找不到這筆排班資料',true);
+    currentScheduleChangeIndex=index; const d=scheduleData[index];
+    if(el('sch_change_modal_sub'))el('sch_change_modal_sub').innerHTML=`${d.date||''}｜${d.company||''}｜${d.staffs||''}｜${d.start||''}-${d.end||''}`;
+    el('sch_change_modal_status').value=d.scheduleStatus||'已排班'; el('sch_change_modal_reason').value=d.changeReason||'無異動'; el('sch_change_modal_owner').value=d.responsibility||'無'; el('sch_change_modal_assessment').value=d.affectsAssessment||'否'; el('sch_change_modal_paid').value=d.isPaid||'依實際出勤'; el('sch_change_modal_points').value=d.deductCustomerPoints||'依合約規則'; el('sch_change_modal_by').value=d.changedBy||''; el('sch_change_modal_time').value=d.changedAt||new Date().toLocaleString('zh-TW',{hour12:false}); el('sch_change_modal_remark').value=d.changeRemark||'';
+    el('scheduleChangeModal').style.display='flex';
+}
+function closeScheduleChangeModal(){if(el('scheduleChangeModal'))el('scheduleChangeModal').style.display='none';currentScheduleChangeIndex=-1;}
+function applyScheduleChangeDefaults(){
+    const status=el('sch_change_modal_status')?.value||'已排班'; const reason=el('sch_change_modal_reason')?.value||'';
+    let owner='無',assess='否',paid='依實際出勤',points='依合約規則';
+    if(status==='員工請假'||reason.includes('員工')||reason.includes('曠職')||reason.includes('遲到')||reason.includes('早退')){owner='員工';assess='是';paid='否';points='否';}
+    else if(status==='客戶取消'||reason.includes('客戶')){owner='客戶';assess='否';paid='依公司規則';points='依合約規則';}
+    else if(status==='主管調班'||reason.includes('主管')||reason.includes('排班')||reason.includes('重複')||reason.includes('改派')){owner='公司';assess='否';paid='依實際出勤';points='依合約規則';}
+    else if(status==='作廢'){owner='公司';assess='否';paid='否';points='否';}
+    else if(status==='異常'){owner='員工';assess='是';paid='依實際出勤';points='依合約規則';}
+    if(el('sch_change_modal_owner'))el('sch_change_modal_owner').value=owner; if(el('sch_change_modal_assessment'))el('sch_change_modal_assessment').value=assess; if(el('sch_change_modal_paid'))el('sch_change_modal_paid').value=paid; if(el('sch_change_modal_points'))el('sch_change_modal_points').value=points;
+}
+function saveScheduleChange(){
+    const i=currentScheduleChangeIndex; if(i<0||!scheduleData[i])return;
+    scheduleData[i]={...scheduleData[i],scheduleStatus:el('sch_change_modal_status').value,changeReason:el('sch_change_modal_reason').value,responsibility:el('sch_change_modal_owner').value,affectsAssessment:el('sch_change_modal_assessment').value,isPaid:el('sch_change_modal_paid').value,deductCustomerPoints:el('sch_change_modal_points').value,changeRemark:el('sch_change_modal_remark').value.trim(),changedBy:el('sch_change_modal_by').value.trim(),changedAt:el('sch_change_modal_time').value||new Date().toLocaleString('zh-TW',{hour12:false})};
+    saveAll(); closeScheduleChangeModal(); if(typeof renderScheduleTable==='function')renderScheduleTable(); renderScheduleChangePage(); showToast('✅ 排班異動已儲存');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
         setupSafeSyncGuards();
@@ -1523,6 +1652,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setupScheduleTabs();
         if(typeof showStaffSection === 'function') showStaffSection('create');
         if(typeof showFtStaffSection === 'function') showFtStaffSection('create');
+        if(typeof initScheduleChangeFilters === 'function') initScheduleChangeFilters();
     } catch (err) { 
         el('login-screen').style.display='flex'; 
     } finally { 
@@ -2320,6 +2450,29 @@ h3{margin:8px 0 0;color:#64748b;font-size:18px;}
 <div class="print-toolbar"><button onclick="window.print()">列印 / 另存 PDF</button></div>
 ${d.contentHtml}
 <script>setTimeout(function(){window.print();},500);<\/script>
+
+<div id="scheduleChangeModal" class="change-modal-backdrop" onclick="if(event.target===this){return false;}">
+    <div class="change-modal">
+        <h3><i class="fas fa-clipboard-list"></i> 排班異動紀錄</h3>
+        <div class="change-modal-sub" id="sch_change_modal_sub">選擇異動狀態與責任歸屬，系統會用來判斷是否影響員工考核、薪資與客戶扣點。</div>
+        <div class="change-form-grid">
+            <div><label>排班狀態</label><select id="sch_change_modal_status" onchange="applyScheduleChangeDefaults()"><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select></div>
+            <div><label>異動原因</label><select id="sch_change_modal_reason" onchange="applyScheduleChangeDefaults()"><option>無異動</option><option>員工臨時請假</option><option>員工病假</option><option>員工事假</option><option>員工未到 / 曠職</option><option>員工遲到</option><option>員工早退</option><option>客戶臨時取消</option><option>客戶當日不需人</option><option>客戶需求人數減少</option><option>客戶現場提早結束</option><option>主管調班</option><option>改派其他人</option><option>排班錯誤</option><option>重複排班</option><option>其他</option></select></div>
+            <div><label>責任歸屬</label><select id="sch_change_modal_owner"><option>無</option><option>員工</option><option>客戶</option><option>公司</option></select></div>
+            <div><label>是否影響考核</label><select id="sch_change_modal_assessment"><option value="否">否</option><option value="是">是</option></select></div>
+            <div><label>是否計薪</label><select id="sch_change_modal_paid"><option value="否">否</option><option value="是">是</option><option value="依實際出勤">依實際出勤</option><option value="依公司規則">依公司規則</option></select></div>
+            <div><label>是否扣客戶點數</label><select id="sch_change_modal_points"><option value="否">否</option><option value="是">是</option><option value="依合約規則">依合約規則</option></select></div>
+            <div><label>異動人員</label><input id="sch_change_modal_by" placeholder="例如：主管 / 丁丁"></div>
+            <div><label>異動時間</label><input id="sch_change_modal_time" readonly></div>
+            <div class="change-full"><label>異動備註</label><textarea id="sch_change_modal_remark" placeholder="補充說明：例如員工幾點通知、客戶窗口說明、是否需補派人員等"></textarea></div>
+        </div>
+        <div class="change-actions">
+            <button class="btn" style="background:#64748b" onclick="closeScheduleChangeModal()"><i class="fas fa-times"></i> 關閉</button>
+            <button class="btn btn-warning" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>`);
     w.document.close();
@@ -2591,7 +2744,7 @@ function renderScheduleFilledList(){
         .filter(d=>(!company||d.company===company)&&String(d.date||'').startsWith(ym)&&getScheduleStaffList(d.staffs).length)
         .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.start||'').localeCompare(String(b.start||'')) || String(a.company||'').localeCompare(String(b.company||'')) || String(a.staffs||'').localeCompare(String(b.staffs||'')));
     if(!list.length){
-        tbody.innerHTML=`<tr><td colspan="9"><div class="schedule-filled-empty">本月目前沒有已填排班資料</div></td></tr>`;
+        tbody.innerHTML=`<tr><td colspan="10"><div class="schedule-filled-empty">本月目前沒有已填排班資料</div></td></tr>`;
         return;
     }
     tbody.innerHTML=list.map(d=>{
@@ -2599,6 +2752,7 @@ function renderScheduleFilledList(){
         const restText=breakHours?`${formatScheduleHours(breakHours)} 小時`:(d.breakStart&&d.breakEnd?`${d.breakStart}-${d.breakEnd}`:'');
         const hours=Number(d.hours)||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours)||0;
         return `<tr>
+            <td>${renderScheduleChangeBadge(d.scheduleStatus||'已排班')}</td>
             <td>${d.date||''}</td>
             <td>${d.company||''}</td>
             <td style="font-weight:900;color:#1d4ed8;">${d.staffs||''}</td>
@@ -2607,7 +2761,7 @@ function renderScheduleFilledList(){
             <td>${restText||'-'}</td>
             <td>${formatScheduleHours(hours)}h</td>
             <td>${d.remark||''}</td>
-            <td><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">編輯</button><button class="schedule-mini-del" onclick="deleteScheduleEntryFromList(${d.index})">刪除</button></td>
+            <td><button class="schedule-mini-change" onclick="openScheduleChangeModal(${d.index})">異動</button><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">編輯</button><button class="schedule-mini-del" onclick="deleteScheduleEntryFromList(${d.index})">刪除</button></td>
         </tr>`;
     }).join('');
 }
@@ -2772,7 +2926,7 @@ function saveScheduleCell(){
         if(!confirm(msg))return;
     }
     const oldIndex=(currentScheduleEditIndex>=0 && scheduleData[currentScheduleEditIndex]) ? currentScheduleEditIndex : (scheduleData||[]).findIndex(x=>x===existing);
-    const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,breakHours,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
+    const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,breakHours,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',scheduleStatus:(existing&&existing.scheduleStatus)||'已排班',location:el('sch_modal_location').value.trim(),remark:el('sch_modal_remark').value.trim()};
     if(oldIndex>=0)scheduleData[oldIndex]={...scheduleData[oldIndex],...obj};else scheduleData.push(obj);
     currentScheduleEditIndex = -1;
     saveAll();closeScheduleModal();renderScheduleTable();showToast('✅ 時段排班已儲存');
@@ -2808,7 +2962,7 @@ function addQuickSchedule(){
         if(!confirm(msg))return;
     }
     const oldIndex=(scheduleData||[]).findIndex(x=>String(x.date||'')===date&&String(x.company||'')===company&&String(x.start||'')===start&&String(x.end||'')===end&&String(x.breakStart||'')===breakStart&&String(x.breakEnd||'')===breakEnd&&String(x.breakHours||'')===String(breakHours||''));
-    const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,breakHours,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',location:'',remark};
+    const obj={company,date,shift:'時段排班',start,end,breakStart,breakEnd,breakHours,hours,need:staffList.length,staffs:staffList.join('、'),status:'已排滿',scheduleStatus:'已排班',location:'',remark};
     if(oldIndex>=0){
         const oldStaff=getScheduleStaffList(scheduleData[oldIndex].staffs);
         const merged=[...new Set([...oldStaff,...staffList])];
@@ -3041,7 +3195,7 @@ function showAdminPage(p) {
             let pin = prompt('🔒 系統安全鎖：\n請輸入高階管理密碼以解鎖設定頁面：\n(若未更改過，預設為 8888)'); 
             if(pin !== (localStorage.getItem('adminPin') || '8888')) { showToast('安全碼錯誤，拒絕存取', true); return; } 
         } 
-        if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','clock_overview','ft_attend','ft_salary','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
+        if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','schedule_changes','clock_overview','ft_attend','ft_salary','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
         if(sysRole === 'sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true);
         if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true); 
         
