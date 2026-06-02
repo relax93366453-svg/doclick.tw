@@ -1599,12 +1599,12 @@ function renderScheduleChangePage(){
         const hours = Number(d.hours)||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours)||0;
         const reason = d.changeReason || '-';
         const remark = d.changeRemark ? `<div style="font-size:12px;color:#64748b;max-width:220px;white-space:normal;">${d.changeRemark}</div>` : '';
-        return `<tr><td>${renderScheduleChangeBadge(d.scheduleStatus||'已排班')}</td><td>${d.date||''}</td><td>${d.company||''}</td><td style="font-weight:900;color:#1d4ed8;">${d.staffs||''}</td><td>${d.start||''}-${d.end||''}<br><span style="font-size:11px;color:#64748b;">${formatScheduleHours(hours)}h</span></td><td>${d.responsibility||'無'}</td><td>${d.affectsAssessment||'否'}</td><td>${d.isPaid||'依實際出勤'}</td><td>${d.deductCustomerPoints||'依合約規則'}</td><td>${reason}${remark}</td><td>${d.changedAt||'-'}<br><span style="font-size:11px;color:#64748b;">${d.changedBy||''}</span></td><td><button class="schedule-mini-change" onclick="openScheduleChangeModal(${d.index})">異動</button><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">排班</button></td></tr>`;
+        return `<tr><td>${renderScheduleChangeBadge(d.scheduleStatus||'已排班')}</td><td>${d.date||''}</td><td>${d.company||''}</td><td style="font-weight:900;color:#1d4ed8;">${d.staffs||''}</td><td>${d.start||''}-${d.end||''}<br><span style="font-size:11px;color:#64748b;">${formatScheduleHours(hours)}h</span></td><td>${d.responsibility||'無'}</td><td>${d.affectsAssessment||'否'}</td><td>${d.isPaid||'依實際出勤'}</td><td>${d.deductCustomerPoints||'依合約規則'}</td><td>${reason}${remark}</td><td>${d.changedAt||'-'}<br><span style="font-size:11px;color:#64748b;">${d.changedBy||''}</span></td><td><button class="schedule-mini-change" data-schedule-change-index="${d.index}" type="button">異動</button><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">排班</button></td></tr>`;
     }).join('');
 }
 function clearScheduleChangeFilters(){if(el('sch_change_company'))el('sch_change_company').value='';if(el('sch_change_staff'))el('sch_change_staff').value='';if(el('sch_change_status'))el('sch_change_status').value='all';renderScheduleChangePage();}
 function openScheduleChangeModal(index){
-    index = Number(index); if(!Number.isInteger(index)||!scheduleData[index])return showToast('找不到這筆排班資料',true);
+    index = Number(index); if(!Number.isInteger(index)||!scheduleData[index])return showToast('找不到這筆排班資料',true); if(!el('scheduleChangeModal')){ alert('找不到排班異動彈窗，請重新整理後再試。'); return; }
     currentScheduleChangeIndex=index; const d=scheduleData[index];
     if(el('sch_change_modal_sub'))el('sch_change_modal_sub').innerHTML=`${d.date||''}｜${d.company||''}｜${d.staffs||''}｜${d.start||''}-${d.end||''}`;
     el('sch_change_modal_status').value=d.scheduleStatus||'已排班'; el('sch_change_modal_reason').value=d.changeReason||'無異動'; el('sch_change_modal_owner').value=d.responsibility||'無'; el('sch_change_modal_assessment').value=d.affectsAssessment||'否'; el('sch_change_modal_paid').value=d.isPaid||'依實際出勤'; el('sch_change_modal_points').value=d.deductCustomerPoints||'依合約規則'; el('sch_change_modal_by').value=d.changedBy||''; el('sch_change_modal_time').value=d.changedAt||new Date().toLocaleString('zh-TW',{hour12:false}); el('sch_change_modal_remark').value=d.changeRemark||'';
@@ -1626,6 +1626,20 @@ function saveScheduleChange(){
     scheduleData[i]={...scheduleData[i],scheduleStatus:el('sch_change_modal_status').value,changeReason:el('sch_change_modal_reason').value,responsibility:el('sch_change_modal_owner').value,affectsAssessment:el('sch_change_modal_assessment').value,isPaid:el('sch_change_modal_paid').value,deductCustomerPoints:el('sch_change_modal_points').value,changeRemark:el('sch_change_modal_remark').value.trim(),changedBy:el('sch_change_modal_by').value.trim(),changedAt:el('sch_change_modal_time').value||new Date().toLocaleString('zh-TW',{hour12:false})};
     saveAll(); closeScheduleChangeModal(); if(typeof renderScheduleTable==='function')renderScheduleTable(); renderScheduleChangePage(); showToast('✅ 排班異動已儲存');
 }
+
+
+/* 排班異動按鈕保險綁定：避免 onclick 失效 */
+document.addEventListener('click', function(e){
+    const btn = e.target.closest && e.target.closest('.schedule-mini-change,[data-schedule-change-index]');
+    if(!btn) return;
+    const idxText = btn.getAttribute('data-schedule-change-index') || (btn.getAttribute('onclick')||'').match(/openScheduleChangeModal\((\d+)\)/)?.[1];
+    if(idxText !== undefined && idxText !== null && idxText !== ''){
+        e.preventDefault();
+        e.stopPropagation();
+        openScheduleChangeModal(Number(idxText));
+    }
+}, true);
+
 
 document.addEventListener('DOMContentLoaded', () => {
     try {
@@ -2761,7 +2775,7 @@ function renderScheduleFilledList(){
             <td>${restText||'-'}</td>
             <td>${formatScheduleHours(hours)}h</td>
             <td>${d.remark||''}</td>
-            <td><button class="schedule-mini-change" onclick="openScheduleChangeModal(${d.index})">異動</button><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">編輯</button><button class="schedule-mini-del" onclick="deleteScheduleEntryFromList(${d.index})">刪除</button></td>
+            <td><button class="schedule-mini-change" data-schedule-change-index="${d.index}" type="button">異動</button><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">編輯</button><button class="schedule-mini-del" onclick="deleteScheduleEntryFromList(${d.index})">刪除</button></td>
         </tr>`;
     }).join('');
 }
