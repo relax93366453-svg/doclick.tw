@@ -2465,28 +2465,6 @@ h3{margin:8px 0 0;color:#64748b;font-size:18px;}
 ${d.contentHtml}
 <script>setTimeout(function(){window.print();},500);<\/script>
 
-<div id="scheduleChangeModal" class="change-modal-backdrop" onclick="if(event.target===this){return false;}">
-    <div class="change-modal">
-        <h3><i class="fas fa-clipboard-list"></i> 排班異動紀錄</h3>
-        <div class="change-modal-sub" id="sch_change_modal_sub">選擇異動狀態與責任歸屬，系統會用來判斷是否影響員工考核、薪資與客戶扣點。</div>
-        <div class="change-form-grid">
-            <div><label>排班狀態</label><select id="sch_change_modal_status" onchange="applyScheduleChangeDefaults()"><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select></div>
-            <div><label>異動原因</label><select id="sch_change_modal_reason" onchange="applyScheduleChangeDefaults()"><option>無異動</option><option>員工臨時請假</option><option>員工病假</option><option>員工事假</option><option>員工未到 / 曠職</option><option>員工遲到</option><option>員工早退</option><option>客戶臨時取消</option><option>客戶當日不需人</option><option>客戶需求人數減少</option><option>客戶現場提早結束</option><option>主管調班</option><option>改派其他人</option><option>排班錯誤</option><option>重複排班</option><option>其他</option></select></div>
-            <div><label>責任歸屬</label><select id="sch_change_modal_owner"><option>無</option><option>員工</option><option>客戶</option><option>公司</option></select></div>
-            <div><label>是否影響考核</label><select id="sch_change_modal_assessment"><option value="否">否</option><option value="是">是</option></select></div>
-            <div><label>是否計薪</label><select id="sch_change_modal_paid"><option value="否">否</option><option value="是">是</option><option value="依實際出勤">依實際出勤</option><option value="依公司規則">依公司規則</option></select></div>
-            <div><label>是否扣客戶點數</label><select id="sch_change_modal_points"><option value="否">否</option><option value="是">是</option><option value="依合約規則">依合約規則</option></select></div>
-            <div><label>異動人員</label><input id="sch_change_modal_by" placeholder="例如：主管 / 丁丁"></div>
-            <div><label>異動時間</label><input id="sch_change_modal_time" readonly></div>
-            <div class="change-full"><label>異動備註</label><textarea id="sch_change_modal_remark" placeholder="補充說明：例如員工幾點通知、客戶窗口說明、是否需補派人員等"></textarea></div>
-        </div>
-        <div class="change-actions">
-            <button class="btn" style="background:#64748b" onclick="closeScheduleChangeModal()"><i class="fas fa-times"></i> 關閉</button>
-            <button class="btn btn-warning" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
-        </div>
-    </div>
-</div>
-
 </body>
 </html>`);
     w.document.close();
@@ -2675,6 +2653,17 @@ function getScheduleAssignments(company,date,time){
     });
     return items;
 }
+
+function getScheduleAssignmentsAnyCompany(date,time){
+    const items=[];
+    (scheduleData||[]).forEach((entry, entryIndex)=>{
+        if(String(entry.date||'')!==String(date||''))return;
+        if(!scheduleEntryCoversTime(entry,time))return;
+        getScheduleStaffList(entry.staffs).forEach(n=>items.push({name:n,entry,entryIndex,isStart:String(entry.start||'')===String(time||'')}));
+    });
+    return items;
+}
+
 function scheduleEntryKey(entry){return [entry.company||'',entry.date||'',entry.start||'',entry.end||'',entry.breakStart||'',entry.breakEnd||'',entry.breakHours||'',entry.staffs||''].join('|');}
 function schedulePersonCard(a){
     const e=a.entry||{};
@@ -2683,7 +2672,7 @@ function schedulePersonCard(a){
     const idx=Number.isInteger(a.entryIndex)?a.entryIndex:-1;
     return `<div class="slot-person-card ${a.isStart?'':'continue'}" title="${a.name} ${e.start||''}-${e.end||''}" onclick="event.stopPropagation(); openScheduleEntryByIndex(${idx});">
         <div class="p-name">${a.name}</div>
-        <div class="p-time">${e.start||''}-${e.end||''}</div>
+        <div class="p-time">${e.company||''}${e.company?'｜':''}${e.start||''}-${e.end||''}</div>
         ${breakText}
         <div class="p-hours">${formatScheduleHours(hours)}h</div>
     </div>`;
@@ -2694,6 +2683,16 @@ function renderScheduleCompanyInfo(){
     const cust=(custData||[]).find(x=>x.name===company)||{},related=(dispatchData||[]).filter(x=>x.company===company&&x.status!=='已完成');
     box.style.display='block';box.innerHTML=`<b><i class="fas fa-building"></i> ${company}</b><br>工作地址：${cust.work_addr||cust.addr||'尚未建立'}　｜　聯絡人：${cust.user||'-'}　｜　電話：${cust.tel||'-'}<br>目前待派發案件：${related.length} 筆；可依此公司需求安排不同人員與時段。`;
 }
+
+function getScheduleDayStaffCountAll(date){
+    const set=new Set();
+    (scheduleData||[]).forEach(entry=>{
+        if(String(entry.date||'')!==String(date||''))return;
+        getScheduleStaffList(entry.staffs).forEach(n=>set.add(n));
+    });
+    return set.size;
+}
+
 function getScheduleDayStaffCount(company,date){
     const people=new Set();
     (scheduleData||[]).forEach(entry=>{
@@ -2710,7 +2709,7 @@ function renderScheduleTable(){
     if(el('sch_month_title'))el('sch_month_title').innerText=`${y} 年 ${m} 月時段排班表`;
     let head='<tr><th class="time-head">時段</th>';
     for(let d=1;d<=days;d++){
-        const wd=new Date(y,m-1,d).getDay(),date=dateYMD(y,m,d),dayPeople=company?getScheduleDayStaffCount(company,date):0;
+        const wd=new Date(y,m-1,d).getDay(),date=dateYMD(y,m,d),dayPeople=company?getScheduleDayStaffCount(company,date):getScheduleDayStaffCountAll(date);
         head+=`<th class="day-head ${wd===0||wd===6?'weekend':''}"><span class="num">${d}</span><span class="week">${week[wd]}</span>${dayPeople?`<span class="day-count">${dayPeople}人</span>`:''}</th>`;
     }
     head+='</tr>';
@@ -2720,7 +2719,7 @@ function renderScheduleTable(){
         let row=`<tr><td class="time-cell">${time}</td>`;
         for(let d=1;d<=days;d++){
             const date=dateYMD(y,m,d);
-            const assignments=company?getScheduleAssignments(company,date,time):[];
+            const assignments=company?getScheduleAssignments(company,date,time):getScheduleAssignmentsAnyCompany(date,time);
             if(assignments.length){
                 const cards=assignments.map(schedulePersonCard).join('');
                 row+=`<td class="slot-cell" onclick="openScheduleCell('', '${date}', '${time}')"><div class="slot-cell-content"><span class="slot-count">${assignments.length} 人</span>${cards}</div></td>`;
@@ -2745,7 +2744,7 @@ function renderScheduleTable(){
     if(el('sch_kpi_staff'))el('sch_kpi_staff').innerText=`${realStaff.size} 人`;
     if(el('sch_kpi_hours'))el('sch_kpi_hours').innerText=`${formatScheduleHours(realPersonHours)} 人時`;
     if(el('sch_kpi_rest'))el('sch_kpi_rest').innerText=`${realCells} 筆`;
-    if(el('sch_kpi_warn'))el('sch_kpi_warn').innerText=company?'0 筆':'請先選公司';
+    if(el('sch_kpi_warn'))el('sch_kpi_warn').innerText='0 筆';
     if(el('scheduleWarningBox'))el('scheduleWarningBox').innerHTML='';
     renderScheduleFilledList();
 }
@@ -5008,5 +5007,28 @@ document.addEventListener("DOMContentLoaded", function() {
     }, 800);
 });
 </script>
+
+<div id="scheduleChangeModal" class="change-modal-backdrop" onclick="if(event.target===this){return false;}">
+    <div class="change-modal">
+        <h3><i class="fas fa-clipboard-list"></i> 排班異動紀錄</h3>
+        <div class="change-modal-sub" id="sch_change_modal_sub">選擇異動狀態與責任歸屬，系統會用來判斷是否影響員工考核、薪資與客戶扣點。</div>
+        <div class="change-form-grid">
+            <div><label>排班狀態</label><select id="sch_change_modal_status" onchange="applyScheduleChangeDefaults()"><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select></div>
+            <div><label>異動原因</label><select id="sch_change_modal_reason" onchange="applyScheduleChangeDefaults()"><option>無異動</option><option>員工臨時請假</option><option>員工病假</option><option>員工事假</option><option>員工未到 / 曠職</option><option>員工遲到</option><option>員工早退</option><option>客戶臨時取消</option><option>客戶當日不需人</option><option>客戶需求人數減少</option><option>客戶現場提早結束</option><option>主管調班</option><option>改派其他人</option><option>排班錯誤</option><option>重複排班</option><option>其他</option></select></div>
+            <div><label>責任歸屬</label><select id="sch_change_modal_owner"><option>無</option><option>員工</option><option>客戶</option><option>公司</option></select></div>
+            <div><label>是否影響考核</label><select id="sch_change_modal_assessment"><option value="否">否</option><option value="是">是</option></select></div>
+            <div><label>是否計薪</label><select id="sch_change_modal_paid"><option value="否">否</option><option value="是">是</option><option value="依實際出勤">依實際出勤</option><option value="依公司規則">依公司規則</option></select></div>
+            <div><label>是否扣客戶點數</label><select id="sch_change_modal_points"><option value="否">否</option><option value="是">是</option><option value="依合約規則">依合約規則</option></select></div>
+            <div><label>異動人員</label><input id="sch_change_modal_by" placeholder="例如：主管 / 丁丁"></div>
+            <div><label>異動時間</label><input id="sch_change_modal_time" readonly></div>
+            <div class="change-full"><label>異動備註</label><textarea id="sch_change_modal_remark" placeholder="補充說明：例如員工幾點通知、客戶窗口說明、是否需補派人員等"></textarea></div>
+        </div>
+        <div class="change-actions">
+            <button class="btn" style="background:#64748b" onclick="closeScheduleChangeModal()"><i class="fas fa-times"></i> 關閉</button>
+            <button class="btn btn-warning" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
