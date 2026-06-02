@@ -584,6 +584,38 @@
 .hr-reminder-panel{display:none!important;grid-column:1/-1;}
 .hr-reminder-panel.active{display:block!important;}
 
+
+/* ===== 人事儀表板：四個提醒按鈕切換 ===== */
+.hr-dashboard-tabs{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:12px 0 14px 0;
+    grid-column:1/-1;
+}
+.hr-dashboard-tabs button{
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:#334155;
+    border-radius:12px;
+    padding:10px 14px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 2px 5px rgba(15,23,42,.05);
+}
+.hr-dashboard-tabs button.active{
+    background:#2563eb;
+    color:#fff;
+    border-color:#2563eb;
+}
+.hr-reminder-panel{
+    display:none!important;
+    grid-column:1/-1;
+}
+.hr-reminder-panel.active{
+    display:block!important;
+}
+
 </style>
 </head>
 <body>
@@ -822,7 +854,15 @@
                         <div class="table-responsive"><table style="width:100%;"><thead><tr><th>公司名稱</th><th>職位需求</th><th>人數</th><th>目前狀態</th><th>備註與交接</th></tr></thead><tbody id="dash_urgent_dispatch_table"></tbody></table></div>
                     </div>
 
-                    <div class="panel ws-hr hr-reminder-panel active" id="hrReminderMissing" style="grid-column:1/-1;border-top:3px solid #f59e0b;"><h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-user-clock" style="color:#f59e0b;"></i> 待補交資料名單</h3><div class="table-responsive"><table style="width:100%;"><thead><tr><th>員工姓名</th><th>欠缺文件</th><th>操作</th></tr></thead><tbody id="dash_missing_docs_table"></tbody></table></div></div>
+                    
+<div class="hr-dashboard-tabs ws-hr">
+    <button id="hrTabMissing" class="active" onclick="showHrDashboardReminder('missing')"><i class="fas fa-user-clock"></i> 待補資料</button>
+    <button id="hrTabUpgrade" onclick="showHrDashboardReminder('upgrade')"><i class="fas fa-level-up-alt"></i> 時薪升級</button>
+    <button id="hrTabInsurance" onclick="showHrDashboardReminder('insurance')"><i class="fas fa-file-medical-alt"></i> 勞保調距</button>
+    <button id="hrTabBirthday" onclick="showHrDashboardReminder('birthday')"><i class="fas fa-birthday-cake"></i> 壽星提醒</button>
+</div>
+
+<div class="panel ws-hr hr-reminder-panel active" id="hrReminderMissing" style="grid-column:1/-1;border-top:3px solid #f59e0b;"><h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-user-clock" style="color:#f59e0b;"></i> 待補交資料名單</h3><div class="table-responsive"><table style="width:100%;"><thead><tr><th>員工姓名</th><th>欠缺文件</th><th>操作</th></tr></thead><tbody id="dash_missing_docs_table"></tbody></table></div></div>
                     <div class="panel ws-hr hr-reminder-panel" id="hrReminderUpgrade" style="grid-column:1/-1;border-top:3px solid #0ea5e9;"><h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-level-up-alt" style="color:#0ea5e9;"></i> 時薪升級與進度提醒 <span style="font-size:12px;color:#64748b;font-weight:normal;">(距離升級不到30小時)</span></h3><div class="table-responsive"><table style="width:100%;"><thead><tr><th>員工姓名</th><th>目前方案</th><th>進度 (目前 / 門檻)</th><th>時薪變化 (現在 ➔ 升級)</th><th>距離達標</th></tr></thead><tbody id="dash_upgrade_table"></tbody></table></div></div>
                     <div class="panel ws-hr hr-reminder-panel" id="hrReminderInsurance" style="grid-column:1/-1;border-top:3px solid #db2777;"><h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-file-medical-alt" style="color:#db2777;"></i> 勞保滿三個月 調距預警 <span style="font-size:12px;color:#64748b;font-weight:normal;">(起保日滿3個月前後提醒)</span></h3><div class="table-responsive"><table style="width:100%;"><thead><tr><th>員工姓名</th><th>勞保起保日</th><th>滿3個月日期</th><th>狀態</th><th>操作</th></tr></thead><tbody id="dash_ins_alert_table"></tbody></table></div></div>
                     <div class="panel ws-business sys-auth" style="border-top:3px solid #8b5cf6;"><h3 style="font-size:16px;font-weight:bold;margin-bottom:15px;"><i class="fas fa-file-invoice-dollar" style="color:#8b5cf6;"></i> 供應商帳款提醒</h3><div class="table-responsive"><table style="width:100%;"><thead><tr><th>供應商</th><th>金額</th><th>應付日</th><th>狀態</th><th>操作</th></tr></thead><tbody id="dash_ap_table"></tbody></table></div></div>
