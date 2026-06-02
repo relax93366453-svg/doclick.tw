@@ -500,6 +500,10 @@
 .change-kpi .label{font-size:12px;color:#64748b;font-weight:900;}.change-kpi .num{font-size:26px;font-weight:900;color:#0f172a;line-height:1.25;}
 @media(max-width:800px){.change-form-grid,.change-kpi-grid{grid-template-columns:1fr;}.change-full{grid-column:auto;}}
 
+
+/* 修正：排班異動紀錄獨立頁面顯示 */
+#page-schedule_changes.active{display:block!important;background:#fff!important;border-radius:12px!important;padding:30px!important;box-shadow:0 4px 6px -1px rgba(0,0,0,.05)!important;border:1px solid #f1f5f9!important;}
+
 </style>
 </head>
 <body>
@@ -581,7 +585,7 @@
                 <li class="ws-hr"><a onclick="showAdminPage('ft_staff')"><i class="fas fa-user-tie"></i> 正職員工資料庫</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('match')"><i class="fas fa-people-arrows"></i> 派工媒合平台</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('schedule')"><i class="fas fa-calendar-alt"></i> 公司排班管理</a></li>
-                <li class="ws-hr"><a onclick="showAdminPage('schedule_changes')"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</a></li>
+                <li class="ws-hr"><a onclick="openScheduleChangesPage()"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('clock_overview')"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('dispatch')"><i class="fas fa-tasks"></i> 待派發案件</a></li>
                 <li class="ws-hr"><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
@@ -919,34 +923,7 @@
                 </div>
 
                 
-            <div class="page" id="page-schedule_changes">
-                <div class="page-title"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</div>
-                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 16px;color:#1e40af;font-weight:800;line-height:1.8;margin-bottom:14px;">
-                    用來分清楚排班異動責任歸屬：員工請假 / 未到會影響考核；客戶取消、主管調班、排錯班不會影響員工考核。此資料會保留在原排班資料內，不會破壞原本排班與打卡流程。
-                </div>
-                <div class="filter-bar">
-                    <label>年份</label><select id="sch_change_year" onchange="renderScheduleChangePage()"></select>
-                    <label>月份</label><select id="sch_change_month" onchange="renderScheduleChangePage()"></select>
-                    <label>公司</label><input list="list_cust" id="sch_change_company" placeholder="搜尋公司" oninput="renderScheduleChangePage()">
-                    <label>人員</label><input list="list_staff" id="sch_change_staff" placeholder="搜尋人員" oninput="renderScheduleChangePage()">
-                    <label>狀態</label><select id="sch_change_status" onchange="renderScheduleChangePage()"><option value="all">全部</option><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select>
-                    <button class="btn btn-clear-filter" onclick="clearScheduleChangeFilters()"><i class="fas fa-broom"></i> 清除搜尋</button>
-                </div>
-                <div class="change-kpi-grid">
-                    <div class="change-kpi"><div class="label">本月異動總數</div><div class="num" id="sch_change_kpi_total">0</div></div>
-                    <div class="change-kpi"><div class="label">員工責任</div><div class="num" id="sch_change_kpi_staff">0</div></div>
-                    <div class="change-kpi"><div class="label">客戶責任</div><div class="num" id="sch_change_kpi_client">0</div></div>
-                    <div class="change-kpi"><div class="label">公司內部</div><div class="num" id="sch_change_kpi_company">0</div></div>
-                </div>
-                <div class="table-responsive">
-                    <table id="scheduleChangeTableBox">
-                        <thead><tr><th>排班狀態</th><th>日期</th><th>公司</th><th>人員</th><th>排班時間</th><th>責任歸屬</th><th>是否影響考核</th><th>是否計薪</th><th>是否扣點</th><th>異動原因 / 備註</th><th>異動時間</th><th>操作</th></tr></thead>
-                        <tbody id="scheduleChangeTable"></tbody>
-                    </table>
-                </div>
-            </div>
-
-<div class="schedule-modal-backdrop" id="scheduleEditModal">
+            <div class="schedule-modal-backdrop" id="scheduleEditModal">
                     <div class="schedule-modal">
                         <div class="schedule-modal-head">
                             <div>
@@ -980,7 +957,35 @@
                 </div>
             </div>
 
-            <div class="page" id="page-match"><div class="page-title"><i class="fas fa-people-arrows"></i> 派工媒合平台</div><div class="grid" style="background:#f0f9ff;padding:25px;border-radius:12px;border:1px solid #bae6fd;"><div><label>姓名 *</label><input id="match_name" required></div><div><label>電話</label><input id="match_tel"></div><div><label>區域</label><input id="match_region" placeholder="例：林口、龜山"></div><div><label>交通工具</label><input id="match_transport" placeholder="例：機車、汽車"></div><div style="grid-column: span 2;"><label>技能 / 專長</label><input id="match_skills" placeholder="例：堆高機、文書、會計"></div><div style="grid-column: span 2;"><label>工作經歷</label><input id="match_exp" placeholder="簡述過去相關經驗"></div><div style="grid-column: span 4;"><label>備註</label><input id="match_remark" placeholder="其他補充事項 (如：可上班時間)"></div></div><button class="btn btn-success" id="btnAddMatch" onclick="addMatch()"><i class="fas fa-save"></i> 儲存至媒合庫</button><button class="btn btn-warning" id="btnUpdateMatch" onclick="updateMatch()" style="display:none"><i class="fas fa-edit"></i> 修改資料</button><button class="btn" style="background:#64748b;" onclick="clearMatchForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>綜合搜尋：</label><input type="text" id="match_filter_keyword" placeholder="搜尋姓名、技能或區域..." oninput="resetPage('match'); renderMatchTable()"><button class="btn btn-clear-filter" onclick="clearFilters('match')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('matchTableBox','派工媒合名單')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="matchTableBox"><thead><tr><th>姓名</th><th>電話</th><th>區域</th><th>交通工具</th><th>技能/專長</th><th>工作經歷</th><th>備註</th><th>操作</th></tr></thead><tbody id="matchTable"></tbody></table></div></div>
+            <div class="page" id="page-schedule_changes">
+                <div class="page-title"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</div>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 16px;color:#1e40af;font-weight:800;line-height:1.8;margin-bottom:14px;">
+                    用來分清楚排班異動責任歸屬：員工請假 / 未到會影響考核；客戶取消、主管調班、排錯班不會影響員工考核。此資料會保留在原排班資料內，不會破壞原本排班與打卡流程。
+                </div>
+                <div class="filter-bar">
+                    <label>年份</label><select id="sch_change_year" onchange="renderScheduleChangePage()"></select>
+                    <label>月份</label><select id="sch_change_month" onchange="renderScheduleChangePage()"></select>
+                    <label>公司</label><input list="list_cust" id="sch_change_company" placeholder="搜尋公司" oninput="renderScheduleChangePage()">
+                    <label>人員</label><input list="list_staff" id="sch_change_staff" placeholder="搜尋人員" oninput="renderScheduleChangePage()">
+                    <label>狀態</label><select id="sch_change_status" onchange="renderScheduleChangePage()"><option value="all">全部</option><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select>
+                    <button class="btn btn-clear-filter" onclick="clearScheduleChangeFilters()"><i class="fas fa-broom"></i> 清除搜尋</button>
+                </div>
+                <div class="change-kpi-grid">
+                    <div class="change-kpi"><div class="label">本月異動總數</div><div class="num" id="sch_change_kpi_total">0</div></div>
+                    <div class="change-kpi"><div class="label">員工責任</div><div class="num" id="sch_change_kpi_staff">0</div></div>
+                    <div class="change-kpi"><div class="label">客戶責任</div><div class="num" id="sch_change_kpi_client">0</div></div>
+                    <div class="change-kpi"><div class="label">公司內部</div><div class="num" id="sch_change_kpi_company">0</div></div>
+                </div>
+                <div class="table-responsive">
+                    <table id="scheduleChangeTableBox">
+                        <thead><tr><th>排班狀態</th><th>日期</th><th>公司</th><th>人員</th><th>排班時間</th><th>責任歸屬</th><th>是否影響考核</th><th>是否計薪</th><th>是否扣點</th><th>異動原因 / 備註</th><th>異動時間</th><th>操作</th></tr></thead>
+                        <tbody id="scheduleChangeTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+
+<div class="page" id="page-match"><div class="page-title"><i class="fas fa-people-arrows"></i> 派工媒合平台</div><div class="grid" style="background:#f0f9ff;padding:25px;border-radius:12px;border:1px solid #bae6fd;"><div><label>姓名 *</label><input id="match_name" required></div><div><label>電話</label><input id="match_tel"></div><div><label>區域</label><input id="match_region" placeholder="例：林口、龜山"></div><div><label>交通工具</label><input id="match_transport" placeholder="例：機車、汽車"></div><div style="grid-column: span 2;"><label>技能 / 專長</label><input id="match_skills" placeholder="例：堆高機、文書、會計"></div><div style="grid-column: span 2;"><label>工作經歷</label><input id="match_exp" placeholder="簡述過去相關經驗"></div><div style="grid-column: span 4;"><label>備註</label><input id="match_remark" placeholder="其他補充事項 (如：可上班時間)"></div></div><button class="btn btn-success" id="btnAddMatch" onclick="addMatch()"><i class="fas fa-save"></i> 儲存至媒合庫</button><button class="btn btn-warning" id="btnUpdateMatch" onclick="updateMatch()" style="display:none"><i class="fas fa-edit"></i> 修改資料</button><button class="btn" style="background:#64748b;" onclick="clearMatchForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>綜合搜尋：</label><input type="text" id="match_filter_keyword" placeholder="搜尋姓名、技能或區域..." oninput="resetPage('match'); renderMatchTable()"><button class="btn btn-clear-filter" onclick="clearFilters('match')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('matchTableBox','派工媒合名單')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="matchTableBox"><thead><tr><th>姓名</th><th>電話</th><th>區域</th><th>交通工具</th><th>技能/專長</th><th>工作經歷</th><th>備註</th><th>操作</th></tr></thead><tbody id="matchTable"></tbody></table></div></div>
             
             <div class="page" id="page-ft_attend"><div class="page-title"><i class="fas fa-calendar-check"></i> 正職出勤紀錄</div><div id="leave-info-panel" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;padding:15px 20px;border-radius:8px;margin-bottom:20px;"><h4 style="color:#1e3a8a;"><i class="fas fa-plane-departure"></i> <span id="leave-info-name"></span> 特休資訊</h4><div style="display:flex;gap:25px;font-size:14px;flex-wrap:wrap;margin-top:10px;"><div>年資：<b id="leave-info-tenure" style="color:#0369a1;">-</b></div><div>依法享有：<b id="leave-info-total" style="color:#10b981;">- 天</b></div><div>已用：<b id="leave-info-used" style="color:#ef4444;">- 天</b></div><div style="padding:2px 10px;background:#dcfce7;border-radius:4px;border:1px solid #bbf7d0;">剩餘：<b id="leave-info-remain" style="color:#166534;">- 天</b></div><div>下階段：<span id="leave-info-next"></span></div></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr;"><div><label>員工 *</label><input list="list_ft_staff" id="fta_staff" placeholder="搜尋員工姓名" required oninput="showLeaveInfo()"></div><div><label>日期 *</label><input type="date" id="fta_date" required></div><div><label>類型 *</label><select id="fta_record_type" onchange="toggleFtaFields()"><option value="正常出勤">正常出勤</option><option value="異常">異常</option><option value="請假">請假</option><option value="加班">加班</option><option value="換班">換班</option></select></div><div><label>原因</label><input type="text" id="fta_reason"></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1.5fr 1fr;" id="fta_time_block"><div><label>上班打卡</label><input type="text" id="fta_time_in" placeholder="0900" onblur="formatTimeInput(this); calcFtaHours()"></div><div><label>下班打卡</label><input type="text" id="fta_time_out" placeholder="1800" onblur="formatTimeInput(this); calcFtaHours()"></div><div><label>合計時數</label><div style="display:flex;align-items:center;gap:10px;"><input type="number" id="fta_hours" step="0.1" style="width:90px;padding:8px;"><label style="font-size:13px;cursor:pointer;display:flex;align-items:center;color:#0369a1;font-weight:bold;margin:0;"><input type="checkbox" id="fta_deduct_break" checked onchange="calcFtaHours()" style="margin-right:5px;"> 扣除休息1h</label></div></div><div id="fta_leave_type_block" style="display:none;"><label>請假假別</label><select id="fta_leave_type"><option value="事假">事假</option><option value="病假">病假</option><option value="特休假">特休假</option><option value="喪假">喪假</option></select></div><div id="fta_approval_block" style="display:none;"><label>核准狀態</label><select id="fta_approval"><option value="已核准">已核准</option><option value="待審核">待審核</option></select></div></div><button class="btn btn-success" id="btnAddFtAttend" onclick="addFtAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" style="background:#64748b;" onclick="clearFtAttendForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>年月</label><input type="month" id="fta_filter_month" onchange="resetPage('ft_attend'); renderFtAttendTable()"><label>搜尋員工：</label><input list="list_ft_staff" id="fta_filter_staff" placeholder="手打搜尋正職" oninput="resetPage('ft_attend'); renderFtAttendTable()"><button class="btn btn-clear-filter" onclick="clearFilters('ft_attend')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('ftAttendTableBox','出勤紀錄')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="ftAttendTableBox"><thead><tr><th>員工</th><th>日期</th><th>類型</th><th>時間/假別</th><th>時數</th><th>狀態/原因</th><th>操作</th></tr></thead><tbody id="ftAttendTable"></tbody></table></div></div>
             
@@ -2465,6 +2470,8 @@ h3{margin:8px 0 0;color:#64748b;font-size:18px;}
 ${d.contentHtml}
 <script>setTimeout(function(){window.print();},500);<\/script>
 
+
+
 <div id="scheduleChangeModal" class="change-modal-backdrop" onclick="if(event.target===this){return false;}">
     <div class="change-modal">
         <h3><i class="fas fa-clipboard-list"></i> 排班異動紀錄</h3>
@@ -2478,11 +2485,35 @@ ${d.contentHtml}
             <div><label>是否扣客戶點數</label><select id="sch_change_modal_points"><option value="否">否</option><option value="是">是</option><option value="依合約規則">依合約規則</option></select></div>
             <div><label>異動人員</label><input id="sch_change_modal_by" placeholder="例如：主管 / 丁丁"></div>
             <div><label>異動時間</label><input id="sch_change_modal_time" readonly></div>
-            <div class="change-full"><label>異動備註</label><textarea id="sch_change_modal_remark" placeholder="補充說明：例如員工幾點通知、客戶窗口說明、是否需補派人員等"></textarea></div>
+            <div class="change-form-full"><label>異動備註</label><textarea id="sch_change_modal_remark" rows="3" placeholder="請補充原因、現場狀況或主管處理方式"></textarea></div>
         </div>
-        <div class="change-actions">
-            <button class="btn" style="background:#64748b" onclick="closeScheduleChangeModal()"><i class="fas fa-times"></i> 關閉</button>
-            <button class="btn btn-warning" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
+        <div class="change-modal-actions">
+            <button class="btn" style="background:#64748b;" onclick="closeScheduleChangeModal()">取消</button>
+            <button class="btn btn-success" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- 真正顯示在主系統中的排班異動彈窗 -->
+<div id="scheduleChangeModal" class="change-modal-backdrop" onclick="if(event.target===this){return false;}">
+    <div class="change-modal">
+        <h3><i class="fas fa-clipboard-list"></i> 排班異動紀錄</h3>
+        <div class="change-modal-sub" id="sch_change_modal_sub">選擇異動狀態與責任歸屬，系統會用來判斷是否影響員工考核、薪資與客戶扣點。</div>
+        <div class="change-form-grid">
+            <div><label>排班狀態</label><select id="sch_change_modal_status" onchange="applyScheduleChangeDefaults()"><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select></div>
+            <div><label>異動原因</label><select id="sch_change_modal_reason" onchange="applyScheduleChangeDefaults()"><option>無異動</option><option>員工臨時請假</option><option>員工病假</option><option>員工事假</option><option>員工未到 / 曠職</option><option>員工遲到</option><option>員工早退</option><option>客戶臨時取消</option><option>客戶當日不需人</option><option>客戶需求人數減少</option><option>客戶現場提早結束</option><option>主管調班</option><option>改派其他人</option><option>排班錯誤</option><option>重複排班</option><option>其他</option></select></div>
+            <div><label>責任歸屬</label><select id="sch_change_modal_owner"><option>無</option><option>員工</option><option>客戶</option><option>公司</option></select></div>
+            <div><label>是否影響考核</label><select id="sch_change_modal_assessment"><option value="否">否</option><option value="是">是</option></select></div>
+            <div><label>是否計薪</label><select id="sch_change_modal_paid"><option value="否">否</option><option value="是">是</option><option value="依實際出勤">依實際出勤</option><option value="依公司規則">依公司規則</option></select></div>
+            <div><label>是否扣客戶點數</label><select id="sch_change_modal_points"><option value="否">否</option><option value="是">是</option><option value="依合約規則">依合約規則</option></select></div>
+            <div><label>異動人員</label><input id="sch_change_modal_by" placeholder="例如：主管 / 丁丁"></div>
+            <div><label>異動時間</label><input id="sch_change_modal_time" readonly></div>
+            <div class="change-form-full"><label>異動備註</label><textarea id="sch_change_modal_remark" rows="3" placeholder="請補充原因、現場狀況或主管處理方式"></textarea></div>
+        </div>
+        <div class="change-modal-actions">
+            <button class="btn" style="background:#64748b;" onclick="closeScheduleChangeModal()">取消</button>
+            <button class="btn btn-success" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
         </div>
     </div>
 </div>
@@ -3213,6 +3244,26 @@ function exportClockOverviewExcel(){
 }
 
 
+
+function openScheduleChangesPage(){
+    try{
+        let p='schedule_changes';
+        let tp=el('page-schedule_changes');
+        const main=document.querySelector('#sys-screen .main-content');
+        if(tp && main && !main.contains(tp)) main.appendChild(tp);
+        if(!tp){ alert('找不到排班異動紀錄頁面，請重新整理後再試。'); return; }
+        localStorage.setItem('adminPage',p);
+        document.querySelectorAll('#sys-screen .page').forEach(x=>x.classList.remove('active'));
+        tp.classList.add('active');
+        document.querySelectorAll('#sys-screen .sidebar-nav a').forEach(a=>a.classList.remove('active'));
+        const link=[...document.querySelectorAll('#sys-screen .sidebar-nav a')].find(a=>String(a.textContent||'').includes('排班異動紀錄'));
+        if(link) link.classList.add('active');
+        if(typeof initScheduleChangeFilters==='function') initScheduleChangeFilters();
+        if(typeof renderScheduleChangePage==='function') renderScheduleChangePage();
+        window.scrollTo({top:0,behavior:'smooth'});
+    }catch(e){console.error(e); alert('排班異動紀錄開啟失敗：'+(e.message||e));}
+}
+
 function showAdminPage(p) { 
     try { 
         let sysRole = localStorage.getItem('sysRole') || 'admin'; 
@@ -3242,6 +3293,7 @@ function showAdminPage(p) {
         if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); } 
         if(p==='match') { clearMatchForm(); renderMatchTable(); } 
         if(p==='schedule') { clearScheduleForm(); setupScheduleTabs(); renderScheduleTable(); }
+        if(p==='schedule_changes') { if(typeof initScheduleChangeFilters==='function') initScheduleChangeFilters(); if(typeof renderScheduleChangePage==='function') renderScheduleChangePage(); }
         if(p==='clock_overview') { initClockOverviewFilters(); renderClockOverview(); } 
         if(p==='req') { clearReqForm(); renderReqTable(); } 
         if(p==='dispatch') { clearDispatchForm(); renderDispatchTable(); }
@@ -4998,6 +5050,15 @@ function exportSalesSettlementExcel() {
     XLSX.writeFile(XLSX.utils.table_to_book(cloneTb, {sheet: "獎金結算"}), `愜易居_${y}年${m}月_業務獎金結算表.xlsx`);
     showToast('✅ 匯出成功');
 }
+
+
+document.addEventListener('click', function(e){
+    const btn=e.target.closest('[data-schedule-change-index]');
+    if(btn){
+        e.preventDefault(); e.stopPropagation();
+        openScheduleChangeModal(Number(btn.getAttribute('data-schedule-change-index')));
+    }
+});
 
 </script>
 
