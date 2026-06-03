@@ -1736,35 +1736,67 @@ function initScheduleChangeFilters(){
 }
 function getScheduleChangeFilteredList(){
     initScheduleChangeFilters();
-    const y = el('sch_change_year') ? Number(el('sch_change_year').value) : (getScheduleYear?getScheduleYear():new Date().getFullYear());
-    const m = el('sch_change_month') ? Number(el('sch_change_month').value) : (getScheduleMonth?getScheduleMonth():new Date().getMonth()+1);
+    const y = el('sch_change_year') ? Number(el('sch_change_year').value) : (getScheduleYear ? getScheduleYear() : new Date().getFullYear());
+    const m = el('sch_change_month') ? Number(el('sch_change_month').value) : (getScheduleMonth ? getScheduleMonth() : new Date().getMonth()+1);
     const ym = `${y}-${pad2(m)}-`;
     const company = (el('sch_change_company')?.value || '').trim();
     const staff = (el('sch_change_staff')?.value || '').trim();
     const status = el('sch_change_status')?.value || 'all';
-    return (scheduleData||[]).map((d,index)=>({...d,index}))
-        .filter(d=>String(d.date||'').startsWith(ym))
-        .filter(d=>!company || String(d.company||'').includes(company))
-        .filter(d=>!staff || String(d.staffs||'').includes(staff))
-        .filter(d=>status==='all' || (d.scheduleStatus||'已排班')===status)
-        .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.start||'').localeCompare(String(b.start||'')) || String(a.company||'').localeCompare(String(b.company||'')));
+
+    return (scheduleData || [])
+        .map((d, index) => ({...d, index}))
+        .filter(d => {
+            if(!String(d.date || '').startsWith(ym)) return false;
+            if(company && !String(d.company || '').includes(company)) return false;
+            if(staff && !String(d.staffs || d.staff || '').includes(staff)) return false;
+            if(status && status !== 'all' && String(d.scheduleStatus || '已排班') !== status) return false;
+            return true; // 作廢也要保留在異動紀錄，方便補原因與責任歸屬
+        })
+        .sort((a,b)=>
+            String(a.date||'').localeCompare(String(b.date||'')) ||
+            String(a.company||'').localeCompare(String(b.company||'')) ||
+            String(a.start||'').localeCompare(String(b.start||'')) ||
+            String(a.staffs||a.staff||'').localeCompare(String(b.staffs||b.staff||''))
+        );
 }
 function renderScheduleChangePage(){
     initScheduleChangeFilters();
     const tbody = el('scheduleChangeTable');
     if(!tbody) return;
     const list = getScheduleChangeFilteredList();
-    const changed = list.filter(d=>(d.scheduleStatus||'已排班')!=='已排班');
+    const changed = list.filter(d => (d.scheduleStatus || '已排班') !== '已排班');
+
     if(el('sch_change_kpi_total')) el('sch_change_kpi_total').innerText = changed.length;
-    if(el('sch_change_kpi_staff')) el('sch_change_kpi_staff').innerText = list.filter(d=>d.responsibility==='員工').length;
-    if(el('sch_change_kpi_client')) el('sch_change_kpi_client').innerText = list.filter(d=>d.responsibility==='客戶').length;
-    if(el('sch_change_kpi_company')) el('sch_change_kpi_company').innerText = list.filter(d=>d.responsibility==='公司').length;
-    if(!list.length){tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#64748b;font-weight:800;padding:18px;">目前沒有符合條件的排班資料</td></tr>';return;}
-    tbody.innerHTML = list.map(d=>{
-        const hours = Number(d.hours)||calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours)||0;
+    if(el('sch_change_kpi_staff')) el('sch_change_kpi_staff').innerText = list.filter(d => d.responsibility === '員工').length;
+    if(el('sch_change_kpi_client')) el('sch_change_kpi_client').innerText = list.filter(d => d.responsibility === '客戶').length;
+    if(el('sch_change_kpi_company')) el('sch_change_kpi_company').innerText = list.filter(d => d.responsibility === '公司').length;
+
+    if(!list.length){
+        tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#64748b;font-weight:800;padding:18px;">目前沒有符合條件的排班資料</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = list.map(d => {
+        const hours = Number(d.hours) || calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours) || 0;
         const reason = d.changeReason || '-';
         const remark = d.changeRemark ? `<div style="font-size:12px;color:#64748b;max-width:220px;white-space:normal;">${d.changeRemark}</div>` : '';
-        return `<tr><td>${renderScheduleChangeBadge(d.scheduleStatus||'已排班')}</td><td>${d.date||''}</td><td>${d.company||''}</td><td style="font-weight:900;color:#1d4ed8;">${d.staffs||''}</td><td>${d.start||''}-${d.end||''}<br><span style="font-size:11px;color:#64748b;">${formatScheduleHours(hours)}h</span></td><td>${d.responsibility||'無'}</td><td>${d.affectsAssessment||'否'}</td><td>${d.isPaid||'依實際出勤'}</td><td>${d.deductCustomerPoints||'依合約規則'}</td><td>${reason}${remark}</td><td>${d.changedAt||'-'}<br><span style="font-size:11px;color:#64748b;">${d.changedBy||''}</span></td><td><button class="schedule-mini-change" data-schedule-change-index="${d.index}" type="button">異動</button><button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">排班</button></td></tr>`;
+        return `<tr>
+            <td>${renderScheduleChangeBadge(d.scheduleStatus || '已排班')}</td>
+            <td>${d.date || ''}</td>
+            <td>${d.company || ''}</td>
+            <td style="font-weight:900;color:#1d4ed8;">${d.staffs || d.staff || ''}</td>
+            <td>${d.start || ''}-${d.end || ''}<br><span style="font-size:11px;color:#64748b;">${formatScheduleHours(hours)}h</span></td>
+            <td>${d.responsibility || '無'}</td>
+            <td>${d.affectsAssessment || '否'}</td>
+            <td>${d.isPaid || '依實際出勤'}</td>
+            <td>${d.deductCustomerPoints || '依合約規則'}</td>
+            <td>${reason}${remark}</td>
+            <td>${d.changedAt || '-'}<br><span style="font-size:11px;color:#64748b;">${d.changedBy || ''}</span></td>
+            <td>
+                <button class="schedule-mini-change" data-schedule-change-index="${d.index}" type="button">異動</button>
+                <button class="schedule-mini-edit" onclick="openScheduleEntryByIndex(${d.index})">排班</button>
+            </td>
+        </tr>`;
     }).join('');
 }
 function clearScheduleChangeFilters(){if(el('sch_change_company'))el('sch_change_company').value='';if(el('sch_change_staff'))el('sch_change_staff').value='';if(el('sch_change_status'))el('sch_change_status').value='all';renderScheduleChangePage();}
@@ -5487,6 +5519,89 @@ document.addEventListener("DOMContentLoaded", function() {
             return oldOpenPreview.call(this, title, cleanHtml, drive, name);
         };
     }
+})();
+</script>
+
+
+<script>
+/* ===== 作廢排班仍可編輯異動：最終修正 ===== */
+(function(){
+    function ensureChangeModal(){
+        let modal = document.getElementById('scheduleChangeModal');
+        if(modal) return modal;
+        // 若彈窗真的不存在，建立一個最小可用彈窗
+        document.body.insertAdjacentHTML('beforeend', `
+        <div id="scheduleChangeModal" class="change-modal-backdrop" onclick="if(event.target===this){return false;}">
+            <div class="change-modal">
+                <h3><i class="fas fa-clipboard-list"></i> 排班異動紀錄</h3>
+                <div class="change-modal-sub" id="sch_change_modal_sub"></div>
+                <div class="change-form-grid">
+                    <div><label>排班狀態</label><select id="sch_change_modal_status" onchange="applyScheduleChangeDefaults()"><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select></div>
+                    <div><label>異動原因</label><select id="sch_change_modal_reason" onchange="applyScheduleChangeDefaults()"><option>無異動</option><option>員工臨時請假</option><option>員工病假</option><option>員工事假</option><option>員工未到 / 曠職</option><option>員工遲到</option><option>員工早退</option><option>客戶臨時取消</option><option>客戶當日不需人</option><option>客戶需求人數減少</option><option>客戶現場提早結束</option><option>主管調班</option><option>改派其他人</option><option>排班錯誤</option><option>重複排班</option><option>其他</option></select></div>
+                    <div><label>責任歸屬</label><select id="sch_change_modal_owner"><option>無</option><option>員工</option><option>客戶</option><option>公司</option></select></div>
+                    <div><label>是否影響考核</label><select id="sch_change_modal_assessment"><option value="否">否</option><option value="是">是</option></select></div>
+                    <div><label>是否計薪</label><select id="sch_change_modal_paid"><option value="否">否</option><option value="是">是</option><option value="依實際出勤">依實際出勤</option><option value="依公司規則">依公司規則</option></select></div>
+                    <div><label>是否扣客戶點數</label><select id="sch_change_modal_points"><option value="否">否</option><option value="是">是</option><option value="依合約規則">依合約規則</option></select></div>
+                    <div><label>異動人員</label><input id="sch_change_modal_by"></div>
+                    <div><label>異動時間</label><input id="sch_change_modal_time" readonly></div>
+                    <div class="change-form-full"><label>異動備註</label><textarea id="sch_change_modal_remark" rows="3"></textarea></div>
+                </div>
+                <div class="change-modal-actions">
+                    <button class="btn" style="background:#64748b;" onclick="closeScheduleChangeModal()">取消</button>
+                    <button class="btn btn-success" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
+                </div>
+            </div>
+        </div>`);
+        return document.getElementById('scheduleChangeModal');
+    }
+
+    window.openScheduleChangeModal = function(index){
+        index = Number(index);
+        let realIndex = index;
+
+        // 重要：作廢只是不生效，不是刪除，因此 scheduleData 裡應該仍可編輯
+        if(!Number.isInteger(realIndex) || !scheduleData || !scheduleData[realIndex]){
+            // 從目前異動清單重新抓一次，找第一筆符合按鈕所在列的資料
+            // 若仍找不到才提示
+            const list = (typeof getScheduleChangeFilteredList === 'function') ? getScheduleChangeFilteredList() : [];
+            const fallback = list.find(x => Number.isInteger(Number(x.index)) && scheduleData[Number(x.index)]);
+            if(fallback) realIndex = Number(fallback.index);
+        }
+
+        if(!Number.isInteger(realIndex) || !scheduleData || !scheduleData[realIndex]){
+            alert('找不到這筆排班資料，請按「重新整理」後再試。');
+            return;
+        }
+
+        currentScheduleChangeIndex = realIndex;
+        const d = scheduleData[realIndex] || {};
+        const modal = ensureChangeModal();
+        const setVal = (id, val) => { const node = document.getElementById(id); if(node) node.value = val ?? ''; };
+
+        const sub = document.getElementById('sch_change_modal_sub');
+        if(sub) sub.innerHTML = `${d.date || ''}｜${d.company || ''}｜${d.staffs || d.staff || ''}｜${d.start || ''}-${d.end || ''}`;
+
+        setVal('sch_change_modal_status', d.scheduleStatus || '已排班');
+        setVal('sch_change_modal_reason', d.changeReason || '無異動');
+        setVal('sch_change_modal_owner', d.responsibility || '無');
+        setVal('sch_change_modal_assessment', d.affectsAssessment || '否');
+        setVal('sch_change_modal_paid', d.isPaid || '依實際出勤');
+        setVal('sch_change_modal_points', d.deductCustomerPoints || '依合約規則');
+        setVal('sch_change_modal_by', d.changedBy || (localStorage.getItem('loginName') || ''));
+        setVal('sch_change_modal_time', d.changedAt || new Date().toLocaleString('zh-TW',{hour12:false}));
+        setVal('sch_change_modal_remark', d.changeRemark || '');
+
+        modal.style.display = 'flex';
+    };
+
+    document.addEventListener('click', function(e){
+        const btn = e.target.closest && e.target.closest('[data-schedule-change-index]');
+        if(btn){
+            e.preventDefault();
+            e.stopPropagation();
+            openScheduleChangeModal(btn.getAttribute('data-schedule-change-index'));
+        }
+    }, true);
 })();
 </script>
 
