@@ -5697,5 +5697,173 @@ document.addEventListener("DOMContentLoaded", function() {
 })();
 </script>
 
+
+<script>
+/* ===== 對帳單 PDF 自動縮放進 A4 ===== */
+(function(){
+    function cleanStatementHtmlAutoFit(html){
+        let s = String(html || '');
+        if(typeof window.cleanStatementHtml === 'function'){
+            try { s = window.cleanStatementHtml(s); } catch(e){}
+        }
+        s = s.replace(/<div[^>]*id=["']scheduleChangeModal["'][\s\S]*?<\/div>\s*<\/div>/gi, '');
+        s = s.replace(/排班異動紀錄[\s\S]*?(?:儲存異動|取消|<\/form>|<\/section>|<\/div>)/gi, '');
+        return s;
+    }
+
+    function fitStatementPreview(){
+        const box = document.querySelector('#preview-body .pdf-box');
+        if(!box || !window.currentPdfData) return;
+        const isStatement = String(window.currentPdfData.title || '').includes('對帳') || String(box.innerHTML || '').includes('服務對帳單');
+        if(!isStatement) return;
+
+        box.classList.add('statement-a4-fit-preview');
+        // 用視覺縮放，不改資料內容
+        const naturalWidth = box.scrollWidth || box.getBoundingClientRect().width || 1;
+        const availableWidth = box.clientWidth || 760;
+        const scale = Math.min(1, availableWidth / naturalWidth);
+        box.style.transformOrigin = 'top left';
+        box.style.transform = `scale(${scale})`;
+        box.style.width = `${100 / scale}%`;
+    }
+
+    const oldOpenPreview = window.openPreview;
+    if(typeof oldOpenPreview === 'function' && !window.__statementA4FitOpenPreview){
+        window.__statementA4FitOpenPreview = true;
+        window.openPreview = function(title, contentHtml, fUrl, filename){
+            const isStatement = String(title || '').includes('對帳') || String(contentHtml || '').includes('服務對帳單');
+            const clean = isStatement ? cleanStatementHtmlAutoFit(contentHtml) : contentHtml;
+            const result = oldOpenPreview.call(this, title, clean, fUrl, filename);
+            if(isStatement) setTimeout(fitStatementPreview, 80);
+            return result;
+        };
+    }
+
+    const oldDoDownloadPdf = window.doDownloadPdf;
+    if(typeof oldDoDownloadPdf === 'function' && !window.__statementA4FitDownloadPdf){
+        window.__statementA4FitDownloadPdf = true;
+        window.doDownloadPdf = function(isCloud){
+            const d = window.currentPdfData;
+            const isStatement = d && (String(d.title || '').includes('對帳') || String(d.contentHtml || '').includes('服務對帳單'));
+            if(!isStatement){
+                return oldDoDownloadPdf.call(this, isCloud);
+            }
+
+            showToast(isCloud ? '📄 雲端上傳中...' : '📄 正在產生 A4 對帳單 PDF...');
+
+            const hiddenElements = [];
+            Array.from(document.body.children).forEach(child => {
+                if(child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE' && child.id !== 'toast'){
+                    hiddenElements.push({ el: child, display: child.style.display });
+                    child.style.display = 'none';
+                }
+            });
+
+            const oldBg = document.body.style.background;
+            const oldOverflow = document.body.style.overflow;
+            const oldHeight = document.body.style.height;
+            document.body.style.background = '#ffffff';
+            document.body.style.overflow = 'visible';
+            document.body.style.height = 'auto';
+
+            const cleanHtml = cleanStatementHtmlAutoFit(d.contentHtml);
+
+            const c = document.createElement('div');
+            c.id = 'pdf-export-box';
+            c.style.cssText = 'width:794px;padding:30px;background:#fff;color:#333;font-family:"Microsoft JhengHei",Arial,sans-serif;text-align:left;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;min-height:1122px;overflow:hidden;';
+
+            // 關鍵：自動縮放在 A4 寬度內。zoom 會讓版面重新縮小，不會像 transform 被切掉。
+            c.innerHTML = `
+<style>
+#pdf-export-box, #pdf-export-box *{box-sizing:border-box;}
+#pdf-export-box .statement-fit-inner{
+    zoom:0.78;
+    width:100%;
+    transform-origin:top left;
+}
+#pdf-export-box table{
+    border-collapse:collapse;
+}
+#pdf-export-box th,#pdf-export-box td{
+    word-break:break-word;
+}
+#pdf-export-box img{
+    max-width:70px;
+    height:auto;
+}
+#pdf-export-box .summary-table strong{
+    font-size:22px!important;
+}
+#pdf-export-box #scheduleChangeModal,
+#pdf-export-box .change-modal-backdrop,
+#pdf-export-box .change-modal,
+#pdf-export-box [id^="sch_change_modal"]{
+    display:none!important;
+    visibility:hidden!important;
+}
+</style>
+<div class="statement-fit-inner">${cleanHtml}</div>`;
+
+            document.body.appendChild(c);
+            window.scrollTo(0,0);
+
+            const opt = {
+                margin: [8,0,8,0],
+                filename: `${d.filename || '對帳單'}_${d.title || '文件'}.pdf`,
+                image: { type:'jpeg', quality:1 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    scrollY: 0,
+                    backgroundColor: '#ffffff'
+                },
+                jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
+                pagebreak: { mode: ['css','legacy'] }
+            };
+
+            const finish = () => {
+                if(document.body.contains(c)) document.body.removeChild(c);
+                document.body.style.background = oldBg;
+                document.body.style.overflow = oldOverflow;
+                document.body.style.height = oldHeight;
+                hiddenElements.forEach(item => item.el.style.display = item.display);
+                window.scrollTo(0,0);
+            };
+
+            setTimeout(() => {
+                const job = html2pdf().set(opt).from(c);
+                if(isCloud){
+                    if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
+                    job.outputPdf('datauristring').then(b64 => {
+                        finish();
+                        fetch(SCRIPT_URL, {
+                            method:'POST',
+                            body:JSON.stringify({
+                                action:'savePDF',
+                                folderUrl:d.fUrl,
+                                fileName:opt.filename,
+                                base64Data:b64
+                            })
+                        }).then(r=>r.json()).then(r=>{
+                            if(r.status==='success'){
+                                showToast('🚀 已歸檔');
+                                if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
+                            }else{
+                                showToast('失敗', true);
+                            }
+                        }).catch(()=>showToast('錯誤', true));
+                    }).catch(() => { finish(); showToast('產出失敗', true); });
+                }else{
+                    job.save().then(()=>{
+                        finish();
+                        showToast('✅ 下載完成！');
+                    }).catch(()=>{ finish(); showToast('產出失敗', true); });
+                }
+            }, 600);
+        };
+    }
+})();
+</script>
+
 </body>
 </html>
