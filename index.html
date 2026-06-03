@@ -616,6 +616,18 @@
     display:block!important;
 }
 
+
+/* ===== 營業管理區不要顯示人事提醒區塊 ===== */
+.workspace-business .ws-hr,
+.workspace-sales .ws-hr,
+.workspace-business .hr-reminder-panel.active,
+.workspace-sales .hr-reminder-panel.active{
+    display:none!important;
+}
+.workspace-hr .hr-reminder-panel.active{
+    display:block!important;
+}
+
 </style>
 </head>
 <body>
@@ -5602,6 +5614,39 @@ document.addEventListener("DOMContentLoaded", function() {
             openScheduleChangeModal(btn.getAttribute('data-schedule-change-index'));
         }
     }, true);
+})();
+</script>
+
+
+<script>
+/* ===== 儀表板區塊安全切換：營業區不顯示人事提醒 ===== */
+(function(){
+    window.hideHrDashboardRemindersOutsideHr = function(){
+        const sys = document.getElementById('sys-screen');
+        const isHr = sys && sys.classList.contains('workspace-hr');
+        if(!isHr){
+            document.querySelectorAll('.hr-reminder-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.hr-dashboard-tabs button').forEach(b => b.classList.remove('active'));
+        }
+    };
+
+    const oldApplyWorkspaceTheme = window.applyWorkspaceTheme;
+    if(typeof oldApplyWorkspaceTheme === 'function' && !window.__workspaceHrHidePatch){
+        window.__workspaceHrHidePatch = true;
+        window.applyWorkspaceTheme = function(workspace){
+            oldApplyWorkspaceTheme(workspace);
+            setTimeout(hideHrDashboardRemindersOutsideHr, 0);
+        };
+    }
+
+    const oldRenderDashboard = window.renderDashboard;
+    if(typeof oldRenderDashboard === 'function' && !window.__renderDashboardHrHidePatch){
+        window.__renderDashboardHrHidePatch = true;
+        window.renderDashboard = function(){
+            oldRenderDashboard();
+            hideHrDashboardRemindersOutsideHr();
+        };
+    }
 })();
 </script>
 
