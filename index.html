@@ -1742,22 +1742,12 @@ function getScheduleChangeFilteredList(){
     const company = (el('sch_change_company')?.value || '').trim();
     const staff = (el('sch_change_staff')?.value || '').trim();
     const status = el('sch_change_status')?.value || 'all';
-
-    return (scheduleData || [])
-        .map((d, index) => ({...d, index}))
-        .filter(d => {
-            if(!String(d.date || '').startsWith(ym)) return false;
-            if(company && !String(d.company || '').includes(company)) return false;
-            if(staff && !String(d.staffs || d.staff || '').includes(staff)) return false;
-            if(status && status !== 'all' && String(d.scheduleStatus || '已排班') !== status) return false;
-            return true;
-        })
-        .sort((a,b)=>
-            String(a.date||'').localeCompare(String(b.date||'')) ||
-            String(a.company||'').localeCompare(String(b.company||'')) ||
-            String(a.start||'').localeCompare(String(b.start||'')) ||
-            String(a.staffs||a.staff||'').localeCompare(String(b.staffs||b.staff||''))
-        );
+    return (scheduleData||[]).map((d,index)=>({...d,index}))
+        .filter(d=>String(d.date||'').startsWith(ym))
+        .filter(d=>!company || String(d.company||'').includes(company))
+        .filter(d=>!staff || String(d.staffs||'').includes(staff))
+        .filter(d=>status==='all' || (d.scheduleStatus||'已排班')===status)
+        .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.start||'').localeCompare(String(b.start||'')) || String(a.company||'').localeCompare(String(b.company||'')));
 }
 function renderScheduleChangePage(){
     initScheduleChangeFilters();
@@ -1887,13 +1877,9 @@ function applyWorkspaceTheme(workspace) {
 
 function handleLogin() {
     try {
-        const roleEl = el('login_role');
-        const accEl = el('login_acc');
-        const pwdEl = el('login_pwd');
-        const role = roleEl ? roleEl.value : 'admin';
-        const acc = (accEl ? accEl.value : '').trim();
-        const pwd = (pwdEl ? pwdEl.value : '').trim();
-
+        const role = el('login_role').value;
+        const acc = el('login_acc').value.trim();
+        const pwd = el('login_pwd').value.trim();
         if(!acc || !pwd) return showToast('請輸入帳密', true);
 
         const safeGetPwd = (key, def) => {
@@ -1911,37 +1897,43 @@ function handleLogin() {
         const sSA = localStorage.getItem('salesAcc') || 'sales';
         const sSP = safeGetPwd('salesPwd', '0000');
 
-        function loginAs(sysRole, workspace, msg){
+        function loginAdmin(sysRole, workspace, msg){
             localStorage.setItem('loginRole','admin');
-            localStorage.setItem('sysRole',sysRole);
-            localStorage.setItem('workspace',workspace);
+            localStorage.setItem('sysRole', sysRole);
+            localStorage.setItem('workspace', workspace);
             restoreLoginState();
             showToast(msg);
         }
 
-        // 管理登入：不論下拉選單是否選到管理身份，都允許預設管理帳密登入，避免卡在登入頁。
-        if((acc === sAA && pwd === sAP) || (acc === '0000' && pwd === '0000') || (acc === 'admin' && (pwd === '0000' || pwd === 'doclick888'))){
-            loginAs('admin','hr','系統管理員登入成功');
+        // 管理端帳密，保留原本可用帳密，同時補強 0000/0000
+        if(role === 'admin') {
+            if((acc === sAA && pwd === sAP) || (acc === '0000' && pwd === '0000') || (acc === 'admin' && (pwd === '0000' || pwd === 'doclick888'))) {
+                loginAdmin('admin','hr','系統管理員登入成功');
+                return;
+            }
+            if((acc === sHA && pwd === sHP) || (acc === 'hr' && (pwd === '0000' || pwd === 'doclick888'))) {
+                loginAdmin('hr','hr','人資登入成功');
+                return;
+            }
+            if((acc === sSA && pwd === sSP) || (acc === 'sales' && (pwd === '0000' || pwd === 'doclick888'))) {
+                loginAdmin('sales','sales','業務登入成功');
+                return;
+            }
+        }
+
+        // 即使下拉選錯，也允許 0000/0000 進管理端，避免卡住
+        if((acc === '0000' && pwd === '0000') || (acc === 'admin' && (pwd === '0000' || pwd === 'doclick888'))) {
+            loginAdmin('admin','hr','系統管理員登入成功');
             return;
         }
 
-        if((acc === sHA && pwd === sHP) || (acc === 'hr' && (pwd === '0000' || pwd === 'doclick888'))){
-            loginAs('hr','hr','人資登入成功');
-            return;
-        }
-
-        if((acc === sSA && pwd === sSP) || (acc === 'sales' && (pwd === '0000' || pwd === 'doclick888'))){
-            loginAs('sales','sales','業務登入成功');
-            return;
-        }
-
-        // 員工登入
+        // 員工端帳密
         const s = (staffData || []).find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         const fs = (ftStaffData || []).find(x => x && String(x.account||'').trim() === acc && String(x.pwd||'').trim() === pwd);
         if(s || fs) {
             currentLoginStaff = s || fs;
             localStorage.setItem('loginRole','staff');
-            localStorage.setItem('loginAcc',acc);
+            localStorage.setItem('loginAcc', acc);
             restoreLoginState();
             showToast('員工登入成功');
             return;
@@ -1950,7 +1942,7 @@ function handleLogin() {
         showToast('帳密錯誤', true);
     } catch(err) {
         console.error('登入錯誤：', err);
-        alert('登入發生錯誤，請先按「重新整理」後再用帳號 0000 / 密碼 0000 登入。');
+        alert('登入發生錯誤，請重新整理後再試。');
     }
 }
 
@@ -2678,27 +2670,7 @@ ${d.contentHtml}
 
 
 
-<div id="scheduleChangeModal" class="change-modal-backdrop" onclick="if(event.target===this){return false;}">
-    <div class="change-modal">
-        <h3><i class="fas fa-clipboard-list"></i> 排班異動紀錄</h3>
-        <div class="change-modal-sub" id="sch_change_modal_sub">選擇異動狀態與責任歸屬，系統會用來判斷是否影響員工考核、薪資與客戶扣點。</div>
-        <div class="change-form-grid">
-            <div><label>排班狀態</label><select id="sch_change_modal_status" onchange="applyScheduleChangeDefaults()"><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select></div>
-            <div><label>異動原因</label><select id="sch_change_modal_reason" onchange="applyScheduleChangeDefaults()"><option>無異動</option><option>員工臨時請假</option><option>員工病假</option><option>員工事假</option><option>員工未到 / 曠職</option><option>員工遲到</option><option>員工早退</option><option>客戶臨時取消</option><option>客戶當日不需人</option><option>客戶需求人數減少</option><option>客戶現場提早結束</option><option>主管調班</option><option>改派其他人</option><option>排班錯誤</option><option>重複排班</option><option>其他</option></select></div>
-            <div><label>責任歸屬</label><select id="sch_change_modal_owner"><option>無</option><option>員工</option><option>客戶</option><option>公司</option></select></div>
-            <div><label>是否影響考核</label><select id="sch_change_modal_assessment"><option value="否">否</option><option value="是">是</option></select></div>
-            <div><label>是否計薪</label><select id="sch_change_modal_paid"><option value="否">否</option><option value="是">是</option><option value="依實際出勤">依實際出勤</option><option value="依公司規則">依公司規則</option></select></div>
-            <div><label>是否扣客戶點數</label><select id="sch_change_modal_points"><option value="否">否</option><option value="是">是</option><option value="依合約規則">依合約規則</option></select></div>
-            <div><label>異動人員</label><input id="sch_change_modal_by" placeholder="例如：主管 / 丁丁"></div>
-            <div><label>異動時間</label><input id="sch_change_modal_time" readonly></div>
-            <div class="change-form-full"><label>異動備註</label><textarea id="sch_change_modal_remark" rows="3" placeholder="請補充原因、現場狀況或主管處理方式"></textarea></div>
-        </div>
-        <div class="change-modal-actions">
-            <button class="btn" style="background:#64748b;" onclick="closeScheduleChangeModal()">取消</button>
-            <button class="btn btn-success" onclick="saveScheduleChange()"><i class="fas fa-save"></i> 儲存異動</button>
-        </div>
-    </div>
-</div>
+
 
 
 <!-- 真正顯示在主系統中的排班異動彈窗 -->
@@ -2723,101 +2695,6 @@ ${d.contentHtml}
         </div>
     </div>
 </div>
-
-
-<script>
-/* ===== 排班異動：索引修正＋Excel保留 ===== */
-(function(){
-    window.openScheduleChangeModal = function(index){
-        index = Number(index);
-        if(!Number.isInteger(index) || !window.scheduleData || !scheduleData[index]){
-            alert('找不到這筆排班資料，請按「重新整理」後再試。');
-            return;
-        }
-        window.currentScheduleChangeIndex = index;
-        const d = scheduleData[index] || {};
-        const modal = document.getElementById('scheduleChangeModal');
-        if(!modal){
-            alert('找不到排班異動彈窗，請按「重新整理」後再試。');
-            return;
-        }
-        const setVal = (id, val) => { const node = document.getElementById(id); if(node) node.value = val ?? ''; };
-        const sub = document.getElementById('sch_change_modal_sub');
-        if(sub) sub.innerHTML = `${d.date||''}｜${d.company||''}｜${d.staffs||d.staff||''}｜${d.start||''}-${d.end||''}`;
-        setVal('sch_change_modal_status', d.scheduleStatus || '已排班');
-        setVal('sch_change_modal_reason', d.changeReason || '無異動');
-        setVal('sch_change_modal_owner', d.responsibility || '無');
-        setVal('sch_change_modal_assessment', d.affectsAssessment || '否');
-        setVal('sch_change_modal_paid', d.isPaid || '依實際出勤');
-        setVal('sch_change_modal_points', d.deductCustomerPoints || '依合約規則');
-        setVal('sch_change_modal_by', d.changedBy || (localStorage.getItem('loginName') || ''));
-        setVal('sch_change_modal_time', d.changedAt || new Date().toLocaleString('zh-TW', {hour12:false}));
-        setVal('sch_change_modal_remark', d.changeRemark || '');
-        modal.style.display = 'flex';
-    };
-
-    document.addEventListener('click', function(e){
-        const btn = e.target.closest && e.target.closest('[data-schedule-change-index]');
-        if(btn){
-            e.preventDefault();
-            e.stopPropagation();
-            openScheduleChangeModal(btn.getAttribute('data-schedule-change-index'));
-        }
-    }, true);
-
-    window.exportScheduleChangesExcel = function(){
-        if(typeof initScheduleChangeFilters === 'function') initScheduleChangeFilters();
-        const list = typeof getScheduleChangeFilteredList === 'function' ? getScheduleChangeFilteredList() : [];
-        const rows = list.map(d => ({
-            '排班狀態': d.scheduleStatus || '已排班',
-            '日期': d.date || '',
-            '公司': d.company || '',
-            '人員': d.staffs || d.staff || '',
-            '上班': d.start || '',
-            '下班': d.end || '',
-            '工時': d.hours || '',
-            '責任歸屬': d.responsibility || '無',
-            '是否影響考核': d.affectsAssessment || '否',
-            '是否計薪': d.isPaid || '依實際出勤',
-            '是否扣客戶點數': d.deductCustomerPoints || '依合約規則',
-            '異動原因': d.changeReason || '',
-            '異動備註': d.changeRemark || '',
-            '異動時間': d.changedAt || '',
-            '異動人員': d.changedBy || ''
-        }));
-        if(!rows.length){ alert('目前沒有可匯出的排班異動資料'); return; }
-        if(typeof XLSX !== 'undefined'){
-            const ws = XLSX.utils.json_to_sheet(rows);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, '排班異動紀錄');
-            XLSX.writeFile(wb, '排班異動紀錄.xlsx');
-        }else{
-            const headers = Object.keys(rows[0]);
-            const csv = '\ufeff' + [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h]??'').replace(/"/g,'""')}"`).join(','))].join('\n');
-            const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = '排班異動紀錄.csv';
-            a.click();
-            URL.revokeObjectURL(a.href);
-        }
-    };
-
-    const oldShowAdminPage = window.showAdminPage;
-    if(typeof oldShowAdminPage === 'function' && !window.__scheduleChangeShowPagePatched2){
-        window.__scheduleChangeShowPagePatched2 = true;
-        window.showAdminPage = function(p){
-            oldShowAdminPage(p);
-            if(p === 'schedule_changes'){
-                setTimeout(function(){
-                    if(typeof initScheduleChangeFilters === 'function') initScheduleChangeFilters();
-                    if(typeof renderScheduleChangePage === 'function') renderScheduleChangePage();
-                }, 0);
-            }
-        };
-    }
-})();
-</script>
 
 </body>
 </html>`);
@@ -5598,17 +5475,19 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 <script>
-/* ===== 登入 Enter 鍵補強 ===== */
-document.addEventListener('keydown', function(e){
-    if(e.key === 'Enter'){
-        const active = document.activeElement;
-        const loginScreen = document.getElementById('login-screen');
-        if(loginScreen && loginScreen.style.display !== 'none' && active && ['login_acc','login_pwd','login_role'].includes(active.id)){
-            e.preventDefault();
-            if(typeof handleLogin === 'function') handleLogin();
-        }
+/* ===== 對帳單列印保護：不帶入排班異動彈窗 ===== */
+(function(){
+    const oldOpenPreview = window.openPreview;
+    if(typeof oldOpenPreview === 'function' && !window.__statementNoScheduleChangePatch){
+        window.__statementNoScheduleChangePatch = true;
+        window.openPreview = function(title, contentHtml, drive, name){
+            let cleanHtml = String(contentHtml || '');
+            cleanHtml = cleanHtml.replace(/<div[^>]*id=["']scheduleChangeModal["'][\s\S]*?<\/div>\s*<\/div>/g, '');
+            cleanHtml = cleanHtml.replace(/<h3[^>]*>\s*<i[^>]*><\/i>\s*排班異動紀錄\s*<\/h3>[\s\S]*?(?=<\/body>|$)/g, '');
+            return oldOpenPreview.call(this, title, cleanHtml, drive, name);
+        };
     }
-});
+})();
 </script>
 
 </body>
