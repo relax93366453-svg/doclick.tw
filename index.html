@@ -1742,12 +1742,22 @@ function getScheduleChangeFilteredList(){
     const company = (el('sch_change_company')?.value || '').trim();
     const staff = (el('sch_change_staff')?.value || '').trim();
     const status = el('sch_change_status')?.value || 'all';
-    return (scheduleData||[]).map((d,index)=>({...d,index}))
-        .filter(d=>String(d.date||'').startsWith(ym))
-        .filter(d=>!company || String(d.company||'').includes(company))
-        .filter(d=>!staff || String(d.staffs||'').includes(staff))
-        .filter(d=>status==='all' || (d.scheduleStatus||'已排班')===status)
-        .sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')) || String(a.start||'').localeCompare(String(b.start||'')) || String(a.company||'').localeCompare(String(b.company||'')));
+
+    return (scheduleData || [])
+        .map((d, index) => ({...d, index}))
+        .filter(d => {
+            if(!String(d.date || '').startsWith(ym)) return false;
+            if(company && !String(d.company || '').includes(company)) return false;
+            if(staff && !String(d.staffs || d.staff || '').includes(staff)) return false;
+            if(status && status !== 'all' && String(d.scheduleStatus || '已排班') !== status) return false;
+            return true;
+        })
+        .sort((a,b)=>
+            String(a.date||'').localeCompare(String(b.date||'')) ||
+            String(a.company||'').localeCompare(String(b.company||'')) ||
+            String(a.start||'').localeCompare(String(b.start||'')) ||
+            String(a.staffs||a.staff||'').localeCompare(String(b.staffs||b.staff||''))
+        );
 }
 function renderScheduleChangePage(){
     initScheduleChangeFilters();
@@ -2677,6 +2687,101 @@ ${d.contentHtml}
         </div>
     </div>
 </div>
+
+
+<script>
+/* ===== 排班異動：索引修正＋Excel保留 ===== */
+(function(){
+    window.openScheduleChangeModal = function(index){
+        index = Number(index);
+        if(!Number.isInteger(index) || !window.scheduleData || !scheduleData[index]){
+            alert('找不到這筆排班資料，請按「重新整理」後再試。');
+            return;
+        }
+        window.currentScheduleChangeIndex = index;
+        const d = scheduleData[index] || {};
+        const modal = document.getElementById('scheduleChangeModal');
+        if(!modal){
+            alert('找不到排班異動彈窗，請按「重新整理」後再試。');
+            return;
+        }
+        const setVal = (id, val) => { const node = document.getElementById(id); if(node) node.value = val ?? ''; };
+        const sub = document.getElementById('sch_change_modal_sub');
+        if(sub) sub.innerHTML = `${d.date||''}｜${d.company||''}｜${d.staffs||d.staff||''}｜${d.start||''}-${d.end||''}`;
+        setVal('sch_change_modal_status', d.scheduleStatus || '已排班');
+        setVal('sch_change_modal_reason', d.changeReason || '無異動');
+        setVal('sch_change_modal_owner', d.responsibility || '無');
+        setVal('sch_change_modal_assessment', d.affectsAssessment || '否');
+        setVal('sch_change_modal_paid', d.isPaid || '依實際出勤');
+        setVal('sch_change_modal_points', d.deductCustomerPoints || '依合約規則');
+        setVal('sch_change_modal_by', d.changedBy || (localStorage.getItem('loginName') || ''));
+        setVal('sch_change_modal_time', d.changedAt || new Date().toLocaleString('zh-TW', {hour12:false}));
+        setVal('sch_change_modal_remark', d.changeRemark || '');
+        modal.style.display = 'flex';
+    };
+
+    document.addEventListener('click', function(e){
+        const btn = e.target.closest && e.target.closest('[data-schedule-change-index]');
+        if(btn){
+            e.preventDefault();
+            e.stopPropagation();
+            openScheduleChangeModal(btn.getAttribute('data-schedule-change-index'));
+        }
+    }, true);
+
+    window.exportScheduleChangesExcel = function(){
+        if(typeof initScheduleChangeFilters === 'function') initScheduleChangeFilters();
+        const list = typeof getScheduleChangeFilteredList === 'function' ? getScheduleChangeFilteredList() : [];
+        const rows = list.map(d => ({
+            '排班狀態': d.scheduleStatus || '已排班',
+            '日期': d.date || '',
+            '公司': d.company || '',
+            '人員': d.staffs || d.staff || '',
+            '上班': d.start || '',
+            '下班': d.end || '',
+            '工時': d.hours || '',
+            '責任歸屬': d.responsibility || '無',
+            '是否影響考核': d.affectsAssessment || '否',
+            '是否計薪': d.isPaid || '依實際出勤',
+            '是否扣客戶點數': d.deductCustomerPoints || '依合約規則',
+            '異動原因': d.changeReason || '',
+            '異動備註': d.changeRemark || '',
+            '異動時間': d.changedAt || '',
+            '異動人員': d.changedBy || ''
+        }));
+        if(!rows.length){ alert('目前沒有可匯出的排班異動資料'); return; }
+        if(typeof XLSX !== 'undefined'){
+            const ws = XLSX.utils.json_to_sheet(rows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, '排班異動紀錄');
+            XLSX.writeFile(wb, '排班異動紀錄.xlsx');
+        }else{
+            const headers = Object.keys(rows[0]);
+            const csv = '\ufeff' + [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h]??'').replace(/"/g,'""')}"`).join(','))].join('\n');
+            const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = '排班異動紀錄.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+    };
+
+    const oldShowAdminPage = window.showAdminPage;
+    if(typeof oldShowAdminPage === 'function' && !window.__scheduleChangeShowPagePatched2){
+        window.__scheduleChangeShowPagePatched2 = true;
+        window.showAdminPage = function(p){
+            oldShowAdminPage(p);
+            if(p === 'schedule_changes'){
+                setTimeout(function(){
+                    if(typeof initScheduleChangeFilters === 'function') initScheduleChangeFilters();
+                    if(typeof renderScheduleChangePage === 'function') renderScheduleChangePage();
+                }, 0);
+            }
+        };
+    }
+})();
+</script>
 
 </body>
 </html>`);
