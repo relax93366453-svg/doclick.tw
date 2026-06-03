@@ -629,19 +629,22 @@
 }
 
 
-/* ===== 列印時絕對不輸出排班異動彈窗/表單 ===== */
+/* ===== 對帳單/PDF：只隱藏排班異動彈窗，不改版面比例 ===== */
 @media print{
     #scheduleChangeModal,
     .change-modal-backdrop,
     .change-modal,
-    [id^="sch_change_modal"],
-    .schedule-mini-change,
-    .schedule-change-print-block{
+    [id^="sch_change_modal"]{
         display:none!important;
         visibility:hidden!important;
-        height:0!important;
-        overflow:hidden!important;
     }
+}
+#pdf-export-box #scheduleChangeModal,
+#pdf-export-box .change-modal-backdrop,
+#pdf-export-box .change-modal,
+#pdf-export-box [id^="sch_change_modal"]{
+    display:none!important;
+    visibility:hidden!important;
 }
 
 </style>
@@ -5649,289 +5652,48 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
 <script>
-/* ===== 對帳單最終保護：移除排班異動表單與彈窗 ===== */
+/* ===== 對帳單修正：移除排班異動，但保留原本PDF版面 ===== */
 (function(){
-    function removeScheduleChangeContent(html){
-        let clean = String(html || '');
-
-        // 移除完整排班異動彈窗區塊
-        clean = clean.replace(/<div[^>]*id=["']scheduleChangeModal["'][\s\S]*?<\/div>\s*<\/div>/gi, '');
-
-        // 移除以「排班異動紀錄」為標題的表單段落
-        clean = clean.replace(/<[^>]*>\s*排班異動紀錄\s*<\/[^>]*>[\s\S]*?(?=<div class=["']footer["']|<table class=["']info-table["']|<\/body>|$)/gi, '');
-
-        // 移除單獨殘留的排班異動欄位與文字
-        clean = clean.replace(/排班異動紀錄[\s\S]*?儲存異動/gi, '');
-        clean = clean.replace(/選擇異動狀態與責任歸屬[\s\S]*?管理方式/gi, '');
-        clean = clean.replace(/排班狀態[\s\S]*?儲存異動/gi, '');
-
-        return clean;
-    }
-
-    const oldOpenPreview = window.openPreview;
-    if(typeof oldOpenPreview === 'function' && !window.__statementRemoveScheduleChangeFinal){
-        window.__statementRemoveScheduleChangeFinal = true;
-        window.openPreview = function(title, contentHtml, drive, name){
-            const isStatement = String(title || '').includes('對帳') || String(contentHtml || '').includes('服務對帳單');
-            const finalHtml = isStatement ? removeScheduleChangeContent(contentHtml) : contentHtml;
-            return oldOpenPreview.call(this, title, finalHtml, drive, name);
-        };
-    }
-
-    const oldGenerateStatementPDF = window.generateStatementPDF;
-    if(typeof oldGenerateStatementPDF === 'function' && !window.__statementGeneratePatchFinal){
-        window.__statementGeneratePatchFinal = true;
-        window.generateStatementPDF = function(){
-            const old = window.openPreview;
-            window.openPreview = function(title, contentHtml, drive, name){
-                const finalHtml = removeScheduleChangeContent(contentHtml);
-                window.openPreview = old;
-                return old.call(this, title, finalHtml, drive, name);
-            };
-            return oldGenerateStatementPDF.apply(this, arguments);
-        };
-    }
-})();
-</script>
-
-
-<script>
-/* ===== 對帳單預覽/列印/PDF：最終移除排班異動內容 ===== */
-(function(){
-    function cleanNoScheduleChange(html){
+    function cleanStatementHtml(html){
         let s = String(html || '');
-
-        // 移除完整排班異動 modal/form
         s = s.replace(/<div[^>]*id=["']scheduleChangeModal["'][\s\S]*?<\/div>\s*<\/div>/gi, '');
-
-        // 移除整段排班異動紀錄表單文字（包含截圖中的欄位）
         s = s.replace(/排班異動紀錄[\s\S]*?(?:儲存異動|取消|<\/form>|<\/section>|<\/div>)/gi, '');
         s = s.replace(/選擇異動狀態與責任歸屬[\s\S]*?(?:管理方式|儲存異動|取消)/gi, '');
-
-        // 移除殘留欄位標籤
-        const labels = [
-            '排班狀態','異動原因','責任歸屬','是否影響考核','是否計薪',
-            '是否扣客戶點數','異動人員','異動時間','異動備註'
-        ];
-        labels.forEach(label=>{
-            const reg = new RegExp(label + '[\\s\\S]{0,120}(?=<br|<div|<table|$)', 'gi');
-            s = s.replace(reg, '');
-        });
-
-        // 移除排班異動相關 input/select/textarea 殘留
-        s = s.replace(/<input[^>]*id=["']sch_change_modal[^>]*>/gi, '');
-        s = s.replace(/<select[^>]*id=["']sch_change_modal[\s\S]*?<\/select>/gi, '');
-        s = s.replace(/<textarea[^>]*id=["']sch_change_modal[\s\S]*?<\/textarea>/gi, '');
-        s = s.replace(/<button[^>]*>\s*(取消|儲存異動)\s*<\/button>/gi, '');
-
         return s;
     }
+    window.cleanStatementHtml = cleanStatementHtml;
 
-    window.cleanNoScheduleChange = cleanNoScheduleChange;
-
-    // 預覽時先清
     const oldOpenPreview = window.openPreview;
-    if(typeof oldOpenPreview === 'function' && !window.__cleanOpenPreviewFinal){
-        window.__cleanOpenPreviewFinal = true;
+    if(typeof oldOpenPreview === 'function' && !window.__statementCleanKeepLayout){
+        window.__statementCleanKeepLayout = true;
         window.openPreview = function(title, contentHtml, fUrl, filename){
             const isStatement = String(title || '').includes('對帳') || String(contentHtml || '').includes('服務對帳單');
-            return oldOpenPreview.call(this, title, isStatement ? cleanNoScheduleChange(contentHtml) : contentHtml, fUrl, filename);
+            const clean = isStatement ? cleanStatementHtml(contentHtml) : contentHtml;
+            return oldOpenPreview.call(this, title, clean, fUrl, filename);
         };
     }
 
-    // 原生列印時強制只寫入清潔後內容
-    window.doNativePrint = function(){
-        const d = window.currentPdfData;
-        if(!d || !d.contentHtml){
-            alert('目前沒有可列印的預覽資料，請先按預覽。');
-            return;
-        }
-        const w = window.open('', '_blank');
-        if(!w){
-            alert('瀏覽器阻擋了列印視窗，請允許彈出視窗後再試一次。');
-            return;
-        }
+    const oldDoNativePrint = window.doNativePrint;
+    if(typeof oldDoNativePrint === 'function' && !window.__nativePrintCleanKeepLayout){
+        window.__nativePrintCleanKeepLayout = true;
+        window.doNativePrint = function(){
+            if(window.currentPdfData && window.currentPdfData.contentHtml){
+                window.currentPdfData.contentHtml = cleanStatementHtml(window.currentPdfData.contentHtml);
+            }
+            return oldDoNativePrint.call(this);
+        };
+    }
 
-        const safeTitle = String(d.title || '對帳單').replace(/[<>]/g, '');
-        const bodyHtml = cleanNoScheduleChange(d.contentHtml);
-
-        w.document.open();
-        w.document.write(`<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-<meta charset="UTF-8">
-<title>${safeTitle}</title>
-<style>
-@page{size:A4 portrait;margin:15mm;}
-*{box-sizing:border-box;}
-body{font-family:"Microsoft JhengHei",Arial,sans-serif;color:#333;margin:0;padding:0;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.print-toolbar{display:flex;justify-content:flex-end;margin-bottom:18px;}
-.print-toolbar button{padding:10px 20px;background:#2d9d5c;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:16px;font-weight:800;}
-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:14px;}
-th,td{border:1px solid #cbd5e1;padding:10px;text-align:center;vertical-align:middle;}
-th{background:#f1f5f9;font-weight:bold;color:#333;}
-.summary-table{background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;margin-bottom:25px;text-align:center;font-size:16px;}
-.summary-table td{border:none;border-right:1px solid #d1fae5;padding:16px;}
-.summary-table td:last-child{border-right:none;}
-.info-table{width:100%;margin-bottom:20px;border:none;border-collapse:collapse;}
-.info-table td{border:none;padding:4px 0;text-align:left;color:#333;}
-.info-table td:last-child{text-align:right;}
-h2{margin:0;color:#2d9d5c;font-size:28px;}
-h3{margin:8px 0 0;color:#64748b;font-size:18px;}
-.footer{text-align:right;font-size:12px;color:#888;margin-top:30px;}
-#scheduleChangeModal,.change-modal-backdrop,.change-modal,[id^="sch_change_modal"]{display:none!important;visibility:hidden!important;}
-@media print{.print-toolbar{display:none!important;} body{margin:0;} #scheduleChangeModal,.change-modal-backdrop,.change-modal,[id^="sch_change_modal"]{display:none!important;visibility:hidden!important;}}
-</style>
-</head>
-<body>
-<div class="print-toolbar"><button onclick="window.print()">列印 / 另存 PDF</button></div>
-${bodyHtml}
-<script>setTimeout(function(){window.print();},500);<\/script>
-</body>
-</html>`);
-        w.document.close();
-    };
-
-    // PDF 下載前，也把 currentPdfData 清一次
     const oldDoDownloadPdf = window.doDownloadPdf;
-    if(typeof oldDoDownloadPdf === 'function' && !window.__cleanDownloadPdfFinal){
-        window.__cleanDownloadPdfFinal = true;
+    if(typeof oldDoDownloadPdf === 'function' && !window.__downloadPdfCleanKeepLayout){
+        window.__downloadPdfCleanKeepLayout = true;
         window.doDownloadPdf = function(isCloud){
             if(window.currentPdfData && window.currentPdfData.contentHtml){
-                window.currentPdfData.contentHtml = cleanNoScheduleChange(window.currentPdfData.contentHtml);
+                window.currentPdfData.contentHtml = cleanStatementHtml(window.currentPdfData.contentHtml);
             }
             return oldDoDownloadPdf.call(this, isCloud);
         };
     }
-})();
-</script>
-
-
-<script>
-/* ===== 對帳單 PDF 版面修正：避免右側被切掉 ===== */
-(function(){
-    function cleanNoScheduleChangeLocal(html){
-        if(typeof window.cleanNoScheduleChange === 'function') return window.cleanNoScheduleChange(html);
-        let s = String(html || '');
-        s = s.replace(/<div[^>]*id=["']scheduleChangeModal["'][\s\S]*?<\/div>\s*<\/div>/gi, '');
-        s = s.replace(/排班異動紀錄[\s\S]*?(?:儲存異動|取消|<\/form>|<\/section>|<\/div>)/gi, '');
-        return s;
-    }
-
-    window.doDownloadPdf = function(isCloud){
-        const d = window.currentPdfData;
-        if(!d || !d.contentHtml){
-            alert('目前沒有可下載的預覽資料，請先按預覽。');
-            return;
-        }
-
-        showToast(isCloud ? '📄 雲端上傳中...' : '📄 正在產生高畫質 PDF...');
-
-        const hiddenElements = [];
-        Array.from(document.body.children).forEach(child => {
-            if(child.tagName !== 'SCRIPT' && child.tagName !== 'STYLE' && child.id !== 'toast'){
-                hiddenElements.push({ el: child, display: child.style.display });
-                child.style.display = 'none';
-            }
-        });
-
-        const oldBg = document.body.style.background;
-        const oldOverflow = document.body.style.overflow;
-        const oldHeight = document.body.style.height;
-        document.body.style.background = '#ffffff';
-        document.body.style.overflow = 'visible';
-        document.body.style.height = 'auto';
-
-        const isStatement = String(d.title || '').includes('對帳') || String(d.contentHtml || '').includes('服務對帳單');
-        const cleanHtml = cleanNoScheduleChangeLocal(d.contentHtml);
-
-        let c = document.createElement('div');
-        c.id = 'pdf-export-box';
-        // A4 canvas: 794px is standard. Use smaller padding so the right side won't be clipped.
-        c.style.cssText = 'width:794px;padding:24px;margin:0;background:#fff;color:#333;font-family:"Microsoft JhengHei",Arial,sans-serif;text-align:left;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;min-height:1122px;overflow:hidden;';
-
-        c.innerHTML = `
-<style>
-#pdf-export-box, #pdf-export-box *{box-sizing:border-box;max-width:100%;}
-#pdf-export-box table{width:100%!important;border-collapse:collapse;margin-bottom:16px;font-size:12px;table-layout:fixed;}
-#pdf-export-box th,#pdf-export-box td{border:1px solid #cbd5e1;padding:8px;text-align:center;color:#333;word-break:break-word;vertical-align:middle;}
-#pdf-export-box th{background:#f1f5f9;font-weight:bold;color:#333;}
-#pdf-export-box h2{font-size:24px!important;line-height:1.25!important;margin:0!important;color:#2d9d5c!important;}
-#pdf-export-box .footer{text-align:right;font-size:11px;color:#888;margin-top:18px;}
-#pdf-export-box .info-table{width:100%!important;margin-bottom:14px!important;border:none!important;table-layout:auto!important;}
-#pdf-export-box .info-table td{display:block!important;width:100%!important;border:none!important;text-align:left!important;padding:4px 0!important;}
-#pdf-export-box .info-table td:last-child{text-align:left!important;}
-#pdf-export-box .info-table div{display:block!important;margin:8px 0 0 0!important;width:100%!important;text-align:left!important;}
-#pdf-export-box .summary-table{width:100%!important;table-layout:fixed!important;margin-bottom:18px!important;font-size:12px!important;}
-#pdf-export-box .summary-table td{padding:8px 4px!important;vertical-align:top!important;}
-#pdf-export-box .summary-table strong{font-size:18px!important;line-height:1.2!important;}
-#pdf-export-box img{max-width:60px!important;height:auto!important;}
-#pdf-export-box #scheduleChangeModal,
-#pdf-export-box .change-modal-backdrop,
-#pdf-export-box .change-modal,
-#pdf-export-box [id^="sch_change_modal"]{display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important;}
-</style>
-${cleanHtml}`;
-
-        document.body.appendChild(c);
-        window.scrollTo(0,0);
-
-        const opt = {
-            margin: [8, 0, 8, 0],
-            filename: `${d.filename || '對帳單'}_${d.title || '文件'}.pdf`,
-            image: { type:'jpeg', quality:1 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                scrollY: 0,
-                windowWidth: 794,
-                width: 794,
-                backgroundColor: '#ffffff'
-            },
-            jsPDF: { unit:'mm', format:'a4', orientation:'portrait' },
-            pagebreak: { mode: ['css', 'legacy'] }
-        };
-
-        const finish = () => {
-            if(document.body.contains(c)) document.body.removeChild(c);
-            document.body.style.background = oldBg;
-            document.body.style.overflow = oldOverflow;
-            document.body.style.height = oldHeight;
-            hiddenElements.forEach(item => item.el.style.display = item.display);
-            window.scrollTo(0,0);
-        };
-
-        setTimeout(() => {
-            let w = html2pdf().set(opt).from(c);
-            if(isCloud){
-                if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 上傳...');
-                w.outputPdf('datauristring').then(b64 => {
-                    finish();
-                    fetch(SCRIPT_URL, {
-                        method:'POST',
-                        body:JSON.stringify({
-                            action:'savePDF',
-                            folderUrl:d.fUrl,
-                            fileName:opt.filename,
-                            base64Data:b64
-                        })
-                    }).then(r=>r.json()).then(r=>{
-                        if(r.status==='success'){
-                            showToast('🚀 已歸檔');
-                            if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒');
-                        }else{
-                            showToast('失敗', true);
-                        }
-                    }).catch(()=>showToast('錯誤', true));
-                }).catch(() => { finish(); showToast('產出失敗', true); });
-            }else{
-                w.save().then(() => {
-                    finish();
-                    showToast('✅ 下載完成！');
-                }).catch(() => { finish(); showToast('產出失敗', true); });
-            }
-        }, 600);
-    };
 })();
 </script>
 
