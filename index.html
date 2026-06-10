@@ -6292,137 +6292,212 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 </script>
 
 
+
+
 <style>
-/* ===== 對帳單瀏覽器列印修正：避免 LOGO 原圖被放大 ===== */
+/* ===== 對帳單列印版面修正：列印要跟左邊預覽一樣 ===== */
 @media print{
-    body *{ visibility:hidden !important; }
-    #pdfPreviewBox, #pdfPreviewBox *,
-    #pdf-export-box, #pdf-export-box *,
-    .statement-a4, .statement-a4 *{
-        visibility:visible !important;
+    @page{size:A4 portrait;margin:8mm;}
+    html,body{
+        margin:0!important;
+        padding:0!important;
+        background:#fff!important;
+        -webkit-print-color-adjust:exact!important;
+        print-color-adjust:exact!important;
     }
-    #pdfPreviewBox,
-    #pdf-export-box{
-        position:absolute !important;
-        left:0 !important;
-        top:0 !important;
-        width:100% !important;
-        margin:0 !important;
-        padding:0 !important;
-        background:#fff !important;
-        box-shadow:none !important;
+    body *{visibility:hidden!important;}
+    #qyjPrintStatementBox,
+    #qyjPrintStatementBox *{
+        visibility:visible!important;
     }
-    .pdf-preview-toolbar,
-    .preview-toolbar,
-    .modal-header,
-    .modal-footer,
-    .no-print{
-        display:none !important;
-    }
-    .statement-a4{
-        width:680px !important;
-        max-width:680px !important;
-        margin:0 auto !important;
-        padding:0 !important;
-        transform:none !important;
-        zoom:1 !important;
-        page-break-inside:avoid;
-    }
-    .statement-title{
-        font-size:22px !important;
-        line-height:1.2 !important;
-        margin-bottom:12px !important;
-    }
-    .statement-logo,
-    .statement-title img,
-    #pdfPreviewBox img.statement-logo,
-    #pdfPreviewBox .statement-title img,
-    #pdf-export-box img.statement-logo,
-    #pdf-export-box .statement-title img{
-        width:34px !important;
-        height:34px !important;
-        max-width:34px !important;
-        max-height:34px !important;
-        object-fit:contain !important;
-        display:inline-block !important;
-    }
-    .statement-info-grid{
-        display:grid !important;
-        grid-template-columns:1.4fr .9fr .9fr !important;
-        gap:10px !important;
-    }
-    .statement-small-box{
-        min-height:auto !important;
-        height:auto !important;
-        overflow:hidden !important;
-    }
-    .statement-detail,
-    .statement-summary,
-    .statement-small-box table{
-        width:100% !important;
-        max-width:100% !important;
-        table-layout:fixed !important;
-        border-collapse:collapse !important;
+    #qyjPrintStatementBox{
+        position:absolute!important;
+        left:0!important;
+        top:0!important;
+        width:100%!important;
+        margin:0!important;
+        padding:0!important;
+        background:#fff!important;
     }
 }
 </style>
 
 <script>
-/* ===== 對帳單瀏覽器列印函式修正 ===== */
+/* ===== 對帳單列印：完整保留預覽版面，不要縮成右邊那樣 ===== */
 (function(){
-    function qyjCleanStatementPrintHtml(html){
+    function cleanStatementHtmlForPrint(html){
         let s = String(html || '');
         s = s.replace(/<div[^>]*id=["']scheduleChangeModal["'][\s\S]*?<\/div>\s*<\/div>/gi,'');
         s = s.replace(/排班異動紀錄/gi,'');
         return s;
     }
 
-    function qyjStatementPrintCss(){
+    function statementPreviewSameCss(){
         return `
         <style>
-            @page{size:A4 portrait;margin:12mm;}
-            html,body{margin:0;padding:0;background:#fff;color:#334155;font-family:"Microsoft JhengHei",Arial,sans-serif;}
+            @page{size:A4 portrait;margin:8mm;}
+            html,body{
+                margin:0;
+                padding:0;
+                background:#fff;
+                color:#334155;
+                font-family:"Microsoft JhengHei",Arial,sans-serif;
+                -webkit-print-color-adjust:exact;
+                print-color-adjust:exact;
+            }
             *{box-sizing:border-box;}
-            .statement-a4{width:680px;max-width:680px;margin:0 auto;font-size:13px;}
-            .statement-title{display:flex;align-items:center;justify-content:center;gap:10px;color:#16a34a;font-size:22px;font-weight:900;margin-bottom:12px;}
-            .statement-logo,.statement-title img{width:34px!important;height:34px!important;max-width:34px!important;max-height:34px!important;object-fit:contain!important;}
-            .statement-line{height:2px;background:#16a34a;margin:0 0 16px 0;}
-            .statement-info-grid{display:grid;grid-template-columns:1.4fr .9fr .9fr;gap:10px;align-items:start;margin-bottom:14px;}
-            .statement-info{line-height:1.7;padding:5px 2px;}
-            .statement-small-box{border:1px solid #dbeafe;background:#f8fafc;border-radius:8px;padding:8px;min-height:auto;}
-            .statement-small-box .box-title{font-weight:900;color:#334155;border-bottom:1px solid #cbd5e1;padding-bottom:4px;margin-bottom:4px;}
+            #qyjPrintStatementBox{
+                width:100%;
+                margin:0 auto;
+                padding:0;
+                background:#fff;
+            }
+            .statement-a4{
+                width:100%;
+                max-width:720px;
+                margin:0 auto;
+                color:#334155;
+                font-family:"Microsoft JhengHei",Arial,sans-serif;
+                font-size:13px;
+                padding:0;
+            }
+            .statement-title{
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                gap:10px;
+                color:#16a34a;
+                font-size:26px;
+                font-weight:900;
+                margin:0 0 12px 0;
+                line-height:1.2;
+            }
+            .statement-logo,
+            .statement-title img{
+                width:46px!important;
+                height:46px!important;
+                max-width:46px!important;
+                max-height:46px!important;
+                object-fit:contain!important;
+                display:inline-block!important;
+            }
+            .statement-line{
+                height:3px;
+                background:#16a34a;
+                margin:0 0 18px 0;
+            }
+            .statement-info-grid{
+                display:grid;
+                grid-template-columns:1.4fr .9fr .9fr;
+                gap:10px;
+                align-items:start;
+                margin-bottom:14px;
+            }
+            .statement-info{
+                line-height:1.8;
+                padding:6px 2px;
+            }
+            .statement-small-box{
+                border:1px solid #dbeafe;
+                background:#f8fafc;
+                border-radius:8px;
+                padding:8px;
+                min-height:auto;
+                overflow:hidden;
+            }
+            .statement-small-box .box-title{
+                font-weight:900;
+                color:#334155;
+                border-bottom:1px solid #cbd5e1;
+                padding-bottom:4px;
+                margin-bottom:4px;
+            }
             table{border-collapse:collapse;}
-            .statement-small-box table{width:100%;font-size:12px;}
-            .statement-small-box td{border:none;padding:2px 0;text-align:left;}
-            .statement-summary{width:100%;table-layout:fixed;margin:12px 0 14px 0;}
-            .statement-summary td{border:1px solid #cbd5e1;padding:9px 4px;text-align:center;background:#f8fafc;}
+            .statement-small-box table{
+                width:100%;
+                border-collapse:collapse;
+                margin:0!important;
+                font-size:12px;
+            }
+            .statement-small-box td{
+                border:none!important;
+                padding:2px 0!important;
+                text-align:left!important;
+            }
+            .statement-summary{
+                width:100%;
+                table-layout:fixed;
+                border-collapse:collapse;
+                margin:12px 0 16px 0;
+            }
+            .statement-summary td{
+                border:1px solid #cbd5e1;
+                padding:10px 4px;
+                text-align:center;
+                background:#f8fafc;
+            }
             .statement-summary td:nth-child(3){background:#fff1f2;}
             .statement-summary td:nth-child(4){background:#fff7ed;}
             .statement-summary td:nth-child(5){background:#ecfdf5;}
-            .statement-summary span{display:block;font-size:12px;color:#64748b;margin-bottom:4px;}
-            .statement-summary strong{display:block;font-size:18px;color:#0f172a;}
-            .statement-detail{width:100%;table-layout:fixed;font-size:12px;}
-            .statement-detail th,.statement-detail td{border:1px solid #cbd5e1;padding:6px 5px;text-align:center;word-break:break-word;}
-            .statement-detail th{background:#f1f5f9;color:#334155;font-weight:900;}
-            .statement-detail th:nth-child(1),.statement-detail td:nth-child(1){width:22%;}
-            .statement-detail th:nth-child(2),.statement-detail td:nth-child(2){width:20%;}
-            .statement-detail th:nth-child(3),.statement-detail td:nth-child(3){width:24%;}
-            .statement-detail th:nth-child(4),.statement-detail td:nth-child(4){width:17%;}
-            .statement-detail th:nth-child(5),.statement-detail td:nth-child(5){width:17%;}
-            .footer{text-align:right;color:#94a3b8;font-size:11px;margin-top:8px;}
-            img:not(.statement-logo){max-width:100%;height:auto;}
+            .statement-summary span{
+                display:block;
+                font-size:12px;
+                color:#64748b;
+                margin-bottom:5px;
+            }
+            .statement-summary strong{
+                display:block;
+                font-size:20px;
+                color:#0f172a;
+            }
+            .statement-detail{
+                width:100%;
+                table-layout:fixed;
+                border-collapse:collapse;
+                font-size:12px;
+            }
+            .statement-detail th,
+            .statement-detail td{
+                border:1px solid #cbd5e1;
+                padding:7px 5px;
+                text-align:center;
+                word-break:break-word;
+            }
+            .statement-detail th{
+                background:#f1f5f9;
+                color:#334155;
+                font-weight:900;
+            }
+            .statement-detail th:nth-child(1), .statement-detail td:nth-child(1){width:22%;}
+            .statement-detail th:nth-child(2), .statement-detail td:nth-child(2){width:20%;}
+            .statement-detail th:nth-child(3), .statement-detail td:nth-child(3){width:24%;}
+            .statement-detail th:nth-child(4), .statement-detail td:nth-child(4){width:17%;}
+            .statement-detail th:nth-child(5), .statement-detail td:nth-child(5){width:17%;}
+            .footer{
+                text-align:left;
+                color:#475569;
+                font-size:12px;
+                margin-top:8px;
+            }
+            @media print{
+                #qyjPrintStatementBox{width:100%;}
+                .statement-a4{max-width:720px!important;width:720px!important;}
+            }
         </style>`;
     }
 
-    window.printStatementOnly = function(){
+    function getCurrentStatementHtml(){
         const d = window.currentPdfData || {};
         let content = d.contentHtml || '';
         if(!content){
             const box = document.querySelector('.statement-a4');
-            content = box ? box.outerHTML : document.body.innerHTML;
+            content = box ? box.outerHTML : '';
         }
-        content = qyjCleanStatementPrintHtml(content);
+        return cleanStatementHtmlForPrint(content);
+    }
 
+    window.printStatementOnly = function(){
+        const content = getCurrentStatementHtml();
         const w = window.open('', '_blank');
         w.document.open();
         w.document.write(`
@@ -6431,36 +6506,38 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             <head>
                 <meta charset="utf-8">
                 <title>服務對帳單</title>
-                ${qyjStatementPrintCss()}
+                ${statementPreviewSameCss()}
             </head>
-            <body>${content}</body>
+            <body>
+                <div id="qyjPrintStatementBox">${content}</div>
+            </body>
             </html>
         `);
         w.document.close();
-        setTimeout(()=>{ w.focus(); w.print(); }, 500);
+        setTimeout(()=>{ w.focus(); w.print(); }, 450);
     };
 
-    const oldNative = window.doNativePrint;
+    const oldNativePrint = window.doNativePrint;
     window.doNativePrint = function(){
         const d = window.currentPdfData || {};
         const isStatement = String(d.title || '').includes('對帳') || String(d.contentHtml || '').includes('服務對帳單');
         if(isStatement){
             return window.printStatementOnly();
         }
-        if(typeof oldNative === 'function') return oldNative.apply(this, arguments);
-        window.print();
+        if(typeof oldNativePrint === 'function') return oldNativePrint.apply(this, arguments);
+        return window.print();
     };
 
-    // 讓「瀏覽器列印」按鈕一定會使用修正版
     document.addEventListener('click', function(e){
         const btn = e.target.closest('button');
         if(!btn) return;
         const txt = (btn.innerText || '').trim();
         if(txt.includes('瀏覽器列印')){
             const d = window.currentPdfData || {};
-            if(String(d.title || '').includes('對帳') || String(d.contentHtml || '').includes('服務對帳單')){
+            const isStatement = String(d.title || '').includes('對帳') || String(d.contentHtml || '').includes('服務對帳單');
+            if(isStatement){
                 e.preventDefault();
-                e.stopPropagation();
+                e.stopImmediatePropagation();
                 window.printStatementOnly();
             }
         }
