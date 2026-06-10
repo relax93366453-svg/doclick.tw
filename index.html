@@ -647,6 +647,125 @@
     visibility:hidden!important;
 }
 
+
+/* ===== 對帳單 A4 友善版面 ===== */
+.statement-a4{
+    width:100%;
+    max-width:720px;
+    margin:0 auto;
+    color:#334155;
+    font-family:"Microsoft JhengHei",Arial,sans-serif;
+    font-size:13px;
+}
+.statement-title{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    color:#16a34a;
+    font-size:26px;
+    font-weight:900;
+    margin-bottom:12px;
+}
+.statement-logo{
+    width:46px!important;
+    height:46px!important;
+    object-fit:contain;
+}
+.statement-line{
+    height:3px;
+    background:#16a34a;
+    margin:0 0 18px 0;
+}
+.statement-info-grid{
+    display:grid;
+    grid-template-columns:1.4fr .9fr .9fr;
+    gap:10px;
+    align-items:start;
+    margin-bottom:14px;
+}
+.statement-info{
+    line-height:1.8;
+    padding:6px 2px;
+}
+.statement-small-box{
+    border:1px solid #dbeafe;
+    background:#f8fafc;
+    border-radius:8px;
+    padding:8px;
+    min-height:auto;
+}
+.statement-small-box .box-title{
+    font-weight:900;
+    color:#334155;
+    border-bottom:1px solid #cbd5e1;
+    padding-bottom:4px;
+    margin-bottom:4px;
+}
+.statement-small-box table{
+    width:100%;
+    border-collapse:collapse;
+    margin:0!important;
+    font-size:12px;
+}
+.statement-small-box td{
+    border:none!important;
+    padding:2px 0!important;
+    text-align:left!important;
+}
+.statement-summary{
+    width:100%;
+    table-layout:fixed;
+    border-collapse:collapse;
+    margin:12px 0 16px 0;
+}
+.statement-summary td{
+    border:1px solid #cbd5e1;
+    padding:10px 4px;
+    text-align:center;
+    background:#f8fafc;
+}
+.statement-summary td:nth-child(3){background:#fff1f2;}
+.statement-summary td:nth-child(4){background:#fff7ed;}
+.statement-summary td:nth-child(5){background:#ecfdf5;}
+.statement-summary span{
+    display:block;
+    font-size:12px;
+    color:#64748b;
+    margin-bottom:5px;
+}
+.statement-summary strong{
+    display:block;
+    font-size:20px;
+    color:#0f172a;
+}
+.statement-detail{
+    width:100%;
+    table-layout:fixed;
+    border-collapse:collapse;
+    font-size:12px;
+}
+.statement-detail th,
+.statement-detail td{
+    border:1px solid #cbd5e1;
+    padding:7px 5px;
+    text-align:center;
+    word-break:break-word;
+}
+.statement-detail th{
+    background:#f1f5f9;
+    color:#334155;
+    font-weight:900;
+}
+.statement-detail th:nth-child(1), .statement-detail td:nth-child(1){width:22%;}
+.statement-detail th:nth-child(2), .statement-detail td:nth-child(2){width:20%;}
+.statement-detail th:nth-child(3), .statement-detail td:nth-child(3){width:24%;}
+.statement-detail th:nth-child(4), .statement-detail td:nth-child(4){width:17%;}
+.statement-detail th:nth-child(5), .statement-detail td:nth-child(5){width:17%;}
+@media print{
+    .statement-a4{max-width:720px!important;}
+}
+
 </style>
 </head>
 <body>
@@ -4457,99 +4576,145 @@ function renderBill() {
 }
 
 function generateStatementPDF() {
-    const cb = el('bill_filter_company').value.trim(), yb = el('bill_filter_year').value, mb = el('bill_filter_month').value; 
+    const cb = el('bill_filter_company').value.trim();
+    const yb = el('bill_filter_year').value;
+    const mb = el('bill_filter_month').value;
     const cycle = el('bill_cycle').value;
-    
-    if(!cb || cb === '全部' || cb === '') return showToast('請選公司', true); 
+
+    if(!cb || cb === '全部' || cb === '') return showToast('請選公司', true);
     const ci = custData.find(x => x.name === cb);
-    
+
     let periodStart = '0000-00-00', periodEnd = '9999-99-99', pt = '全部';
     if (cycle === 'manual') {
         periodStart = el('bill_start_date').value || '0000-00-00';
         periodEnd = el('bill_end_date').value || '9999-99-99';
-        let ptStart = periodStart === '0000-00-00' ? '最前' : periodStart;
-        let ptEnd = periodEnd === '9999-99-99' ? '最後' : periodEnd;
-        pt = `${ptStart} ~ ${ptEnd}`;
-        if(periodStart === '0000-00-00' && periodEnd === '9999-99-99') pt = '全部';
-    } else {
-        if(yb !== 'all' && mb !== 'all') {
-            if(cycle === '1') { 
-                periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`;
-                let lastDay = new Date(yb, mb, 0).getDate(); 
-                periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`; 
-                pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`;
-            } else { 
-                let py = parseInt(yb); let pm = parseInt(mb) - 1;
-                if(pm === 0) { pm = 12; py -= 1; } 
-                periodStart = `${py}-${String(pm).padStart(2,'0')}-26`; 
-                periodEnd = `${yb}-${String(mb).padStart(2,'0')}-25`;
-                pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`; 
-            }
+        const ptStart = periodStart === '0000-00-00' ? '最前' : periodStart;
+        const ptEnd = periodEnd === '9999-99-99' ? '最後' : periodEnd;
+        pt = (periodStart === '0000-00-00' && periodEnd === '9999-99-99') ? '全部' : `${ptStart} ~ ${ptEnd}`;
+    } else if(yb !== 'all' && mb !== 'all') {
+        if(cycle === '1') {
+            periodStart = `${yb}-${String(mb).padStart(2,'0')}-01`;
+            const lastDay = new Date(yb, mb, 0).getDate();
+            periodEnd = `${yb}-${String(mb).padStart(2,'0')}-${lastDay}`;
+            pt = `${yb}/${String(mb).padStart(2,'0')}/01 ~ ${yb}/${String(mb).padStart(2,'0')}/${lastDay}`;
+        } else {
+            let py = parseInt(yb,10);
+            let pm = parseInt(mb,10) - 1;
+            if(pm === 0) { pm = 12; py -= 1; }
+            periodStart = `${py}-${String(pm).padStart(2,'0')}-26`;
+            periodEnd = `${yb}-${String(mb).padStart(2,'0')}-25`;
+            pt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${yb}/${String(mb).padStart(2,'0')}/25`;
         }
     }
-    
-    const cs = contractData.filter(x => x.customer === cb && (!x.date || x.date <= periodEnd)).sort((a,b) => new Date(a.date) - new Date(b.date));
-    let tp = 0, ph = '', ps = new Set(); 
+
+    const cs = contractData
+        .filter(x => x.customer === cb && (!x.date || x.date <= periodEnd))
+        .sort((a,b) => new Date(a.date || '1900-01-01') - new Date(b.date || '1900-01-01'));
+
+    let totalPurchased = 0;
+    const plans = new Set();
+    const purchaseRows = [];
     cs.forEach(c => {
-        tp += Number(c.point) || 0;
-        if(c.price_plan) ps.add(c.price_plan);
-        ph += `<div style="margin-bottom:4px;">📅 ${c.date||'無'} <b style="color:#2d9d5c;">${Number(c.point)||0} 點</b></div>`;
+        const pts = Number(c.point) || 0;
+        totalPurchased += pts;
+        if(c.price_plan) plans.add(c.price_plan);
+        purchaseRows.push(`<tr><td>${c.date || '-'}</td><td style="text-align:right;color:#059669;font-weight:900;">${pts.toFixed(pts % 1 ? 1 : 0)} 點</td></tr>`);
     });
-    if(cs.length === 0){ ph = '<div style="color:#999;">無</div>'; ps.add('無'); }
-    
-    let pastRecords = attendData.filter(x => x.company === cb && x.date < periodStart); 
-    let pastDeducted = 0; let pastBreakdown = {};
-    
-    pastRecords.forEach(i => { 
-        let pts = getItemDeductPoints(i); 
-        pastDeducted += pts; 
-        let parts = i.date.split('-'); 
-        let rY = parseInt(parts[0], 10); let rM = parseInt(parts[1], 10); let rD = parseInt(parts[2], 10); 
-        if (cycle === '26' && rD >= 26) { rM += 1; if (rM > 12) { rM = 1; rY += 1; } } 
-        let pKey = `${rY}年${rM}月`; 
-        if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0; 
-        pastBreakdown[pKey] += pts; 
+
+    let pastRecords = attendData.filter(x => x.company === cb && x.date < periodStart);
+    let pastDeducted = 0;
+    let pastBreakdown = {};
+    pastRecords.forEach(i => {
+        const pts = getItemDeductPoints(i);
+        pastDeducted += pts;
+        const parts = String(i.date || '').split('-');
+        let rY = parseInt(parts[0],10), rM = parseInt(parts[1],10), rD = parseInt(parts[2],10);
+        if(cycle === '26' && rD >= 26) { rM += 1; if(rM > 12) { rM = 1; rY += 1; } }
+        const pKey = `${rY}年${rM}月`;
+        if(!pastBreakdown[pKey]) pastBreakdown[pKey] = 0;
+        pastBreakdown[pKey] += pts;
     });
-    
-    let pKeys = Object.keys(pastBreakdown).sort((a,b) => { 
-        let [y1, m1] = a.replace('月','').split('年'); 
-        let [y2, m2] = b.replace('月','').split('年'); 
-        return (parseInt(y1)*12 + parseInt(m1)) - (parseInt(y2)*12 + parseInt(m2)); 
-    });
-    
-    let pastHistoryHtml = pKeys.length > 0 ? pKeys.map(k => `<div style="font-size:12px; color:#64748b; line-height:1.6;">${k} : ${pastBreakdown[k].toFixed(1)} 點</div>`).join('') : '<div style="font-size:12px;color:#999;">無</div>';
-    
-    let atsRaw = attendData.filter(x => {
+
+    const historyRows = Object.keys(pastBreakdown).sort((a,b) => {
+        const [y1,m1] = a.replace('月','').split('年');
+        const [y2,m2] = b.replace('月','').split('年');
+        return (parseInt(y1,10)*12 + parseInt(m1,10)) - (parseInt(y2,10)*12 + parseInt(m2,10));
+    }).map(k => `<tr><td>${k}</td><td style="text-align:right;color:#64748b;font-weight:900;">${pastBreakdown[k].toFixed(1)} 點</td></tr>`);
+
+    const atsRaw = attendData.filter(x => {
         if(x.company !== cb) return false;
-        if(cycle === 'manual') return (!el('bill_start_date').value || x.date >= periodStart) && (!el('bill_end_date').value || x.date <= periodEnd);
+        if(cycle === 'manual') {
+            return (!el('bill_start_date').value || x.date >= periodStart) && (!el('bill_end_date').value || x.date <= periodEnd);
+        }
         return isDispatchPayrollPeriod(x.date, yb, mb, cycle);
-    }); 
-    
-    let gl = {};
-    atsRaw.forEach(i => {
-        let k = `${i.date}_${i.staff}_${i.service}`;
-        if(!gl[k]) gl[k] = {...i, cH: 0, cP: 0};
-        gl[k].cH += getItemClockHours(i); 
-        gl[k].cP += getItemDeductPoints(i);
     });
-    
-    let ats = Object.values(gl).sort((a,b) => new Date(a.date) - new Date(b.date));
-    
-    let ah = ''; let periodDeducted = 0;
-    if(ats.length > 0) { 
-        ats.forEach(i => { 
-            periodDeducted += i.cP; 
-            ah += `<tr><td>${i.date}</td><td>${i.staff}</td><td>${i.service || '-'}</td><td>${i.cH.toFixed(1)}</td><td>${i.cP}</td></tr>`; 
-        });
-    } else { 
-        ah = `<tr><td colspan="5" style="border:1px solid #ddd;padding:20px;color:#666;text-align:center;">無紀錄</td></tr>`; 
-    }
-    
+
+    const grouped = {};
+    atsRaw.forEach(i => {
+        const key = `${i.date}_${i.staff}_${i.service || '-'}`;
+        if(!grouped[key]) grouped[key] = {...i, cH:0, cP:0};
+        grouped[key].cH += getItemClockHours(i);
+        grouped[key].cP += getItemDeductPoints(i);
+    });
+
+    const ats = Object.values(grouped).sort((a,b) => new Date(a.date) - new Date(b.date));
+    let periodDeducted = 0;
+    const detailRows = ats.map(i => {
+        periodDeducted += i.cP;
+        return `<tr>
+            <td>${i.date || ''}</td>
+            <td>${i.staff || ''}</td>
+            <td>${i.service || '-'}</td>
+            <td>${Number(i.cH || 0).toFixed(1)}</td>
+            <td>${Number(i.cP || 0).toFixed(1).replace('.0','')}</td>
+        </tr>`;
+    }).join('') || `<tr><td colspan="5" style="padding:18px;color:#64748b;text-align:center;">無紀錄</td></tr>`;
+
     const totalDeducted = pastDeducted + periodDeducted;
-    const endingPoints = Number((tp - totalDeducted).toFixed(1));
-    const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">` : '';
-    
-    let c = `<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #2d9d5c;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#2d9d5c;">愜易居有限公司 - 服務對帳單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;vertical-align:top;"><strong>客戶名稱：</strong> ${cb}<br><strong>結算期間：</strong> ${pt}<br><strong>使用方案：</strong> ${Array.from(ps).join('、')}</td><td style="text-align:right;vertical-align:top;"><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;vertical-align:top;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">儲值紀錄</div>${ph}</div><div style="display:inline-block;background:#f8fafc;padding:12px 18px;border-radius:8px;border:1px solid #e2e8f0;text-align:left;margin-left:10px;vertical-align:top;"><div style="font-weight:bold;margin-bottom:8px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;color:#333;">歷史扣除明細</div>${pastHistoryHtml}</div></td></tr></table><table class="summary-table" style="width:100%;background:#fff;border-radius:8px;margin-bottom:25px;text-align:center;font-size:15px;border:1px solid #cbd5e1;box-shadow:0 4px 6px rgba(0,0,0,0.05);"><tr><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;width:20%;vertical-align:top;background:#f8fafc;">購買總點數<br><strong style="font-size:24px;color:#1e293b;">${tp} 點</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#333;vertical-align:top;background:#f8fafc;width:20%;">歷史已扣<br><strong style="font-size:24px;color:#64748b;">${pastDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#dc2626;background:#fff5f5;vertical-align:top;width:20%;">本期扣除<br><strong style="font-size:24px;">${periodDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;border-right:1px solid #cbd5e1;color:#ea580c;background:#fff7ed;vertical-align:top;width:20%;">累計總扣除<br><strong style="font-size:24px;">${totalDeducted.toFixed(1)}</strong></td><td style="padding:12px 8px;color:#059669;background:#ecfdf5;vertical-align:top;width:20%;">最新剩餘點數<br><strong style="font-size:28px;color:${endingPoints<0?'#ef4444':'#059669'};">${endingPoints.toFixed(1)}</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody>${ah}</tbody></table><div class="footer" style="text-align:right;font-size:13px;color:#94a3b8;margin-top:30px;">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+    const endingPoints = Number((totalPurchased - totalDeducted).toFixed(1));
+    const logo = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" class="statement-logo">` : '';
+
+    const c = `
+<div class="statement-a4">
+    <div class="statement-title">
+        ${logo}
+        <div>愜易居有限公司 - 服務對帳單</div>
+    </div>
+    <div class="statement-line"></div>
+
+    <div class="statement-info-grid">
+        <div class="statement-info">
+            <div><b>客戶名稱：</b>${cb}</div>
+            <div><b>結算期間：</b>${pt}</div>
+            <div><b>使用方案：</b>${Array.from(plans).join('、') || '-'}</div>
+        </div>
+        <div class="statement-small-box">
+            <div class="box-title">儲值紀錄</div>
+            <table>${purchaseRows.join('') || '<tr><td colspan="2" style="color:#94a3b8;">無</td></tr>'}</table>
+        </div>
+        <div class="statement-small-box">
+            <div class="box-title">歷史扣除</div>
+            <table>${historyRows.join('') || '<tr><td colspan="2" style="color:#94a3b8;">無</td></tr>'}</table>
+        </div>
+    </div>
+
+    <table class="statement-summary">
+        <tr>
+            <td><span>購買總點數</span><strong>${totalPurchased.toFixed(totalPurchased % 1 ? 1 : 0)} 點</strong></td>
+            <td><span>歷史已扣</span><strong>${pastDeducted.toFixed(1)}</strong></td>
+            <td><span>本期扣除</span><strong style="color:#ef4444;">${periodDeducted.toFixed(1)}</strong></td>
+            <td><span>累計總扣除</span><strong style="color:#f97316;">${totalDeducted.toFixed(1)}</strong></td>
+            <td><span>最新剩餘點數</span><strong style="color:${endingPoints < 0 ? '#ef4444' : '#059669'};">${endingPoints.toFixed(1)}</strong></td>
+        </tr>
+    </table>
+
+    <table class="statement-detail">
+        <thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead>
+        <tbody>${detailRows}</tbody>
+    </table>
+    <div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
+</div>`;
+
     openPreview('對帳單', c, ci ? ci.drive : '', cb);
 }
 
@@ -5864,6 +6029,63 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 })();
 </script>
+
+
+<script>
+/* ===== 對帳單新版版面不再使用整體縮放 ===== */
+(function(){
+    const oldDoDownloadPdf = window.doDownloadPdf;
+    if(typeof oldDoDownloadPdf === 'function' && !window.__statementNewLayoutKeepOriginalDownload){
+        window.__statementNewLayoutKeepOriginalDownload = true;
+        window.doDownloadPdf = function(isCloud){
+            if(window.currentPdfData && window.currentPdfData.contentHtml){
+                window.currentPdfData.contentHtml = String(window.currentPdfData.contentHtml).replace(/<div[^>]*id=["']scheduleChangeModal["'][\s\S]*?<\/div>\s*<\/div>/gi,'');
+            }
+            return oldDoDownloadPdf.call(this, isCloud);
+        };
+    }
+})();
+</script>
+
+
+<!-- ===== 員工手機版入口：第一次登入後記住帳號 ===== -->
+<style>
+#mobileStaffApp{position:fixed;inset:0;background:#f4f5f7;z-index:999999;display:none;color:#222;font-family:"Microsoft JhengHei",Arial,sans-serif;overflow:auto}#mobileStaffApp *{box-sizing:border-box}.ms-top{height:58px;background:#fff;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:5}.ms-back{position:absolute;left:12px;border:0;background:transparent;font-size:30px}.ms-title{font-weight:900;font-size:18px}.ms-wrap{padding:18px 16px 92px;max-width:560px;margin:auto}.ms-card{background:#fff;border-radius:16px;padding:18px;margin-bottom:16px}.ms-logo{width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#88ddd2,#287be8);color:#fff;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:900;margin:10px auto 14px}.ms-label{font-size:13px;color:#64748b;margin:12px 0 6px}.ms-input{width:100%;height:48px;border:1px solid #d1d5db;border-radius:12px;padding:0 14px;font-size:16px}.ms-primary{width:100%;height:50px;border:0;border-radius:14px;background:linear-gradient(90deg,#00c853,#2f8df7);color:#fff;font-weight:900;font-size:17px;margin-top:16px}.ms-secondary{width:100%;height:46px;border:1px solid #d1d5db;border-radius:13px;background:#fff;color:#334155;font-weight:800;font-size:15px;margin-top:10px}.ms-profile{display:flex;gap:14px;align-items:center}.ms-avatar{width:64px;height:64px;border-radius:50%;background:#1e5bb8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;flex:0 0 auto}.ms-name{font-size:22px;font-weight:900}.ms-sub{font-size:14px;color:#64748b;line-height:1.7}.ms-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:15px}.ms-row:last-child{border-bottom:0}.ms-row span:first-child{color:#64748b}.ms-row span:last-child{font-weight:800;text-align:right}.ms-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #eef2f7}.ms-grid button{min-height:96px;border:0;background:#fff;border-right:1px solid #eef2f7;border-bottom:1px solid #eef2f7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:8px 3px}.ms-grid button:nth-child(4n){border-right:0}.ms-ico{font-size:28px}.ms-gt{font-size:14px;font-weight:900}.ms-gs{font-size:11px;color:#94a3b8}.ms-punch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.ms-punch button{height:54px;border:0;border-radius:16px;color:#fff;font-size:17px;font-weight:900}.ms-in{background:#00b83f}.ms-out{background:#2563eb}.ms-bottom{position:fixed;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid #e5e7eb;display:none;grid-template-columns:repeat(5,1fr);z-index:10}.ms-bottom button{border:0;background:#fff;color:#4b5563;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}.ms-bottom b{font-size:22px}.ms-list{background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px}.ms-lt{font-size:17px;font-weight:900}.ms-ls{font-size:13px;color:#64748b;margin-top:4px}.ms-empty{text-align:center;color:#94a3b8;padding:32px 12px}.ms-logout{color:#dc2626;text-align:center;font-weight:900;padding:18px}@media(max-width:420px){.ms-grid button{min-height:90px}.ms-gs{display:none}}
+</style>
+<div id="mobileStaffApp"><div class="ms-top"><button class="ms-back" onclick="closeMobileStaffApp()">‹</button><div class="ms-title" id="msTopTitle">員工服務</div></div><div id="msContent" class="ms-wrap"></div><div class="ms-bottom" id="msBottomNav"><button onclick="msGo('attendance')"><b>📅</b><span>出勤紀錄</span></button><button onclick="msGo('schedule')"><b>📋</b><span>我的班表</span></button><button onclick="msGo('home')"><b>⌂</b><span>首頁</span></button><button onclick="msGo('notice')"><b>💬</b><span>公告欄</span></button><button onclick="msGo('more')"><b>▦</b><span>更多</span></button></div></div>
+<script>
+(function(){
+window.MS_LOGIN_KEY='qyj_mobile_staff_login';
+window.openMobileStaffApp=function(route){document.getElementById('mobileStaffApp').style.display='block';let s=msGetCurrentStaff();if(!s)msShowLogin(route||'home');else msGo(route||'home')};
+window.closeMobileStaffApp=function(){document.getElementById('mobileStaffApp').style.display='none'};
+window.msGetStaffList=function(){return [...(Array.isArray(window.staffData)?window.staffData:[]),...(Array.isArray(window.ftStaffData)?window.ftStaffData:[])].filter(Boolean)};
+window.msStaffName=function(s){return s.name||s.staff||s.realName||s.employeeName||s.fullname||''};
+window.msStaffAccount=function(s){return s.account||s.username||s.phone||s.mobile||s.tel||s.id||s.code||s.staffId||msStaffName(s)};
+window.msStaffPassword=function(s){return s.password||s.pwd||s.pass||'1234'};
+window.msGetCurrentStaff=function(){try{let saved=JSON.parse(localStorage.getItem(MS_LOGIN_KEY)||'null');if(!saved)return null;let list=msGetStaffList();return list.find(s=>String(msStaffAccount(s))===String(saved.account)||String(msStaffName(s))===String(saved.name))||saved}catch(e){return null}};
+window.msSetTitle=function(t){document.getElementById('msTopTitle').innerText=t};
+window.msShowLogin=function(route){msSetTitle('員工登入');document.getElementById('msBottomNav').style.display='none';document.getElementById('msContent').innerHTML=`<div class="ms-card"><div class="ms-logo">愜</div><div style="text-align:center;font-size:22px;font-weight:900">愜易居員工服務</div><div style="text-align:center;color:#64748b;font-size:14px;margin-top:5px">第一次登入後，系統會記住帳號</div><div class="ms-label">帳號 / 手機 / 員工姓名</div><input id="msLoginAccount" class="ms-input" placeholder="請輸入帳號"><div class="ms-label">密碼</div><input id="msLoginPwd" class="ms-input" type="password" placeholder="請輸入密碼"><button class="ms-primary" onclick="msDoLogin('${route||'home'}')">登入</button><button class="ms-secondary" onclick="closeMobileStaffApp()">返回</button><div style="font-size:12px;color:#94a3b8;line-height:1.7;margin-top:14px">建議帳號使用手機號碼；若尚未設定密碼，可先由主管在人員資料庫建立。</div></div>`};
+window.msDoLogin=function(route){let acc=(document.getElementById('msLoginAccount').value||'').trim(),pwd=(document.getElementById('msLoginPwd').value||'').trim();if(!acc||!pwd)return alert('請輸入帳號與密碼');let s=msGetStaffList().find(x=>[msStaffAccount(x),msStaffName(x),x.phone,x.mobile,x.tel,x.id,x.code,x.staffId].filter(Boolean).map(String).includes(String(acc))&&String(msStaffPassword(x))===String(pwd));if(!s)return alert('帳號或密碼錯誤，請先確認人員資料庫是否有帳密');localStorage.setItem(MS_LOGIN_KEY,JSON.stringify({account:msStaffAccount(s),name:msStaffName(s),loginAt:new Date().toISOString()}));msGo(route||'home')};
+window.msLogout=function(){if(confirm('確定登出？')){localStorage.removeItem(MS_LOGIN_KEY);msShowLogin('home')}};
+window.msTodayString=function(){let d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+window.msFindTodaySchedules=function(staff){let n=msStaffName(staff),today=msTodayString();return (Array.isArray(window.scheduleData)?window.scheduleData:[]).filter(x=>x.date===today&&String(x.staff||x.name||x.employee||'')===String(n)&&(x.status||x.scheduleStatus||'')!=='作廢')};
+window.msGo=function(route){if(!msGetCurrentStaff())return msShowLogin(route);document.getElementById('msBottomNav').style.display='grid';({home:msShowHome,punch:msShowPunch,attendance:msShowAttendance,schedule:msShowSchedule,leave:msShowLeave,salary:msShowSalary,profile:msShowProfile,sop:msShowSop,notice:msShowNotice,more:msShowMore}[route]||msShowHome)()};
+window.msShowHome=function(){let s=msGetCurrentStaff(),n=msStaffName(s)||'員工',code=s.code||s.id||s.staffId||msStaffAccount(s)||'-',dept=s.dept||s.department||s.type||s.role||s.status||'派遣/員工',t=msFindTodaySchedules(s);msSetTitle('員工服務');document.getElementById('msContent').innerHTML=`<div class="ms-card ms-profile"><div class="ms-avatar">${n.slice(0,1)}</div><div><div class="ms-name">${n}</div><div class="ms-sub">員工編號：${code}<br>狀態：${dept}</div></div></div><div class="ms-card"><div style="font-weight:900;margin-bottom:12px">今日排班</div>${t.length?t.map(x=>`<div class="ms-row"><span>${x.company||'-'}</span><span>${x.start||x.startTime||'-'}-${x.end||x.endTime||'-'}</span></div>`).join(''):'<div class="ms-empty">今天目前沒有排班</div>'}<div class="ms-punch"><button class="ms-in" onclick="msGo('punch')">我要打卡</button><button class="ms-out" onclick="msGo('schedule')">我的班表</button></div></div><div class="ms-grid"><button onclick="msGo('punch')"><div class="ms-ico">📍</div><div class="ms-gt">我要打卡</div><div class="ms-gs">上下班打卡</div></button><button onclick="msGo('attendance')"><div class="ms-ico">📅</div><div class="ms-gt">出勤紀錄</div><div class="ms-gs">查看打卡</div></button><button onclick="msGo('schedule')"><div class="ms-ico">📋</div><div class="ms-gt">我的班表</div><div class="ms-gs">查看排班</div></button><button onclick="msGo('leave')"><div class="ms-ico">📝</div><div class="ms-gt">我要請假</div><div class="ms-gs">請假申請</div></button><button onclick="msGo('salary')"><div class="ms-ico">💰</div><div class="ms-gt">我的薪資單</div><div class="ms-gs">下載薪資</div></button><button onclick="msGo('profile')"><div class="ms-ico">👤</div><div class="ms-gt">員工資訊</div><div class="ms-gs">個人資料</div></button><button onclick="msGo('sop')"><div class="ms-ico">📦</div><div class="ms-gt">入職包 SOP</div><div class="ms-gs">新員工指引</div></button><button onclick="msGo('more')"><div class="ms-ico">▦</div><div class="ms-gt">更多功能</div><div class="ms-gs">其他服務</div></button></div>`};
+window.msShowPunch=function(){let s=msGetCurrentStaff(),t=msFindTodaySchedules(s);msSetTitle('我要打卡');document.getElementById('msContent').innerHTML=t.length?t.map((x,i)=>`<div class="ms-card"><div style="font-size:18px;font-weight:900;margin-bottom:10px">${x.company||'今日班表'}</div><div class="ms-row"><span>日期</span><span>${x.date||'-'}</span></div><div class="ms-row"><span>時間</span><span>${x.start||x.startTime||'-'} - ${x.end||x.endTime||'-'}</span></div><div class="ms-punch"><button class="ms-in" onclick="msDoPunch('上班',${i})">上班打卡</button><button class="ms-out" onclick="msDoPunch('下班',${i})">下班打卡</button></div></div>`).join(''):`<div class="ms-card"><div class="ms-empty">今天目前沒有排班</div><button class="ms-secondary" onclick="msGo('home')">回首頁</button></div>`};
+window.msDoPunch=function(type,i){let s=msGetCurrentStaff(),sch=msFindTodaySchedules(s)[i]||{},now=new Date(),time=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;let done=function(pos){let gps=pos?`${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`:'未取得';let rec={staff:msStaffName(s),company:sch.company||'總公司',type,date:msTodayString(),time,gps,createdAt:now.toISOString()};let arr=JSON.parse(localStorage.getItem('qyj_staff_punch_records')||'[]');arr.push(rec);localStorage.setItem('qyj_staff_punch_records',JSON.stringify(arr));msShowPunchSuccess(rec)};navigator.geolocation?navigator.geolocation.getCurrentPosition(done,()=>done(null),{enableHighAccuracy:true,timeout:8000}):done(null)};
+window.msShowPunchSuccess=function(r){msSetTitle('打卡成功');document.getElementById('msContent').innerHTML=`<div class="ms-card"><div style="color:#00a92f;font-size:20px;font-weight:900;margin-bottom:22px">你已打卡成功</div><div style="font-size:38px;font-weight:900;margin-bottom:14px">${r.type}打卡 ${r.time}</div><div class="ms-row"><span>日期</span><span>${r.date}</span></div><div class="ms-row"><span>打卡地點</span><span>${r.company}（GPS）</span></div><div class="ms-row"><span>GPS</span><span>${r.gps}</span></div><button class="ms-secondary" onclick="msGo('attendance')">查看出勤紀錄</button><button class="ms-secondary" onclick="msGo('home')">開啟員工首頁</button></div>`};
+window.msShowAttendance=function(){let s=msGetCurrentStaff(),p=JSON.parse(localStorage.getItem('qyj_staff_punch_records')||'[]').filter(x=>x.staff===msStaffName(s)).reverse();msSetTitle('出勤紀錄');document.getElementById('msContent').innerHTML=p.map(x=>`<div class="ms-list"><div><div class="ms-lt">${x.type} ${x.time}</div><div class="ms-ls">${x.date}｜${x.company}｜GPS ${x.gps}</div></div><span>›</span></div>`).join('')||'<div class="ms-card"><div class="ms-empty">目前沒有出勤紀錄</div></div>'};
+window.msShowSchedule=function(){let s=msGetCurrentStaff(),n=msStaffName(s),arr=(Array.isArray(window.scheduleData)?window.scheduleData:[]).filter(x=>String(x.staff||x.name||x.employee||'')===String(n)&&(x.status||x.scheduleStatus||'')!=='作廢').sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).slice(0,60);msSetTitle('我的班表');document.getElementById('msContent').innerHTML=arr.map(x=>`<div class="ms-list"><div><div class="ms-lt">${x.date||''}｜${x.company||''}</div><div class="ms-ls">${x.start||x.startTime||'-'} - ${x.end||x.endTime||'-'}</div></div><span>›</span></div>`).join('')||'<div class="ms-card"><div class="ms-empty">目前沒有班表</div></div>'};
+window.msShowLeave=function(){msSetTitle('我要請假');document.getElementById('msContent').innerHTML='<div class="ms-card"><div style="font-weight:900;font-size:18px">請假申請</div><div class="ms-label">請假日期</div><input class="ms-input" type="date"><div class="ms-label">請假原因</div><input class="ms-input" placeholder="請輸入請假原因"><button class="ms-primary" onclick="alert(\'第一階段先建立入口，後續再串主管簽核。\')">送出申請</button></div>'};
+window.msShowSalary=function(){msSetTitle('我的薪資單');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">第一階段先保留入口，後續串既有薪資單下載。</div></div>'};
+window.msShowProfile=function(){let s=msGetCurrentStaff(),n=msStaffName(s),code=s.code||s.id||s.staffId||msStaffAccount(s)||'-',phone=s.phone||s.mobile||s.tel||'-',dept=s.dept||s.department||s.type||s.role||s.status||'-';msSetTitle('員工資訊');document.getElementById('msContent').innerHTML=`<div class="ms-card" style="text-align:center"><div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${n.slice(0,1)}</div><div class="ms-row"><span>員工姓名</span><span>${n}</span></div><div class="ms-row"><span>員工編號</span><span>${code}</span></div><div class="ms-row"><span>部門/狀態</span><span>${dept}</span></div><div class="ms-row"><span>手機</span><span>${phone}</span></div></div><div class="ms-card"><div style="font-weight:900;font-size:18px">登入方式</div><div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div><div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>`};
+window.msShowSop=function(){msSetTitle('入職包 SOP');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list"><div><div class="ms-lt">報班前注意事項</div><div class="ms-ls">請詳閱派遣規範</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">工作態度規範</div><div class="ms-ls">服裝、準時、回報、資料保密</div></div><span>›</span></div></div>'};
+window.msShowNotice=function(){msSetTitle('公告欄');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有公告</div></div>'};
+window.msShowMore=function(){msSetTitle('更多功能');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list" onclick="msGo(\'profile\')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'sop\')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">新員工指引</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">LINE 通知管理</div><div class="ms-ls">第二階段開放</div></div><span>›</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>'};
+window.addEventListener('load',function(){let qs=new URLSearchParams(location.search);if(qs.get('staffApp')==='1'||location.hash==='#staff')openMobileStaffApp(qs.get('route')||'home')});
+})();
+</script>
+<!-- ===== /員工手機版入口 ===== -->
 
 </body>
 </html>
