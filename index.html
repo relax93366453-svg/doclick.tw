@@ -6170,5 +6170,303 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<script>
+/* ===== 員工手機版班表顯示修正：手機登入也抓得到今日排班 ===== */
+(function(){
+    function msNorm(v){
+        return String(v || '').replace(/\s+/g,'').trim();
+    }
+
+    function msDateToday(){
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function msStaffAliases(staff){
+        const arr = [];
+        if(!staff) return arr;
+        const getName = typeof msStaffName === 'function' ? msStaffName(staff) : (staff.name || staff.staff || '');
+        const getAccount = typeof msStaffAccount === 'function' ? msStaffAccount(staff) : (staff.account || staff.phone || staff.mobile || '');
+        [
+            getName,
+            getAccount,
+            staff.name,
+            staff.staff,
+            staff.realName,
+            staff.employeeName,
+            staff.fullname,
+            staff.phone,
+            staff.mobile,
+            staff.tel,
+            staff.account,
+            staff.username,
+            staff.id,
+            staff.code,
+            staff.staffId
+        ].forEach(v => {
+            if(v !== undefined && v !== null && String(v).trim() !== '') arr.push(msNorm(v));
+        });
+        return Array.from(new Set(arr));
+    }
+
+    function msScheduleStaffAliases(x){
+        return Array.from(new Set([
+            x.staff,
+            x.name,
+            x.employee,
+            x.employeeName,
+            x.staffName,
+            x.worker,
+            x.person,
+            x.phone,
+            x.mobile,
+            x.tel,
+            x.staffPhone,
+            x.account,
+            x.staffId,
+            x.code
+        ].filter(Boolean).map(msNorm)));
+    }
+
+    window.msFindTodaySchedules = function(staff){
+        const today = (typeof msTodayString === 'function' ? msTodayString() : msDateToday());
+        const arr = Array.isArray(window.scheduleData) ? window.scheduleData : [];
+        const validToday = arr.filter(x => {
+            const st = x.status || x.scheduleStatus || '';
+            return x.date === today && st !== '作廢';
+        });
+
+        const aliases = msStaffAliases(staff);
+        let matched = validToday.filter(x => {
+            const sa = msScheduleStaffAliases(x);
+            return sa.some(v => aliases.includes(v));
+        });
+
+        // 第一階段手機版：若用手機/姓名快速登入，資料庫還沒綁定，但今天只有少量排班，先顯示今日排班方便測試。
+        if(matched.length === 0 && staff && staff.quickLocalLogin){
+            matched = validToday;
+        }
+
+        // 如果真的只有一筆今日排班，也先顯示出來，避免員工手機端空白。
+        if(matched.length === 0 && validToday.length === 1){
+            matched = validToday;
+        }
+
+        return matched;
+    };
+
+    window.msShowSchedule = function(){
+        const staff = typeof msGetCurrentStaff === 'function' ? msGetCurrentStaff() : null;
+        const arr = Array.isArray(window.scheduleData) ? window.scheduleData : [];
+        const aliases = msStaffAliases(staff);
+
+        let list = arr.filter(x => {
+            const st = x.status || x.scheduleStatus || '';
+            if(st === '作廢') return false;
+            const sa = msScheduleStaffAliases(x);
+            return sa.some(v => aliases.includes(v));
+        });
+
+        // 第一階段快速登入尚未綁定時，先顯示最近排班，避免「我的班表」完全空白。
+        if(list.length === 0 && staff && staff.quickLocalLogin){
+            list = arr.filter(x => (x.status || x.scheduleStatus || '') !== '作廢');
+        }
+
+        list = list.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).slice(0,80);
+
+        if(typeof msSetTitle === 'function') msSetTitle('我的班表');
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        box.innerHTML = list.map(x => `
+            <div class="ms-list-item">
+                <div>
+                    <div class="ms-list-title">${x.date || ''}｜${x.company || ''}</div>
+                    <div class="ms-list-sub">${x.staff || x.name || x.employee || ''}｜${x.start || x.startTime || '-'} - ${x.end || x.endTime || '-'}｜休息 ${x.breakHours || x.rest || x.break || 0} 小時</div>
+                </div>
+                <span>›</span>
+            </div>`).join('') || `<div class="ms-card"><div class="ms-empty">目前沒有班表</div></div>`;
+    };
+})();
+</script>
+
+
+<style>
+/* ===== 對帳單瀏覽器列印修正：避免 LOGO 原圖被放大 ===== */
+@media print{
+    body *{ visibility:hidden !important; }
+    #pdfPreviewBox, #pdfPreviewBox *,
+    #pdf-export-box, #pdf-export-box *,
+    .statement-a4, .statement-a4 *{
+        visibility:visible !important;
+    }
+    #pdfPreviewBox,
+    #pdf-export-box{
+        position:absolute !important;
+        left:0 !important;
+        top:0 !important;
+        width:100% !important;
+        margin:0 !important;
+        padding:0 !important;
+        background:#fff !important;
+        box-shadow:none !important;
+    }
+    .pdf-preview-toolbar,
+    .preview-toolbar,
+    .modal-header,
+    .modal-footer,
+    .no-print{
+        display:none !important;
+    }
+    .statement-a4{
+        width:680px !important;
+        max-width:680px !important;
+        margin:0 auto !important;
+        padding:0 !important;
+        transform:none !important;
+        zoom:1 !important;
+        page-break-inside:avoid;
+    }
+    .statement-title{
+        font-size:22px !important;
+        line-height:1.2 !important;
+        margin-bottom:12px !important;
+    }
+    .statement-logo,
+    .statement-title img,
+    #pdfPreviewBox img.statement-logo,
+    #pdfPreviewBox .statement-title img,
+    #pdf-export-box img.statement-logo,
+    #pdf-export-box .statement-title img{
+        width:34px !important;
+        height:34px !important;
+        max-width:34px !important;
+        max-height:34px !important;
+        object-fit:contain !important;
+        display:inline-block !important;
+    }
+    .statement-info-grid{
+        display:grid !important;
+        grid-template-columns:1.4fr .9fr .9fr !important;
+        gap:10px !important;
+    }
+    .statement-small-box{
+        min-height:auto !important;
+        height:auto !important;
+        overflow:hidden !important;
+    }
+    .statement-detail,
+    .statement-summary,
+    .statement-small-box table{
+        width:100% !important;
+        max-width:100% !important;
+        table-layout:fixed !important;
+        border-collapse:collapse !important;
+    }
+}
+</style>
+
+<script>
+/* ===== 對帳單瀏覽器列印函式修正 ===== */
+(function(){
+    function qyjCleanStatementPrintHtml(html){
+        let s = String(html || '');
+        s = s.replace(/<div[^>]*id=["']scheduleChangeModal["'][\s\S]*?<\/div>\s*<\/div>/gi,'');
+        s = s.replace(/排班異動紀錄/gi,'');
+        return s;
+    }
+
+    function qyjStatementPrintCss(){
+        return `
+        <style>
+            @page{size:A4 portrait;margin:12mm;}
+            html,body{margin:0;padding:0;background:#fff;color:#334155;font-family:"Microsoft JhengHei",Arial,sans-serif;}
+            *{box-sizing:border-box;}
+            .statement-a4{width:680px;max-width:680px;margin:0 auto;font-size:13px;}
+            .statement-title{display:flex;align-items:center;justify-content:center;gap:10px;color:#16a34a;font-size:22px;font-weight:900;margin-bottom:12px;}
+            .statement-logo,.statement-title img{width:34px!important;height:34px!important;max-width:34px!important;max-height:34px!important;object-fit:contain!important;}
+            .statement-line{height:2px;background:#16a34a;margin:0 0 16px 0;}
+            .statement-info-grid{display:grid;grid-template-columns:1.4fr .9fr .9fr;gap:10px;align-items:start;margin-bottom:14px;}
+            .statement-info{line-height:1.7;padding:5px 2px;}
+            .statement-small-box{border:1px solid #dbeafe;background:#f8fafc;border-radius:8px;padding:8px;min-height:auto;}
+            .statement-small-box .box-title{font-weight:900;color:#334155;border-bottom:1px solid #cbd5e1;padding-bottom:4px;margin-bottom:4px;}
+            table{border-collapse:collapse;}
+            .statement-small-box table{width:100%;font-size:12px;}
+            .statement-small-box td{border:none;padding:2px 0;text-align:left;}
+            .statement-summary{width:100%;table-layout:fixed;margin:12px 0 14px 0;}
+            .statement-summary td{border:1px solid #cbd5e1;padding:9px 4px;text-align:center;background:#f8fafc;}
+            .statement-summary td:nth-child(3){background:#fff1f2;}
+            .statement-summary td:nth-child(4){background:#fff7ed;}
+            .statement-summary td:nth-child(5){background:#ecfdf5;}
+            .statement-summary span{display:block;font-size:12px;color:#64748b;margin-bottom:4px;}
+            .statement-summary strong{display:block;font-size:18px;color:#0f172a;}
+            .statement-detail{width:100%;table-layout:fixed;font-size:12px;}
+            .statement-detail th,.statement-detail td{border:1px solid #cbd5e1;padding:6px 5px;text-align:center;word-break:break-word;}
+            .statement-detail th{background:#f1f5f9;color:#334155;font-weight:900;}
+            .statement-detail th:nth-child(1),.statement-detail td:nth-child(1){width:22%;}
+            .statement-detail th:nth-child(2),.statement-detail td:nth-child(2){width:20%;}
+            .statement-detail th:nth-child(3),.statement-detail td:nth-child(3){width:24%;}
+            .statement-detail th:nth-child(4),.statement-detail td:nth-child(4){width:17%;}
+            .statement-detail th:nth-child(5),.statement-detail td:nth-child(5){width:17%;}
+            .footer{text-align:right;color:#94a3b8;font-size:11px;margin-top:8px;}
+            img:not(.statement-logo){max-width:100%;height:auto;}
+        </style>`;
+    }
+
+    window.printStatementOnly = function(){
+        const d = window.currentPdfData || {};
+        let content = d.contentHtml || '';
+        if(!content){
+            const box = document.querySelector('.statement-a4');
+            content = box ? box.outerHTML : document.body.innerHTML;
+        }
+        content = qyjCleanStatementPrintHtml(content);
+
+        const w = window.open('', '_blank');
+        w.document.open();
+        w.document.write(`
+            <!doctype html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>服務對帳單</title>
+                ${qyjStatementPrintCss()}
+            </head>
+            <body>${content}</body>
+            </html>
+        `);
+        w.document.close();
+        setTimeout(()=>{ w.focus(); w.print(); }, 500);
+    };
+
+    const oldNative = window.doNativePrint;
+    window.doNativePrint = function(){
+        const d = window.currentPdfData || {};
+        const isStatement = String(d.title || '').includes('對帳') || String(d.contentHtml || '').includes('服務對帳單');
+        if(isStatement){
+            return window.printStatementOnly();
+        }
+        if(typeof oldNative === 'function') return oldNative.apply(this, arguments);
+        window.print();
+    };
+
+    // 讓「瀏覽器列印」按鈕一定會使用修正版
+    document.addEventListener('click', function(e){
+        const btn = e.target.closest('button');
+        if(!btn) return;
+        const txt = (btn.innerText || '').trim();
+        if(txt.includes('瀏覽器列印')){
+            const d = window.currentPdfData || {};
+            if(String(d.title || '').includes('對帳') || String(d.contentHtml || '').includes('服務對帳單')){
+                e.preventDefault();
+                e.stopPropagation();
+                window.printStatementOnly();
+            }
+        }
+    }, true);
+})();
+</script>
+
 </body>
 </html>
