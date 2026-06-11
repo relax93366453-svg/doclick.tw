@@ -6427,154 +6427,384 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 </script>
 
 
+
+
 <script>
-/* ===== 員工手機版：今日排班與打卡連動修正版 ===== */
+/* ===== 員工手機版最終修正：進入員工端先強制讀取雲端/本機全部資料，再顯示排班 ===== */
 (function(){
-  function clean(v){ return String(v||'').replace(/\s+/g,'').trim(); }
-  function dnorm(v){
-    var s = String(v||'').trim().replace(/\//g,'-');
-    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-    if(!m) return s;
-    return m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0');
-  }
-  function todayStr(){
-    var d = new Date();
-    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  }
-  function savedStaff(){
-    try{return JSON.parse(localStorage.getItem('qyj_mobile_staff_login')||'null')||{};}catch(e){return {};}
-  }
-  function allSchedules(){
-    var rows = [];
-    ['scheduleData','schedules','scheduleList','shiftData','shiftList','rosterData'].forEach(function(k){
-      if(Array.isArray(window[k])) rows = rows.concat(window[k]);
-    });
-    Object.keys(localStorage).forEach(function(k){
-      if(!/schedule|shift|roster|排班/i.test(k)) return;
-      try{
-        var v = JSON.parse(localStorage.getItem(k));
-        if(Array.isArray(v)) rows = rows.concat(v);
-      }catch(e){}
-    });
-    var seen = {};
-    return rows.filter(function(x){
-      if(!x || typeof x !== 'object') return false;
-      var key = JSON.stringify([dateOf(x), companyOf(x), staffOf(x), startOf(x), endOf(x)]);
-      if(seen[key]) return false;
-      seen[key]=1; return true;
-    });
-  }
-  function dateOf(x){ return dnorm(x.date||x.workDate||x.shiftDate||x.scheduleDate||x.day); }
-  function companyOf(x){ return x.company||x.customer||x.client||x.companyName||''; }
-  function staffOf(x){ return x.staff||x.name||x.employee||x.staffName||x.employeeName||x.worker||x.person||''; }
-  function startOf(x){ return x.start||x.startTime||x.start_time||x.on||x.onTime||x.begin||x.beginTime||''; }
-  function endOf(x){ return x.end||x.endTime||x.end_time||x.off||x.offTime||x.finish||x.finishTime||''; }
-  function breakOf(x){ return x.breakHours||x.rest||x.break||x.restHours||0; }
-  function isVoid(x){ return String(x.status||x.scheduleStatus||x.state||'').indexOf('作廢')>=0; }
-  function aliases(staff){
-    var s = staff || {}, sv = savedStaff(), vals = [];
-    [s,sv].forEach(function(o){
-      if(!o) return;
-      var name = (typeof msStaffName==='function') ? msStaffName(o) : (o.name||o.staff||'');
-      var acc = (typeof msStaffAccount==='function') ? msStaffAccount(o) : (o.account||o.phone||o.mobile||'');
-      [name,acc,o.name,o.staff,o.phone,o.mobile,o.tel,o.account,o.username,o.id,o.code,o.staffId].forEach(function(v){
-        if(v!==undefined && v!==null && String(v).trim()!=='') vals.push(clean(v));
-      });
-    });
-    return Array.from(new Set(vals));
-  }
-  function matchStaff(x, staff){
-    var a = aliases(staff);
-    var b = [staffOf(x),x.phone,x.mobile,x.tel,x.account,x.staffId,x.code].filter(Boolean).map(clean);
-    return b.some(function(v){return a.indexOf(v)>=0;});
-  }
-
-  window.msFindTodaySchedules = function(staff){
-    var t = (typeof msTodayString==='function') ? dnorm(msTodayString()) : todayStr();
-    var todayRows = allSchedules().filter(function(x){return dateOf(x)===t && !isVoid(x);});
-    var matched = todayRows.filter(function(x){return matchStaff(x, staff);});
-    if(matched.length===0) matched = todayRows; // 第一階段未綁定時，也先顯示今日排班
-    return matched;
-  };
-
-  window.msShowHome = function(){
-    var staff = (typeof msGetCurrentStaff==='function') ? msGetCurrentStaff() : savedStaff();
-    var name = (typeof msStaffName==='function') ? (msStaffName(staff)||staff.name||'員工') : (staff.name||'員工');
-    var code = staff.code||staff.id||staff.staffId||staff.account||'-';
-    var dept = staff.dept||staff.department||staff.type||staff.role||staff.status||'員工';
-    var list = window.msFindTodaySchedules(staff);
-    var todayBlock = list.length ? list.map(function(x){
-      return '<div class="ms-today" style="margin-bottom:10px;">'
-        +'<div class="ms-row"><span>公司</span><span>'+(companyOf(x)||'-')+'</span></div>'
-        +'<div class="ms-row"><span>日期</span><span>'+(dateOf(x)||'-')+'</span></div>'
-        +'<div class="ms-row"><span>人員</span><span>'+(staffOf(x)||name)+'</span></div>'
-        +'<div class="ms-row"><span>時間</span><span>'+(startOf(x)||'-')+' - '+(endOf(x)||'-')+'</span></div>'
-        +'<div class="ms-row"><span>休息</span><span>'+breakOf(x)+' 小時</span></div>'
-        +'</div>';
-    }).join('') : '<div class="ms-empty">今天目前沒有排班</div>';
-    if(typeof msSetTitle==='function') msSetTitle('員工服務');
-    var box = document.getElementById('msContent'); if(!box) return;
-    box.innerHTML =
-      '<div class="ms-card ms-profile"><div class="ms-avatar">'+String(name).slice(0,1)+'</div><div><div class="ms-name">'+name+'</div><div class="ms-sub">員工編號：'+code+'<br>狀態：'+dept+'</div></div></div>'
-      +'<div class="ms-card"><div class="ms-section-title">今日排班</div>'+todayBlock+'<div class="ms-punch-big"><button class="ms-in" onclick="msGo(\'punch\')">我要打卡</button><button class="ms-out" onclick="msGo(\'schedule\')">我的班表</button></div></div>'
-      +'<div class="ms-grid">'
-      +'<button class="ms-grid-btn" onclick="msGo(\'punch\')"><div class="ms-icon">📍</div><div class="ms-grid-title">我要打卡</div><div class="ms-grid-sub">上下班打卡</div></button>'
-      +'<button class="ms-grid-btn" onclick="msGo(\'attendance\')"><div class="ms-icon">📅</div><div class="ms-grid-title">出勤紀錄</div><div class="ms-grid-sub">查看打卡</div></button>'
-      +'<button class="ms-grid-btn" onclick="msGo(\'schedule\')"><div class="ms-icon">📋</div><div class="ms-grid-title">我的班表</div><div class="ms-grid-sub">查看排班</div></button>'
-      +'<button class="ms-grid-btn" onclick="msGo(\'leave\')"><div class="ms-icon">📝</div><div class="ms-grid-title">我要請假</div><div class="ms-grid-sub">請假申請</div></button>'
-      +'<button class="ms-grid-btn" onclick="msGo(\'salary\')"><div class="ms-icon">💰</div><div class="ms-grid-title">我的薪資單</div><div class="ms-grid-sub">下載薪資</div></button>'
-      +'<button class="ms-grid-btn" onclick="msGo(\'profile\')"><div class="ms-icon">👤</div><div class="ms-grid-title">員工資訊</div><div class="ms-grid-sub">個人資料</div></button>'
-      +'<button class="ms-grid-btn" onclick="msGo(\'sop\')"><div class="ms-icon">📦</div><div class="ms-grid-title">入職包 SOP</div><div class="ms-grid-sub">新員工指引</div></button>'
-      +'<button class="ms-grid-btn" onclick="msGo(\'more\')"><div class="ms-icon">▦</div><div class="ms-grid-title">更多功能</div><div class="ms-grid-sub">其他服務</div></button>'
-      +'</div>';
-  };
-
-  window.msShowPunch = function(){
-    var staff = (typeof msGetCurrentStaff==='function') ? msGetCurrentStaff() : savedStaff();
-    var list = window.msFindTodaySchedules(staff);
-    if(typeof msSetTitle==='function') msSetTitle('我要打卡');
-    var cards = list.length ? list.map(function(x,i){
-      return '<div class="ms-card"><div class="ms-section-title">'+(companyOf(x)||'今日班表')+'</div>'
-        +'<div class="ms-row"><span>日期</span><span>'+dateOf(x)+'</span></div>'
-        +'<div class="ms-row"><span>人員</span><span>'+(staffOf(x)||'-')+'</span></div>'
-        +'<div class="ms-row"><span>時間</span><span>'+(startOf(x)||'-')+' - '+(endOf(x)||'-')+'</span></div>'
-        +'<div class="ms-row"><span>狀態</span><span class="ms-badge">等待打卡</span></div>'
-        +'<div class="ms-punch-big"><button class="ms-in" onclick="msDoPunch(\'上班\','+i+')">上班打卡</button><button class="ms-out" onclick="msDoPunch(\'下班\','+i+')">下班打卡</button></div>'
-        +'</div>';
-    }).join('') : '<div class="ms-card"><div class="ms-empty">今天目前沒有排班</div><button class="ms-secondary" onclick="msShowHome()">回首頁</button></div>';
-    var box = document.getElementById('msContent'); if(box) box.innerHTML = cards;
-  };
-
-  window.msShowSchedule = function(){
-    var staff = (typeof msGetCurrentStaff==='function') ? msGetCurrentStaff() : savedStaff();
-    var all = allSchedules().filter(function(x){return !isVoid(x);});
-    var list = all.filter(function(x){return matchStaff(x, staff);});
-    if(list.length===0) list = all;
-    list = list.sort(function(a,b){return String(dateOf(a)).localeCompare(String(dateOf(b)));}).slice(0,100);
-    if(typeof msSetTitle==='function') msSetTitle('我的班表');
-    var box = document.getElementById('msContent'); if(!box) return;
-    box.innerHTML = list.length ? list.map(function(x){
-      return '<div class="ms-list-item"><div><div class="ms-list-title">'+dateOf(x)+'｜'+(companyOf(x)||'')+'</div><div class="ms-list-sub">'+(staffOf(x)||'')+'｜'+(startOf(x)||'-')+' - '+(endOf(x)||'-')+'｜休息 '+breakOf(x)+' 小時</div></div><span>›</span></div>';
-    }).join('') : '<div class="ms-card"><div class="ms-empty">目前沒有班表</div></div>';
-  };
-
-  window.msDoPunch = function(type, scheduleIndex){
-    var staff = (typeof msGetCurrentStaff==='function') ? msGetCurrentStaff() : savedStaff();
-    var schedules = window.msFindTodaySchedules(staff);
-    var sch = schedules[scheduleIndex] || {};
-    var now = new Date();
-    var time = String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    function done(pos){
-      var gpsText = pos ? pos.coords.latitude.toFixed(6)+','+pos.coords.longitude.toFixed(6) : '未取得';
-      var rec = {staff:(staff.name||staffOf(sch)||''), company:companyOf(sch)||'總公司', type:type, date:todayStr(), time:time, gps:gpsText, createdAt:now.toISOString()};
-      var arr = JSON.parse(localStorage.getItem('qyj_staff_punch_records')||'[]');
-      arr.push(rec);
-      localStorage.setItem('qyj_staff_punch_records', JSON.stringify(arr));
-      if(typeof msShowPunchSuccess==='function') msShowPunchSuccess(rec);
+    function qyjGetToday(){
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
-    if(navigator.geolocation) navigator.geolocation.getCurrentPosition(done,function(){done(null);},{enableHighAccuracy:true,timeout:8000});
-    else done(null);
-  };
+
+    function qyjNorm(v){
+        return String(v || '').replace(/\s+/g,'').trim();
+    }
+
+    function qyjDate(v){
+        if(!v) return '';
+        const s = String(v).replace(/\//g,'-').trim();
+        const m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+        if(!m) return s;
+        return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    }
+
+    function qyjCompany(x){
+        return x.company || x.customer || x.client || x.companyName || x.cust || '';
+    }
+
+    function qyjStaff(x){
+        return x.staff || x.name || x.employee || x.staffName || x.employeeName || x.worker || x.person || '';
+    }
+
+    function qyjStart(x){
+        return x.start || x.startTime || x.start_time || x.on || x.onTime || x.begin || x.beginTime || x.workStart || '';
+    }
+
+    function qyjEnd(x){
+        return x.end || x.endTime || x.end_time || x.off || x.offTime || x.finish || x.finishTime || x.workEnd || '';
+    }
+
+    function qyjBreak(x){
+        return x.breakHours || x.rest || x.break || x.restHours || x.break_time || 0;
+    }
+
+    function qyjVoid(x){
+        return String(x.status || x.scheduleStatus || x.state || '').includes('作廢');
+    }
+
+    function qyjSavedStaff(){
+        try { return JSON.parse(localStorage.getItem('qyj_mobile_staff_login') || 'null') || {}; }
+        catch(e){ return {}; }
+    }
+
+    function qyjAliases(staff){
+        const s = staff || {};
+        const saved = qyjSavedStaff();
+        const arr = [];
+        [s, saved].forEach(o => {
+            if(!o) return;
+            const name = (typeof msStaffName === 'function') ? msStaffName(o) : (o.name || o.staff || '');
+            const account = (typeof msStaffAccount === 'function') ? msStaffAccount(o) : (o.account || o.phone || o.mobile || '');
+            [
+                name, account,
+                o.name, o.staff, o.realName, o.employeeName, o.fullname,
+                o.phone, o.mobile, o.tel, o.account, o.username, o.id, o.code, o.staffId
+            ].forEach(v => {
+                if(v !== undefined && v !== null && String(v).trim() !== '') arr.push(qyjNorm(v));
+            });
+        });
+        return Array.from(new Set(arr));
+    }
+
+    function qyjAllScheduleRows(){
+        let rows = [];
+
+        // 1. 讀全域變數
+        [
+            'scheduleData','schedules','scheduleList','shiftData','shiftList','rosterData',
+            'dispatchScheduleData','companyScheduleData','companySchedules','calendarScheduleData'
+        ].forEach(k => {
+            if(Array.isArray(window[k])) {
+                rows = rows.concat(window[k].map(x => ({...x, __source:k})));
+            }
+        });
+
+        // 2. 讀 localStorage 全部可能排班資料
+        Object.keys(localStorage).forEach(k => {
+            if(!/schedule|shift|roster|排班|班表/i.test(k)) return;
+            try {
+                const v = JSON.parse(localStorage.getItem(k));
+                if(Array.isArray(v)) {
+                    rows = rows.concat(v.filter(x => x && typeof x === 'object').map(x => ({...x, __source:k})));
+                }
+            } catch(e){}
+        });
+
+        // 3. 某些版本排班存在 appData / cloudData 裡
+        ['appData','cloudData','systemData','qyjData','dbData'].forEach(k => {
+            try {
+                const obj = window[k] || JSON.parse(localStorage.getItem(k) || 'null');
+                if(!obj || typeof obj !== 'object') return;
+                Object.keys(obj).forEach(sub => {
+                    if(/schedule|shift|roster|排班|班表/i.test(sub) && Array.isArray(obj[sub])) {
+                        rows = rows.concat(obj[sub].filter(x => x && typeof x === 'object').map(x => ({...x, __source:`${k}.${sub}`})));
+                    }
+                });
+            } catch(e){}
+        });
+
+        // 去重
+        const seen = new Set();
+        rows = rows.filter(x => {
+            const key = JSON.stringify([
+                qyjDate(x.date || x.workDate || x.shiftDate || x.scheduleDate || x.day),
+                qyjCompany(x),
+                qyjStaff(x),
+                qyjStart(x),
+                qyjEnd(x)
+            ]);
+            if(seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        return rows;
+    }
+
+    function qyjMatchStaff(x, staff){
+        const aliases = qyjAliases(staff);
+        const values = [
+            qyjStaff(x), x.phone, x.mobile, x.tel, x.account, x.staffId, x.code
+        ].filter(Boolean).map(qyjNorm);
+        return values.some(v => aliases.includes(v));
+    }
+
+    async function qyjForceCloudReadForStaff(){
+        // 顯示同步提示，但不要阻塞太久
+        try {
+            if(typeof loadCloudData === 'function') {
+                await Promise.race([
+                    Promise.resolve(loadCloudData()),
+                    new Promise(res => setTimeout(res, 2500))
+                ]);
+            }
+        } catch(e){}
+
+        try {
+            if(typeof pullCloudData === 'function') {
+                await Promise.race([
+                    Promise.resolve(pullCloudData()),
+                    new Promise(res => setTimeout(res, 2500))
+                ]);
+            }
+        } catch(e){}
+
+        try {
+            if(typeof syncFromCloud === 'function') {
+                await Promise.race([
+                    Promise.resolve(syncFromCloud()),
+                    new Promise(res => setTimeout(res, 2500))
+                ]);
+            }
+        } catch(e){}
+
+        try {
+            if(typeof loadAllData === 'function') {
+                await Promise.race([
+                    Promise.resolve(loadAllData()),
+                    new Promise(res => setTimeout(res, 2500))
+                ]);
+            }
+        } catch(e){}
+    }
+
+    window.qyjMobileGetTodaySchedules = function(staff){
+        const t = qyjGetToday();
+        const all = qyjAllScheduleRows().filter(x => !qyjVoid(x));
+        const todayRows = all.filter(x => {
+            const date = qyjDate(x.date || x.workDate || x.shiftDate || x.scheduleDate || x.day);
+            return date === t;
+        });
+
+        let matched = todayRows.filter(x => qyjMatchStaff(x, staff));
+
+        // 第一階段先讓手機可測：今天有排班但尚未正式綁定人員，就先顯示今日所有排班
+        if(matched.length === 0) matched = todayRows;
+
+        return matched;
+    };
+
+    window.msFindTodaySchedules = function(staff){
+        return window.qyjMobileGetTodaySchedules(staff);
+    };
+
+    window.qyjMobileRenderHome = function(){
+        const staff = (typeof msGetCurrentStaff === 'function') ? msGetCurrentStaff() : qyjSavedStaff();
+        const name = (typeof msStaffName === 'function') ? (msStaffName(staff) || staff?.name || '員工') : (staff?.name || '員工');
+        const code = staff?.code || staff?.id || staff?.staffId || staff?.account || '-';
+        const dept = staff?.dept || staff?.department || staff?.type || staff?.role || staff?.status || '員工';
+        const list = window.qyjMobileGetTodaySchedules(staff);
+
+        const todayBlock = list.length ? list.map(x => `
+            <div class="ms-today" style="margin-bottom:10px;">
+                <div class="ms-row"><span>公司</span><span>${qyjCompany(x) || '-'}</span></div>
+                <div class="ms-row"><span>日期</span><span>${qyjDate(x.date || x.workDate || x.shiftDate || x.scheduleDate || x.day) || '-'}</span></div>
+                <div class="ms-row"><span>人員</span><span>${qyjStaff(x) || name}</span></div>
+                <div class="ms-row"><span>時間</span><span>${qyjStart(x) || '-'} - ${qyjEnd(x) || '-'}</span></div>
+                <div class="ms-row"><span>休息</span><span>${qyjBreak(x)} 小時</span></div>
+            </div>
+        `).join('') : `
+            <div class="ms-empty">
+                今天目前沒有排班<br>
+                <span style="font-size:12px;color:#94a3b8;">若後台有排班，請先確認已按「同步雲端」</span>
+            </div>
+        `;
+
+        if(typeof msSetTitle === 'function') msSetTitle('員工服務');
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        box.innerHTML = `
+            <div class="ms-card ms-profile">
+                <div class="ms-avatar">${String(name).slice(0,1)}</div>
+                <div>
+                    <div class="ms-name">${name}</div>
+                    <div class="ms-sub">員工編號：${code}<br>狀態：${dept}</div>
+                </div>
+            </div>
+            <div class="ms-card">
+                <div class="ms-section-title">今日排班</div>
+                ${todayBlock}
+                <div class="ms-punch-big">
+                    <button class="ms-in" onclick="msGo('punch')">我要打卡</button>
+                    <button class="ms-out" onclick="msGo('schedule')">我的班表</button>
+                </div>
+                <button class="ms-secondary" onclick="qyjMobileRefresh()">重新同步排班</button>
+            </div>
+            <div class="ms-grid">
+                <button class="ms-grid-btn" onclick="msGo('punch')"><div class="ms-icon">📍</div><div class="ms-grid-title">我要打卡</div><div class="ms-grid-sub">上下班打卡</div></button>
+                <button class="ms-grid-btn" onclick="msGo('attendance')"><div class="ms-icon">📅</div><div class="ms-grid-title">出勤紀錄</div><div class="ms-grid-sub">查看打卡</div></button>
+                <button class="ms-grid-btn" onclick="msGo('schedule')"><div class="ms-icon">📋</div><div class="ms-grid-title">我的班表</div><div class="ms-grid-sub">查看排班</div></button>
+                <button class="ms-grid-btn" onclick="msGo('leave')"><div class="ms-icon">📝</div><div class="ms-grid-title">我要請假</div><div class="ms-grid-sub">請假申請</div></button>
+                <button class="ms-grid-btn" onclick="msGo('salary')"><div class="ms-icon">💰</div><div class="ms-grid-title">我的薪資單</div><div class="ms-grid-sub">下載薪資</div></button>
+                <button class="ms-grid-btn" onclick="msGo('profile')"><div class="ms-icon">👤</div><div class="ms-grid-title">員工資訊</div><div class="ms-grid-sub">個人資料</div></button>
+                <button class="ms-grid-btn" onclick="msGo('sop')"><div class="ms-icon">📦</div><div class="ms-grid-title">入職包 SOP</div><div class="ms-grid-sub">新員工指引</div></button>
+                <button class="ms-grid-btn" onclick="msGo('more')"><div class="ms-icon">▦</div><div class="ms-grid-title">更多功能</div><div class="ms-grid-sub">其他服務</div></button>
+            </div>
+        `;
+    };
+
+    window.msShowHome = function(){
+        qyjMobileRenderHome();
+    };
+
+    window.msShowPunch = function(){
+        const staff = (typeof msGetCurrentStaff === 'function') ? msGetCurrentStaff() : qyjSavedStaff();
+        const list = window.qyjMobileGetTodaySchedules(staff);
+        if(typeof msSetTitle === 'function') msSetTitle('我要打卡');
+
+        const cards = list.length ? list.map((x,i) => `
+            <div class="ms-card">
+                <div class="ms-section-title">${qyjCompany(x) || '今日班表'}</div>
+                <div class="ms-row"><span>日期</span><span>${qyjDate(x.date || x.workDate || x.shiftDate || x.scheduleDate || x.day) || '-'}</span></div>
+                <div class="ms-row"><span>人員</span><span>${qyjStaff(x) || '-'}</span></div>
+                <div class="ms-row"><span>時間</span><span>${qyjStart(x) || '-'} - ${qyjEnd(x) || '-'}</span></div>
+                <div class="ms-row"><span>狀態</span><span class="ms-badge">等待打卡</span></div>
+                <div class="ms-punch-big">
+                    <button class="ms-in" onclick="msDoPunch('上班', ${i})">上班打卡</button>
+                    <button class="ms-out" onclick="msDoPunch('下班', ${i})">下班打卡</button>
+                </div>
+            </div>
+        `).join('') : `
+            <div class="ms-card">
+                <div class="ms-empty">
+                    今天目前沒有排班<br>
+                    <span style="font-size:12px;color:#94a3b8;">請先回後台確認排班已同步雲端</span>
+                </div>
+                <button class="ms-secondary" onclick="qyjMobileRefresh()">重新同步排班</button>
+                <button class="ms-secondary" onclick="msShowHome()">回首頁</button>
+            </div>
+        `;
+
+        const box = document.getElementById('msContent');
+        if(box) box.innerHTML = cards;
+    };
+
+    window.msShowSchedule = function(){
+        const staff = (typeof msGetCurrentStaff === 'function') ? msGetCurrentStaff() : qyjSavedStaff();
+        const all = qyjAllScheduleRows().filter(x => !qyjVoid(x));
+        let list = all.filter(x => qyjMatchStaff(x, staff));
+
+        // 第一階段未正式綁定時，先顯示全部班表方便確認
+        if(list.length === 0) list = all;
+
+        list = list.sort((a,b) => String(qyjDate(a.date || a.workDate || a.shiftDate || a.scheduleDate || a.day)).localeCompare(String(qyjDate(b.date || b.workDate || b.shiftDate || b.scheduleDate || b.day)))).slice(0,100);
+
+        if(typeof msSetTitle === 'function') msSetTitle('我的班表');
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        box.innerHTML = list.length ? list.map(x => `
+            <div class="ms-list-item">
+                <div>
+                    <div class="ms-list-title">${qyjDate(x.date || x.workDate || x.shiftDate || x.scheduleDate || x.day) || ''}｜${qyjCompany(x) || ''}</div>
+                    <div class="ms-list-sub">${qyjStaff(x) || ''}｜${qyjStart(x) || '-'} - ${qyjEnd(x) || '-'}｜休息 ${qyjBreak(x)} 小時</div>
+                </div>
+                <span>›</span>
+            </div>
+        `).join('') : `
+            <div class="ms-card">
+                <div class="ms-empty">目前沒有班表</div>
+                <button class="ms-secondary" onclick="qyjMobileRefresh()">重新同步排班</button>
+            </div>
+        `;
+    };
+
+    window.msDoPunch = function(type, scheduleIndex){
+        const staff = (typeof msGetCurrentStaff === 'function') ? msGetCurrentStaff() : qyjSavedStaff();
+        const schedules = window.qyjMobileGetTodaySchedules(staff);
+        const sch = schedules[scheduleIndex] || {};
+        const now = new Date();
+        const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+        const done = (pos) => {
+            const gpsText = pos ? `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}` : '未取得';
+            const rec = {
+                staff: staff?.name || qyjStaff(sch) || '',
+                company: qyjCompany(sch) || '總公司',
+                type,
+                date: qyjGetToday(),
+                time,
+                gps: gpsText,
+                createdAt: now.toISOString()
+            };
+            const arr = JSON.parse(localStorage.getItem('qyj_staff_punch_records') || '[]');
+            arr.push(rec);
+            localStorage.setItem('qyj_staff_punch_records', JSON.stringify(arr));
+            if(typeof msShowPunchSuccess === 'function') msShowPunchSuccess(rec);
+        };
+
+        if(navigator.geolocation){
+            navigator.geolocation.getCurrentPosition(done, () => done(null), {enableHighAccuracy:true, timeout:8000});
+        }else{
+            done(null);
+        }
+    };
+
+    window.qyjMobileRefresh = async function(){
+        const box = document.getElementById('msContent');
+        if(box){
+            box.innerHTML = `<div class="ms-card"><div class="ms-empty">正在同步排班資料...</div></div>`;
+        }
+        await qyjForceCloudReadForStaff();
+        qyjMobileRenderHome();
+    };
+
+    // 改寫員工端開啟：打開後先嘗試同步，再顯示頁面
+    const oldOpenMobileStaffApp = window.openMobileStaffApp;
+    window.openMobileStaffApp = async function(route){
+        document.getElementById('mobileStaffApp').style.display = 'block';
+        localStorage.setItem('qyj_mobile_staff_route', route || 'home');
+        const staff = (typeof msGetCurrentStaff === 'function') ? msGetCurrentStaff() : qyjSavedStaff();
+        if(!staff || !staff.name){
+            if(typeof msShowLogin === 'function') msShowLogin(route || 'home');
+            return;
+        }
+        const box = document.getElementById('msContent');
+        if(box) box.innerHTML = `<div class="ms-card"><div class="ms-empty">正在同步排班資料...</div></div>`;
+        await qyjForceCloudReadForStaff();
+        if(typeof msGo === 'function') msGo(route || 'home');
+        else qyjMobileRenderHome();
+    };
+
+    // URL 進入員工端時也強制走新版
+    window.addEventListener('load', function(){
+        const qs = new URLSearchParams(location.search);
+        if(qs.get('staffApp') === '1' || location.hash === '#staff'){
+            setTimeout(() => window.openMobileStaffApp(qs.get('route') || 'home'), 500);
+        }
+    });
 })();
 </script>
 
