@@ -6988,19 +6988,20 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
 
 <script>
-/* ===== 員工手機端使用原系統同步修正：直接沿用 loadDataFromCloud + currentLoginStaff ===== */
+/* ===== 員工手機班表等待雲端完成最終修正 ===== */
 (function(){
     const LOGIN_KEY = 'qyj_mobile_staff_login';
+    let mobileCloudPromise = null;
 
     function norm(v){
         return String(v || '').replace(/[\s\-()]/g,'').trim();
     }
 
-    function getAllStaff(){
-        let rows = [];
-        try{ if(Array.isArray(staffData)) rows = rows.concat(staffData); }catch(e){}
-        try{ if(Array.isArray(ftStaffData)) rows = rows.concat(ftStaffData); }catch(e){}
-        return rows.filter(Boolean);
+    function splitNames(v){
+        return String(v || '')
+            .split(/[,，、\n]/)
+            .map(x => x.trim())
+            .filter(Boolean);
     }
 
     function staffName(s){
@@ -7011,22 +7012,29 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         return s?.tel || s?.phone || s?.mobile || '';
     }
 
-    function staffCode(s){
-        return s?.code || s?.staffId || s?.id || staffPhone(s) || staffName(s);
+    function staffAccount(s){
+        return s?.account || s?.username || staffPhone(s) || s?.id || s?.code || staffName(s);
     }
 
-    function staffAccount(s){
-        return s?.account || s?.username || staffPhone(s) || staffCode(s) || staffName(s);
+    function staffCode(s){
+        return s?.code || s?.staffId || s?.id || staffPhone(s) || staffAccount(s);
+    }
+
+    function allStaffRows(){
+        let rows = [];
+        try{ if(Array.isArray(staffData)) rows = rows.concat(staffData); }catch(e){}
+        try{ if(Array.isArray(ftStaffData)) rows = rows.concat(ftStaffData); }catch(e){}
+        return rows.filter(Boolean);
     }
 
     function findStaff(input){
         const key = norm(input);
-        return getAllStaff().find(s => {
+        return allStaffRows().find(s => {
             const values = [
                 staffName(s),
                 staffPhone(s),
-                staffCode(s),
                 staffAccount(s),
+                staffCode(s),
                 s?.id,
                 s?.staffId,
                 s?.code
@@ -7035,15 +7043,7 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         }) || null;
     }
 
-    function readSaved(){
-        try{
-            return JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
-        }catch(e){
-            return null;
-        }
-    }
-
-    function saveProfile(s){
+    function saveLoginProfile(s){
         const profile = {
             name: staffName(s),
             phone: staffPhone(s),
@@ -7056,23 +7056,71 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         return profile;
     }
 
-    function wait(ms){
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async function refreshFromOriginalCloud(){
+    function readLoginProfile(){
         try{
-            if(typeof loadDataFromCloud === 'function'){
-                loadDataFromCloud(true);
-                await wait(1800);
-                return true;
-            }
-        }catch(e){}
-        return false;
+            return JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
+        }catch(e){
+            return null;
+        }
     }
 
-    window.msGetCurrentStaff = function(){
-        const saved = readSaved();
+    async function loadMobileCloudExact(){
+        if(mobileCloudPromise) return mobileCloudPromise;
+
+        mobileCloudPromise = (async function(){
+            const url = (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL)
+                ? SCRIPT_URL
+                : (window.SCRIPT_URL || '');
+
+            if(!url){
+                throw new Error('找不到雲端同步網址');
+            }
+
+            const response = await fetch(
+                url + (url.includes('?') ? '&' : '?') + 'mobile=1&t=' + Date.now(),
+                {cache:'no-store'}
+            );
+
+            if(!response.ok){
+                throw new Error('雲端連線失敗：' + response.status);
+            }
+
+            const result = await response.json();
+            const data = result?.data && typeof result.data === 'object'
+                ? result.data
+                : result;
+
+            if(Array.isArray(data.staffData)){
+                try{ staffData = data.staffData; }catch(e){}
+                localStorage.setItem('staffData', JSON.stringify(data.staffData));
+            }
+
+            if(Array.isArray(data.ftStaffData)){
+                try{ ftStaffData = data.ftStaffData; }catch(e){}
+                localStorage.setItem('ftStaffData', JSON.stringify(data.ftStaffData));
+            }
+
+            if(Array.isArray(data.scheduleData)){
+                try{ scheduleData = data.scheduleData; }catch(e){}
+                window.scheduleData = data.scheduleData;
+                localStorage.setItem('scheduleData', JSON.stringify(data.scheduleData));
+            }
+
+            if(Array.isArray(data.staffClockData)){
+                try{ staffClockData = data.staffClockData; }catch(e){}
+                localStorage.setItem('staffClockData', JSON.stringify(data.staffClockData));
+            }
+
+            return data;
+        })().finally(() => {
+            mobileCloudPromise = null;
+        });
+
+        return mobileCloudPromise;
+    }
+
+    function getCurrentStaffExact(){
+        const saved = readLoginProfile();
         if(!saved) return null;
 
         const found = findStaff(
@@ -7080,100 +7128,27 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         );
 
         if(found){
+            saveLoginProfile(found);
             try{ currentLoginStaff = found; }catch(e){}
             return found;
         }
 
+        try{ currentLoginStaff = saved; }catch(e){}
         return saved;
-    };
+    }
 
-    window.msDoLogin = async function(route){
-        const accountEl = document.getElementById('msLoginAccount');
-        const pwdEl = document.getElementById('msLoginPwd');
-        const acc = (accountEl?.value || '').trim();
-        const pwd = (pwdEl?.value || '').trim();
+    function todayRows(){
+        const staff = getCurrentStaffExact();
+        if(!staff) return [];
 
-        if(!acc || !pwd){
-            alert('請輸入姓名、手機或帳號，以及密碼');
-            return;
-        }
+        try{
+            currentLoginStaff = staff;
 
-        const btn = document.querySelector('#msContent .ms-primary');
-        if(btn){
-            btn.disabled = true;
-            btn.textContent = '正在讀取系統資料...';
-        }
-
-        await refreshFromOriginalCloud();
-
-        const found = findStaff(acc);
-        if(!found){
-            if(btn){
-                btn.disabled = false;
-                btn.textContent = '登入';
+            if(typeof getStaffScheduleRowsForToday === 'function'){
+                return getStaffScheduleRowsForToday();
             }
-            alert('找不到這位員工。請確認後台人員資料中的姓名或電話已填寫，並按過「同步雲端」。');
-            return;
-        }
+        }catch(e){}
 
-        const realPwd = String(found.pwd || found.password || found.pass || '');
-        if(realPwd && pwd !== realPwd && !['0000','1234'].includes(pwd)){
-            if(btn){
-                btn.disabled = false;
-                btn.textContent = '登入';
-            }
-            alert('密碼錯誤');
-            return;
-        }
-
-        saveProfile(found);
-        try{ currentLoginStaff = found; }catch(e){}
-
-        if(typeof msGo === 'function'){
-            msGo(route || 'home');
-        }
-    };
-
-    window.openMobileStaffApp = async function(route){
-        const app = document.getElementById('mobileStaffApp');
-        if(app) app.style.display = 'block';
-
-        localStorage.setItem('qyj_mobile_staff_route', route || 'home');
-
-        await refreshFromOriginalCloud();
-
-        const saved = readSaved();
-        if(!saved){
-            if(typeof msShowLogin === 'function'){
-                msShowLogin(route || 'home');
-            }
-            return;
-        }
-
-        const found = findStaff(
-            saved.phone || saved.account || saved.code || saved.name
-        );
-
-        if(!found){
-            localStorage.removeItem(LOGIN_KEY);
-            if(typeof msShowLogin === 'function'){
-                msShowLogin(route || 'home');
-            }
-            return;
-        }
-
-        saveProfile(found);
-        try{ currentLoginStaff = found; }catch(e){}
-
-        if(typeof msGo === 'function'){
-            msGo(route || 'home');
-        }
-    };
-
-    // 今日排班直接讀原系統 scheduleData 與 staffs 欄位
-    window.msFindTodaySchedules = function(staff){
-        const s = staff || window.msGetCurrentStaff();
-        const name = staffName(s);
         const today = (typeof todayYMD === 'function')
             ? todayYMD()
             : new Date().toISOString().slice(0,10);
@@ -7183,24 +7158,220 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             rows = Array.isArray(scheduleData) ? scheduleData : [];
         }catch(e){}
 
-        return rows.filter(item => {
-            if(typeof isVoidedSchedule === 'function' && isVoidedSchedule(item)){
-                return false;
+        const name = staffName(staff);
+
+        return rows
+            .filter(item => {
+                const voided = typeof isVoidedSchedule === 'function'
+                    ? isVoidedSchedule(item)
+                    : String(item?.scheduleStatus || item?.status || '') === '作廢';
+
+                if(voided) return false;
+                if(String(item?.date || '') !== String(today)) return false;
+
+                const names = typeof getScheduleStaffList === 'function'
+                    ? getScheduleStaffList(item.staffs || item.staff || '')
+                    : splitNames(item.staffs || item.staff || '');
+
+                return names.includes(name);
+            })
+            .map(item => ({
+                company:item.company || '',
+                staff:name,
+                date:item.date || '',
+                start:item.start || '',
+                end:item.end || '',
+                restHours:Number(item.restHours || item.breakHours || 0) || 0,
+                hours:Number(item.hours || 0) || 0,
+                remark:item.remark || '',
+                location:item.location || ''
+            }));
+    }
+
+    window.msGetCurrentStaff = getCurrentStaffExact;
+
+    window.msFindTodaySchedules = function(){
+        return todayRows();
+    };
+
+    window.msDoLogin = async function(route){
+        const acc = (document.getElementById('msLoginAccount')?.value || '').trim();
+        const pwd = (document.getElementById('msLoginPwd')?.value || '').trim();
+
+        if(!acc || !pwd){
+            alert('請輸入姓名、手機或帳號，以及密碼');
+            return;
+        }
+
+        const btn = document.querySelector('#msContent .ms-primary');
+        if(btn){
+            btn.disabled = true;
+            btn.textContent = '正在連接系統...';
+        }
+
+        try{
+            await loadMobileCloudExact();
+
+            const found = findStaff(acc);
+            if(!found){
+                throw new Error('找不到這位員工，請確認後台人員資料已同步雲端');
             }
 
-            if(String(item.date || '') !== String(today)){
-                return false;
+            const realPwd = String(found.pwd || found.password || found.pass || '');
+            if(realPwd && pwd !== realPwd && !['0000','1234'].includes(pwd)){
+                throw new Error('密碼錯誤');
             }
 
-            const names = (typeof getScheduleStaffList === 'function')
-                ? getScheduleStaffList(item.staffs || item.staff || '')
-                : String(item.staffs || item.staff || '')
-                    .split(/[,，、\n]/)
-                    .map(x => x.trim())
-                    .filter(Boolean);
+            saveLoginProfile(found);
+            try{ currentLoginStaff = found; }catch(e){}
 
-            return names.includes(name);
-        });
+            if(typeof msGo === 'function'){
+                msGo(route || 'home');
+            }
+        }catch(e){
+            alert(e?.message || '無法連接系統');
+            if(btn){
+                btn.disabled = false;
+                btn.textContent = '登入';
+            }
+        }
+    };
+
+    window.openMobileStaffApp = async function(route){
+        const app = document.getElementById('mobileStaffApp');
+        if(app) app.style.display = 'block';
+
+        localStorage.setItem('qyj_mobile_staff_route', route || 'home');
+
+        const box = document.getElementById('msContent');
+        if(box){
+            box.innerHTML = '<div class="ms-card"><div class="ms-empty">正在讀取今日班表...</div></div>';
+        }
+
+        try{
+            await loadMobileCloudExact();
+
+            const saved = readLoginProfile();
+            if(!saved){
+                if(typeof msShowLogin === 'function'){
+                    msShowLogin(route || 'home');
+                }
+                return;
+            }
+
+            const found = findStaff(
+                saved.phone || saved.account || saved.code || saved.name
+            );
+
+            if(!found){
+                localStorage.removeItem(LOGIN_KEY);
+                if(typeof msShowLogin === 'function'){
+                    msShowLogin(route || 'home');
+                }
+                return;
+            }
+
+            saveLoginProfile(found);
+            try{ currentLoginStaff = found; }catch(e){}
+
+            if(typeof msGo === 'function'){
+                msGo(route || 'home');
+            }
+        }catch(e){
+            if(box){
+                box.innerHTML = `
+                    <div class="ms-card">
+                        <div class="ms-empty">
+                            無法讀取雲端班表<br>
+                            <span style="font-size:13px;">${String(e?.message || '連線失敗')}</span>
+                        </div>
+                    </div>`;
+            }
+        }
+    };
+
+    // 最後覆蓋首頁，確保一定使用「等雲端完成後」的班表資料。
+    window.msShowHome = function(){
+        const s = getCurrentStaffExact();
+        const name = staffName(s) || '員工';
+        const code = staffCode(s) || '-';
+        const status = s?.status || s?.type || '員工';
+        const rows = todayRows();
+
+        const todayBlock = rows.length
+            ? rows.map(row => `
+                <div class="ms-today" style="margin-bottom:10px;">
+                    <div class="ms-row"><span>公司</span><span>${row.company || '-'}</span></div>
+                    <div class="ms-row"><span>日期</span><span>${row.date || '-'}</span></div>
+                    <div class="ms-row"><span>人員</span><span>${row.staff || name}</span></div>
+                    <div class="ms-row"><span>時間</span><span>${row.start || '-'} - ${row.end || '-'}</span></div>
+                    <div class="ms-row"><span>休息</span><span>${row.restHours ? row.restHours + ' 小時' : '-'}</span></div>
+                </div>
+            `).join('')
+            : '<div class="ms-empty">今天目前沒有排班</div>';
+
+        if(typeof msSetTitle === 'function'){
+            msSetTitle('員工服務');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        box.innerHTML = `
+            <div class="ms-card ms-profile">
+                <div class="ms-avatar">${name.slice(0,1)}</div>
+                <div>
+                    <div class="ms-name">${name}</div>
+                    <div class="ms-sub">員工編號：${code}<br>狀態：${status}</div>
+                </div>
+            </div>
+
+            <div class="ms-card">
+                <div class="ms-section-title">今日排班</div>
+                ${todayBlock}
+                <div class="ms-punch-big">
+                    <button class="ms-in" onclick="msGo('punch')">我要打卡</button>
+                    <button class="ms-out" onclick="msGo('schedule')">我的班表</button>
+                </div>
+            </div>
+
+            <div class="ms-grid">
+                <button class="ms-grid-btn" onclick="msGo('punch')"><div class="ms-icon">📍</div><div class="ms-grid-title">我要打卡</div><div class="ms-grid-sub">上下班打卡</div></button>
+                <button class="ms-grid-btn" onclick="msGo('attendance')"><div class="ms-icon">📅</div><div class="ms-grid-title">出勤紀錄</div><div class="ms-grid-sub">查看打卡</div></button>
+                <button class="ms-grid-btn" onclick="msGo('schedule')"><div class="ms-icon">📋</div><div class="ms-grid-title">我的班表</div><div class="ms-grid-sub">查看排班</div></button>
+                <button class="ms-grid-btn" onclick="msGo('leave')"><div class="ms-icon">📝</div><div class="ms-grid-title">我要請假</div><div class="ms-grid-sub">請假申請</div></button>
+                <button class="ms-grid-btn" onclick="msGo('salary')"><div class="ms-icon">💰</div><div class="ms-grid-title">我的薪資單</div><div class="ms-grid-sub">下載薪資</div></button>
+                <button class="ms-grid-btn" onclick="msGo('profile')"><div class="ms-icon">👤</div><div class="ms-grid-title">員工資訊</div><div class="ms-grid-sub">個人資料</div></button>
+                <button class="ms-grid-btn" onclick="msGo('sop')"><div class="ms-icon">📦</div><div class="ms-grid-title">入職包 SOP</div><div class="ms-grid-sub">新員工指引</div></button>
+                <button class="ms-grid-btn" onclick="msGo('more')"><div class="ms-icon">▦</div><div class="ms-grid-title">更多功能</div><div class="ms-grid-sub">其他服務</div></button>
+            </div>`;
+    };
+
+    window.msShowPunch = function(){
+        const rows = todayRows();
+
+        if(typeof msSetTitle === 'function'){
+            msSetTitle('我要打卡');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        box.innerHTML = rows.length
+            ? rows.map((row,index) => `
+                <div class="ms-card">
+                    <div class="ms-section-title">${row.company || '今日班表'}</div>
+                    <div class="ms-row"><span>日期</span><span>${row.date || '-'}</span></div>
+                    <div class="ms-row"><span>人員</span><span>${row.staff || '-'}</span></div>
+                    <div class="ms-row"><span>時間</span><span>${row.start || '-'} - ${row.end || '-'}</span></div>
+                    <div class="ms-row"><span>狀態</span><span class="ms-badge">等待打卡</span></div>
+                    <div class="ms-punch-big">
+                        <button class="ms-in" onclick="msDoPunch('上班',${index})">上班打卡</button>
+                        <button class="ms-out" onclick="msDoPunch('下班',${index})">下班打卡</button>
+                    </div>
+                </div>
+            `).join('')
+            : '<div class="ms-card"><div class="ms-empty">今天目前沒有排班</div></div>';
     };
 
     window.addEventListener('load', function(){
@@ -7208,7 +7379,7 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         if(qs.get('staffApp') === '1' || location.hash === '#staff'){
             setTimeout(
                 () => window.openMobileStaffApp(qs.get('route') || 'home'),
-                400
+                250
             );
         }
     });
