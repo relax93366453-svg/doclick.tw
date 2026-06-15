@@ -1481,7 +1481,7 @@
             <div class="page" id="staff-page-links"><div class="page-title"><i class="fas fa-link"></i> 常用連結</div><div class="grid" style="grid-template-columns:1fr 1fr; gap:30px;"><div id="btn_l1" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fas fa-globe" style="font-size:50px; color:#3b82f6;"></i><h3 id="staff_l1_title" style="margin-top:10px;"></h3><p id="staff_l1_desc" style="color:#64748b; font-size:13px;"></p></div><div id="btn_l2" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fab fa-instagram" style="font-size:50px; color:#e1306c;"></i><h3 id="staff_l2_title" style="margin-top:10px;"></h3><p id="staff_l2_desc" style="color:#64748b; font-size:13px;"></p></div></div></div>
         </div>
     </div><script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQhw1qjHYKLdMk19Xosh_SBbIFM-WlT4Ue5e4_m_KpEKiK5n5-FxGsRq5oakUJxO8O6Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7TpZ1boM1PhcUCSDp89FN4pcZWq0FeBjSkwYFkqhmnWNKMeCDy_caY3YaI3t9sMmg8A/exec';
 const el = id => document.getElementById(id);
 
 // ✅ 安全雲端同步模式：平常每 15 秒讀取；輸入中 / 彈窗開啟 / 未儲存時暫停，避免資料被洗掉
@@ -7016,97 +7016,9 @@ window.addEventListener('load',function(){const qs=new URLSearchParams(location.
 </script>
 
 <script>
-/* ===== 員工手機端同步診斷工具：只在 ?staffDebug=1 顯示 ===== */
-(function(){
-    function safe(v){ return v === undefined || v === null ? '' : String(v); }
-    function arr(v){ return Array.isArray(v) ? v : []; }
-    function splitNames(v){ return safe(v).split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean); }
-    function getScriptUrl(){
-        try{
-            if(typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL) return SCRIPT_URL;
-        }catch(e){}
-        return window.SCRIPT_URL || '';
-    }
-    function currentArrays(){
-        let staff=[], ft=[], sch=[];
-        try{ staff=arr(staffData); }catch(e){}
-        try{ ft=arr(ftStaffData); }catch(e){}
-        try{ sch=arr(scheduleData); }catch(e){}
-        return {staff,ft,sch};
-    }
-    function esc(s){
-        return safe(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-    async function runDiagnostic(){
-        const url=getScriptUrl();
-        const before=currentArrays();
-        let cloud=null,error='';
-        try{
-            if(!url) throw new Error('系統沒有 SCRIPT_URL');
-            const res=await fetch(url+(url.includes('?')?'&':'?')+'debug=1&t='+Date.now(),{cache:'no-store'});
-            cloud=await res.json();
-        }catch(e){
-            error=e && e.message ? e.message : String(e);
-        }
-
-        const cloudStaff=arr(cloud && cloud.staffData);
-        const cloudFt=arr(cloud && cloud.ftStaffData);
-        const cloudSch=arr(cloud && cloud.scheduleData);
-        const sampleStaff=[...cloudStaff,...cloudFt].slice(0,10).map(s=>({
-            name:s.name||s.staff||'',
-            tel:s.tel||s.phone||s.mobile||'',
-            account:s.account||s.username||'',
-            id:s.id||s.code||s.staffId||''
-        }));
-        const sampleSch=cloudSch.slice(0,10).map(s=>({
-            date:s.date||'',
-            company:s.company||'',
-            staffs:s.staffs||s.staff||'',
-            start:s.start||'',
-            end:s.end||''
-        }));
-
-        document.body.innerHTML=`
-        <div style="font-family:Arial,'Microsoft JhengHei';padding:18px;background:#f4f6f8;min-height:100vh;color:#1f2937;">
-          <h2 style="margin:0 0 14px;">員工手機同步診斷</h2>
-          <div style="background:white;padding:14px;border-radius:12px;margin-bottom:12px;">
-            <b>雲端連線：</b>${error?'<span style="color:#dc2626;">失敗：'+esc(error)+'</span>':'<span style="color:#059669;">成功</span>'}<br>
-            <b>雲端網址：</b><span style="word-break:break-all;">${esc(url)}</span>
-          </div>
-          <div style="background:white;padding:14px;border-radius:12px;margin-bottom:12px;line-height:1.8;">
-            <b>手機本機目前資料</b><br>
-            派遣人員：${before.staff.length} 筆<br>
-            正職人員：${before.ft.length} 筆<br>
-            排班：${before.sch.length} 筆
-          </div>
-          <div style="background:white;padding:14px;border-radius:12px;margin-bottom:12px;line-height:1.8;">
-            <b>Google 雲端實際回傳</b><br>
-            派遣人員：${cloudStaff.length} 筆<br>
-            正職人員：${cloudFt.length} 筆<br>
-            排班：${cloudSch.length} 筆
-          </div>
-          <div style="background:white;padding:14px;border-radius:12px;margin-bottom:12px;">
-            <b>雲端人員前 10 筆</b>
-            <pre style="white-space:pre-wrap;font-size:12px;">${esc(JSON.stringify(sampleStaff,null,2))}</pre>
-          </div>
-          <div style="background:white;padding:14px;border-radius:12px;margin-bottom:12px;">
-            <b>雲端排班前 10 筆</b>
-            <pre style="white-space:pre-wrap;font-size:12px;">${esc(JSON.stringify(sampleSch,null,2))}</pre>
-          </div>
-          <div style="background:#fff7ed;padding:14px;border-radius:12px;line-height:1.7;">
-            如果「雲端排班是 0 筆」，問題在後台沒有把排班寫進 Google 雲端。<br>
-            如果「雲端有人員與排班」，但手機仍沒有班，才是姓名／手機比對問題。
-          </div>
-        </div>`;
-    }
-
-    window.addEventListener('load',function(){
-        const qs=new URLSearchParams(location.search);
-        if(qs.get('staffDebug')==='1'){
-            setTimeout(runDiagnostic,300);
-        }
-    });
-})();
+/* Google Apps Script 新部署網址 */
+window.SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7TpZ1boM1PhcUCSDp89FN4pcZWq0FeBjSkwYFkqhmnWNKMeCDy_caY3YaI3t9sMmg8A/exec";
+try { SCRIPT_URL = window.SCRIPT_URL; } catch(e) {}
 </script>
 
 </body>
