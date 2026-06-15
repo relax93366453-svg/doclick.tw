@@ -1677,6 +1677,14 @@ function setupGlobalNavigation() {
         const isDate = target.type === 'date'; 
         const isSelect = target.tagName === 'SELECT'; 
         const canSelect = ['text', 'password', 'search', 'tel', 'url'].includes(target.type) || !target.type; 
+
+        // 時間、日期、數字欄位要保留瀏覽器原生方向鍵操作，
+        // 不要被系統的「方向鍵跳下一格」功能攔截。
+        const nativeArrowTypes = ['time', 'date', 'datetime-local', 'month', 'week', 'number', 'range'];
+        if (nativeArrowTypes.includes(target.type) && ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
+            return;
+        }
+
         if (e.key === 'Enter') { 
             e.preventDefault(); 
             if (idx === inputs.length - 1) { 
@@ -3579,12 +3587,60 @@ function markClockAbnormal(rowIndex){
     saveAll(); renderClockOverview(); showToast('已標記異常');
 }
 function deleteClockRecord(rowIndex){
-    const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
-    const rec=findClockRecord(row);
-    if(!rec) return showToast('這筆目前沒有打卡紀錄可刪除', true);
-    if(!confirm(`確定刪除 ${row.staff} ${row.date} 的打卡紀錄？\n只會刪除打卡紀錄，不會刪除原本排班。`)) return;
-    staffClockData=(staffClockData||[]).filter(c=>c.id!==rec.id);
-    saveAll(); renderClockOverview(); showToast('已刪除打卡紀錄');
+    const row = getScheduleRowsForClockOverview()[rowIndex];
+    if(!row) return showToast('找不到這筆資料', true);
+
+    const rec = findClockRecord(row);
+
+    const confirmText = rec
+        ? `確定刪除 ${row.staff} ${row.date} 的排班與打卡紀錄？\n此操作會同時移除該員工這一筆排班與打卡紀錄。`
+        : `這筆目前尚未打卡。\n確定刪除 ${row.staff} ${row.date} 的排班嗎？`;
+
+    if(!confirm(confirmText)) return;
+
+    // 先刪除對應打卡紀錄
+    staffClockData = (staffClockData || []).filter(c => !(
+        String(c.date || '') === String(row.date || '') &&
+        String(c.staff || '') === String(row.staff || '') &&
+        String(c.company || '') === String(row.company || '') &&
+        (!row.start || String(c.scheduleStart || c.start || '') === String(row.start || ''))
+    ));
+
+    // 再刪除這位員工的排班：
+    // 若同一筆排班有多人，只移除這位員工；若只剩他一人，就刪除整筆排班。
+    scheduleData = (scheduleData || []).flatMap(s => {
+        const sameSchedule =
+            String(s.date || '') === String(row.date || '') &&
+            String(s.company || '') === String(row.company || '') &&
+            String(s.start || '') === String(row.start || '') &&
+            String(s.end || '') === String(row.end || '');
+
+        if(!sameSchedule) return [s];
+
+        const names = getScheduleStaffList(s.staffs || s.staff || '');
+        if(!names.includes(row.staff)) return [s];
+
+        const left = names.filter(n => n !== row.staff);
+
+        if(left.length === 0){
+            return [];
+        }
+
+        return [{
+            ...s,
+            staffs: left.join('、'),
+            staff: left.join('、')
+        }];
+    });
+
+    saveAll();
+    renderClockOverview();
+
+    if(typeof renderScheduleTable === 'function'){
+        try{ renderScheduleTable(); }catch(e){}
+    }
+
+    showToast('已刪除排班資料');
 }
 function exportClockOverviewExcel(){
     const rows=getScheduleRowsForClockOverview().map(row=>{const rec=findClockRecord(row); const status=getClockStatus(row,rec); const calcH=(rec?.clockIn&&rec?.clockOut)?Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)):''; const realH=(rec && rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcH; return {'狀態':status,'日期':row.date,'公司':row.company,'人員':row.staff,'排班時間':`${row.start||''}-${row.end||''}`,'休息':row.restHours||0,'上班打卡':rec?.clockIn||'','上班GPS':formatGpsText(rec?.inGps),'下班打卡':rec?.clockOut||'','下班GPS':formatGpsText(rec?.outGps),'裝置資訊':(rec?.device?.userAgent||rec?.userAgent||''),'實際工時':realH===''?'':Number(realH.toFixed(1)),'備註':[rec?.gpsWarning,rec?.reportType,rec?.returnReason,rec?.remark,row.remark].filter(Boolean).join(' / ')};});
@@ -6762,6 +6818,171 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             setTimeout(()=>window.openMobileStaffApp(qs.get('route')||'home'),500);
         }
     });
+})();
+</script>
+
+
+<script>
+/* ===== 手機登入綁定員工資料修正：手機號碼 → 人員資料 → 姓名 → 班表 ===== */
+(function(){
+    const LOGIN_KEY = 'qyj_mobile_staff_login';
+
+    function norm(v){
+        return String(v || '').replace(/\s+/g,'').trim();
+    }
+
+    function getAllStaffRows(){
+        let rows = [];
+
+        try{ if(Array.isArray(staffData)) rows = rows.concat(staffData); }catch(e){}
+        try{ if(Array.isArray(ftStaffData)) rows = rows.concat(ftStaffData); }catch(e){}
+        try{ if(Array.isArray(window.staffData)) rows = rows.concat(window.staffData); }catch(e){}
+        try{ if(Array.isArray(window.ftStaffData)) rows = rows.concat(window.ftStaffData); }catch(e){}
+
+        ['staffData','ftStaffData'].forEach(key=>{
+            try{
+                const v = JSON.parse(localStorage.getItem(key) || '[]');
+                if(Array.isArray(v)) rows = rows.concat(v);
+            }catch(e){}
+        });
+
+        const seen = new Set();
+        return rows.filter(x=>{
+            if(!x || typeof x !== 'object') return false;
+            const key = JSON.stringify([
+                x.id || x.staffId || x.code || '',
+                x.name || x.staff || x.realName || '',
+                x.phone || x.mobile || x.tel || ''
+            ]);
+            if(seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
+    function rowName(x){
+        return x.name || x.staff || x.realName || x.employeeName || x.fullname || '';
+    }
+
+    function rowPhone(x){
+        return x.phone || x.mobile || x.tel || x.cellphone || x.mobilePhone || '';
+    }
+
+    function rowAccount(x){
+        return x.account || x.username || x.login || x.user || '';
+    }
+
+    function rowCode(x){
+        return x.code || x.staffId || x.id || x.employeeId || rowPhone(x) || rowAccount(x) || rowName(x);
+    }
+
+    function rowStatus(x){
+        return x.status || x.type || x.role || x.department || x.dept || '員工';
+    }
+
+    function findStaffByLogin(input){
+        const key = norm(input);
+        return getAllStaffRows().find(x=>{
+            const values = [
+                rowName(x),
+                rowPhone(x),
+                rowAccount(x),
+                rowCode(x),
+                x.mobile,
+                x.tel,
+                x.phone,
+                x.id,
+                x.staffId,
+                x.code
+            ].filter(Boolean).map(norm);
+            return values.includes(key);
+        }) || null;
+    }
+
+    window.msGetCurrentStaff = function(){
+        try{
+            const saved = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
+            if(!saved) return null;
+
+            // 每次開啟都重新用手機/帳號找一次正式人員資料
+            const found = findStaffByLogin(saved.account || saved.phone || saved.name || saved.code);
+            if(found) return found;
+
+            return saved;
+        }catch(e){
+            return null;
+        }
+    };
+
+    const oldLogin = window.msDoLogin;
+
+    window.msDoLogin = function(route){
+        const accEl = document.getElementById('msLoginAccount');
+        const pwdEl = document.getElementById('msLoginPwd');
+        const acc = accEl ? (accEl.value || '').trim() : '';
+        const pwd = pwdEl ? (pwdEl.value || '').trim() : '';
+
+        if(!acc || !pwd){
+            alert('請輸入帳號與密碼');
+            return;
+        }
+
+        const staff = findStaffByLogin(acc);
+
+        // 第一階段保留 0000 / 1234 測試密碼
+        if(pwd !== '0000' && pwd !== '1234'){
+            if(typeof oldLogin === 'function'){
+                return oldLogin(route || 'home');
+            }
+            alert('密碼錯誤');
+            return;
+        }
+
+        if(!staff){
+            alert('找不到這支手機或帳號對應的員工資料，請先到派遣人員或正職人員資料庫確認手機號碼。');
+            return;
+        }
+
+        const profile = {
+            account: rowAccount(staff) || rowPhone(staff) || rowCode(staff),
+            phone: rowPhone(staff),
+            name: rowName(staff),
+            code: rowCode(staff),
+            status: rowStatus(staff),
+            loginAt: new Date().toISOString()
+        };
+
+        localStorage.setItem(LOGIN_KEY, JSON.stringify(profile));
+
+        if(typeof msGo === 'function'){
+            msGo(route || 'home');
+        }else{
+            location.reload();
+        }
+    };
+
+    // 修正首頁顯示名稱：一定顯示正式員工姓名，不再顯示手機號碼
+    const oldShowHome = window.msShowHome;
+    window.msShowHome = function(){
+        const saved = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
+        const found = saved ? findStaffByLogin(saved.account || saved.phone || saved.code || saved.name) : null;
+
+        if(found && saved){
+            const fixed = {
+                account: rowAccount(found) || rowPhone(found) || rowCode(found),
+                phone: rowPhone(found),
+                name: rowName(found),
+                code: rowCode(found),
+                status: rowStatus(found),
+                loginAt: saved.loginAt || new Date().toISOString()
+            };
+            localStorage.setItem(LOGIN_KEY, JSON.stringify(fixed));
+        }
+
+        if(typeof oldShowHome === 'function'){
+            return oldShowHome();
+        }
+    };
 })();
 </script>
 
