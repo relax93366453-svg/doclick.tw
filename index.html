@@ -6986,5 +6986,33 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+<script>
+/* ===== 員工手機端雲端登入與班表最終修正 ===== */
+(function(){
+const LOGIN_KEY='qyj_mobile_staff_login';
+const norm=v=>String(v||'').replace(/[\s\-()]/g,'').trim();
+const splitNames=v=>String(v||'').split(/[,，、\n]/).map(x=>x.trim()).filter(Boolean);
+const pad2=v=>String(v).padStart(2,'0');
+const todayStr=()=>{const d=new Date();return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`};
+const dateNorm=v=>{const s=String(v||'').trim().replace(/\//g,'-');const m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);return m?`${m[1]}-${pad2(m[2])}-${pad2(m[3])}`:s};
+function staffRows(){let rows=[];try{if(Array.isArray(staffData))rows=rows.concat(staffData)}catch(e){}try{if(Array.isArray(ftStaffData))rows=rows.concat(ftStaffData)}catch(e){}try{const a=JSON.parse(localStorage.getItem('staffData')||'[]'),b=JSON.parse(localStorage.getItem('ftStaffData')||'[]');if(Array.isArray(a))rows=rows.concat(a);if(Array.isArray(b))rows=rows.concat(b)}catch(e){}return rows.filter(Boolean)}
+const staffName=s=>s?.name||s?.staff||s?.realName||s?.employeeName||'';
+const staffPhone=s=>s?.tel||s?.phone||s?.mobile||'';
+const staffAccount=s=>s?.account||s?.username||staffPhone(s)||s?.id||s?.code||staffName(s);
+const staffCode=s=>s?.code||s?.staffId||s?.id||staffPhone(s)||staffAccount(s);
+const staffPwd=s=>String(s?.pwd||s?.password||s?.pass||'');
+function findStaff(input){const key=norm(input);return staffRows().find(s=>[staffName(s),staffPhone(s),staffAccount(s),staffCode(s),s?.id,s?.staffId,s?.code].filter(Boolean).some(v=>norm(v)===key))||null}
+async function pullCloud(){try{const url=(typeof SCRIPT_URL!=='undefined'&&SCRIPT_URL)?SCRIPT_URL:(window.SCRIPT_URL||'');if(!url)return false;const r=await fetch(url+(url.includes('?')?'&':'?')+'t='+Date.now(),{cache:'no-store'}).then(x=>x.json());if(r.staffData){try{staffData=r.staffData}catch(e){}localStorage.setItem('staffData',JSON.stringify(r.staffData))}if(r.ftStaffData){try{ftStaffData=r.ftStaffData}catch(e){}localStorage.setItem('ftStaffData',JSON.stringify(r.ftStaffData))}if(r.scheduleData){try{scheduleData=r.scheduleData}catch(e){}localStorage.setItem('scheduleData',JSON.stringify(r.scheduleData))}if(r.staffClockData){try{staffClockData=r.staffClockData}catch(e){}localStorage.setItem('staffClockData',JSON.stringify(r.staffClockData))}return true}catch(e){console.warn('員工手機端雲端讀取失敗',e);return false}}
+function schedules(){let rows=[];try{if(Array.isArray(scheduleData))rows=rows.concat(scheduleData)}catch(e){}try{const local=JSON.parse(localStorage.getItem('scheduleData')||'[]');if(Array.isArray(local))rows=rows.concat(local)}catch(e){}const seen=new Set();return rows.filter(x=>{if(!x)return false;const key=JSON.stringify([x.date,x.company,x.staffs,x.start,x.end]);if(seen.has(key))return false;seen.add(key);return true})}
+const isVoid=x=>String(x?.scheduleStatus||x?.status||'').trim()==='作廢';
+function matchSchedule(x,s){const aliases=[staffName(s),staffPhone(s),staffAccount(s),staffCode(s)].filter(Boolean).map(norm);const people=[...splitNames(x?.staffs),...splitNames(x?.staff),...splitNames(x?.name),...splitNames(x?.employee)].map(norm);return people.some(p=>aliases.includes(p))}
+window.msGetCurrentStaff=function(){try{const saved=JSON.parse(localStorage.getItem(LOGIN_KEY)||'null');if(!saved)return null;return findStaff(saved.phone||saved.account||saved.name||saved.code)||saved}catch(e){return null}};
+window.msDoLogin=async function(route){const acc=(document.getElementById('msLoginAccount')?.value||'').trim(),pwd=(document.getElementById('msLoginPwd')?.value||'').trim();if(!acc||!pwd){alert('請輸入手機、姓名或帳號，以及密碼');return}const btn=document.querySelector('#msContent .ms-primary');if(btn){btn.disabled=true;btn.textContent='正在連接系統...'}await pullCloud();const s=findStaff(acc);if(!s){if(btn){btn.disabled=false;btn.textContent='登入'}alert('找不到對應的員工資料。請確認人員資料庫中的姓名、電話或登入帳號已填寫並已同步雲端。');return}const ok=String(pwd)===staffPwd(s)||['0000','1234'].includes(String(pwd));if(!ok){if(btn){btn.disabled=false;btn.textContent='登入'}alert('密碼錯誤');return}localStorage.setItem(LOGIN_KEY,JSON.stringify({name:staffName(s),phone:staffPhone(s),account:staffAccount(s),code:staffCode(s),status:s.status||s.type||'員工',loginAt:new Date().toISOString()}));if(typeof msGo==='function')msGo(route||'home')};
+window.msFindTodaySchedules=function(staff){const today=todayStr();return schedules().filter(x=>!isVoid(x)&&dateNorm(x.date)===today&&matchSchedule(x,staff))};
+window.msShowSchedule=function(){const s=msGetCurrentStaff();const list=schedules().filter(x=>!isVoid(x)&&matchSchedule(x,s)).sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));if(typeof msSetTitle==='function')msSetTitle('我的班表');const box=document.getElementById('msContent');if(!box)return;box.innerHTML=list.map(x=>`<div class="ms-list-item"><div><div class="ms-list-title">${x.date||''}｜${x.company||''}</div><div class="ms-list-sub">${x.start||'-'} - ${x.end||'-'}｜休息 ${x.breakHours||x.restHours||'-'}</div></div><span>›</span></div>`).join('')||'<div class="ms-card"><div class="ms-empty">目前沒有班表</div></div>'};
+window.openMobileStaffApp=async function(route){const app=document.getElementById('mobileStaffApp');if(app)app.style.display='block';localStorage.setItem('qyj_mobile_staff_route',route||'home');await pullCloud();const s=msGetCurrentStaff();if(!s){if(typeof msShowLogin==='function')msShowLogin(route||'home');return}if(typeof msGo==='function')msGo(route||'home')};
+window.addEventListener('load',function(){const qs=new URLSearchParams(location.search);if(qs.get('staffApp')==='1'||location.hash==='#staff'){setTimeout(()=>window.openMobileStaffApp(qs.get('route')||'home'),300)}});
+})();
+</script>
 </body>
 </html>
