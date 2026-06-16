@@ -1481,7 +1481,8 @@
             <div class="page" id="staff-page-links"><div class="page-title"><i class="fas fa-link"></i> 常用連結</div><div class="grid" style="grid-template-columns:1fr 1fr; gap:30px;"><div id="btn_l1" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fas fa-globe" style="font-size:50px; color:#3b82f6;"></i><h3 id="staff_l1_title" style="margin-top:10px;"></h3><p id="staff_l1_desc" style="color:#64748b; font-size:13px;"></p></div><div id="btn_l2" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fab fa-instagram" style="font-size:50px; color:#e1306c;"></i><h3 id="staff_l2_title" style="margin-top:10px;"></h3><p id="staff_l2_desc" style="color:#64748b; font-size:13px;"></p></div></div></div>
         </div>
     </div><script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxnB_KD0wZUCoXFUuXF4vFVqKrIfkziD4-SbykC3aYXt6uKJY-VUe-fEtAThK6Ccg_3xA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyqaY2cgSESCdCeIJIf7--LYTj0ElIL1vP7nfEScJFaoqxfqJMrlbIi41Ovg2xzkY22Q/exec';
+window.SCRIPT_URL = SCRIPT_URL;
 window.SCRIPT_URL = SCRIPT_URL;
 const el = id => document.getElementById(id);
 
@@ -7384,6 +7385,650 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             );
         }
     });
+})();
+</script>
+
+
+<script>
+/* ===== JSONP 跨網域雲端同步最終修正 ===== */
+(function(){
+    function qyjJsonpRead(timeoutMs){
+        timeoutMs = timeoutMs || 15000;
+
+        return new Promise(function(resolve, reject){
+            var callbackName =
+                '__qyjCloudCallback_' +
+                Date.now() +
+                '_' +
+                Math.random().toString(36).slice(2);
+
+            var script =
+                document.createElement('script');
+
+            var timer =
+                setTimeout(function(){
+                    cleanup();
+                    reject(
+                        new Error(
+                            '雲端讀取逾時'
+                        )
+                    );
+                }, timeoutMs);
+
+            function cleanup(){
+                clearTimeout(timer);
+
+                try{
+                    delete window[callbackName];
+                }catch(e){
+                    window[callbackName] =
+                        undefined;
+                }
+
+                if (
+                    script &&
+                    script.parentNode
+                ){
+                    script.parentNode
+                        .removeChild(script);
+                }
+            }
+
+            window[callbackName] =
+                function(data){
+                    cleanup();
+
+                    if (
+                        !data ||
+                        data.status === 'error'
+                    ){
+                        reject(
+                            new Error(
+                                data &&
+                                data.message
+                                  ? data.message
+                                  : '雲端回傳錯誤'
+                            )
+                        );
+                        return;
+                    }
+
+                    resolve(data);
+                };
+
+            script.onerror =
+                function(){
+                    cleanup();
+
+                    reject(
+                        new Error(
+                            '雲端連線失敗'
+                        )
+                    );
+                };
+
+            script.src =
+                SCRIPT_URL +
+                (
+                    SCRIPT_URL.includes('?')
+                      ? '&'
+                      : '?'
+                ) +
+                'callback=' +
+                encodeURIComponent(
+                    callbackName
+                ) +
+                '&t=' +
+                Date.now();
+
+            document.head
+                .appendChild(script);
+        });
+    }
+
+    function qyjApplyCloudData(
+        r,
+        forceRender
+    ){
+        if (!r) return;
+
+        if (r.custData) {
+            custData = r.custData;
+        }
+
+        if (r.contractData) {
+            contractData =
+                r.contractData;
+        }
+
+        if (r.staffData) {
+            staffData = r.staffData;
+        }
+
+        if (r.attendData) {
+            attendData = r.attendData;
+        }
+
+        if (r.ftStaffData) {
+            ftStaffData =
+                r.ftStaffData;
+        }
+
+        if (r.ftAttendData) {
+            ftAttendData =
+                r.ftAttendData;
+        }
+
+        if (r.talentData) {
+            talentData =
+                r.talentData;
+        }
+
+        if (r.supplierData) {
+            supplierData =
+                r.supplierData;
+        }
+
+        if (r.matchData) {
+            matchData = r.matchData;
+        }
+
+        if (r.reqData) {
+            reqData = r.reqData;
+        }
+
+        if (r.dispatchData) {
+            dispatchData =
+                r.dispatchData;
+        }
+
+        if (r.salesStaffData) {
+            salesStaffData =
+                r.salesStaffData;
+        }
+
+        if (
+            Array.isArray(
+                r.scheduleData
+            )
+        ){
+            scheduleData =
+                r.scheduleData;
+        }
+
+        if (
+            Array.isArray(
+                r.staffClockData
+            )
+        ){
+            staffClockData =
+                r.staffClockData;
+        }
+
+        if (r.salaryDeductData) {
+            salaryDeductData =
+                r.salaryDeductData;
+        }
+
+        if (r.sysConfig) {
+            try{
+                if (
+                    r.sysConfig.adminAcc
+                ){
+                    localStorage.setItem(
+                        'adminAcc',
+                        r.sysConfig.adminAcc
+                    );
+                }
+
+                if (
+                    r.sysConfig.adminPwd
+                ){
+                    localStorage.setItem(
+                        'adminPwd',
+                        r.sysConfig.adminPwd
+                    );
+                }
+
+                if (
+                    r.sysConfig.hrAcc
+                ){
+                    localStorage.setItem(
+                        'hrAcc',
+                        r.sysConfig.hrAcc
+                    );
+                }
+
+                if (
+                    r.sysConfig.hrPwd
+                ){
+                    localStorage.setItem(
+                        'hrPwd',
+                        r.sysConfig.hrPwd
+                    );
+                }
+
+                if (
+                    r.sysConfig.salesAcc
+                ){
+                    localStorage.setItem(
+                        'salesAcc',
+                        r.sysConfig.salesAcc
+                    );
+                }
+
+                if (
+                    r.sysConfig.salesPwd
+                ){
+                    localStorage.setItem(
+                        'salesPwd',
+                        r.sysConfig.salesPwd
+                    );
+                }
+            }catch(e){}
+        }
+
+        try{
+            if (
+                typeof standardizeData ===
+                'function'
+            ){
+                standardizeData();
+            }
+
+            if (
+                typeof invalidateCustBillingMap ===
+                'function'
+            ){
+                invalidateCustBillingMap();
+            }
+        }catch(e){}
+
+        try{
+            localStorage.setItem(
+                'custData',
+                JSON.stringify(custData)
+            );
+
+            localStorage.setItem(
+                'contractData',
+                JSON.stringify(
+                    contractData
+                )
+            );
+
+            localStorage.setItem(
+                'staffData',
+                JSON.stringify(staffData)
+            );
+
+            localStorage.setItem(
+                'attendData',
+                JSON.stringify(
+                    attendData
+                )
+            );
+
+            localStorage.setItem(
+                'ftStaffData',
+                JSON.stringify(
+                    ftStaffData
+                )
+            );
+
+            localStorage.setItem(
+                'ftAttendData',
+                JSON.stringify(
+                    ftAttendData
+                )
+            );
+
+            localStorage.setItem(
+                'talentData',
+                JSON.stringify(
+                    talentData
+                )
+            );
+
+            localStorage.setItem(
+                'supplierData',
+                JSON.stringify(
+                    supplierData
+                )
+            );
+
+            localStorage.setItem(
+                'matchData',
+                JSON.stringify(matchData)
+            );
+
+            localStorage.setItem(
+                'reqData',
+                JSON.stringify(reqData)
+            );
+
+            localStorage.setItem(
+                'dispatchData',
+                JSON.stringify(
+                    dispatchData
+                )
+            );
+
+            localStorage.setItem(
+                'salesStaffData',
+                JSON.stringify(
+                    salesStaffData
+                )
+            );
+
+            localStorage.setItem(
+                'scheduleData',
+                JSON.stringify(
+                    scheduleData
+                )
+            );
+
+            localStorage.setItem(
+                'staffClockData',
+                JSON.stringify(
+                    staffClockData
+                )
+            );
+
+            localStorage.setItem(
+                'salaryDeductData',
+                JSON.stringify(
+                    salaryDeductData
+                )
+            );
+        }catch(e){}
+
+        __safeSyncPendingCloud =
+            false;
+
+        if (
+            el('sync-status')
+        ){
+            updateSyncStatus(
+                '<i class="fas fa-cloud-download-alt"></i> ' +
+                '已讀取｜排班 ' +
+                (
+                    Array.isArray(
+                        scheduleData
+                    )
+                      ? scheduleData.length
+                      : 0
+                ) +
+                ' 筆'
+            );
+        }
+
+        var cp =
+            localStorage.getItem(
+                'adminPage'
+            ) || 'dashboard';
+
+        if (
+            el('sys-screen') &&
+            el('sys-screen').style
+                .display !== 'none'
+        ){
+            try{
+                if (forceRender) {
+                    showAdminPage(cp);
+                } else if (
+                    cp === 'schedule'
+                ){
+                    renderScheduleTable();
+                } else if (
+                    cp ===
+                    'clock_overview'
+                ){
+                    renderClockOverview();
+                } else if (
+                    cp === 'dashboard'
+                ){
+                    renderDashboard();
+                }
+            }catch(e){}
+        }
+    }
+
+    loadDataFromCloud =
+        function(forceRender){
+            forceRender =
+                !!forceRender;
+
+            var blockedReason =
+                isSafeSyncBlocked();
+
+            if (
+                blockedReason &&
+                !forceRender
+            ){
+                __safeSyncPendingCloud =
+                    true;
+
+                if (
+                    el('sync-status')
+                ){
+                    updateSyncStatus(
+                        '<i class="fas fa-lock"></i> ' +
+                        blockedReason +
+                        '，已暫停雲端讀取'
+                    );
+                }
+
+                return Promise.resolve(
+                    null
+                );
+            }
+
+            if (
+                el('sync-status')
+            ){
+                updateSyncStatus(
+                    '<i class="fas fa-spinner fa-spin"></i> ' +
+                    '讀取雲端...'
+                );
+            }
+
+            return qyjJsonpRead()
+                .then(function(r){
+                    qyjApplyCloudData(
+                        r,
+                        forceRender
+                    );
+
+                    return r;
+                })
+                .catch(function(err){
+                    if (
+                        el('sync-status')
+                    ){
+                        updateSyncStatus(
+                            '<i class="fas fa-exclamation-triangle"></i> ' +
+                            '讀取失敗',
+                            true
+                        );
+                    }
+
+                    if (forceRender) {
+                        showToast(
+                            '❌ ' +
+                            err.message,
+                            true
+                        );
+                    }
+
+                    throw err;
+                });
+        };
+
+    pushCloudData =
+        function(silent){
+            silent = !!silent;
+
+            var payload =
+                buildCloudPayload();
+
+            saveLocalData();
+
+            if (
+                !silent &&
+                el('sync-status')
+            ){
+                updateSyncStatus(
+                    '<i class="fas fa-spinner fa-spin"></i> ' +
+                    '同步中...'
+                );
+            }
+
+            return fetch(
+                SCRIPT_URL,
+                {
+                    method:'POST',
+                    mode:'no-cors',
+                    headers:{
+                        'Content-Type':
+                          'text/plain;charset=utf-8'
+                    },
+                    body:JSON.stringify(
+                        payload
+                    )
+                }
+            )
+            .then(function(){
+                return new Promise(
+                    function(resolve){
+                        setTimeout(
+                            resolve,
+                            1600
+                        );
+                    }
+                );
+            })
+            .then(function(){
+                return qyjJsonpRead();
+            })
+            .then(function(r){
+                qyjApplyCloudData(
+                    r,
+                    false
+                );
+
+                var cloudCount =
+                    Array.isArray(
+                        r.scheduleData
+                    )
+                      ? r.scheduleData
+                          .length
+                      : 0;
+
+                var localCount =
+                    Array.isArray(
+                        payload.scheduleData
+                    )
+                      ? payload.scheduleData
+                          .length
+                      : 0;
+
+                if (
+                    cloudCount <
+                    localCount
+                ){
+                    throw new Error(
+                        '雲端排班尚未寫入完成'
+                    );
+                }
+
+                clearFormDirty();
+
+                if (
+                    el('sync-status')
+                ){
+                    updateSyncStatus(
+                        '<i class="fas fa-cloud-check-alt"></i> ' +
+                        '已同步｜排班 ' +
+                        cloudCount +
+                        ' 筆'
+                    );
+                }
+
+                if (!silent) {
+                    showToast(
+                        '✅ 已同步雲端，排班 ' +
+                        cloudCount +
+                        ' 筆'
+                    );
+                }
+
+                return {
+                    status:'success',
+                    scheduleCount:
+                      cloudCount
+                };
+            })
+            .catch(function(err){
+                if (
+                    el('sync-status')
+                ){
+                    updateSyncStatus(
+                        '<i class="fas fa-exclamation-triangle"></i> ' +
+                        '同步失敗',
+                        true
+                    );
+                }
+
+                if (!silent) {
+                    showToast(
+                        '❌ ' +
+                        err.message,
+                        true
+                    );
+                }
+
+                throw err;
+            });
+        };
+
+    manualCloudRead =
+        function(){
+            var blockedReason =
+                isSafeSyncBlocked();
+
+            if (blockedReason) {
+                showToast(
+                    '請先儲存目前資料，再讀取雲端（目前：' +
+                    blockedReason +
+                    '）',
+                    true
+                );
+                return;
+            }
+
+            loadDataFromCloud(true)
+                .then(function(){
+                    showToast(
+                        '✅ 已讀取雲端最新資料'
+                    );
+                })
+                .catch(function(){});
+        };
+
+    manualCloudSync =
+        function(){
+            pushCloudData(false)
+                .then(function(){
+                    return loadDataFromCloud(
+                        false
+                    );
+                })
+                .catch(function(){});
+        };
+
+    window.qyjJsonpRead =
+        qyjJsonpRead;
 })();
 </script>
 
