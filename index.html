@@ -2918,44 +2918,7 @@ ${d.contentHtml}
 
 
 
-<script>
-/* ===== 員工手機版極速啟動最終覆蓋 ===== */
-(function(){
-    const oldMsGo = window.msGo;
 
-    if(typeof oldMsGo === 'function'){
-        window.msGo = function(route){
-            const targetRoute = route || 'home';
-            localStorage.setItem('qyj_mobile_staff_route', targetRoute);
-            document.documentElement.classList.add('qyj-staff-ready');
-            return oldMsGo.call(this, targetRoute);
-        };
-    }
-
-    function launchStaffAppNow(){
-        let qs;
-        try{
-            qs = new URLSearchParams(location.search);
-        }catch(e){
-            return;
-        }
-
-        if(qs.get('staffApp') !== '1' && location.hash !== '#staff') return;
-
-        const route = qs.get('route') || 'home';
-        const app = document.getElementById('mobileStaffApp');
-
-        if(!app || typeof window.openMobileStaffApp !== 'function') return;
-
-        app.style.display = 'block';
-        document.documentElement.classList.add('qyj-staff-ready');
-        window.openMobileStaffApp(route);
-    }
-
-    // 此程式位於 body 最後，直接執行，不等待圖片、字型或管理端套件載入。
-    launchStaffAppNow();
-})();
-</script>
 
 </body>
 </html>`);
@@ -8867,6 +8830,47 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             }).join('')
             : '<div class="ms-card"><div class="ms-empty">目前沒有出勤紀錄</div></div>';
     };
+})();
+</script>
+
+
+
+<script>
+/* ===== 員工手機版極速啟動最終覆蓋 ===== */
+(function(){
+    const oldMsGo = window.msGo;
+
+    if(typeof oldMsGo === 'function'){
+        window.msGo = function(route){
+            const targetRoute = route || 'home';
+            localStorage.setItem('qyj_mobile_staff_route', targetRoute);
+            document.documentElement.classList.add('qyj-staff-ready');
+            return oldMsGo.call(this, targetRoute);
+        };
+    }
+
+    function launchStaffAppNow(){
+        let qs;
+        try{
+            qs = new URLSearchParams(location.search);
+        }catch(e){
+            return;
+        }
+
+        if(qs.get('staffApp') !== '1' && location.hash !== '#staff') return;
+
+        const route = qs.get('route') || 'home';
+        const app = document.getElementById('mobileStaffApp');
+
+        if(!app || typeof window.openMobileStaffApp !== 'function') return;
+
+        app.style.display = 'block';
+        document.documentElement.classList.add('qyj-staff-ready');
+        window.openMobileStaffApp(route);
+    }
+
+    // 此程式位於 body 最後，直接執行，不等待圖片、字型或管理端套件載入。
+    launchStaffAppNow();
 })();
 </script>
 
