@@ -4,10 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>愜易居客戶及派遣管理系統</title>
+
+    <!-- ===== 員工手機版快速啟動：避免先閃出桌面系統 ===== -->
+    <script>
+    (function(){
+        try{
+            var qs = new URLSearchParams(location.search);
+            if(qs.get('staffApp') === '1' || location.hash === '#staff'){
+                document.documentElement.classList.add('qyj-staff-mode');
+                window.__QYJ_STAFF_MODE__ = true;
+            }
+        }catch(e){}
+    })();
+    </script>
+    <style>
+        html.qyj-staff-mode{
+            background:#f4f5f7;
+        }
+        html.qyj-staff-mode::before{
+            content:'正在開啟員工打卡…';
+            position:fixed;
+            inset:0;
+            z-index:2147483647;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#f4f5f7;
+            color:#2563eb;
+            font-family:'Microsoft JhengHei',Arial,sans-serif;
+            font-size:17px;
+            font-weight:900;
+        }
+        html.qyj-staff-mode.qyj-staff-ready::before{
+            display:none;
+        }
+        html.qyj-staff-mode #login-screen,
+        html.qyj-staff-mode #sys-screen,
+        html.qyj-staff-mode #staff-screen,
+        html.qyj-staff-mode .app-container,
+        html.qyj-staff-mode .staff-container,
+        html.qyj-staff-mode #preview-overlay{
+            display:none!important;
+        }
+        html.qyj-staff-mode #mobileStaffApp{
+            display:block!important;
+        }
+    </style>
+
     
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css" media="print" onload="this.media='all'; this.onload=null;" crossorigin="anonymous">
     
@@ -2868,6 +2915,47 @@ ${d.contentHtml}
 <!-- 真正顯示在主系統中的排班異動彈窗 -->
 
 
+
+
+
+<script>
+/* ===== 員工手機版極速啟動最終覆蓋 ===== */
+(function(){
+    const oldMsGo = window.msGo;
+
+    if(typeof oldMsGo === 'function'){
+        window.msGo = function(route){
+            const targetRoute = route || 'home';
+            localStorage.setItem('qyj_mobile_staff_route', targetRoute);
+            document.documentElement.classList.add('qyj-staff-ready');
+            return oldMsGo.call(this, targetRoute);
+        };
+    }
+
+    function launchStaffAppNow(){
+        let qs;
+        try{
+            qs = new URLSearchParams(location.search);
+        }catch(e){
+            return;
+        }
+
+        if(qs.get('staffApp') !== '1' && location.hash !== '#staff') return;
+
+        const route = qs.get('route') || 'home';
+        const app = document.getElementById('mobileStaffApp');
+
+        if(!app || typeof window.openMobileStaffApp !== 'function') return;
+
+        app.style.display = 'block';
+        document.documentElement.classList.add('qyj-staff-ready');
+        window.openMobileStaffApp(route);
+    }
+
+    // 此程式位於 body 最後，直接執行，不等待圖片、字型或管理端套件載入。
+    launchStaffAppNow();
+})();
+</script>
 
 </body>
 </html>`);
@@ -7199,6 +7287,7 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     window.msDoLogin = async function(route){
         const acc = (document.getElementById('msLoginAccount')?.value || '').trim();
         const pwd = (document.getElementById('msLoginPwd')?.value || '').trim();
+        const targetRoute = route || 'home';
 
         if(!acc || !pwd){
             alert('請輸入姓名、手機或帳號，以及密碼');
@@ -7208,27 +7297,65 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         const btn = document.querySelector('#msContent .ms-primary');
         if(btn){
             btn.disabled = true;
-            btn.textContent = '正在連接系統...';
+            btn.textContent = '登入中...';
+        }
+
+        function checkPassword(found){
+            const realPwd = String(found?.pwd || found?.password || found?.pass || '');
+            if(realPwd && pwd !== realPwd && !['0000','1234'].includes(pwd)){
+                throw new Error('密碼錯誤');
+            }
         }
 
         try{
+            // 先使用本機已同步過的人員資料，讓回訪員工可以立即登入。
+            let found = findStaff(acc);
+
+            if(found){
+                checkPassword(found);
+                saveLoginProfile(found);
+                try{ currentLoginStaff = found; }catch(e){}
+
+                document.documentElement.classList.add('qyj-staff-ready');
+                localStorage.setItem('qyj_mobile_staff_route', targetRoute);
+
+                if(typeof msGo === 'function'){
+                    msGo(targetRoute);
+                }
+
+                // 雲端更新改在背景執行，不阻塞員工進入打卡頁。
+                loadMobileCloudExact().then(function(){
+                    const latest = findStaff(acc);
+                    if(latest){
+                        saveLoginProfile(latest);
+                        try{ currentLoginStaff = latest; }catch(e){}
+                    }
+                    const currentRoute = localStorage.getItem('qyj_mobile_staff_route') || targetRoute;
+                    if(typeof msGo === 'function') msGo(currentRoute);
+                }).catch(function(error){
+                    console.warn('員工資料背景同步失敗：', error);
+                });
+                return;
+            }
+
+            // 本機第一次沒有資料時，才等待一次雲端讀取。
+            if(btn) btn.textContent = '第一次登入，正在讀取資料...';
             await loadMobileCloudExact();
 
-            const found = findStaff(acc);
+            found = findStaff(acc);
             if(!found){
                 throw new Error('找不到這位員工，請確認後台人員資料已同步雲端');
             }
 
-            const realPwd = String(found.pwd || found.password || found.pass || '');
-            if(realPwd && pwd !== realPwd && !['0000','1234'].includes(pwd)){
-                throw new Error('密碼錯誤');
-            }
-
+            checkPassword(found);
             saveLoginProfile(found);
             try{ currentLoginStaff = found; }catch(e){}
 
+            document.documentElement.classList.add('qyj-staff-ready');
+            localStorage.setItem('qyj_mobile_staff_route', targetRoute);
+
             if(typeof msGo === 'function'){
-                msGo(route || 'home');
+                msGo(targetRoute);
             }
         }catch(e){
             alert(e?.message || '無法連接系統');
@@ -7239,57 +7366,62 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         }
     };
 
-    window.openMobileStaffApp = async function(route){
+    window.openMobileStaffApp = function(route){
+        const targetRoute = route || 'home';
         const app = document.getElementById('mobileStaffApp');
+
         if(app) app.style.display = 'block';
+        document.documentElement.classList.add('qyj-staff-ready');
+        localStorage.setItem('qyj_mobile_staff_route', targetRoute);
 
-        localStorage.setItem('qyj_mobile_staff_route', route || 'home');
+        const saved = readLoginProfile();
 
-        const box = document.getElementById('msContent');
-        if(box){
-            box.innerHTML = '<div class="ms-card"><div class="ms-empty">正在讀取今日班表...</div></div>';
+        // 尚未登入：直接顯示登入頁，不等待雲端。
+        if(!saved){
+            if(typeof msShowLogin === 'function'){
+                msShowLogin(targetRoute);
+            }
+            return;
         }
 
-        try{
-            await loadMobileCloudExact();
+        // 已記住登入：先用本機快取立即開啟首頁／打卡頁。
+        const localFound = findStaff(
+            saved.phone || saved.account || saved.code || saved.name
+        );
 
-            const saved = readLoginProfile();
-            if(!saved){
-                if(typeof msShowLogin === 'function'){
-                    msShowLogin(route || 'home');
-                }
-                return;
+        if(localFound){
+            saveLoginProfile(localFound);
+            try{ currentLoginStaff = localFound; }catch(e){}
+        }else{
+            try{ currentLoginStaff = saved; }catch(e){}
+        }
+
+        if(typeof msGo === 'function'){
+            msGo(targetRoute);
+        }else if(typeof window.msShowHome === 'function'){
+            window.msShowHome();
+        }
+
+        // 班表、人員與打卡紀錄在背景更新，不再卡住畫面。
+        loadMobileCloudExact().then(function(){
+            const latestSaved = readLoginProfile();
+            const latestFound = latestSaved ? findStaff(
+                latestSaved.phone || latestSaved.account || latestSaved.code || latestSaved.name
+            ) : null;
+
+            if(latestFound){
+                saveLoginProfile(latestFound);
+                try{ currentLoginStaff = latestFound; }catch(e){}
             }
 
-            const found = findStaff(
-                saved.phone || saved.account || saved.code || saved.name
-            );
-
-            if(!found){
-                localStorage.removeItem(LOGIN_KEY);
-                if(typeof msShowLogin === 'function'){
-                    msShowLogin(route || 'home');
-                }
-                return;
-            }
-
-            saveLoginProfile(found);
-            try{ currentLoginStaff = found; }catch(e){}
-
+            // 員工若已經點到其他頁，就停留在目前頁面，不強制跳回首頁。
+            const currentRoute = localStorage.getItem('qyj_mobile_staff_route') || targetRoute;
             if(typeof msGo === 'function'){
-                msGo(route || 'home');
+                msGo(currentRoute);
             }
-        }catch(e){
-            if(box){
-                box.innerHTML = `
-                    <div class="ms-card">
-                        <div class="ms-empty">
-                            無法讀取雲端班表<br>
-                            <span style="font-size:13px;">${String(e?.message || '連線失敗')}</span>
-                        </div>
-                    </div>`;
-            }
-        }
+        }).catch(function(error){
+            console.warn('員工手機背景同步失敗，先使用本機資料：', error);
+        });
     };
 
     // 最後覆蓋首頁，確保一定使用「等雲端完成後」的班表資料。
@@ -8048,7 +8180,6 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     const LEGACY_PUNCH_KEY = 'qyj_staff_punch_records';
     const CLOCK_KEY = 'staffClockData';
     const REPAIR_PREFIX = 'qyj_clock_repair_synced_';
-    let repairRunning = false;
 
     function pad2(v){
         return String(v).padStart(2,'0');
@@ -8481,8 +8612,6 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     }
 
     async function repairOldPunches(){
-        if(repairRunning) return;
-
         const rows = getTodayRows();
         if(!rows.length) return;
 
@@ -8491,42 +8620,35 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
         if(sessionStorage.getItem(repairKey) === '1') return;
 
-        repairRunning = true;
-        let shouldRender = false;
+        await loadFullCloudBeforeWrite();
+
+        let clocks = getClockRows();
+        let changed = false;
+        let target = null;
+
+        rows.forEach(function(row){
+            const result = migrateLegacyForRow(row,clocks);
+            if(result.changed){
+                changed = true;
+                target = result.record;
+            }
+        });
+
+        if(!changed){
+            sessionStorage.setItem(repairKey,'1');
+            return;
+        }
+
+        setClockRows(clocks);
 
         try{
-            await loadFullCloudBeforeWrite();
-
-            let clocks = getClockRows();
-            let changed = false;
-            let target = null;
-
-            rows.forEach(function(row){
-                const result = migrateLegacyForRow(row,clocks);
-                if(result.changed){
-                    changed = true;
-                    target = result.record;
-                }
-            });
-
-            if(!changed){
-                sessionStorage.setItem(repairKey,'1');
-                return;
-            }
-
-            setClockRows(clocks);
-            shouldRender = true;
-
             await uploadClockAndVerify(target);
             sessionStorage.setItem(repairKey,'1');
         }catch(e){
             console.warn('舊打卡紀錄同步失敗：',e);
-        }finally{
-            repairRunning = false;
-            if(shouldRender){
-                window.msShowPunch();
-            }
         }
+
+        window.msShowPunch();
     }
 
     window.msShowPunch = function(){
