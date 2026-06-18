@@ -9726,5 +9726,718 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加功能：正職一鍵產生整月排班
+     預設休息時間：12:00－13:30
+     原始程式全部保留
+========================================================= -->
+<style>
+.qyj-ft-auto-panel{
+    display:none;
+    background:#fff;
+    border:1px solid #a7f3d0;
+    border-radius:16px;
+    padding:18px;
+    margin:14px 0;
+    box-shadow:0 5px 16px rgba(15,23,42,.05);
+}
+.qyj-ft-auto-panel.show{display:block;}
+.qyj-ft-auto-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+}
+.qyj-ft-auto-title h3{
+    margin:0;
+    color:#065f46;
+    font-size:17px;
+    font-weight:900;
+}
+.qyj-ft-auto-title p{
+    margin:4px 0 0;
+    color:#64748b;
+    font-size:13px;
+    font-weight:700;
+}
+.qyj-ft-auto-grid{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+}
+.qyj-ft-auto-grid label{
+    display:block;
+    color:#475569;
+    font-size:12px;
+    font-weight:900;
+    margin-bottom:5px;
+}
+.qyj-ft-auto-grid input,
+.qyj-ft-auto-grid select,
+.qyj-ft-auto-grid textarea{
+    width:100%;
+    padding:10px 11px;
+    border:1px solid #cbd5e1;
+    border-radius:10px;
+    background:#fff;
+    font-size:13px;
+}
+.qyj-ft-auto-grid textarea{
+    min-height:74px;
+    resize:vertical;
+}
+.qyj-ft-auto-wide{grid-column:1/-1;}
+.qyj-ft-people{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    max-height:210px;
+    overflow:auto;
+    padding:10px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+}
+.qyj-ft-person{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:8px 10px;
+    background:#fff;
+    border:1px solid #dbe7f5;
+    border-radius:10px;
+    color:#334155;
+    font-size:13px;
+    font-weight:800;
+}
+.qyj-ft-person input{width:auto;margin:0;}
+.qyj-ft-auto-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:16px;
+}
+.qyj-ft-auto-hint{
+    margin-top:12px;
+    padding:10px 12px;
+    border-radius:10px;
+    background:#ecfdf5;
+    color:#065f46;
+    font-size:12px;
+    font-weight:800;
+    line-height:1.7;
+}
+@media(max-width:950px){
+    .qyj-ft-auto-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:650px){
+    .qyj-ft-auto-grid,
+    .qyj-ft-people{grid-template-columns:1fr;}
+}
+</style>
+
+<script>
+(function(){
+    'use strict';
+
+    const AUTO_SETTING_KEY = 'qyj_fulltime_auto_schedule_settings';
+
+    function esc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function pad(value){
+        return String(value).padStart(2,'0');
+    }
+
+    function readSettings(){
+        try{
+            return Object.assign({
+                start:'09:00',
+                end:'17:30',
+                breakStart:'12:00',
+                breakEnd:'13:30',
+                service:'行政',
+                skipWeekends:true,
+                skipApprovedLeave:true,
+                holidayDates:''
+            },JSON.parse(localStorage.getItem(AUTO_SETTING_KEY) || '{}'));
+        }catch(error){
+            return {
+                start:'09:00',
+                end:'17:30',
+                breakStart:'12:00',
+                breakEnd:'13:30',
+                service:'行政',
+                skipWeekends:true,
+                skipApprovedLeave:true,
+                holidayDates:''
+            };
+        }
+    }
+
+    function writeSettings(settings){
+        localStorage.setItem(
+            AUTO_SETTING_KEY,
+            JSON.stringify(settings)
+        );
+    }
+
+    function fulltimeNames(){
+        return [...new Set(
+            (ftStaffData || [])
+                .filter(function(item){
+                    return !item.status || item.status === '在職';
+                })
+                .map(function(item){
+                    return item.name || item.staff || '';
+                })
+                .filter(Boolean)
+        )].sort();
+    }
+
+    function serviceOptions(){
+        const raw =
+            (typeof portalConf !== 'undefined' &&
+             portalConf &&
+             portalConf.serviceTypes)
+                ? portalConf.serviceTypes
+                : '行政,會計,服務員,理貨包裝,其他';
+
+        return String(raw)
+            .split(',')
+            .map(function(item){ return item.trim(); })
+            .filter(Boolean);
+    }
+
+    function selectedMonth(){
+        const year =
+            Number(document.getElementById('sch_year')?.value) ||
+            new Date().getFullYear();
+
+        const month =
+            Number(document.getElementById('sch_month')?.value) ||
+            (new Date().getMonth() + 1);
+
+        return {year:year,month:month};
+    }
+
+    function approvedLeaveSet(staffName){
+        const result = new Set();
+
+        (ftAttendData || []).forEach(function(item){
+            const sameStaff =
+                String(item.staff || '').trim() ===
+                String(staffName || '').trim();
+
+            if(!sameStaff) return;
+
+            const approved =
+                !item.approval ||
+                item.approval === '已核准' ||
+                item.approval === '核准';
+
+            if(!approved) return;
+
+            const recordType = String(
+                item.record_type ||
+                item.type ||
+                ''
+            );
+
+            const leaveType = String(item.leave_type || '');
+
+            const isLeave =
+                recordType.includes('請假') ||
+                recordType.includes('休假') ||
+                leaveType.length > 0;
+
+            if(isLeave && item.date){
+                result.add(String(item.date));
+            }
+        });
+
+        return result;
+    }
+
+    function parseHolidayDates(raw){
+        return new Set(
+            String(raw || '')
+                .split(/[\s,，、;；\n]+/)
+                .map(function(item){ return item.trim(); })
+                .filter(Boolean)
+                .map(function(item){
+                    const match = item.match(
+                        /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/
+                    );
+
+                    if(!match) return '';
+
+                    return (
+                        match[1] + '-' +
+                        pad(match[2]) + '-' +
+                        pad(match[3])
+                    );
+                })
+                .filter(Boolean)
+        );
+    }
+
+    function calcHours(start,end,breakStart,breakEnd){
+        if(typeof calcScheduleNetHours === 'function'){
+            return calcScheduleNetHours(
+                start,end,breakStart,breakEnd,''
+            );
+        }
+
+        function minutes(value){
+            const parts = String(value || '').split(':');
+            return Number(parts[0] || 0) * 60 +
+                   Number(parts[1] || 0);
+        }
+
+        let total = minutes(end) - minutes(start);
+        if(total < 0) total += 1440;
+
+        let rest = minutes(breakEnd) - minutes(breakStart);
+        if(rest < 0) rest += 1440;
+
+        return Math.max(0,(total-rest)/60);
+    }
+
+    function ensurePanel(){
+        const shell = document.querySelector(
+            '#page-schedule .schedule-page-shell'
+        );
+
+        if(!shell) return;
+
+        let panel = document.getElementById(
+            'qyjFulltimeAutoSchedulePanel'
+        );
+
+        if(!panel){
+            panel = document.createElement('section');
+            panel.id = 'qyjFulltimeAutoSchedulePanel';
+            panel.className = 'qyj-ft-auto-panel';
+
+            const typeTabs =
+                document.getElementById('qyjScheduleTypeTabs');
+
+            if(typeTabs){
+                typeTabs.insertAdjacentElement('afterend',panel);
+            }else{
+                shell.prepend(panel);
+            }
+        }
+
+        const currentType =
+            typeof qyjGetCurrentScheduleStaffType === 'function'
+                ? qyjGetCurrentScheduleStaffType()
+                : '派遣';
+
+        panel.classList.toggle('show',currentType === '正職');
+
+        if(currentType !== '正職') return;
+
+        const settings = readSettings();
+        const month = selectedMonth();
+
+        panel.innerHTML =
+            '<div class="qyj-ft-auto-title">' +
+                '<div>' +
+                    '<h3><i class="fas fa-calendar-plus"></i> ' +
+                        '正職一鍵產生整月排班</h3>' +
+                    '<p>自動略過週六、週日、指定國定假日及已核准請假。</p>' +
+                '</div>' +
+                '<button type="button" class="btn btn-excel" ' +
+                    'onclick="qyjSelectAllFulltimeAutoStaff(true)">' +
+                    '全選正職' +
+                '</button>' +
+            '</div>' +
+
+            '<div class="qyj-ft-auto-grid">' +
+
+                '<div>' +
+                    '<label>排班月份</label>' +
+                    '<input id="qyj_ft_auto_month" type="month" ' +
+                        'value="' + month.year + '-' +
+                        pad(month.month) + '">' +
+                '</div>' +
+
+                '<div>' +
+                    '<label>預設上班時間</label>' +
+                    '<input id="qyj_ft_auto_start" type="time" ' +
+                        'value="' + esc(settings.start) + '">' +
+                '</div>' +
+
+                '<div>' +
+                    '<label>預設下班時間</label>' +
+                    '<input id="qyj_ft_auto_end" type="time" ' +
+                        'value="' + esc(settings.end) + '">' +
+                '</div>' +
+
+                '<div>' +
+                    '<label>服務項目</label>' +
+                    '<select id="qyj_ft_auto_service">' +
+                        serviceOptions().map(function(item){
+                            return '<option value="' + esc(item) + '" ' +
+                                (item === settings.service
+                                    ? 'selected'
+                                    : '') +
+                            '>' + esc(item) + '</option>';
+                        }).join('') +
+                    '</select>' +
+                '</div>' +
+
+                '<div>' +
+                    '<label>休息開始</label>' +
+                    '<input id="qyj_ft_auto_break_start" type="time" ' +
+                        'value="' +
+                        esc(settings.breakStart || '12:00') +
+                    '">' +
+                '</div>' +
+
+                '<div>' +
+                    '<label>休息結束</label>' +
+                    '<input id="qyj_ft_auto_break_end" type="time" ' +
+                        'value="' +
+                        esc(settings.breakEnd || '13:30') +
+                    '">' +
+                '</div>' +
+
+                '<div style="display:flex;align-items:end;">' +
+                    '<label class="qyj-ft-person" style="width:100%;">' +
+                        '<input id="qyj_ft_auto_weekend" ' +
+                            'type="checkbox" ' +
+                            (settings.skipWeekends
+                                ? 'checked'
+                                : '') +
+                        '> 週六、週日不排班' +
+                    '</label>' +
+                '</div>' +
+
+                '<div style="display:flex;align-items:end;">' +
+                    '<label class="qyj-ft-person" style="width:100%;">' +
+                        '<input id="qyj_ft_auto_leave" ' +
+                            'type="checkbox" ' +
+                            (settings.skipApprovedLeave
+                                ? 'checked'
+                                : '') +
+                        '> 略過已核准請假' +
+                    '</label>' +
+                '</div>' +
+
+                '<div class="qyj-ft-auto-wide">' +
+                    '<label>選擇正職人員</label>' +
+                    '<div class="qyj-ft-people" ' +
+                        'id="qyj_ft_auto_people">' +
+                        fulltimeNames().map(function(name){
+                            return (
+                                '<label class="qyj-ft-person">' +
+                                    '<input type="checkbox" ' +
+                                        'class="qyj-ft-auto-person" ' +
+                                        'value="' + esc(name) + '">' +
+                                    esc(name) +
+                                '</label>'
+                            );
+                        }).join('') +
+                    '</div>' +
+                '</div>' +
+
+                '<div class="qyj-ft-auto-wide">' +
+                    '<label>國定假日／其他不排班日期</label>' +
+                    '<textarea id="qyj_ft_auto_holidays" ' +
+                        'placeholder="例如：2026-01-01、2026-02-16、2026-02-17">' +
+                        esc(settings.holidayDates || '') +
+                    '</textarea>' +
+                '</div>' +
+
+            '</div>' +
+
+            '<div class="qyj-ft-auto-hint">' +
+                '目前預設休息時間為 12:00－13:30，共 1.5 小時。' +
+                '已經存在的同人、同日排班不會重複新增；' +
+                '臨時換班或加班仍可用單日排班修改。' +
+            '</div>' +
+
+            '<div class="qyj-ft-auto-actions">' +
+                '<button type="button" class="btn" ' +
+                    'style="background:#64748b;" ' +
+                    'onclick="qyjSelectAllFulltimeAutoStaff(false)">' +
+                    '取消全選' +
+                '</button>' +
+                '<button type="button" class="btn btn-success" ' +
+                    'onclick="qyjGenerateFulltimeMonthSchedule()">' +
+                    '<i class="fas fa-calendar-check"></i> ' +
+                    '一鍵產生整月正職排班' +
+                '</button>' +
+            '</div>';
+    }
+
+    window.qyjSelectAllFulltimeAutoStaff = function(checked){
+        document.querySelectorAll(
+            '.qyj-ft-auto-person'
+        ).forEach(function(input){
+            input.checked = Boolean(checked);
+        });
+    };
+
+    window.qyjGenerateFulltimeMonthSchedule = function(){
+        const monthValue =
+            document.getElementById('qyj_ft_auto_month')?.value || '';
+
+        const start =
+            document.getElementById('qyj_ft_auto_start')?.value || '';
+
+        const end =
+            document.getElementById('qyj_ft_auto_end')?.value || '';
+
+        const breakStart =
+            document.getElementById('qyj_ft_auto_break_start')?.value ||
+            '12:00';
+
+        const breakEnd =
+            document.getElementById('qyj_ft_auto_break_end')?.value ||
+            '13:30';
+
+        const service =
+            document.getElementById('qyj_ft_auto_service')?.value || '';
+
+        const skipWeekends =
+            Boolean(document.getElementById('qyj_ft_auto_weekend')?.checked);
+
+        const skipLeave =
+            Boolean(document.getElementById('qyj_ft_auto_leave')?.checked);
+
+        const holidayRaw =
+            document.getElementById('qyj_ft_auto_holidays')?.value || '';
+
+        const names = [...document.querySelectorAll(
+            '.qyj-ft-auto-person:checked'
+        )].map(function(input){
+            return input.value;
+        });
+
+        if(!monthValue){
+            return showToast('請選擇排班月份',true);
+        }
+
+        if(!start || !end){
+            return showToast('請設定上下班時間',true);
+        }
+
+        if(!names.length){
+            return showToast('請至少勾選一位正職人員',true);
+        }
+
+        const company =
+            typeof getScheduleCompany === 'function'
+                ? getScheduleCompany()
+                : '';
+
+        if(!company){
+            return showToast(
+                '請先在公司排班管理選擇公司',
+                true
+            );
+        }
+
+        const hours = calcHours(
+            start,end,breakStart,breakEnd
+        );
+
+        if(!hours || hours <= 0){
+            return showToast(
+                '上下班或休息時間設定不正確',
+                true
+            );
+        }
+
+        const parts = monthValue.split('-');
+        const year = Number(parts[0]);
+        const month = Number(parts[1]);
+        const lastDay = new Date(year,month,0).getDate();
+        const holidays = parseHolidayDates(holidayRaw);
+
+        writeSettings({
+            start:start,
+            end:end,
+            breakStart:breakStart,
+            breakEnd:breakEnd,
+            service:service,
+            skipWeekends:skipWeekends,
+            skipApprovedLeave:skipLeave,
+            holidayDates:holidayRaw
+        });
+
+        let created = 0;
+        let duplicate = 0;
+        let skippedWeekend = 0;
+        let skippedHoliday = 0;
+        let skippedLeave = 0;
+
+        names.forEach(function(name){
+            const leaveDates = skipLeave
+                ? approvedLeaveSet(name)
+                : new Set();
+
+            for(let day=1;day<=lastDay;day++){
+                const date =
+                    year + '-' + pad(month) + '-' + pad(day);
+
+                const weekday =
+                    new Date(year,month-1,day).getDay();
+
+                if(skipWeekends && (weekday === 0 || weekday === 6)){
+                    skippedWeekend++;
+                    continue;
+                }
+
+                if(holidays.has(date)){
+                    skippedHoliday++;
+                    continue;
+                }
+
+                if(leaveDates.has(date)){
+                    skippedLeave++;
+                    continue;
+                }
+
+                const exists = (scheduleData || []).some(function(item){
+                    return (
+                        String(item.company || '') === company &&
+                        String(item.date || '') === date &&
+                        String(item.staffType || '') === '正職' &&
+                        (
+                            typeof getScheduleStaffList === 'function'
+                                ? getScheduleStaffList(item.staffs)
+                                : String(item.staffs || '')
+                                    .split(/[、,，\n]+/)
+                        ).includes(name)
+                    );
+                });
+
+                if(exists){
+                    duplicate++;
+                    continue;
+                }
+
+                scheduleData.push({
+                    company:company,
+                    date:date,
+                    shift:'正職固定班',
+                    start:start,
+                    end:end,
+                    breakStart:breakStart,
+                    breakEnd:breakEnd,
+                    breakHours:1.5,
+                    hours:Number(Number(hours).toFixed(2)),
+                    need:1,
+                    staffs:name,
+                    staffType:'正職',
+                    service:service,
+                    status:'已排滿',
+                    scheduleStatus:'已排班',
+                    location:'',
+                    remark:'正職整月自動排班'
+                });
+
+                created++;
+            }
+        });
+
+        if(typeof saveAll === 'function'){
+            saveAll();
+        }
+
+        if(document.getElementById('sch_year')){
+            document.getElementById('sch_year').value = year;
+        }
+
+        if(document.getElementById('sch_month')){
+            document.getElementById('sch_month').value = month;
+        }
+
+        if(typeof renderScheduleTable === 'function'){
+            renderScheduleTable();
+        }
+
+        alert(
+            '正職整月排班完成\n\n' +
+            '新增：' + created + ' 筆\n' +
+            '已存在未重複：' + duplicate + ' 筆\n' +
+            '週末略過：' + skippedWeekend + ' 筆\n' +
+            '指定假日略過：' + skippedHoliday + ' 筆\n' +
+            '已核准請假略過：' + skippedLeave + ' 筆'
+        );
+    };
+
+    const oldSetScheduleStaffType =
+        window.qyjSetScheduleStaffType;
+
+    window.qyjSetScheduleStaffType = function(type){
+        if(typeof oldSetScheduleStaffType === 'function'){
+            oldSetScheduleStaffType(type);
+        }
+
+        setTimeout(ensurePanel,0);
+    };
+
+    const oldRenderScheduleTable =
+        window.renderScheduleTable;
+
+    window.renderScheduleTable = function(){
+        const result =
+            typeof oldRenderScheduleTable === 'function'
+                ? oldRenderScheduleTable.apply(this,arguments)
+                : undefined;
+
+        ensurePanel();
+        return result;
+    };
+
+    const oldShowAdminPage =
+        window.showAdminPage;
+
+    window.showAdminPage = function(page){
+        const result =
+            typeof oldShowAdminPage === 'function'
+                ? oldShowAdminPage.apply(this,arguments)
+                : undefined;
+
+        if(page === 'schedule'){
+            setTimeout(ensurePanel,0);
+        }
+
+        return result;
+    };
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            function(){
+                setTimeout(ensurePanel,300);
+            }
+        );
+    }else{
+        setTimeout(ensurePanel,300);
+    }
+
+    console.log(
+        '正職一鍵整月排班已載入，休息時間預設 12:00－13:30'
+    );
+})();
+</script>
+
 </body>
 </html>
