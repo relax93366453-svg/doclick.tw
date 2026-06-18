@@ -14220,5 +14220,520 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：
+     1. 手機打卡同步寫入主管端 staffClockData
+     2. 主管端區分未打上班卡／未打下班卡／已完成
+     原始程式與其他功能全部保留
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    const LOCAL_PUNCH_KEY = 'qyj_staff_punch_records';
+
+    function normalize(value){
+        return String(value || '').replace(/\s+/g,'').trim();
+    }
+
+    function readArray(key){
+        try{
+            const value = JSON.parse(localStorage.getItem(key) || '[]');
+            return Array.isArray(value) ? value : [];
+        }catch(error){
+            return [];
+        }
+    }
+
+    function currentStaff(){
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                return window.msGetCurrentStaff() || {};
+            }
+        }catch(error){}
+
+        try{
+            return JSON.parse(
+                localStorage.getItem('qyj_mobile_staff_login') || '{}'
+            ) || {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function currentStaffName(){
+        const staff = currentStaff();
+
+        try{
+            if(typeof window.msStaffName === 'function'){
+                const name = window.msStaffName(staff);
+                if(name) return name;
+            }
+        }catch(error){}
+
+        return (
+            staff.name ||
+            staff.staff ||
+            staff.realName ||
+            staff.employeeName ||
+            ''
+        );
+    }
+
+    function todayRows(){
+        const staff = currentStaff();
+
+        try{
+            if(typeof window.qyjMobileTodayRows === 'function'){
+                const rows = window.qyjMobileTodayRows(staff);
+                return Array.isArray(rows) ? rows : [];
+            }
+        }catch(error){}
+
+        try{
+            if(typeof window.msFindTodaySchedules === 'function'){
+                const rows = window.msFindTodaySchedules(staff);
+                return Array.isArray(rows) ? rows : [];
+            }
+        }catch(error){}
+
+        return [];
+    }
+
+    function rowCompany(row){
+        return (
+            row.company ||
+            row.customer ||
+            row.client ||
+            row.companyName ||
+            ''
+        );
+    }
+
+    function rowDate(row){
+        return (
+            row.date ||
+            row.workDate ||
+            row.shiftDate ||
+            row.scheduleDate ||
+            ''
+        );
+    }
+
+    function ensureGlobalClockData(){
+        try{
+            if(!Array.isArray(window.staffClockData)){
+                window.staffClockData = readArray('staffClockData');
+            }
+        }catch(error){
+            window.staffClockData = readArray('staffClockData');
+        }
+
+        return window.staffClockData;
+    }
+
+    function findCloudClockRecord(row,staffName){
+        const company = rowCompany(row);
+        const date = rowDate(row);
+        const list = ensureGlobalClockData();
+
+        return list.find(function(item){
+            return (
+                normalize(item.staff) === normalize(staffName) &&
+                normalize(item.company) === normalize(company) &&
+                String(item.date || '') === String(date || '')
+            );
+        });
+    }
+
+    function findLocalPunch(row,staffName,type){
+        const company = rowCompany(row);
+        const date = rowDate(row);
+
+        return readArray(LOCAL_PUNCH_KEY)
+            .filter(function(item){
+                return (
+                    normalize(item.staff) === normalize(staffName) &&
+                    normalize(item.company) === normalize(company) &&
+                    String(item.date || '') === String(date || '') &&
+                    String(item.type || '') === String(type)
+                );
+            })
+            .sort(function(a,b){
+                return String(b.createdAt || '').localeCompare(
+                    String(a.createdAt || '')
+                );
+            })[0] || null;
+    }
+
+    function saveClockData(){
+        const list = ensureGlobalClockData();
+
+        try{
+            localStorage.setItem(
+                'staffClockData',
+                JSON.stringify(list)
+            );
+        }catch(error){
+            console.warn('本機打卡總覽儲存失敗：',error);
+        }
+
+        try{
+            if(typeof window.saveAll === 'function'){
+                return Promise.resolve(window.saveAll());
+            }
+        }catch(error){
+            console.warn('saveAll 同步失敗：',error);
+        }
+
+        try{
+            if(typeof window.saveAllSilently === 'function'){
+                return Promise.resolve(window.saveAllSilently());
+            }
+        }catch(error){
+            console.warn('saveAllSilently 同步失敗：',error);
+        }
+
+        return Promise.resolve();
+    }
+
+    function syncOneRowToOverview(row){
+        const staffName = currentStaffName();
+        if(!staffName || !row) return Promise.resolve(false);
+
+        const localIn = findLocalPunch(row,staffName,'上班');
+        const localOut = findLocalPunch(row,staffName,'下班');
+
+        if(!localIn && !localOut){
+            return Promise.resolve(false);
+        }
+
+        const list = ensureGlobalClockData();
+        let record = findCloudClockRecord(row,staffName);
+
+        if(!record){
+            record = {
+                id:
+                    'clock_' +
+                    Date.now() +
+                    '_' +
+                    Math.random().toString(36).slice(2,8),
+                staff:staffName,
+                company:rowCompany(row),
+                date:rowDate(row),
+                scheduleStart:
+                    row.start ||
+                    row.startTime ||
+                    row.workStart ||
+                    '',
+                scheduleEnd:
+                    row.end ||
+                    row.endTime ||
+                    row.workEnd ||
+                    '',
+                status:'未打卡',
+                createdAt:new Date().toISOString()
+            };
+
+            list.push(record);
+        }
+
+        if(localIn){
+            record.clockIn = localIn.time || record.clockIn || '';
+            record.inGps =
+                localIn.gps ||
+                localIn.location ||
+                record.inGps ||
+                '';
+            record.inDevice =
+                localIn.device ||
+                localIn.deviceInfo ||
+                record.inDevice ||
+                '';
+        }
+
+        if(localOut){
+            record.clockOut = localOut.time || record.clockOut || '';
+            record.outGps =
+                localOut.gps ||
+                localOut.location ||
+                record.outGps ||
+                '';
+            record.outDevice =
+                localOut.device ||
+                localOut.deviceInfo ||
+                record.outDevice ||
+                '';
+        }
+
+        if(record.clockIn && record.clockOut){
+            record.status = '已完成';
+        }else if(record.clockIn){
+            record.status = '上班中';
+        }else{
+            record.status = '未打上班卡';
+        }
+
+        record.updatedAt = new Date().toISOString();
+
+        return saveClockData().then(function(){
+            return true;
+        });
+    }
+
+    function syncAllTodayRowsToOverview(){
+        const rows = todayRows();
+
+        return rows.reduce(function(chain,row){
+            return chain.then(function(){
+                return syncOneRowToOverview(row);
+            });
+        },Promise.resolve());
+    }
+
+    const originalMsDoPunch = window.msDoPunch;
+
+    window.msDoPunch = async function(type,index){
+        if(typeof originalMsDoPunch !== 'function'){
+            alert('打卡功能尚未載入，請重新整理後再試。');
+            return;
+        }
+
+        const result = await originalMsDoPunch.apply(this,arguments);
+
+        await new Promise(function(resolve){
+            setTimeout(resolve,150);
+        });
+
+        const rows = todayRows();
+        const row = rows[index];
+
+        if(row){
+            try{
+                await syncOneRowToOverview(row);
+            }catch(error){
+                console.error('手機打卡同步主管端失敗：',error);
+            }
+        }
+
+        try{
+            if(typeof window.msShowPunch === 'function'){
+                window.msShowPunch();
+            }
+        }catch(error){}
+
+        return result;
+    };
+
+    const originalMsShowPunch = window.msShowPunch;
+
+    window.msShowPunch = function(){
+        const result =
+            typeof originalMsShowPunch === 'function'
+                ? originalMsShowPunch.apply(this,arguments)
+                : undefined;
+
+        setTimeout(function(){
+            syncAllTodayRowsToOverview().catch(function(error){
+                console.warn('舊打卡補同步失敗：',error);
+            });
+        },0);
+
+        return result;
+    };
+
+    function getOverviewRows(){
+        try{
+            if(typeof window.getScheduleRowsForClockOverview === 'function'){
+                const rows = window.getScheduleRowsForClockOverview();
+                return Array.isArray(rows) ? rows : [];
+            }
+        }catch(error){}
+
+        return [];
+    }
+
+    function overviewRecord(row){
+        try{
+            if(typeof window.findClockRecord === 'function'){
+                return window.findClockRecord(row) || null;
+            }
+        }catch(error){}
+
+        const list = ensureGlobalClockData();
+
+        return list.find(function(item){
+            return (
+                normalize(item.staff) === normalize(row.staff) &&
+                normalize(item.company) === normalize(row.company) &&
+                String(item.date || '') === String(row.date || '')
+            );
+        }) || null;
+    }
+
+    function statusInfo(record){
+        if(record && record.clockIn && record.clockOut){
+            return {
+                text:'已完成',
+                bg:'#dcfce7',
+                color:'#166534'
+            };
+        }
+
+        if(record && record.clockIn && !record.clockOut){
+            return {
+                text:'未打下班卡',
+                bg:'#dbeafe',
+                color:'#1d4ed8'
+            };
+        }
+
+        return {
+            text:'未打上班卡',
+            bg:'#fef3c7',
+            color:'#92400e'
+        };
+    }
+
+    function patchOverviewTable(){
+        const rows = getOverviewRows();
+        const table =
+            document.getElementById('clockOverviewTable') ||
+            document.querySelector('.clock-overview-table tbody');
+
+        if(!table) return;
+
+        const trList = table.querySelectorAll('tr');
+
+        trList.forEach(function(tr,index){
+            const row = rows[index];
+            if(!row) return;
+
+            const record = overviewRecord(row);
+            const info = statusInfo(record);
+            const firstCell = tr.querySelector('td');
+
+            if(firstCell){
+                firstCell.innerHTML =
+                    '<span style="' +
+                        'display:inline-block;' +
+                        'padding:4px 10px;' +
+                        'border-radius:999px;' +
+                        'background:' + info.bg + ';' +
+                        'color:' + info.color + ';' +
+                        'font-weight:900;' +
+                        'white-space:nowrap;' +
+                    '">' +
+                        info.text +
+                    '</span>';
+            }
+
+            const cells = tr.querySelectorAll('td');
+
+            if(cells.length >= 7 && record){
+                if(record.clockIn){
+                    cells[6].textContent = record.clockIn;
+                }
+
+                if(cells.length >= 9 && record.clockOut){
+                    cells[8].textContent = record.clockOut;
+                }
+            }
+        });
+
+        let noIn = 0;
+        let working = 0;
+        let done = 0;
+
+        rows.forEach(function(row){
+            const record = overviewRecord(row);
+
+            if(record && record.clockIn && record.clockOut){
+                done++;
+            }else if(record && record.clockIn){
+                working++;
+            }else{
+                noIn++;
+            }
+        });
+
+        const cards = document.querySelectorAll(
+            '#page-clock_overview .dash-card'
+        );
+
+        cards.forEach(function(card){
+            const label =
+                card.querySelector('.label')?.textContent.trim() || '';
+            const number = card.querySelector('.num');
+
+            if(!number) return;
+
+            if(label === '未打卡'){
+                number.textContent = noIn;
+            }else if(label === '上班中'){
+                number.textContent = working;
+            }else if(label === '已完成'){
+                number.textContent = done;
+            }
+        });
+    }
+
+    const originalRenderClockOverview =
+        window.renderClockOverview;
+
+    window.renderClockOverview = function(){
+        const result =
+            typeof originalRenderClockOverview === 'function'
+                ? originalRenderClockOverview.apply(this,arguments)
+                : undefined;
+
+        setTimeout(patchOverviewTable,0);
+        return result;
+    };
+
+    const originalReadCloud = window.readCloud;
+
+    window.readCloud = async function(){
+        const result =
+            typeof originalReadCloud === 'function'
+                ? await originalReadCloud.apply(this,arguments)
+                : undefined;
+
+        if(
+            document.getElementById('page-clock_overview') &&
+            document.getElementById('page-clock_overview')
+                .classList.contains('active')
+        ){
+            if(typeof window.renderClockOverview === 'function'){
+                window.renderClockOverview();
+            }
+        }
+
+        return result;
+    };
+
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded',function(){
+            setTimeout(function(){
+                syncAllTodayRowsToOverview().catch(function(error){
+                    console.warn(error);
+                });
+            },800);
+        });
+    }else{
+        setTimeout(function(){
+            syncAllTodayRowsToOverview().catch(function(error){
+                console.warn(error);
+            });
+        },800);
+    }
+
+    console.log(
+        '手機打卡同步與主管端狀態辨識功能已載入'
+    );
+})();
+</script>
+
 </body>
 </html>
