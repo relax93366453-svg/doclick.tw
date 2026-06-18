@@ -14735,5 +14735,746 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：
+     1. 員工手機公告欄讀取雲端 portalConf
+     2. 手機打卡先讀取雲端最新完整資料，再合併並同步
+     原始程式與其他功能全部保留
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    let qyjMobileSyncPromise = null;
+
+    function normalize(value){
+        return String(value || '').replace(/\s+/g,'').trim();
+    }
+
+    function getCloudUrl(){
+        try{
+            if(typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL){
+                return SCRIPT_URL;
+            }
+        }catch(error){}
+
+        return window.SCRIPT_URL || '';
+    }
+
+    function saveLocalArray(key,value){
+        try{
+            localStorage.setItem(key,JSON.stringify(value || []));
+        }catch(error){}
+    }
+
+    function applyCloudPayload(data){
+        if(!data || typeof data !== 'object') return;
+
+        const arrayKeys = [
+            'custData',
+            'contractData',
+            'staffData',
+            'attendData',
+            'ftStaffData',
+            'ftAttendData',
+            'talentData',
+            'supplierData',
+            'matchData',
+            'reqData',
+            'dispatchData',
+            'salesStaffData',
+            'scheduleData',
+            'staffClockData',
+            'salaryDeductData'
+        ];
+
+        arrayKeys.forEach(function(key){
+            if(!Array.isArray(data[key])) return;
+
+            try{
+                window[key] = data[key];
+            }catch(error){}
+
+            /*
+             * let 宣告的全域變數不一定掛在 window，
+             * 逐一同步至實際系統變數。
+             */
+            try{
+                if(key === 'custData') custData = data[key];
+                if(key === 'contractData') contractData = data[key];
+                if(key === 'staffData') staffData = data[key];
+                if(key === 'attendData') attendData = data[key];
+                if(key === 'ftStaffData') ftStaffData = data[key];
+                if(key === 'ftAttendData') ftAttendData = data[key];
+                if(key === 'talentData') talentData = data[key];
+                if(key === 'supplierData') supplierData = data[key];
+                if(key === 'matchData') matchData = data[key];
+                if(key === 'reqData') reqData = data[key];
+                if(key === 'dispatchData') dispatchData = data[key];
+                if(key === 'salesStaffData') salesStaffData = data[key];
+                if(key === 'scheduleData') scheduleData = data[key];
+                if(key === 'staffClockData') staffClockData = data[key];
+                if(key === 'salaryDeductData') salaryDeductData = data[key];
+            }catch(error){}
+
+            saveLocalArray(key,data[key]);
+        });
+
+        /*
+         * 公告與 SOP 都存放在 sysConfig.portalConf。
+         */
+        if(
+            data.sysConfig &&
+            data.sysConfig.portalConf
+        ){
+            try{
+                const cloudPortal =
+                    typeof data.sysConfig.portalConf === 'string'
+                        ? JSON.parse(data.sysConfig.portalConf)
+                        : data.sysConfig.portalConf;
+
+                if(cloudPortal && typeof cloudPortal === 'object'){
+                    try{
+                        portalConf = Object.assign(
+                            {},
+                            typeof defaultPortalConf !== 'undefined'
+                                ? defaultPortalConf
+                                : {},
+                            cloudPortal
+                        );
+                    }catch(error){
+                        window.portalConf = Object.assign(
+                            {},
+                            window.portalConf || {},
+                            cloudPortal
+                        );
+                    }
+
+                    localStorage.setItem(
+                        'portalConf',
+                        JSON.stringify(cloudPortal)
+                    );
+                }
+            }catch(error){
+                console.warn('雲端公告資料解析失敗：',error);
+            }
+        }
+    }
+
+    async function readLatestCloudForMobile(){
+        if(qyjMobileSyncPromise){
+            return qyjMobileSyncPromise;
+        }
+
+        qyjMobileSyncPromise = (async function(){
+            const url = getCloudUrl();
+
+            if(!url){
+                throw new Error('找不到雲端同步網址');
+            }
+
+            const response = await fetch(
+                url +
+                (url.includes('?') ? '&' : '?') +
+                'mobileFull=1&t=' +
+                Date.now(),
+                {
+                    cache:'no-store'
+                }
+            );
+
+            if(!response.ok){
+                throw new Error(
+                    '雲端讀取失敗：' + response.status
+                );
+            }
+
+            const result = await response.json();
+
+            const data =
+                result &&
+                result.data &&
+                typeof result.data === 'object'
+                    ? result.data
+                    : result;
+
+            applyCloudPayload(data);
+
+            return data;
+        })().finally(function(){
+            qyjMobileSyncPromise = null;
+        });
+
+        return qyjMobileSyncPromise;
+    }
+
+    async function pushLatestCloudPayload(){
+        const url = getCloudUrl();
+
+        if(!url){
+            throw new Error('找不到雲端同步網址');
+        }
+
+        let payload;
+
+        if(typeof window.buildCloudPayload === 'function'){
+            payload = window.buildCloudPayload();
+        }else{
+            try{
+                if(typeof buildCloudPayload === 'function'){
+                    payload = buildCloudPayload();
+                }
+            }catch(error){}
+        }
+
+        if(!payload){
+            payload = {
+                custData:
+                    typeof custData !== 'undefined'
+                        ? custData
+                        : [],
+                contractData:
+                    typeof contractData !== 'undefined'
+                        ? contractData
+                        : [],
+                staffData:
+                    typeof staffData !== 'undefined'
+                        ? staffData
+                        : [],
+                attendData:
+                    typeof attendData !== 'undefined'
+                        ? attendData
+                        : [],
+                ftStaffData:
+                    typeof ftStaffData !== 'undefined'
+                        ? ftStaffData
+                        : [],
+                ftAttendData:
+                    typeof ftAttendData !== 'undefined'
+                        ? ftAttendData
+                        : [],
+                talentData:
+                    typeof talentData !== 'undefined'
+                        ? talentData
+                        : [],
+                supplierData:
+                    typeof supplierData !== 'undefined'
+                        ? supplierData
+                        : [],
+                matchData:
+                    typeof matchData !== 'undefined'
+                        ? matchData
+                        : [],
+                reqData:
+                    typeof reqData !== 'undefined'
+                        ? reqData
+                        : [],
+                dispatchData:
+                    typeof dispatchData !== 'undefined'
+                        ? dispatchData
+                        : [],
+                salesStaffData:
+                    typeof salesStaffData !== 'undefined'
+                        ? salesStaffData
+                        : [],
+                scheduleData:
+                    typeof scheduleData !== 'undefined'
+                        ? scheduleData
+                        : [],
+                staffClockData:
+                    typeof staffClockData !== 'undefined'
+                        ? staffClockData
+                        : [],
+                salaryDeductData:
+                    typeof salaryDeductData !== 'undefined'
+                        ? salaryDeductData
+                        : [],
+                sysConfig:
+                    typeof getSysConfigPayload === 'function'
+                        ? getSysConfigPayload()
+                        : {},
+                updatedAt:new Date().toISOString()
+            };
+        }
+
+        const response = await fetch(url,{
+            method:'POST',
+            body:JSON.stringify(payload),
+            headers:{
+                'Content-Type':'text/plain;charset=utf-8'
+            }
+        });
+
+        if(!response.ok){
+            throw new Error(
+                '雲端寫入失敗：' + response.status
+            );
+        }
+
+        return response.json().catch(function(){
+            return {status:'ok'};
+        });
+    }
+
+    function currentStaffObject(){
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                return window.msGetCurrentStaff() || {};
+            }
+        }catch(error){}
+
+        try{
+            return JSON.parse(
+                localStorage.getItem(
+                    'qyj_mobile_staff_login'
+                ) || '{}'
+            ) || {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function currentStaffName(){
+        const staff = currentStaffObject();
+
+        try{
+            if(typeof window.msStaffName === 'function'){
+                const name = window.msStaffName(staff);
+                if(name) return name;
+            }
+        }catch(error){}
+
+        return (
+            staff.name ||
+            staff.staff ||
+            staff.realName ||
+            staff.employeeName ||
+            ''
+        );
+    }
+
+    function todayRows(){
+        const staff = currentStaffObject();
+
+        try{
+            if(typeof window.qyjMobileTodayRows === 'function'){
+                const rows = window.qyjMobileTodayRows(staff);
+                return Array.isArray(rows) ? rows : [];
+            }
+        }catch(error){}
+
+        try{
+            if(typeof window.msFindTodaySchedules === 'function'){
+                const rows = window.msFindTodaySchedules(staff);
+                return Array.isArray(rows) ? rows : [];
+            }
+        }catch(error){}
+
+        return [];
+    }
+
+    function rowCompany(row){
+        return (
+            row.company ||
+            row.customer ||
+            row.client ||
+            row.companyName ||
+            ''
+        );
+    }
+
+    function rowDate(row){
+        return (
+            row.date ||
+            row.workDate ||
+            row.shiftDate ||
+            row.scheduleDate ||
+            ''
+        );
+    }
+
+    function readLocalPunchRows(){
+        try{
+            const rows = JSON.parse(
+                localStorage.getItem(
+                    'qyj_staff_punch_records'
+                ) || '[]'
+            );
+
+            return Array.isArray(rows) ? rows : [];
+        }catch(error){
+            return [];
+        }
+    }
+
+    function localPunch(row,type){
+        const staffName = currentStaffName();
+
+        return readLocalPunchRows()
+            .filter(function(item){
+                return (
+                    normalize(item.staff) ===
+                        normalize(staffName) &&
+                    normalize(item.company) ===
+                        normalize(rowCompany(row)) &&
+                    String(item.date || '') ===
+                        String(rowDate(row)) &&
+                    String(item.type || '') ===
+                        String(type)
+                );
+            })
+            .sort(function(a,b){
+                return String(
+                    b.createdAt || ''
+                ).localeCompare(
+                    String(a.createdAt || '')
+                );
+            })[0] || null;
+    }
+
+    function mergePunchIntoClockData(row){
+        const staffName = currentStaffName();
+
+        const inPunch = localPunch(row,'上班');
+        const outPunch = localPunch(row,'下班');
+
+        if(!inPunch && !outPunch){
+            return null;
+        }
+
+        let list = [];
+
+        try{
+            list = Array.isArray(staffClockData)
+                ? staffClockData
+                : [];
+        }catch(error){
+            list = [];
+        }
+
+        let record = list.find(function(item){
+            return (
+                normalize(item.staff) ===
+                    normalize(staffName) &&
+                normalize(item.company) ===
+                    normalize(rowCompany(row)) &&
+                String(item.date || '') ===
+                    String(rowDate(row))
+            );
+        });
+
+        if(!record){
+            record = {
+                id:
+                    'clk_' +
+                    Date.now() +
+                    '_' +
+                    Math.random()
+                        .toString(36)
+                        .slice(2,8),
+                company:rowCompany(row),
+                staff:staffName,
+                date:rowDate(row),
+                scheduleStart:
+                    row.start ||
+                    row.startTime ||
+                    '',
+                scheduleEnd:
+                    row.end ||
+                    row.endTime ||
+                    '',
+                restHours:
+                    row.restHours ||
+                    row.breakHours ||
+                    '',
+                createdAt:
+                    new Date().toISOString()
+            };
+
+            list.push(record);
+        }
+
+        if(inPunch){
+            record.clockIn =
+                inPunch.time ||
+                record.clockIn ||
+                '';
+
+            record.inGps =
+                inPunch.gps ||
+                inPunch.location ||
+                record.inGps ||
+                '';
+
+            record.inDevice =
+                inPunch.device ||
+                inPunch.deviceInfo ||
+                record.inDevice ||
+                '';
+        }
+
+        if(outPunch){
+            record.clockOut =
+                outPunch.time ||
+                record.clockOut ||
+                '';
+
+            record.outGps =
+                outPunch.gps ||
+                outPunch.location ||
+                record.outGps ||
+                '';
+
+            record.outDevice =
+                outPunch.device ||
+                outPunch.deviceInfo ||
+                record.outDevice ||
+                '';
+        }
+
+        if(record.clockIn && record.clockOut){
+            record.status = '已完成';
+        }else if(record.clockIn){
+            record.status = '上班中';
+        }else{
+            record.status = '未打上班卡';
+        }
+
+        record.updatedAt =
+            new Date().toISOString();
+
+        try{
+            staffClockData = list;
+        }catch(error){}
+
+        window.staffClockData = list;
+
+        localStorage.setItem(
+            'staffClockData',
+            JSON.stringify(list)
+        );
+
+        return record;
+    }
+
+    /*
+     * 再包一層手機打卡：
+     * 先抓雲端完整最新資料，打卡後合併，再完整寫回。
+     */
+    const previousMsDoPunch =
+        window.msDoPunch;
+
+    window.msDoPunch = async function(type,index){
+        try{
+            await readLatestCloudForMobile();
+        }catch(error){
+            console.warn(
+                '打卡前讀取雲端失敗，改用本機資料：',
+                error
+            );
+        }
+
+        if(typeof previousMsDoPunch !== 'function'){
+            alert(
+                '打卡功能尚未載入，請重新整理後再試。'
+            );
+            return;
+        }
+
+        const result =
+            await previousMsDoPunch.apply(
+                this,
+                arguments
+            );
+
+        await new Promise(function(resolve){
+            setTimeout(resolve,250);
+        });
+
+        const rows = todayRows();
+        const row = rows[index];
+
+        if(row){
+            mergePunchIntoClockData(row);
+
+            try{
+                await pushLatestCloudPayload();
+
+                /*
+                 * 寫入後再讀一次確認。
+                 */
+                await readLatestCloudForMobile();
+            }catch(error){
+                console.error(
+                    '手機打卡雲端同步失敗：',
+                    error
+                );
+
+                alert(
+                    '手機已記錄打卡時間，但雲端同步失敗，' +
+                    '請保留畫面並通知主管。'
+                );
+            }
+        }
+
+        try{
+            if(typeof window.msShowPunch === 'function'){
+                window.msShowPunch();
+            }
+        }catch(error){}
+
+        return result;
+    };
+
+    /*
+     * 公告欄開啟前先讀雲端最新 portalConf。
+     */
+    const previousMsShowNotice =
+        window.msShowNotice;
+
+    window.msShowNotice = async function(){
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('公告欄');
+        }
+
+        const box =
+            document.getElementById('msContent');
+
+        if(box){
+            box.innerHTML =
+                '<div class="ms-card">' +
+                    '<div class="ms-empty">' +
+                        '正在讀取最新公告…' +
+                    '</div>' +
+                '</div>';
+        }
+
+        try{
+            await readLatestCloudForMobile();
+        }catch(error){
+            console.warn(
+                '公告雲端讀取失敗：',
+                error
+            );
+        }
+
+        if(typeof previousMsShowNotice === 'function'){
+            return previousMsShowNotice.apply(
+                this,
+                arguments
+            );
+        }
+    };
+
+    /*
+     * SOP 同樣讀取雲端內容。
+     */
+    const previousMsShowSop =
+        window.msShowSop;
+
+    window.msShowSop = async function(){
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('入職包 SOP');
+        }
+
+        const box =
+            document.getElementById('msContent');
+
+        if(box){
+            box.innerHTML =
+                '<div class="ms-card">' +
+                    '<div class="ms-empty">' +
+                        '正在讀取最新內容…' +
+                    '</div>' +
+                '</div>';
+        }
+
+        try{
+            await readLatestCloudForMobile();
+        }catch(error){
+            console.warn(
+                'SOP 雲端讀取失敗：',
+                error
+            );
+        }
+
+        if(typeof previousMsShowSop === 'function'){
+            return previousMsShowSop.apply(
+                this,
+                arguments
+            );
+        }
+    };
+
+    /*
+     * 手機直達頁載入後，先抓一次雲端公告與打卡資料。
+     */
+    async function initialMobileCloudRefresh(){
+        try{
+            const params =
+                new URLSearchParams(
+                    location.search
+                );
+
+            if(
+                params.get('staffApp') !== '1'
+            ){
+                return;
+            }
+
+            await readLatestCloudForMobile();
+
+            const route =
+                params.get('route') ||
+                localStorage.getItem(
+                    'qyj_mobile_staff_route'
+                ) ||
+                'home';
+
+            if(
+                route === 'punch' &&
+                typeof window.msShowPunch === 'function'
+            ){
+                window.msShowPunch();
+            }
+
+            if(
+                route === 'notice' &&
+                typeof window.msShowNotice === 'function'
+            ){
+                window.msShowNotice();
+            }
+        }catch(error){
+            console.warn(
+                '員工手機首次雲端更新失敗：',
+                error
+            );
+        }
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            function(){
+                setTimeout(
+                    initialMobileCloudRefresh,
+                    300
+                );
+            }
+        );
+    }else{
+        setTimeout(
+            initialMobileCloudRefresh,
+            300
+        );
+    }
+
+    console.log(
+        '員工打卡與公告雲端同步修正版已載入'
+    );
+})();
+</script>
+
 </body>
 </html>
