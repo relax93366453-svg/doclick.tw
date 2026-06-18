@@ -8423,5 +8423,1308 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：正職排班 / 派遣排班分流
+     原始程式全部保留，不刪除、不重排
+========================================================= -->
+<style>
+.qyj-schedule-type-tabs{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:0 0 16px 0;
+}
+.qyj-schedule-type-btn{
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:#334155;
+    padding:11px 18px;
+    border-radius:12px;
+    font-weight:900;
+    cursor:pointer;
+    box-shadow:0 2px 8px rgba(15,23,42,.06);
+}
+.qyj-schedule-type-btn.active[data-type="正職"]{
+    background:#059669;
+    border-color:#059669;
+    color:#fff;
+}
+.qyj-schedule-type-btn.active[data-type="派遣"]{
+    background:#2563eb;
+    border-color:#2563eb;
+    color:#fff;
+}
+.qyj-schedule-type-note{
+    margin-bottom:14px;
+    border-radius:12px;
+    padding:11px 14px;
+    font-size:13px;
+    font-weight:800;
+    line-height:1.7;
+}
+.qyj-schedule-type-note.fulltime{
+    background:#ecfdf5;
+    border:1px solid #a7f3d0;
+    color:#065f46;
+}
+.qyj-schedule-type-note.dispatch{
+    background:#eff6ff;
+    border:1px solid #bfdbfe;
+    color:#1e40af;
+}
+.qyj-schedule-type-badge{
+    display:inline-block;
+    border-radius:999px;
+    padding:3px 9px;
+    font-size:11px;
+    font-weight:900;
+    white-space:nowrap;
+}
+.qyj-schedule-type-badge.fulltime{
+    background:#dcfce7;
+    color:#166534;
+}
+.qyj-schedule-type-badge.dispatch{
+    background:#dbeafe;
+    color:#1d4ed8;
+}
+</style>
+
+<script>
+(function(){
+    'use strict';
+
+    const MODE_KEY = 'qyj_schedule_staff_type';
+    let scheduleStaffType = localStorage.getItem(MODE_KEY) || '派遣';
+
+    function qyjEsc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function qyjNormalizeName(value){
+        return String(value || '').replace(/\s+/g,'').trim();
+    }
+
+    function qyjGetStaffType(name){
+        const target = qyjNormalizeName(name);
+
+        const isFulltime = (ftStaffData || []).some(function(item){
+            return qyjNormalizeName(item.name || item.staff) === target;
+        });
+
+        if(isFulltime) return '正職';
+
+        const isDispatch = (staffData || []).some(function(item){
+            return qyjNormalizeName(item.name || item.staff) === target;
+        });
+
+        if(isDispatch) return '派遣';
+
+        return '';
+    }
+
+    function qyjActiveStaffNames(type){
+        const source = type === '正職' ? (ftStaffData || []) : (staffData || []);
+
+        return [...new Set(
+            source
+                .filter(function(item){
+                    return !item.status || item.status === '在職';
+                })
+                .map(function(item){
+                    return item.name || item.staff || '';
+                })
+                .filter(Boolean)
+        )].sort();
+    }
+
+    function qyjScheduleServiceOptions(){
+        const text =
+            (typeof portalConf !== 'undefined' &&
+             portalConf &&
+             portalConf.serviceTypes)
+                ? portalConf.serviceTypes
+                : '行政,會計,服務員,理貨包裝,其他';
+
+        return String(text)
+            .split(',')
+            .map(function(item){ return item.trim(); })
+            .filter(Boolean);
+    }
+
+    function qyjEnsureScheduleDatalist(){
+        let list = document.getElementById('qyj_schedule_staff_list');
+
+        if(!list){
+            list = document.createElement('datalist');
+            list.id = 'qyj_schedule_staff_list';
+            document.body.appendChild(list);
+        }
+
+        list.innerHTML = qyjActiveStaffNames(scheduleStaffType)
+            .map(function(name){
+                return '<option value="' + qyjEsc(name) + '"></option>';
+            })
+            .join('');
+
+        const quickInput = document.getElementById('sch_quick_staff');
+        const modalInput = document.getElementById('sch_modal_staff');
+
+        if(quickInput){
+            quickInput.setAttribute('list','qyj_schedule_staff_list');
+            quickInput.placeholder =
+                scheduleStaffType === '正職'
+                    ? '只能輸入正職人員'
+                    : '只能輸入派遣人員';
+        }
+
+        if(modalInput){
+            modalInput.setAttribute('list','qyj_schedule_staff_list');
+            modalInput.placeholder =
+                scheduleStaffType === '正職'
+                    ? '只能選擇正職人員'
+                    : '只能選擇派遣人員';
+        }
+    }
+
+    function qyjEnsureServiceSelects(){
+        const quickForm = document.querySelector('.schedule-quick-form');
+
+        if(quickForm && !document.getElementById('sch_quick_service')){
+            const remarkWrap =
+                document.getElementById('sch_quick_remark')?.parentElement;
+
+            const wrap = document.createElement('div');
+            wrap.innerHTML =
+                '<label>服務項目</label>' +
+                '<select id="sch_quick_service" ' +
+                    'style="width:100%;padding:10px 11px;' +
+                    'border:1px solid #cbd5e1;border-radius:10px;">' +
+                '</select>';
+
+            if(remarkWrap){
+                quickForm.insertBefore(wrap, remarkWrap);
+            }else{
+                quickForm.appendChild(wrap);
+            }
+        }
+
+        const modalForm = document.querySelector(
+            '#scheduleEditModal .schedule-modal-form'
+        );
+
+        if(modalForm && !document.getElementById('sch_modal_service')){
+            const staffWrap =
+                document.getElementById('sch_modal_staff')?.parentElement;
+
+            const wrap = document.createElement('div');
+            wrap.innerHTML =
+                '<label>服務項目</label>' +
+                '<select id="sch_modal_service" ' +
+                    'style="width:100%;padding:11px 12px;' +
+                    'border:1px solid #cbd5e1;border-radius:10px;">' +
+                '</select>';
+
+            if(staffWrap){
+                modalForm.insertBefore(wrap, staffWrap);
+            }else{
+                modalForm.appendChild(wrap);
+            }
+        }
+
+        const options = qyjScheduleServiceOptions();
+
+        ['sch_quick_service','sch_modal_service'].forEach(function(id){
+            const select = document.getElementById(id);
+            if(!select) return;
+
+            const current = select.value;
+
+            select.innerHTML =
+                '<option value="">請選擇</option>' +
+                options.map(function(item){
+                    return '<option value="' + qyjEsc(item) + '">' +
+                        qyjEsc(item) +
+                    '</option>';
+                }).join('');
+
+            if(current) select.value = current;
+        });
+    }
+
+    function qyjEnsureTypeTabs(){
+        const shell = document.querySelector(
+            '#page-schedule .schedule-page-shell'
+        );
+
+        if(!shell) return;
+
+        let box = document.getElementById('qyjScheduleTypeTabs');
+
+        if(!box){
+            box = document.createElement('div');
+            box.id = 'qyjScheduleTypeTabs';
+
+            const topbar = shell.querySelector('.schedule-topbar');
+            if(topbar){
+                topbar.insertAdjacentElement('afterend', box);
+            }else{
+                shell.prepend(box);
+            }
+        }
+
+        box.innerHTML =
+            '<div class="qyj-schedule-type-tabs">' +
+                '<button type="button" ' +
+                    'class="qyj-schedule-type-btn ' +
+                    (scheduleStaffType === '正職' ? 'active' : '') +
+                    '" data-type="正職" ' +
+                    'onclick="qyjSetScheduleStaffType(\'正職\')">' +
+                    '<i class="fas fa-user-tie"></i> 正職排班' +
+                '</button>' +
+
+                '<button type="button" ' +
+                    'class="qyj-schedule-type-btn ' +
+                    (scheduleStaffType === '派遣' ? 'active' : '') +
+                    '" data-type="派遣" ' +
+                    'onclick="qyjSetScheduleStaffType(\'派遣\')">' +
+                    '<i class="fas fa-users"></i> 派遣排班' +
+                '</button>' +
+            '</div>' +
+
+            '<div class="qyj-schedule-type-note ' +
+                (scheduleStaffType === '正職'
+                    ? 'fulltime'
+                    : 'dispatch') +
+            '">' +
+                (scheduleStaffType === '正職'
+                    ? '目前為正職排班：只能選擇正職人員，打卡確認後會轉入「正職出勤與請假」。'
+                    : '目前為派遣排班：只能選擇派遣人員，打卡確認後會轉入「派遣紀錄」。') +
+            '</div>';
+
+        const convertButton = [...document.querySelectorAll(
+            '#page-schedule .schedule-actions button'
+        )].find(function(button){
+            return String(button.textContent || '').includes('轉派遣記錄') ||
+                   String(button.textContent || '').includes('轉正職出勤');
+        });
+
+        if(convertButton){
+            convertButton.innerHTML =
+                scheduleStaffType === '正職'
+                    ? '<i class="fas fa-clock"></i> 轉正職出勤'
+                    : '<i class="fas fa-clock"></i> 轉派遣記錄';
+        }
+
+        const quickTitle = document.querySelector('.schedule-quick-title');
+        if(quickTitle){
+            quickTitle.innerHTML =
+                '<i class="fas fa-keyboard"></i> ' +
+                scheduleStaffType +
+                '快速手打排班';
+        }
+
+        qyjEnsureScheduleDatalist();
+        qyjEnsureServiceSelects();
+    }
+
+    window.qyjSetScheduleStaffType = function(type){
+        scheduleStaffType = type === '正職' ? '正職' : '派遣';
+        localStorage.setItem(MODE_KEY, scheduleStaffType);
+
+        const quickStaff = document.getElementById('sch_quick_staff');
+        const modalStaff = document.getElementById('sch_modal_staff');
+
+        if(quickStaff) quickStaff.value = '';
+        if(modalStaff) modalStaff.value = '';
+
+        qyjEnsureTypeTabs();
+
+        if(typeof renderScheduleStaffCheckboxes === 'function'){
+            renderScheduleStaffCheckboxes([]);
+        }
+
+        if(typeof renderScheduleTable === 'function'){
+            renderScheduleTable();
+        }
+    };
+
+    window.qyjGetCurrentScheduleStaffType = function(){
+        return scheduleStaffType;
+    };
+
+    window.getAllScheduleStaffNames = function(){
+        return qyjActiveStaffNames(scheduleStaffType);
+    };
+
+    window.renderScheduleStaffCheckboxes = function(selectedNames){
+        const grid = document.getElementById('sch_staff_check_grid');
+        if(!grid) return;
+
+        const selected = new Set((selectedNames || []).filter(Boolean));
+        const names = qyjActiveStaffNames(scheduleStaffType);
+
+        if(!names.length){
+            grid.innerHTML =
+                '<div style="color:#64748b;font-weight:800;">' +
+                    '目前沒有可排班的' + scheduleStaffType + '人員' +
+                '</div>';
+            return;
+        }
+
+        grid.innerHTML = names.map(function(name){
+            return (
+                '<label class="schedule-staff-check-item">' +
+                    '<input type="checkbox" ' +
+                        'class="sch_staff_check" ' +
+                        'value="' + qyjEsc(name) + '" ' +
+                        (selected.has(name) ? 'checked' : '') +
+                        ' onchange="' +
+                            'syncScheduleStaffInputFromChecks();' +
+                            'previewScheduleConflicts();' +
+                        '">' +
+                    qyjEsc(name) +
+                '</label>'
+            );
+        }).join('');
+    };
+
+    const originalGetScheduleAssignments =
+        window.getScheduleAssignments;
+
+    window.getScheduleAssignments = function(company,date,time){
+        const items = typeof originalGetScheduleAssignments === 'function'
+            ? originalGetScheduleAssignments(company,date,time)
+            : [];
+
+        return items.filter(function(item){
+            const storedType =
+                item.entry && item.entry.staffType
+                    ? item.entry.staffType
+                    : qyjGetStaffType(item.name);
+
+            return storedType === scheduleStaffType;
+        });
+    };
+
+    window.getScheduleDayStaffCount = function(company,date){
+        const people = new Set();
+
+        (scheduleData || []).forEach(function(entry){
+            if(typeof isVoidedSchedule === 'function' &&
+               isVoidedSchedule(entry)) return;
+
+            if(String(entry.date || '') !== String(date || '')) return;
+            if(company &&
+               String(entry.company || '') !== String(company)) return;
+
+            getScheduleStaffList(entry.staffs).forEach(function(name){
+                const type = entry.staffType || qyjGetStaffType(name);
+                if(type === scheduleStaffType){
+                    people.add(name);
+                }
+            });
+        });
+
+        return people.size;
+    };
+
+    window.renderScheduleFilledList = function(){
+        const tbody = document.getElementById('scheduleFilledList');
+        if(!tbody) return;
+
+        const company = getScheduleCompany();
+        const y = getScheduleYear();
+        const m = getScheduleMonth();
+        const ym = y + '-' + pad2(m) + '-';
+
+        const list = (scheduleData || [])
+            .map(function(item,index){
+                return Object.assign({},item,{index:index});
+            })
+            .filter(function(item){
+                if(company && item.company !== company) return false;
+                if(!String(item.date || '').startsWith(ym)) return false;
+
+                const names = getScheduleStaffList(item.staffs)
+                    .filter(function(name){
+                        return (item.staffType || qyjGetStaffType(name)) ===
+                            scheduleStaffType;
+                    });
+
+                return names.length > 0;
+            })
+            .sort(function(a,b){
+                return String(a.date || '').localeCompare(
+                    String(b.date || '')
+                ) ||
+                String(a.start || '').localeCompare(
+                    String(b.start || '')
+                );
+            });
+
+        if(!list.length){
+            tbody.innerHTML =
+                '<tr><td colspan="10">' +
+                    '<div class="schedule-filled-empty">' +
+                        '本月目前沒有' + scheduleStaffType + '排班資料' +
+                    '</div>' +
+                '</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = list.map(function(item){
+            const names = getScheduleStaffList(item.staffs)
+                .filter(function(name){
+                    return (item.staffType || qyjGetStaffType(name)) ===
+                        scheduleStaffType;
+                });
+
+            const breakHours =
+                parseScheduleBreakHours(item.breakHours) ||
+                calcScheduleBreakHours(
+                    item.breakStart,
+                    item.breakEnd,
+                    item.start,
+                    item.end
+                ) ||
+                0;
+
+            const restText = breakHours
+                ? formatScheduleHours(breakHours) + ' 小時'
+                : (
+                    item.breakStart && item.breakEnd
+                        ? item.breakStart + '-' + item.breakEnd
+                        : '-'
+                );
+
+            const hours =
+                Number(item.hours) ||
+                calcScheduleNetHours(
+                    item.start,
+                    item.end,
+                    item.breakStart,
+                    item.breakEnd,
+                    item.breakHours
+                ) ||
+                0;
+
+            const typeClass =
+                scheduleStaffType === '正職'
+                    ? 'fulltime'
+                    : 'dispatch';
+
+            return (
+                '<tr>' +
+                    '<td>' +
+                        '<span class="qyj-schedule-type-badge ' +
+                            typeClass + '">' +
+                            scheduleStaffType +
+                        '</span><br>' +
+                        renderScheduleChangeBadge(
+                            item.scheduleStatus || '已排班'
+                        ) +
+                    '</td>' +
+                    '<td>' + qyjEsc(item.date || '') + '</td>' +
+                    '<td>' + qyjEsc(item.company || '') + '</td>' +
+                    '<td style="font-weight:900;color:#1d4ed8;">' +
+                        qyjEsc(names.join('、')) +
+                    '</td>' +
+                    '<td>' + qyjEsc(item.start || '') + '</td>' +
+                    '<td>' + qyjEsc(item.end || '') + '</td>' +
+                    '<td>' + qyjEsc(restText) + '</td>' +
+                    '<td>' + formatScheduleHours(hours) + 'h</td>' +
+                    '<td>' +
+                        (item.service
+                            ? '<b>' + qyjEsc(item.service) + '</b><br>'
+                            : '') +
+                        qyjEsc(item.remark || '') +
+                    '</td>' +
+                    '<td>' +
+                        '<button class="schedule-mini-change" ' +
+                            'data-schedule-change-index="' +
+                            item.index +
+                            '" type="button">異動</button>' +
+                        '<button class="schedule-mini-edit" ' +
+                            'onclick="openScheduleEntryByIndex(' +
+                            item.index +
+                            ')">編輯</button>' +
+                        '<button class="schedule-mini-del" ' +
+                            'onclick="deleteScheduleEntryFromList(' +
+                            item.index +
+                            ')">刪除</button>' +
+                    '</td>' +
+                '</tr>'
+            );
+        }).join('');
+    };
+
+    window.addQuickSchedule = function(){
+        const selectedCompany = getScheduleCompany();
+
+        const company =
+            (document.getElementById('sch_quick_company')
+                ?.value.trim() || '') ||
+            selectedCompany;
+
+        const staffRaw =
+            document.getElementById('sch_quick_staff')
+                ?.value.trim() || '';
+
+        const date = normalizeScheduleDateInput(
+            document.getElementById('sch_quick_date')?.value || ''
+        );
+
+        if(document.getElementById('sch_quick_date')){
+            document.getElementById('sch_quick_date').value = date;
+        }
+
+        const start =
+            document.getElementById('sch_quick_start')?.value || '';
+
+        const end =
+            document.getElementById('sch_quick_end')?.value || '';
+
+        const breakStart =
+            document.getElementById('sch_quick_break_start')?.value || '';
+
+        const breakEnd =
+            document.getElementById('sch_quick_break_end')?.value || '';
+
+        const breakHours =
+            document.getElementById('sch_quick_break_hours')?.value || '';
+
+        const remark =
+            document.getElementById('sch_quick_remark')
+                ?.value.trim() || '';
+
+        const service =
+            document.getElementById('sch_quick_service')?.value || '';
+
+        const staffList = getScheduleStaffList(staffRaw);
+        const hours = calcScheduleNetHours(
+            start,end,breakStart,breakEnd,breakHours
+        );
+
+        if(!company){
+            return showToast('請先選擇或輸入公司',true);
+        }
+
+        if(!staffList.length){
+            return showToast('請輸入人員姓名',true);
+        }
+
+        const wrongStaff = staffList.filter(function(name){
+            return qyjGetStaffType(name) !== scheduleStaffType;
+        });
+
+        if(wrongStaff.length){
+            return showToast(
+                '目前是' + scheduleStaffType +
+                '排班，以下人員身分不符合：' +
+                wrongStaff.join('、'),
+                true
+            );
+        }
+
+        if(!date || !start || !end){
+            return showToast(
+                '請輸入日期、上班與下班時間',
+                true
+            );
+        }
+
+        if(!hours || hours <= 0){
+            return showToast(
+                '請確認上下班與休息時間；實際工時不可為 0',
+                true
+            );
+        }
+
+        const conflicts = findScheduleConflicts(
+            company,date,start,end,staffList
+        );
+
+        if(conflicts.length){
+            const message =
+                '以下人員同日同時段已在其他公司排班：\n' +
+                conflicts.map(function(item){
+                    return item.staff + '：' +
+                        item.company + ' ' + item.time;
+                }).join('\n') +
+                '\n\n仍要加入嗎？';
+
+            if(!confirm(message)) return;
+        }
+
+        const oldIndex = (scheduleData || []).findIndex(function(item){
+            return (
+                String(item.date || '') === date &&
+                String(item.company || '') === company &&
+                String(item.start || '') === start &&
+                String(item.end || '') === end &&
+                String(item.staffType || scheduleStaffType) ===
+                    scheduleStaffType
+            );
+        });
+
+        const obj = {
+            company:company,
+            date:date,
+            shift:'時段排班',
+            start:start,
+            end:end,
+            breakStart:breakStart,
+            breakEnd:breakEnd,
+            breakHours:breakHours,
+            hours:hours,
+            need:staffList.length,
+            staffs:staffList.join('、'),
+            staffType:scheduleStaffType,
+            service:service,
+            status:'已排滿',
+            scheduleStatus:'已排班',
+            location:'',
+            remark:remark
+        };
+
+        if(oldIndex >= 0){
+            const oldStaff = getScheduleStaffList(
+                scheduleData[oldIndex].staffs
+            );
+
+            const merged = [...new Set(
+                oldStaff.concat(staffList)
+            )];
+
+            scheduleData[oldIndex] = Object.assign(
+                {},
+                scheduleData[oldIndex],
+                obj,
+                {
+                    staffs:merged.join('、'),
+                    need:merged.length
+                }
+            );
+        }else{
+            scheduleData.push(obj);
+        }
+
+        if(document.getElementById('sch_year')){
+            document.getElementById('sch_year').value =
+                Number(date.slice(0,4));
+        }
+
+        if(document.getElementById('sch_month')){
+            document.getElementById('sch_month').value =
+                Number(date.slice(5,7));
+        }
+
+        if(document.getElementById('sch_company_select')){
+            refreshScheduleCompanyOptions();
+            document.getElementById('sch_company_select').value =
+                company;
+        }
+
+        updateQuickScheduleHours();
+        saveAll();
+        renderScheduleTable();
+
+        showToast(
+            '✅ 已加入' + scheduleStaffType + '排班：' +
+            staffList.join('、')
+        );
+    };
+
+    window.saveScheduleCell = function(){
+        const company =
+            document.getElementById('sch_modal_company')
+                ?.value.trim() || '';
+
+        const date =
+            document.getElementById('sch_modal_date')?.value || '';
+
+        const start =
+            document.getElementById('sch_modal_start')?.value || '';
+
+        const end =
+            document.getElementById('sch_modal_end')?.value || '';
+
+        const breakStart =
+            document.getElementById('sch_modal_break_start')?.value || '';
+
+        const breakEnd =
+            document.getElementById('sch_modal_break_end')?.value || '';
+
+        const breakHours =
+            document.getElementById('sch_modal_break_hours')?.value || '';
+
+        const hours = calcScheduleNetHours(
+            start,end,breakStart,breakEnd,breakHours
+        );
+
+        const staffList = getScheduleStaffList(
+            document.getElementById('sch_modal_staff')?.value || ''
+        ).filter(Boolean);
+
+        const service =
+            document.getElementById('sch_modal_service')?.value || '';
+
+        if(!company || !date || !start || !end){
+            return showToast(
+                '請輸入公司、日期與開始/結束時間',
+                true
+            );
+        }
+
+        if(!hours || hours <= 0){
+            return showToast(
+                '請確認上下班與休息時間；實際工時不可為 0',
+                true
+            );
+        }
+
+        if(!staffList.length){
+            return showToast('請至少輸入一位排班人員',true);
+        }
+
+        const wrongStaff = staffList.filter(function(name){
+            return qyjGetStaffType(name) !== scheduleStaffType;
+        });
+
+        if(wrongStaff.length){
+            return showToast(
+                '目前是' + scheduleStaffType +
+                '排班，以下人員身分不符合：' +
+                wrongStaff.join('、'),
+                true
+            );
+        }
+
+        const existing =
+            currentScheduleEditIndex >= 0 &&
+            scheduleData[currentScheduleEditIndex]
+                ? scheduleData[currentScheduleEditIndex]
+                : findScheduleEntryForSlot(
+                    company,date,start
+                );
+
+        const conflicts = findScheduleConflicts(
+            company,date,start,end,staffList,existing
+        );
+
+        if(conflicts.length){
+            const message =
+                '以下人員同日同時段已在其他公司排班：\n' +
+                conflicts.map(function(item){
+                    return item.staff + '：' +
+                        item.company + ' ' + item.time;
+                }).join('\n') +
+                '\n\n仍要儲存嗎？';
+
+            if(!confirm(message)) return;
+        }
+
+        const oldIndex =
+            currentScheduleEditIndex >= 0 &&
+            scheduleData[currentScheduleEditIndex]
+                ? currentScheduleEditIndex
+                : (scheduleData || []).findIndex(function(item){
+                    return item === existing;
+                });
+
+        const obj = {
+            company:company,
+            date:date,
+            shift:'時段排班',
+            start:start,
+            end:end,
+            breakStart:breakStart,
+            breakEnd:breakEnd,
+            breakHours:breakHours,
+            hours:hours,
+            need:staffList.length,
+            staffs:staffList.join('、'),
+            staffType:scheduleStaffType,
+            service:service,
+            status:'已排滿',
+            scheduleStatus:
+                existing && existing.scheduleStatus
+                    ? existing.scheduleStatus
+                    : '已排班',
+            location:
+                document.getElementById('sch_modal_location')
+                    ?.value.trim() || '',
+            remark:
+                document.getElementById('sch_modal_remark')
+                    ?.value.trim() || ''
+        };
+
+        if(oldIndex >= 0){
+            scheduleData[oldIndex] = Object.assign(
+                {},
+                scheduleData[oldIndex],
+                obj
+            );
+        }else{
+            scheduleData.push(obj);
+        }
+
+        currentScheduleEditIndex = -1;
+        saveAll();
+        closeScheduleModal();
+        renderScheduleTable();
+
+        showToast('✅ ' + scheduleStaffType + '排班已儲存');
+    };
+
+    const originalFillScheduleModalFromEntry =
+        window.fillScheduleModalFromEntry;
+
+    window.fillScheduleModalFromEntry = function(entry,index){
+        const entryNames = getScheduleStaffList(
+            entry && entry.staffs || ''
+        );
+
+        const detectedType =
+            entry && entry.staffType
+                ? entry.staffType
+                : (
+                    entryNames[0]
+                        ? qyjGetStaffType(entryNames[0])
+                        : scheduleStaffType
+                );
+
+        if(detectedType){
+            scheduleStaffType = detectedType;
+            localStorage.setItem(MODE_KEY,scheduleStaffType);
+        }
+
+        qyjEnsureTypeTabs();
+
+        if(typeof originalFillScheduleModalFromEntry === 'function'){
+            originalFillScheduleModalFromEntry(entry,index);
+        }
+
+        qyjEnsureServiceSelects();
+
+        const select = document.getElementById('sch_modal_service');
+        if(select){
+            select.value = entry && entry.service
+                ? entry.service
+                : '';
+        }
+    };
+
+    window.createAttendFromSchedule = function(){
+        const company = getScheduleCompany();
+        const y = getScheduleYear();
+        const m = getScheduleMonth();
+        const ym = y + '-' + pad2(m) + '-';
+
+        const list = (scheduleData || []).filter(function(item){
+            if(company && item.company !== company) return false;
+            if(!String(item.date || '').startsWith(ym)) return false;
+
+            return getScheduleStaffList(item.staffs).some(
+                function(name){
+                    return (item.staffType || qyjGetStaffType(name)) ===
+                        scheduleStaffType;
+                }
+            );
+        });
+
+        if(!list.length){
+            return showToast(
+                '本月沒有可轉入的' + scheduleStaffType + '排班',
+                true
+            );
+        }
+
+        const targetText =
+            scheduleStaffType === '正職'
+                ? '正職出勤'
+                : '派遣紀錄';
+
+        if(!confirm(
+            '確定將本月 ' + list.length +
+            ' 筆' + scheduleStaffType +
+            '排班轉成' + targetText + '？'
+        )){
+            return;
+        }
+
+        let count = 0;
+
+        list.forEach(function(item){
+            getScheduleStaffList(item.staffs).forEach(function(name){
+                const type = item.staffType || qyjGetStaffType(name);
+                if(type !== scheduleStaffType) return;
+
+                const hours =
+                    Number(item.hours) ||
+                    calcScheduleNetHours(
+                        item.start,
+                        item.end,
+                        item.breakStart,
+                        item.breakEnd,
+                        item.breakHours
+                    );
+
+                if(type === '正職'){
+                    const exists = (ftAttendData || []).some(
+                        function(record){
+                            return (
+                                record.staff === name &&
+                                record.date === item.date &&
+                                record.time_in === item.start &&
+                                String(record.reason || '')
+                                    .includes('由智慧排班轉入')
+                            );
+                        }
+                    );
+
+                    if(!exists){
+                        ftAttendData.push({
+                            staff:name,
+                            date:item.date,
+                            record_type:'正常出勤',
+                            reason:
+                                '由智慧排班轉入｜公司：' +
+                                item.company +
+                                (item.service
+                                    ? '｜服務：' + item.service
+                                    : '') +
+                                (item.remark
+                                    ? '｜' + item.remark
+                                    : ''),
+                            time_in:item.start,
+                            time_out:item.end,
+                            hours:Number(hours.toFixed(1)),
+                            leave_type:'',
+                            approval:'已核准',
+                            company:item.company,
+                            service:item.service || ''
+                        });
+                        count++;
+                    }
+                }else{
+                    const exists = (attendData || []).some(
+                        function(record){
+                            return (
+                                record.company === item.company &&
+                                record.staff === name &&
+                                record.date === item.date &&
+                                String(record.remark || '')
+                                    .includes('由智慧排班轉入')
+                            );
+                        }
+                    );
+
+                    if(!exists){
+                        attendData.push({
+                            company:item.company,
+                            staff:name,
+                            date:item.date,
+                            service:item.service || '排班派遣',
+                            am_s:item.start,
+                            am_e:item.end,
+                            pm_s:item.breakStart || '',
+                            pm_e:item.breakEnd || '',
+                            salary_hours:Number(hours.toFixed(1)),
+                            deduct_points:Number(hours.toFixed(1)),
+                            project_fee:0,
+                            special_hourly:'',
+                            remark:
+                                '由智慧排班轉入：' +
+                                (item.remark || '')
+                        });
+                        count++;
+                    }
+                }
+            });
+        });
+
+        saveAll();
+
+        showToast(
+            '✅ 已轉入 ' + count + ' 筆' + targetText
+        );
+    };
+
+    window.confirmClockToAttend = function(rowIndex){
+        const row = getScheduleRowsForClockOverview()[rowIndex];
+        if(!row) return;
+
+        const rec = findClockRecord(row);
+
+        if(!rec || !rec.clockIn || !rec.clockOut){
+            return showToast(
+                '需有上班與下班打卡，才能轉入出勤紀錄',
+                true
+            );
+        }
+
+        if(!rec.inGps || !rec.outGps){
+            if(!confirm(
+                '這筆缺少上班或下班 GPS 定位，仍要轉入紀錄嗎？'
+            )){
+                return;
+            }
+        }
+
+        const type = qyjGetStaffType(row.staff) || '派遣';
+
+        const scheduleEntry = (scheduleData || []).find(function(item){
+            return (
+                item.company === row.company &&
+                item.date === row.date &&
+                item.start === row.start &&
+                getScheduleStaffList(item.staffs).includes(row.staff)
+            );
+        });
+
+        const service =
+            scheduleEntry && scheduleEntry.service
+                ? scheduleEntry.service
+                : (
+                    type === '正職'
+                        ? '正職出勤'
+                        : '排班派遣'
+                );
+
+        const calcHours = Math.max(
+            0,
+            clockHoursBetween(rec.clockIn,rec.clockOut) -
+            (Number(row.restHours) || 0)
+        );
+
+        const hours =
+            rec.overrideHours !== undefined &&
+            rec.overrideHours !== '' &&
+            rec.overrideHours !== null
+                ? Number(rec.overrideHours)
+                : calcHours;
+
+        if(type === '正職'){
+            const exists = (ftAttendData || []).some(
+                function(item){
+                    return (
+                        item.staff === row.staff &&
+                        item.date === row.date &&
+                        String(item.reason || '')
+                            .includes('由員工打卡確認')
+                    );
+                }
+            );
+
+            if(exists &&
+               !confirm(
+                   '這筆似乎已經轉過正職出勤，還要再新增一次嗎？'
+               )){
+                return;
+            }
+
+            ftAttendData.push({
+                staff:row.staff,
+                date:row.date,
+                record_type:'正常出勤',
+                reason:
+                    '由員工打卡確認轉入｜公司：' +
+                    row.company +
+                    '｜服務：' + service +
+                    '｜上班GPS:' +
+                    formatGpsText(rec.inGps) +
+                    '｜下班GPS:' +
+                    formatGpsText(rec.outGps) +
+                    (rec.gpsWarning
+                        ? '｜' + rec.gpsWarning
+                        : ''),
+                time_in:rec.clockIn,
+                time_out:rec.clockOut,
+                hours:Number(hours.toFixed(1)),
+                leave_type:'',
+                approval:'已核准',
+                company:row.company,
+                service:service
+            });
+
+            rec.status = '已轉正職出勤';
+            rec.updatedAt = new Date().toISOString();
+
+            saveAll();
+            renderClockOverview();
+            showToast('✅ 已轉入正職出勤紀錄');
+            return;
+        }
+
+        const exists = (attendData || []).some(
+            function(item){
+                return (
+                    item.company === row.company &&
+                    item.staff === row.staff &&
+                    item.date === row.date &&
+                    String(item.remark || '')
+                        .includes('由員工打卡確認')
+                );
+            }
+        );
+
+        if(exists &&
+           !confirm(
+               '這筆似乎已經轉過派遣紀錄，還要再新增一次嗎？'
+           )){
+            return;
+        }
+
+        attendData.push({
+            company:row.company,
+            staff:row.staff,
+            date:row.date,
+            service:service,
+            am_s:rec.clockIn,
+            am_e:rec.clockOut,
+            pm_s:'',
+            pm_e:'',
+            salary_hours:Number(hours.toFixed(1)),
+            deduct_points:Number(hours.toFixed(1)),
+            project_fee:0,
+            special_hourly:'',
+            remark:
+                '由員工打卡確認轉入｜上班GPS:' +
+                formatGpsText(rec.inGps) +
+                '｜下班GPS:' +
+                formatGpsText(rec.outGps) +
+                (rec.gpsWarning
+                    ? '｜' + rec.gpsWarning
+                    : '')
+        });
+
+        rec.status = '已轉派遣紀錄';
+        rec.updatedAt = new Date().toISOString();
+
+        saveAll();
+        renderClockOverview();
+        showToast('✅ 已轉入正式派遣紀錄');
+    };
+
+    const originalRenderClockOverview =
+        window.renderClockOverview;
+
+    window.renderClockOverview = function(){
+        if(typeof originalRenderClockOverview === 'function'){
+            originalRenderClockOverview();
+        }
+
+        const rows = getScheduleRowsForClockOverview();
+
+        document.querySelectorAll(
+            '#clockOverviewTable tr'
+        ).forEach(function(tr,index){
+            const row = rows[index];
+            if(!row) return;
+
+            const type = qyjGetStaffType(row.staff) || '派遣';
+
+            const button = [...tr.querySelectorAll('button')]
+                .find(function(item){
+                    return String(item.textContent || '')
+                        .includes('確認轉');
+                });
+
+            if(button){
+                button.textContent =
+                    type === '正職'
+                        ? '確認轉正職出勤'
+                        : '確認轉派遣';
+            }
+        });
+    };
+
+    const originalRenderScheduleTable =
+        window.renderScheduleTable;
+
+    window.renderScheduleTable = function(){
+        qyjEnsureTypeTabs();
+
+        if(typeof originalRenderScheduleTable === 'function'){
+            originalRenderScheduleTable();
+        }
+
+        qyjEnsureTypeTabs();
+    };
+
+    const originalOpenScheduleCell =
+        window.openScheduleCell;
+
+    window.openScheduleCell = function(staff,date,time){
+        qyjEnsureTypeTabs();
+
+        if(typeof originalOpenScheduleCell === 'function'){
+            originalOpenScheduleCell(staff,date,time);
+        }
+
+        qyjEnsureServiceSelects();
+        renderScheduleStaffCheckboxes(
+            getScheduleStaffList(
+                document.getElementById('sch_modal_staff')?.value || ''
+            )
+        );
+    };
+
+    const originalShowAdminPage =
+        window.showAdminPage;
+
+    window.showAdminPage = function(page){
+        const result =
+            typeof originalShowAdminPage === 'function'
+                ? originalShowAdminPage.apply(this,arguments)
+                : undefined;
+
+        if(page === 'schedule'){
+            setTimeout(function(){
+                qyjEnsureTypeTabs();
+                if(typeof renderScheduleTable === 'function'){
+                    renderScheduleTable();
+                }
+            },0);
+        }
+
+        return result;
+    };
+
+    function qyjInitializeScheduleSplit(){
+        qyjEnsureTypeTabs();
+
+        if(document.getElementById('page-schedule') &&
+           document.getElementById('page-schedule')
+               .classList.contains('active')){
+            renderScheduleTable();
+        }
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            qyjInitializeScheduleSplit
+        );
+    }else{
+        qyjInitializeScheduleSplit();
+    }
+
+    setTimeout(qyjInitializeScheduleSplit,500);
+
+    console.log(
+        '正職／派遣排班分流修正版已載入，原始程式均保留'
+    );
+})();
+</script>
+
 </body>
 </html>
