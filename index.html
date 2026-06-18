@@ -10893,5 +10893,1266 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加功能：
+     1. 員工「我的班表」月曆版
+     2. 管理端「入職包 SOP／公告欄」內容管理
+     原始程式與其他功能全部保留
+========================================================= -->
+<style>
+/* ===== 管理端：員工內容管理 ===== */
+.qyj-content-modal-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:1000000;
+    background:rgba(15,23,42,.58);
+    padding:20px;
+    overflow:auto;
+}
+.qyj-content-modal{
+    width:min(1100px,96vw);
+    margin:20px auto;
+    background:#fff;
+    border-radius:22px;
+    box-shadow:0 30px 90px rgba(15,23,42,.35);
+    overflow:hidden;
+}
+.qyj-content-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:20px 24px;
+    border-bottom:1px solid #e2e8f0;
+}
+.qyj-content-head h2{
+    margin:0;
+    color:#0f172a;
+    font-size:21px;
+    font-weight:900;
+}
+.qyj-content-close{
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:#334155;
+    border-radius:10px;
+    padding:9px 15px;
+    cursor:pointer;
+    font-weight:800;
+}
+.qyj-content-tabs{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:16px 24px 0;
+}
+.qyj-content-tab{
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:#334155;
+    border-radius:10px;
+    padding:10px 16px;
+    cursor:pointer;
+    font-weight:900;
+}
+.qyj-content-tab.active{
+    background:#2563eb;
+    border-color:#2563eb;
+    color:#fff;
+}
+.qyj-content-body{
+    display:grid;
+    grid-template-columns:360px 1fr;
+    gap:18px;
+    padding:20px 24px 26px;
+}
+.qyj-content-list{
+    border:1px solid #e2e8f0;
+    border-radius:14px;
+    overflow:hidden;
+    background:#f8fafc;
+}
+.qyj-content-list-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:13px 14px;
+    background:#fff;
+    border-bottom:1px solid #e2e8f0;
+    font-weight:900;
+}
+.qyj-content-add{
+    border:0;
+    background:#10b981;
+    color:#fff;
+    border-radius:9px;
+    padding:8px 12px;
+    cursor:pointer;
+    font-weight:900;
+}
+.qyj-content-items{
+    max-height:560px;
+    overflow:auto;
+    padding:10px;
+}
+.qyj-content-item{
+    background:#fff;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    padding:12px;
+    margin-bottom:9px;
+    cursor:pointer;
+}
+.qyj-content-item.active{
+    border-color:#60a5fa;
+    box-shadow:0 0 0 2px rgba(59,130,246,.12);
+}
+.qyj-content-item-title{
+    font-weight:900;
+    color:#0f172a;
+    margin-bottom:5px;
+}
+.qyj-content-item-meta{
+    font-size:12px;
+    color:#64748b;
+    line-height:1.6;
+}
+.qyj-content-form{
+    border:1px solid #e2e8f0;
+    border-radius:14px;
+    padding:18px;
+    background:#fff;
+}
+.qyj-content-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:13px;
+}
+.qyj-content-grid .wide{grid-column:1/-1;}
+.qyj-content-grid label{
+    display:block;
+    font-size:12px;
+    color:#475569;
+    font-weight:900;
+    margin-bottom:5px;
+}
+.qyj-content-grid input,
+.qyj-content-grid select,
+.qyj-content-grid textarea{
+    width:100%;
+    padding:10px 12px;
+    border:1px solid #cbd5e1;
+    border-radius:9px;
+    background:#fff;
+    font-size:13px;
+}
+.qyj-content-grid textarea{
+    min-height:180px;
+    resize:vertical;
+    line-height:1.7;
+}
+.qyj-content-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-top:17px;
+}
+.qyj-content-save,
+.qyj-content-delete{
+    border:0;
+    color:#fff;
+    border-radius:9px;
+    padding:10px 17px;
+    cursor:pointer;
+    font-weight:900;
+}
+.qyj-content-save{background:#2563eb;}
+.qyj-content-delete{background:#ef4444;}
+.qyj-content-note{
+    margin-top:12px;
+    padding:10px 12px;
+    background:#eff6ff;
+    border:1px solid #bfdbfe;
+    color:#1e40af;
+    border-radius:10px;
+    font-size:12px;
+    line-height:1.7;
+    font-weight:800;
+}
+
+/* ===== 手機版：班表月曆 ===== */
+.ms-cal-shell{padding-bottom:12px;}
+.ms-cal-toolbar{
+    display:grid;
+    grid-template-columns:44px 1fr 44px;
+    align-items:center;
+    gap:8px;
+    margin-bottom:14px;
+}
+.ms-cal-nav{
+    border:0;
+    background:#fff;
+    border-radius:12px;
+    height:44px;
+    font-size:24px;
+    cursor:pointer;
+    color:#334155;
+}
+.ms-cal-month{
+    text-align:center;
+    font-size:20px;
+    font-weight:900;
+    color:#0f172a;
+}
+.ms-cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    border-left:1px solid #cbd5e1;
+    border-top:1px solid #cbd5e1;
+    background:#fff;
+}
+.ms-cal-week,
+.ms-cal-day{
+    min-height:58px;
+    border-right:1px solid #cbd5e1;
+    border-bottom:1px solid #cbd5e1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+.ms-cal-week{
+    min-height:42px;
+    font-weight:900;
+    color:#334155;
+    background:#f8fafc;
+}
+.ms-cal-day{
+    position:relative;
+    flex-direction:column;
+    gap:5px;
+    cursor:pointer;
+    font-size:16px;
+    color:#1f2937;
+}
+.ms-cal-day.empty{
+    background:#f8fafc;
+    cursor:default;
+}
+.ms-cal-day.weekend{background:#fafafa;}
+.ms-cal-day.today .ms-cal-num{
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#e0f2fe;
+    color:#0284c7;
+}
+.ms-cal-day.selected .ms-cal-num{
+    color:#fff;
+    background:#2563eb;
+}
+.ms-cal-dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:#38bdf8;
+}
+.ms-cal-dot.none{background:#cbd5e1;}
+.ms-cal-detail-title{
+    margin:18px 0 10px;
+    color:#334155;
+    font-size:15px;
+    font-weight:900;
+}
+.ms-shift-detail{
+    background:#fff;
+    border:1px solid #e2e8f0;
+    border-radius:14px;
+    padding:15px;
+    margin-bottom:10px;
+}
+.ms-shift-company{
+    font-size:17px;
+    font-weight:900;
+    color:#0f172a;
+    margin-bottom:9px;
+}
+.ms-shift-line{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:7px 0;
+    border-bottom:1px solid #f1f5f9;
+    font-size:13px;
+}
+.ms-shift-line:last-child{border-bottom:0;}
+.ms-shift-line span:first-child{color:#64748b;}
+.ms-shift-line span:last-child{
+    color:#1e293b;
+    font-weight:900;
+    text-align:right;
+}
+
+/* ===== 手機版：SOP／公告 ===== */
+.ms-content-card{
+    background:#fff;
+    border:1px solid #e2e8f0;
+    border-radius:15px;
+    margin-bottom:12px;
+    overflow:hidden;
+}
+.ms-content-card button{
+    width:100%;
+    border:0;
+    background:#fff;
+    padding:17px;
+    text-align:left;
+    cursor:pointer;
+}
+.ms-content-card-title{
+    font-size:17px;
+    font-weight:900;
+    color:#0f172a;
+    margin-bottom:5px;
+}
+.ms-content-card-desc{
+    color:#64748b;
+    font-size:13px;
+}
+.ms-content-card-body{
+    display:none;
+    padding:0 17px 18px;
+    color:#334155;
+    font-size:14px;
+    line-height:1.85;
+    white-space:pre-wrap;
+}
+.ms-content-card.open .ms-content-card-body{display:block;}
+.ms-ann-pin{
+    display:inline-block;
+    background:#fee2e2;
+    color:#b91c1c;
+    border-radius:999px;
+    padding:3px 8px;
+    font-size:11px;
+    font-weight:900;
+    margin-right:6px;
+}
+.ms-ann-date{
+    color:#94a3b8;
+    font-size:12px;
+    margin-top:7px;
+}
+
+@media(max-width:850px){
+    .qyj-content-body{grid-template-columns:1fr;}
+    .qyj-content-grid{grid-template-columns:1fr;}
+    .qyj-content-grid .wide{grid-column:auto;}
+}
+</style>
+
+<script>
+(function(){
+    'use strict';
+
+    let qyjContentMode = 'sop';
+    let qyjEditingIndex = -1;
+    let qyjCalendarCursor = new Date();
+    let qyjCalendarSelectedDate = '';
+
+    function esc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function pad(value){
+        return String(value).padStart(2,'0');
+    }
+
+    function ensureContentData(){
+        if(!portalConf.sopItems || !Array.isArray(portalConf.sopItems)){
+            portalConf.sopItems = [
+                {
+                    title:portalConf.r1Title || '報班前注意事項',
+                    summary:'請詳閱派遣規範',
+                    content:portalConf.r1Content || '',
+                    audience:'all',
+                    active:true,
+                    order:1
+                },
+                {
+                    title:portalConf.r2Title || '工作態度規範',
+                    summary:'服裝、準時、回報、資料保密',
+                    content:portalConf.r2Content || '',
+                    audience:'all',
+                    active:true,
+                    order:2
+                }
+            ];
+        }
+
+        if(!portalConf.announcementItems ||
+           !Array.isArray(portalConf.announcementItems)){
+            portalConf.announcementItems = [];
+        }
+    }
+
+    function saveContentData(){
+        ensureContentData();
+        localStorage.setItem('portalConf',JSON.stringify(portalConf));
+
+        if(typeof saveAllSilently === 'function'){
+            saveAllSilently();
+        }
+
+        if(typeof showToast === 'function'){
+            showToast('✅ 內容已儲存並同步');
+        }
+    }
+
+    function contentArray(){
+        ensureContentData();
+        return qyjContentMode === 'sop'
+            ? portalConf.sopItems
+            : portalConf.announcementItems;
+    }
+
+    function audienceText(value){
+        return {
+            all:'全部員工',
+            fulltime:'僅正職',
+            dispatch:'僅派遣'
+        }[value] || '全部員工';
+    }
+
+    function ensureAdminEntry(){
+        const hrMenus = document.querySelectorAll(
+            '.sidebar-nav .ws-hr'
+        );
+
+        if(!hrMenus.length) return;
+
+        if(document.getElementById('qyjContentAdminMenu')) return;
+
+        const li = document.createElement('li');
+        li.id = 'qyjContentAdminMenu';
+        li.className = 'ws-hr hr-menu-group';
+        li.innerHTML =
+            '<button type="button" class="hr-menu-title" ' +
+                'onclick="openQyjContentAdmin(\'sop\')">' +
+                '<span class="left">' +
+                    '<i class="fas fa-bullhorn"></i> 員工內容管理' +
+                '</span>' +
+                '<i class="fas fa-chevron-right chev"></i>' +
+            '</button>';
+
+        const lastHr = hrMenus[hrMenus.length - 1];
+        lastHr.insertAdjacentElement('afterend',li);
+    }
+
+    function ensureAdminModal(){
+        if(document.getElementById('qyjContentAdminModal')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'qyjContentAdminModal';
+        modal.className = 'qyj-content-modal-backdrop';
+        modal.innerHTML =
+            '<div class="qyj-content-modal">' +
+                '<div class="qyj-content-head">' +
+                    '<h2><i class="fas fa-bullhorn"></i> 員工內容管理</h2>' +
+                    '<button class="qyj-content-close" ' +
+                        'onclick="closeQyjContentAdmin()">關閉</button>' +
+                '</div>' +
+
+                '<div class="qyj-content-tabs">' +
+                    '<button id="qyjContentTabSop" ' +
+                        'class="qyj-content-tab" ' +
+                        'onclick="switchQyjContentMode(\'sop\')">' +
+                        '入職包 SOP 管理' +
+                    '</button>' +
+                    '<button id="qyjContentTabAnnouncement" ' +
+                        'class="qyj-content-tab" ' +
+                        'onclick="switchQyjContentMode(\'announcement\')">' +
+                        '公告欄管理' +
+                    '</button>' +
+                '</div>' +
+
+                '<div class="qyj-content-body">' +
+                    '<div class="qyj-content-list">' +
+                        '<div class="qyj-content-list-head">' +
+                            '<span id="qyjContentListTitle">內容列表</span>' +
+                            '<button class="qyj-content-add" ' +
+                                'onclick="newQyjContentItem()">＋ 新增</button>' +
+                        '</div>' +
+                        '<div id="qyjContentItems" class="qyj-content-items"></div>' +
+                    '</div>' +
+
+                    '<div class="qyj-content-form">' +
+                        '<div class="qyj-content-grid">' +
+                            '<div class="wide">' +
+                                '<label>標題</label>' +
+                                '<input id="qyjContentTitle" type="text">' +
+                            '</div>' +
+
+                            '<div class="wide">' +
+                                '<label>簡短說明</label>' +
+                                '<input id="qyjContentSummary" type="text">' +
+                            '</div>' +
+
+                            '<div>' +
+                                '<label>顯示對象</label>' +
+                                '<select id="qyjContentAudience">' +
+                                    '<option value="all">全部員工</option>' +
+                                    '<option value="fulltime">僅正職</option>' +
+                                    '<option value="dispatch">僅派遣</option>' +
+                                '</select>' +
+                            '</div>' +
+
+                            '<div>' +
+                                '<label>狀態</label>' +
+                                '<select id="qyjContentActive">' +
+                                    '<option value="true">啟用</option>' +
+                                    '<option value="false">停用</option>' +
+                                '</select>' +
+                            '</div>' +
+
+                            '<div id="qyjAnnouncementDateWrap">' +
+                                '<label>發布日期</label>' +
+                                '<input id="qyjContentPublishDate" type="date">' +
+                            '</div>' +
+
+                            '<div id="qyjAnnouncementExpireWrap">' +
+                                '<label>到期日期</label>' +
+                                '<input id="qyjContentExpireDate" type="date">' +
+                            '</div>' +
+
+                            '<div id="qyjAnnouncementPinWrap">' +
+                                '<label>置頂</label>' +
+                                '<select id="qyjContentPinned">' +
+                                    '<option value="false">否</option>' +
+                                    '<option value="true">是</option>' +
+                                '</select>' +
+                            '</div>' +
+
+                            '<div>' +
+                                '<label>顯示順序</label>' +
+                                '<input id="qyjContentOrder" type="number" value="1">' +
+                            '</div>' +
+
+                            '<div class="wide">' +
+                                '<label>完整內容</label>' +
+                                '<textarea id="qyjContentBody"></textarea>' +
+                            '</div>' +
+                        '</div>' +
+
+                        '<div class="qyj-content-note">' +
+                            '儲存後會同步到雲端；員工手機重新整理或背景同步後即可看到最新內容。' +
+                        '</div>' +
+
+                        '<div class="qyj-content-actions">' +
+                            '<button class="qyj-content-delete" ' +
+                                'onclick="deleteQyjContentItem()">刪除</button>' +
+                            '<button class="qyj-content-save" ' +
+                                'onclick="saveQyjContentItem()">儲存並同步</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(modal);
+    }
+
+    function renderContentAdmin(){
+        ensureContentData();
+        ensureAdminModal();
+
+        document.getElementById('qyjContentTabSop')
+            .classList.toggle('active',qyjContentMode === 'sop');
+
+        document.getElementById('qyjContentTabAnnouncement')
+            .classList.toggle(
+                'active',
+                qyjContentMode === 'announcement'
+            );
+
+        document.getElementById('qyjContentListTitle').textContent =
+            qyjContentMode === 'sop'
+                ? 'SOP 項目'
+                : '公告列表';
+
+        [
+            'qyjAnnouncementDateWrap',
+            'qyjAnnouncementExpireWrap',
+            'qyjAnnouncementPinWrap'
+        ].forEach(function(id){
+            document.getElementById(id).style.display =
+                qyjContentMode === 'announcement'
+                    ? 'block'
+                    : 'none';
+        });
+
+        const items = contentArray()
+            .map(function(item,index){
+                return Object.assign({},item,{_index:index});
+            })
+            .sort(function(a,b){
+                if(qyjContentMode === 'announcement'){
+                    return Number(Boolean(b.pinned)) -
+                           Number(Boolean(a.pinned)) ||
+                           String(b.publishDate || '').localeCompare(
+                               String(a.publishDate || '')
+                           );
+                }
+
+                return Number(a.order || 0) - Number(b.order || 0);
+            });
+
+        document.getElementById('qyjContentItems').innerHTML =
+            items.length
+                ? items.map(function(item){
+                    return (
+                        '<div class="qyj-content-item ' +
+                            (item._index === qyjEditingIndex
+                                ? 'active'
+                                : '') +
+                        '" onclick="editQyjContentItem(' +
+                            item._index +
+                        ')">' +
+                            '<div class="qyj-content-item-title">' +
+                                esc(item.title || '未命名') +
+                            '</div>' +
+                            '<div class="qyj-content-item-meta">' +
+                                audienceText(item.audience) +
+                                '｜' +
+                                (item.active === false ? '停用' : '啟用') +
+                                (
+                                    qyjContentMode === 'announcement' &&
+                                    item.pinned
+                                        ? '｜置頂'
+                                        : ''
+                                ) +
+                            '</div>' +
+                        '</div>'
+                    );
+                }).join('')
+                : '<div style="padding:20px;color:#64748b;text-align:center;">尚無內容</div>';
+
+        if(qyjEditingIndex < 0){
+            clearContentForm();
+        }
+    }
+
+    function clearContentForm(){
+        qyjEditingIndex = -1;
+
+        document.getElementById('qyjContentTitle').value = '';
+        document.getElementById('qyjContentSummary').value = '';
+        document.getElementById('qyjContentAudience').value = 'all';
+        document.getElementById('qyjContentActive').value = 'true';
+        document.getElementById('qyjContentPublishDate').value =
+            new Date().toISOString().slice(0,10);
+        document.getElementById('qyjContentExpireDate').value = '';
+        document.getElementById('qyjContentPinned').value = 'false';
+        document.getElementById('qyjContentOrder').value =
+            contentArray().length + 1;
+        document.getElementById('qyjContentBody').value = '';
+    }
+
+    window.openQyjContentAdmin = function(mode){
+        qyjContentMode =
+            mode === 'announcement'
+                ? 'announcement'
+                : 'sop';
+
+        qyjEditingIndex = -1;
+        ensureAdminModal();
+        renderContentAdmin();
+
+        document.getElementById('qyjContentAdminModal')
+            .style.display = 'block';
+    };
+
+    window.closeQyjContentAdmin = function(){
+        const modal = document.getElementById('qyjContentAdminModal');
+        if(modal) modal.style.display = 'none';
+    };
+
+    window.switchQyjContentMode = function(mode){
+        qyjContentMode =
+            mode === 'announcement'
+                ? 'announcement'
+                : 'sop';
+
+        qyjEditingIndex = -1;
+        renderContentAdmin();
+    };
+
+    window.newQyjContentItem = function(){
+        clearContentForm();
+        renderContentAdmin();
+    };
+
+    window.editQyjContentItem = function(index){
+        const item = contentArray()[index];
+        if(!item) return;
+
+        qyjEditingIndex = index;
+
+        document.getElementById('qyjContentTitle').value =
+            item.title || '';
+        document.getElementById('qyjContentSummary').value =
+            item.summary || '';
+        document.getElementById('qyjContentAudience').value =
+            item.audience || 'all';
+        document.getElementById('qyjContentActive').value =
+            item.active === false ? 'false' : 'true';
+        document.getElementById('qyjContentPublishDate').value =
+            item.publishDate || '';
+        document.getElementById('qyjContentExpireDate').value =
+            item.expireDate || '';
+        document.getElementById('qyjContentPinned').value =
+            item.pinned ? 'true' : 'false';
+        document.getElementById('qyjContentOrder').value =
+            item.order || 1;
+        document.getElementById('qyjContentBody').value =
+            item.content || '';
+
+        renderContentAdmin();
+    };
+
+    window.saveQyjContentItem = function(){
+        const title =
+            document.getElementById('qyjContentTitle').value.trim();
+
+        if(!title){
+            return showToast('請輸入標題',true);
+        }
+
+        const item = {
+            title:title,
+            summary:
+                document.getElementById('qyjContentSummary').value.trim(),
+            audience:
+                document.getElementById('qyjContentAudience').value,
+            active:
+                document.getElementById('qyjContentActive').value === 'true',
+            order:Number(
+                document.getElementById('qyjContentOrder').value || 1
+            ),
+            content:
+                document.getElementById('qyjContentBody').value.trim()
+        };
+
+        if(qyjContentMode === 'announcement'){
+            item.publishDate =
+                document.getElementById('qyjContentPublishDate').value;
+            item.expireDate =
+                document.getElementById('qyjContentExpireDate').value;
+            item.pinned =
+                document.getElementById('qyjContentPinned').value === 'true';
+        }
+
+        const list = contentArray();
+
+        if(qyjEditingIndex >= 0){
+            list[qyjEditingIndex] = item;
+        }else{
+            list.push(item);
+            qyjEditingIndex = list.length - 1;
+        }
+
+        saveContentData();
+        renderContentAdmin();
+    };
+
+    window.deleteQyjContentItem = function(){
+        if(qyjEditingIndex < 0){
+            return showToast('請先選擇要刪除的內容',true);
+        }
+
+        if(!confirm('確定刪除這筆內容嗎？')) return;
+
+        contentArray().splice(qyjEditingIndex,1);
+        qyjEditingIndex = -1;
+
+        saveContentData();
+        renderContentAdmin();
+    };
+
+    function currentStaffObject(){
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                return window.msGetCurrentStaff() || {};
+            }
+        }catch(error){}
+
+        try{
+            return JSON.parse(
+                localStorage.getItem('qyj_mobile_staff_login') || '{}'
+            ) || {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function currentStaffName(){
+        const staff = currentStaffObject();
+
+        try{
+            if(typeof window.msStaffName === 'function'){
+                const name = window.msStaffName(staff);
+                if(name) return name;
+            }
+        }catch(error){}
+
+        return (
+            staff.name ||
+            staff.staff ||
+            staff.realName ||
+            staff.employeeName ||
+            ''
+        );
+    }
+
+    function currentStaffType(){
+        const name = currentStaffName();
+
+        try{
+            if(typeof window.qyjGetStaffType === 'function'){
+                return window.qyjGetStaffType(name);
+            }
+        }catch(error){}
+
+        const isFulltime = (ftStaffData || []).some(function(item){
+            return String(item.name || item.staff || '').trim() ===
+                   String(name || '').trim();
+        });
+
+        return isFulltime ? '正職' : '派遣';
+    }
+
+    function audienceAllowed(audience){
+        if(!audience || audience === 'all') return true;
+
+        const type = currentStaffType();
+
+        return (
+            audience === 'fulltime' && type === '正職'
+        ) || (
+            audience === 'dispatch' && type === '派遣'
+        );
+    }
+
+    function ownScheduleRows(year,month){
+        const name = currentStaffName();
+        const prefix = year + '-' + pad(month) + '-';
+
+        return (scheduleData || [])
+            .filter(function(item){
+                if(String(item.date || '').indexOf(prefix) !== 0){
+                    return false;
+                }
+
+                const names =
+                    typeof getScheduleStaffList === 'function'
+                        ? getScheduleStaffList(item.staffs)
+                        : String(item.staffs || '')
+                            .split(/[、,，\n]+/)
+                            .map(function(value){ return value.trim(); })
+                            .filter(Boolean);
+
+                return names.includes(name);
+            })
+            .sort(function(a,b){
+                return String(a.date || '').localeCompare(
+                    String(b.date || '')
+                ) ||
+                String(a.start || '').localeCompare(
+                    String(b.start || '')
+                );
+            });
+    }
+
+    function shiftHours(item){
+        if(item.hours !== undefined && item.hours !== ''){
+            return Number(item.hours);
+        }
+
+        try{
+            if(typeof calcScheduleNetHours === 'function'){
+                return calcScheduleNetHours(
+                    item.start,
+                    item.end,
+                    item.breakStart,
+                    item.breakEnd,
+                    item.breakHours
+                );
+            }
+        }catch(error){}
+
+        return '';
+    }
+
+    window.qyjMobileCalendarChange = function(delta){
+        qyjCalendarCursor = new Date(
+            qyjCalendarCursor.getFullYear(),
+            qyjCalendarCursor.getMonth() + delta,
+            1
+        );
+
+        qyjCalendarSelectedDate = '';
+        window.msShowSchedule();
+    };
+
+    window.qyjMobileCalendarSelect = function(date){
+        qyjCalendarSelectedDate = date;
+        window.msShowSchedule();
+    };
+
+    window.msShowSchedule = function(){
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('我的班表');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        const year = qyjCalendarCursor.getFullYear();
+        const month = qyjCalendarCursor.getMonth() + 1;
+        const firstWeekday = new Date(year,month - 1,1).getDay();
+        const lastDay = new Date(year,month,0).getDate();
+        const today = new Date();
+        const rows = ownScheduleRows(year,month);
+
+        const rowsByDate = {};
+
+        rows.forEach(function(item){
+            const date = String(item.date || '');
+            if(!rowsByDate[date]) rowsByDate[date] = [];
+            rowsByDate[date].push(item);
+        });
+
+        if(!qyjCalendarSelectedDate){
+            const todayKey =
+                today.getFullYear() === year &&
+                today.getMonth() + 1 === month
+                    ? year + '-' + pad(month) + '-' + pad(today.getDate())
+                    : '';
+
+            qyjCalendarSelectedDate =
+                todayKey && rowsByDate[todayKey]
+                    ? todayKey
+                    : (
+                        rows[0]
+                            ? rows[0].date
+                            : year + '-' + pad(month) + '-01'
+                    );
+        }
+
+        let cells = '';
+
+        for(let i=0;i<firstWeekday;i++){
+            cells += '<div class="ms-cal-day empty"></div>';
+        }
+
+        for(let day=1;day<=lastDay;day++){
+            const date = year + '-' + pad(month) + '-' + pad(day);
+            const weekday = new Date(year,month - 1,day).getDay();
+            const hasShift = Boolean(rowsByDate[date]);
+            const isToday =
+                today.getFullYear() === year &&
+                today.getMonth() + 1 === month &&
+                today.getDate() === day;
+
+            cells +=
+                '<div class="ms-cal-day ' +
+                    (weekday === 0 || weekday === 6 ? 'weekend ' : '') +
+                    (isToday ? 'today ' : '') +
+                    (qyjCalendarSelectedDate === date ? 'selected' : '') +
+                '" onclick="qyjMobileCalendarSelect(\'' + date + '\')">' +
+                    '<div class="ms-cal-num">' + day + '</div>' +
+                    (
+                        hasShift
+                            ? '<span class="ms-cal-dot"></span>'
+                            : '<span class="ms-cal-dot none"></span>'
+                    ) +
+                '</div>';
+        }
+
+        const detailRows = rowsByDate[qyjCalendarSelectedDate] || [];
+
+        const details = detailRows.length
+            ? detailRows.map(function(item){
+                const hours = shiftHours(item);
+
+                return (
+                    '<div class="ms-shift-detail">' +
+                        '<div class="ms-shift-company">' +
+                            esc(item.company || '未設定公司') +
+                        '</div>' +
+
+                        '<div class="ms-shift-line">' +
+                            '<span>班別</span>' +
+                            '<span>' +
+                                esc(item.shift || item.service || '一般班') +
+                            '</span>' +
+                        '</div>' +
+
+                        '<div class="ms-shift-line">' +
+                            '<span>上班時間</span>' +
+                            '<span>' +
+                                esc(item.start || '-') +
+                                '－' +
+                                esc(item.end || '-') +
+                            '</span>' +
+                        '</div>' +
+
+                        '<div class="ms-shift-line">' +
+                            '<span>休息時間</span>' +
+                            '<span>' +
+                                (
+                                    item.breakStart && item.breakEnd
+                                        ? esc(item.breakStart) +
+                                          '－' +
+                                          esc(item.breakEnd)
+                                        : (
+                                            item.breakHours
+                                                ? esc(item.breakHours) +
+                                                  ' 小時'
+                                                : '-'
+                                        )
+                                ) +
+                            '</span>' +
+                        '</div>' +
+
+                        '<div class="ms-shift-line">' +
+                            '<span>實際工時</span>' +
+                            '<span>' +
+                                (
+                                    hours !== ''
+                                        ? Number(hours).toFixed(1) + ' 小時'
+                                        : '-'
+                                ) +
+                            '</span>' +
+                        '</div>' +
+
+                        (
+                            item.service
+                                ? '<div class="ms-shift-line">' +
+                                    '<span>服務項目</span>' +
+                                    '<span>' + esc(item.service) + '</span>' +
+                                  '</div>'
+                                : ''
+                        ) +
+
+                        (
+                            item.remark
+                                ? '<div class="ms-shift-line">' +
+                                    '<span>備註</span>' +
+                                    '<span>' + esc(item.remark) + '</span>' +
+                                  '</div>'
+                                : ''
+                        ) +
+                    '</div>'
+                );
+            }).join('')
+            : '<div class="ms-card"><div class="ms-empty">這一天沒有排班</div></div>';
+
+        box.innerHTML =
+            '<div class="ms-cal-shell">' +
+                '<div class="ms-cal-toolbar">' +
+                    '<button class="ms-cal-nav" ' +
+                        'onclick="qyjMobileCalendarChange(-1)">‹</button>' +
+                    '<div class="ms-cal-month">' +
+                        year + ' / ' + pad(month) +
+                    '</div>' +
+                    '<button class="ms-cal-nav" ' +
+                        'onclick="qyjMobileCalendarChange(1)">›</button>' +
+                '</div>' +
+
+                '<div class="ms-cal-grid">' +
+                    ['日','一','二','三','四','五','六']
+                        .map(function(text){
+                            return '<div class="ms-cal-week">' +
+                                text +
+                            '</div>';
+                        }).join('') +
+                    cells +
+                '</div>' +
+
+                '<div class="ms-cal-detail-title">' +
+                    esc(qyjCalendarSelectedDate) +
+                '</div>' +
+
+                details +
+            '</div>';
+    };
+
+    window.qyjToggleMobileContentCard = function(index){
+        const card = document.getElementById(
+            'qyjMobileContentCard_' + index
+        );
+
+        if(card) card.classList.toggle('open');
+    };
+
+    window.msShowSop = function(){
+        ensureContentData();
+
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('入職包 SOP');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        const items = portalConf.sopItems
+            .filter(function(item){
+                return item.active !== false &&
+                       audienceAllowed(item.audience);
+            })
+            .sort(function(a,b){
+                return Number(a.order || 0) - Number(b.order || 0);
+            });
+
+        box.innerHTML = items.length
+            ? items.map(function(item,index){
+                return (
+                    '<div class="ms-content-card" ' +
+                        'id="qyjMobileContentCard_' + index + '">' +
+                        '<button onclick="qyjToggleMobileContentCard(' +
+                            index +
+                        ')">' +
+                            '<div class="ms-content-card-title">' +
+                                esc(item.title || '') +
+                            '</div>' +
+                            '<div class="ms-content-card-desc">' +
+                                esc(item.summary || '') +
+                            '</div>' +
+                        '</button>' +
+                        '<div class="ms-content-card-body">' +
+                            esc(item.content || '') +
+                        '</div>' +
+                    '</div>'
+                );
+            }).join('')
+            : '<div class="ms-card"><div class="ms-empty">目前沒有 SOP 內容</div></div>';
+    };
+
+    window.msShowNotice = function(){
+        ensureContentData();
+
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('公告欄');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        const today = new Date().toISOString().slice(0,10);
+
+        const items = portalConf.announcementItems
+            .filter(function(item){
+                if(item.active === false) return false;
+                if(!audienceAllowed(item.audience)) return false;
+                if(item.publishDate && item.publishDate > today) return false;
+                if(item.expireDate && item.expireDate < today) return false;
+                return true;
+            })
+            .sort(function(a,b){
+                return Number(Boolean(b.pinned)) -
+                       Number(Boolean(a.pinned)) ||
+                       String(b.publishDate || '').localeCompare(
+                           String(a.publishDate || '')
+                       );
+            });
+
+        box.innerHTML = items.length
+            ? items.map(function(item,index){
+                return (
+                    '<div class="ms-content-card" ' +
+                        'id="qyjMobileContentCard_' + index + '">' +
+                        '<button onclick="qyjToggleMobileContentCard(' +
+                            index +
+                        ')">' +
+                            '<div class="ms-content-card-title">' +
+                                (
+                                    item.pinned
+                                        ? '<span class="ms-ann-pin">置頂</span>'
+                                        : ''
+                                ) +
+                                esc(item.title || '') +
+                            '</div>' +
+                            '<div class="ms-content-card-desc">' +
+                                esc(item.summary || '') +
+                            '</div>' +
+                            '<div class="ms-ann-date">' +
+                                esc(item.publishDate || '') +
+                            '</div>' +
+                        '</button>' +
+                        '<div class="ms-content-card-body">' +
+                            esc(item.content || '') +
+                        '</div>' +
+                    '</div>'
+                );
+            }).join('')
+            : '<div class="ms-card"><div class="ms-empty">目前沒有公告</div></div>';
+    };
+
+    const originalLoadDataFromCloud = window.loadDataFromCloud;
+
+    window.loadDataFromCloud = function(){
+        const result =
+            typeof originalLoadDataFromCloud === 'function'
+                ? originalLoadDataFromCloud.apply(this,arguments)
+                : undefined;
+
+        Promise.resolve(result).finally(function(){
+            try{
+                const stored = JSON.parse(
+                    localStorage.getItem('portalConf') || '{}'
+                );
+
+                portalConf = Object.assign({},portalConf,stored);
+                ensureContentData();
+            }catch(error){}
+        });
+
+        return result;
+    };
+
+    function initialize(){
+        ensureContentData();
+        ensureAdminEntry();
+        ensureAdminModal();
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            function(){
+                setTimeout(initialize,300);
+            }
+        );
+    }else{
+        setTimeout(initialize,300);
+    }
+
+    console.log(
+        '員工班表月曆與 SOP／公告管理功能已載入'
+    );
+})();
+</script>
+
 </body>
 </html>
