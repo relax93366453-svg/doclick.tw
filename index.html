@@ -12154,5 +12154,2071 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：員工手機請假直接送出待審核
+     原始程式與其他功能全部保留
+========================================================= -->
+<style>
+.ms-leave-status-list{
+    margin-top:14px;
+}
+.ms-leave-status-title{
+    font-size:16px;
+    font-weight:900;
+    color:#0f172a;
+    margin-bottom:10px;
+}
+.ms-leave-record{
+    background:#fff;
+    border:1px solid #e2e8f0;
+    border-radius:13px;
+    padding:14px;
+    margin-bottom:10px;
+}
+.ms-leave-record-row{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:5px 0;
+    font-size:13px;
+}
+.ms-leave-record-row span:first-child{
+    color:#64748b;
+}
+.ms-leave-record-row span:last-child{
+    color:#1e293b;
+    font-weight:900;
+    text-align:right;
+}
+.ms-leave-badge{
+    display:inline-block;
+    border-radius:999px;
+    padding:4px 10px;
+    font-size:12px;
+    font-weight:900;
+}
+.ms-leave-badge.pending{
+    background:#fef3c7;
+    color:#92400e;
+}
+.ms-leave-badge.approved{
+    background:#dcfce7;
+    color:#166534;
+}
+.ms-leave-badge.rejected{
+    background:#fee2e2;
+    color:#991b1b;
+}
+</style>
+
+<script>
+(function(){
+    'use strict';
+
+    function esc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function todayString(){
+        const now = new Date();
+        const pad = function(value){
+            return String(value).padStart(2,'0');
+        };
+
+        return (
+            now.getFullYear() + '-' +
+            pad(now.getMonth() + 1) + '-' +
+            pad(now.getDate())
+        );
+    }
+
+    function getMobileStaff(){
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                return window.msGetCurrentStaff() || {};
+            }
+        }catch(error){}
+
+        try{
+            return JSON.parse(
+                localStorage.getItem('qyj_mobile_staff_login') || '{}'
+            ) || {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function getMobileStaffName(){
+        const staff = getMobileStaff();
+
+        try{
+            if(typeof window.msStaffName === 'function'){
+                const name = window.msStaffName(staff);
+                if(name) return name;
+            }
+        }catch(error){}
+
+        return (
+            staff.name ||
+            staff.staff ||
+            staff.realName ||
+            staff.employeeName ||
+            ''
+        );
+    }
+
+    function saveLeaveData(){
+        try{
+            localStorage.setItem(
+                'ftAttendData',
+                JSON.stringify(ftAttendData || [])
+            );
+        }catch(error){}
+
+        if(typeof window.saveAll === 'function'){
+            try{
+                window.saveAll();
+                return;
+            }catch(error){
+                console.warn('saveAll 儲存請假失敗：',error);
+            }
+        }
+
+        if(typeof window.saveAllSilently === 'function'){
+            try{
+                window.saveAllSilently();
+            }catch(error){
+                console.warn('背景儲存請假失敗：',error);
+            }
+        }
+    }
+
+    function leaveStatusClass(status){
+        if(status === '已核准') return 'approved';
+        if(status === '退回' || status === '未核准') return 'rejected';
+        return 'pending';
+    }
+
+    function ownLeaveRecords(){
+        const name = getMobileStaffName();
+
+        return (ftAttendData || [])
+            .filter(function(item){
+                return (
+                    String(item.staff || '').trim() ===
+                    String(name || '').trim()
+                ) && (
+                    String(item.record_type || '') === '請假'
+                );
+            })
+            .sort(function(a,b){
+                return String(b.date || '').localeCompare(
+                    String(a.date || '')
+                );
+            })
+            .slice(0,20);
+    }
+
+    function renderLeaveHistory(){
+        const records = ownLeaveRecords();
+
+        if(!records.length){
+            return (
+                '<div class="ms-leave-status-list">' +
+                    '<div class="ms-leave-status-title">我的請假紀錄</div>' +
+                    '<div class="ms-card">' +
+                        '<div class="ms-empty">目前沒有請假申請</div>' +
+                    '</div>' +
+                '</div>'
+            );
+        }
+
+        return (
+            '<div class="ms-leave-status-list">' +
+                '<div class="ms-leave-status-title">我的請假紀錄</div>' +
+                records.map(function(item){
+                    const status = item.approval || '待審核';
+
+                    return (
+                        '<div class="ms-leave-record">' +
+                            '<div class="ms-leave-record-row">' +
+                                '<span>請假日期</span>' +
+                                '<span>' + esc(item.date || '-') + '</span>' +
+                            '</div>' +
+
+                            '<div class="ms-leave-record-row">' +
+                                '<span>假別</span>' +
+                                '<span>' +
+                                    esc(item.leave_type || '事假') +
+                                '</span>' +
+                            '</div>' +
+
+                            '<div class="ms-leave-record-row">' +
+                                '<span>原因</span>' +
+                                '<span>' +
+                                    esc(item.reason || '-') +
+                                '</span>' +
+                            '</div>' +
+
+                            '<div class="ms-leave-record-row">' +
+                                '<span>狀態</span>' +
+                                '<span class="ms-leave-badge ' +
+                                    leaveStatusClass(status) +
+                                '">' +
+                                    esc(status) +
+                                '</span>' +
+                            '</div>' +
+                        '</div>'
+                    );
+                }).join('') +
+            '</div>'
+        );
+    }
+
+    window.msShowLeave = function(){
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('我要請假');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        box.innerHTML =
+            '<div class="ms-card">' +
+                '<div style="font-weight:900;font-size:18px;">' +
+                    '請假申請' +
+                '</div>' +
+
+                '<div class="ms-label">請假日期</div>' +
+                '<input class="ms-input" ' +
+                    'id="msLeaveDate" ' +
+                    'type="date" ' +
+                    'value="' + todayString() + '">' +
+
+                '<div class="ms-label">請假假別</div>' +
+                '<select class="ms-input" id="msLeaveType">' +
+                    '<option value="事假">事假</option>' +
+                    '<option value="病假">病假</option>' +
+                    '<option value="特休假">特休假</option>' +
+                    '<option value="喪假">喪假</option>' +
+                    '<option value="家庭照顧假">家庭照顧假</option>' +
+                    '<option value="其他">其他</option>' +
+                '</select>' +
+
+                '<div class="ms-label">請假原因</div>' +
+                '<input class="ms-input" ' +
+                    'id="msLeaveReason" ' +
+                    'placeholder="請輸入請假原因">' +
+
+                '<button class="ms-primary" ' +
+                    'onclick="msSubmitLeaveApplication()">' +
+                    '送出請假申請' +
+                '</button>' +
+            '</div>' +
+
+            renderLeaveHistory();
+    };
+
+    window.msSubmitLeaveApplication = function(){
+        const name = getMobileStaffName();
+
+        const date =
+            document.getElementById('msLeaveDate')?.value || '';
+
+        const leaveType =
+            document.getElementById('msLeaveType')?.value || '事假';
+
+        const reason =
+            document.getElementById('msLeaveReason')?.value.trim() || '';
+
+        if(!name){
+            alert('找不到登入人員資料，請重新登入後再試。');
+            return;
+        }
+
+        if(!date){
+            alert('請選擇請假日期。');
+            return;
+        }
+
+        if(!reason){
+            alert('請輸入請假原因。');
+            return;
+        }
+
+        const duplicate = (ftAttendData || []).some(function(item){
+            return (
+                String(item.staff || '').trim() ===
+                    String(name).trim() &&
+                String(item.date || '') === date &&
+                String(item.record_type || '') === '請假' &&
+                !['退回','未核准'].includes(
+                    String(item.approval || '')
+                )
+            );
+        });
+
+        if(duplicate){
+            alert('這一天已有請假申請，請勿重複送出。');
+            return;
+        }
+
+        ftAttendData.push({
+            staff:name,
+            date:date,
+            record_type:'請假',
+            reason:reason,
+            time_in:'',
+            time_out:'',
+            hours:0,
+            leave_type:leaveType,
+            approval:'待審核',
+            source:'員工手機申請',
+            createdAt:new Date().toISOString(),
+            updatedAt:new Date().toISOString()
+        });
+
+        saveLeaveData();
+
+        alert(
+            '請假申請已送出\n' +
+            '狀態：等待主管審核'
+        );
+
+        window.msShowLeave();
+    };
+
+    console.log('員工手機請假直接送審功能已載入');
+})();
+</script>
+
+
+<!-- =========================================================
+     僅追加修正：正職整月排班支援「補班日」
+     補班日優先於週六、週日不排班
+     原始程式與其他功能全部保留
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    const AUTO_SETTING_KEY = 'qyj_fulltime_auto_schedule_settings';
+
+    function pad(value){
+        return String(value).padStart(2,'0');
+    }
+
+    function parseDateSet(raw){
+        return new Set(
+            String(raw || '')
+                .split(/[\s,，、;；\n]+/)
+                .map(function(item){ return item.trim(); })
+                .filter(Boolean)
+                .map(function(item){
+                    const match = item.match(
+                        /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/
+                    );
+
+                    if(!match) return '';
+
+                    return (
+                        match[1] + '-' +
+                        pad(match[2]) + '-' +
+                        pad(match[3])
+                    );
+                })
+                .filter(Boolean)
+        );
+    }
+
+    function readAutoSettings(){
+        try{
+            return Object.assign({
+                start:'09:00',
+                end:'17:30',
+                breakStart:'12:00',
+                breakEnd:'13:30',
+                service:'行政',
+                skipWeekends:true,
+                skipApprovedLeave:true,
+                holidayDates:'',
+                makeupWorkDates:''
+            },JSON.parse(
+                localStorage.getItem(AUTO_SETTING_KEY) || '{}'
+            ));
+        }catch(error){
+            return {
+                start:'09:00',
+                end:'17:30',
+                breakStart:'12:00',
+                breakEnd:'13:30',
+                service:'行政',
+                skipWeekends:true,
+                skipApprovedLeave:true,
+                holidayDates:'',
+                makeupWorkDates:''
+            };
+        }
+    }
+
+    function writeAutoSettings(settings){
+        localStorage.setItem(
+            AUTO_SETTING_KEY,
+            JSON.stringify(settings)
+        );
+    }
+
+    function ensureMakeupField(){
+        const panel = document.getElementById(
+            'qyjFulltimeAutoSchedulePanel'
+        );
+
+        if(!panel) return;
+        if(document.getElementById('qyj_ft_auto_makeup')) return;
+
+        const holidayInput = document.getElementById(
+            'qyj_ft_auto_holidays'
+        );
+
+        if(!holidayInput) return;
+
+        const holidayWrap = holidayInput.parentElement;
+        const settings = readAutoSettings();
+
+        const wrap = document.createElement('div');
+        wrap.className = 'qyj-ft-auto-wide';
+        wrap.innerHTML =
+            '<label>補班日期</label>' +
+            '<textarea id="qyj_ft_auto_makeup" ' +
+                'placeholder="例如：2026-09-26、2026-10-17">' +
+                String(settings.makeupWorkDates || '') +
+            '</textarea>' +
+            '<div style="' +
+                'margin-top:7px;' +
+                'color:#047857;' +
+                'font-size:12px;' +
+                'font-weight:800;' +
+                'line-height:1.7;' +
+            '">' +
+                '補班日即使落在週六或週日，也會照常建立正職排班。' +
+            '</div>';
+
+        holidayWrap.insertAdjacentElement('afterend',wrap);
+    }
+
+    function fulltimeNames(){
+        return [...new Set(
+            (ftStaffData || [])
+                .filter(function(item){
+                    return !item.status || item.status === '在職';
+                })
+                .map(function(item){
+                    return item.name || item.staff || '';
+                })
+                .filter(Boolean)
+        )].sort();
+    }
+
+    function approvedLeaveSet(staffName){
+        const result = new Set();
+
+        (ftAttendData || []).forEach(function(item){
+            if(
+                String(item.staff || '').trim() !==
+                String(staffName || '').trim()
+            ){
+                return;
+            }
+
+            const approved =
+                item.approval === '已核准' ||
+                item.approval === '核准';
+
+            if(!approved) return;
+
+            const recordType = String(
+                item.record_type || item.type || ''
+            );
+
+            const leaveType = String(item.leave_type || '');
+
+            const isLeave =
+                recordType.includes('請假') ||
+                recordType.includes('休假') ||
+                leaveType.length > 0;
+
+            if(isLeave && item.date){
+                result.add(String(item.date));
+            }
+        });
+
+        return result;
+    }
+
+    function calcHours(start,end,breakStart,breakEnd){
+        if(typeof calcScheduleNetHours === 'function'){
+            return calcScheduleNetHours(
+                start,end,breakStart,breakEnd,''
+            );
+        }
+
+        function minutes(value){
+            const parts = String(value || '').split(':');
+            return Number(parts[0] || 0) * 60 +
+                   Number(parts[1] || 0);
+        }
+
+        let total = minutes(end) - minutes(start);
+        if(total < 0) total += 1440;
+
+        let rest = minutes(breakEnd) - minutes(breakStart);
+        if(rest < 0) rest += 1440;
+
+        return Math.max(0,(total-rest)/60);
+    }
+
+    window.qyjGenerateFulltimeMonthSchedule = function(){
+        ensureMakeupField();
+
+        const monthValue =
+            document.getElementById('qyj_ft_auto_month')?.value || '';
+
+        const start =
+            document.getElementById('qyj_ft_auto_start')?.value || '';
+
+        const end =
+            document.getElementById('qyj_ft_auto_end')?.value || '';
+
+        const breakStart =
+            document.getElementById('qyj_ft_auto_break_start')?.value ||
+            '12:00';
+
+        const breakEnd =
+            document.getElementById('qyj_ft_auto_break_end')?.value ||
+            '13:30';
+
+        const service =
+            document.getElementById('qyj_ft_auto_service')?.value || '';
+
+        const skipWeekends = Boolean(
+            document.getElementById('qyj_ft_auto_weekend')?.checked
+        );
+
+        const skipLeave = Boolean(
+            document.getElementById('qyj_ft_auto_leave')?.checked
+        );
+
+        const holidayRaw =
+            document.getElementById('qyj_ft_auto_holidays')?.value || '';
+
+        const makeupRaw =
+            document.getElementById('qyj_ft_auto_makeup')?.value || '';
+
+        const names = [...document.querySelectorAll(
+            '.qyj-ft-auto-person:checked'
+        )].map(function(input){
+            return input.value;
+        });
+
+        if(!monthValue){
+            return showToast('請選擇排班月份',true);
+        }
+
+        if(!start || !end){
+            return showToast('請設定上下班時間',true);
+        }
+
+        if(!names.length){
+            return showToast('請至少勾選一位正職人員',true);
+        }
+
+        const company =
+            typeof getScheduleCompany === 'function'
+                ? getScheduleCompany()
+                : '點籽響有限公司';
+
+        if(!company){
+            return showToast('找不到正職排班公司',true);
+        }
+
+        const hours = calcHours(
+            start,end,breakStart,breakEnd
+        );
+
+        if(!hours || hours <= 0){
+            return showToast(
+                '上下班或休息時間設定不正確',
+                true
+            );
+        }
+
+        const parts = monthValue.split('-');
+        const year = Number(parts[0]);
+        const month = Number(parts[1]);
+        const lastDay = new Date(year,month,0).getDate();
+
+        const holidays = parseDateSet(holidayRaw);
+        const makeupDates = parseDateSet(makeupRaw);
+
+        writeAutoSettings({
+            start:start,
+            end:end,
+            breakStart:breakStart,
+            breakEnd:breakEnd,
+            service:service,
+            skipWeekends:skipWeekends,
+            skipApprovedLeave:skipLeave,
+            holidayDates:holidayRaw,
+            makeupWorkDates:makeupRaw
+        });
+
+        let created = 0;
+        let duplicate = 0;
+        let skippedWeekend = 0;
+        let skippedHoliday = 0;
+        let skippedLeave = 0;
+        let createdMakeup = 0;
+
+        names.forEach(function(name){
+            const leaveDates = skipLeave
+                ? approvedLeaveSet(name)
+                : new Set();
+
+            for(let day=1;day<=lastDay;day++){
+                const date =
+                    year + '-' + pad(month) + '-' + pad(day);
+
+                const weekday =
+                    new Date(year,month-1,day).getDay();
+
+                const isWeekend =
+                    weekday === 0 || weekday === 6;
+
+                const isMakeupDay =
+                    makeupDates.has(date);
+
+                /*
+                 * 補班日優先：
+                 * 即使是週六、週日，也不能略過。
+                 */
+                if(
+                    skipWeekends &&
+                    isWeekend &&
+                    !isMakeupDay
+                ){
+                    skippedWeekend++;
+                    continue;
+                }
+
+                /*
+                 * 若同一天同時被填入假日與補班日，
+                 * 以補班日為優先，照常排班。
+                 */
+                if(
+                    holidays.has(date) &&
+                    !isMakeupDay
+                ){
+                    skippedHoliday++;
+                    continue;
+                }
+
+                if(leaveDates.has(date)){
+                    skippedLeave++;
+                    continue;
+                }
+
+                const exists = (scheduleData || []).some(function(item){
+                    const staffList =
+                        typeof getScheduleStaffList === 'function'
+                            ? getScheduleStaffList(item.staffs)
+                            : String(item.staffs || '')
+                                .split(/[、,，\n]+/)
+                                .map(function(value){
+                                    return value.trim();
+                                })
+                                .filter(Boolean);
+
+                    return (
+                        String(item.company || '') === company &&
+                        String(item.date || '') === date &&
+                        String(item.staffType || '') === '正職' &&
+                        staffList.includes(name)
+                    );
+                });
+
+                if(exists){
+                    duplicate++;
+                    continue;
+                }
+
+                scheduleData.push({
+                    company:company,
+                    date:date,
+                    shift:isMakeupDay
+                        ? '正職補班'
+                        : '正職固定班',
+                    start:start,
+                    end:end,
+                    breakStart:breakStart,
+                    breakEnd:breakEnd,
+                    breakHours:1.5,
+                    hours:Number(Number(hours).toFixed(2)),
+                    need:1,
+                    staffs:name,
+                    staffType:'正職',
+                    service:service,
+                    status:'已排滿',
+                    scheduleStatus:'已排班',
+                    location:'',
+                    isMakeupWorkDay:isMakeupDay,
+                    remark:isMakeupDay
+                        ? '正職補班日自動排班'
+                        : '正職整月自動排班'
+                });
+
+                created++;
+
+                if(isMakeupDay){
+                    createdMakeup++;
+                }
+            }
+        });
+
+        if(typeof saveAll === 'function'){
+            saveAll();
+        }
+
+        if(document.getElementById('sch_year')){
+            document.getElementById('sch_year').value = year;
+        }
+
+        if(document.getElementById('sch_month')){
+            document.getElementById('sch_month').value = month;
+        }
+
+        if(typeof renderScheduleTable === 'function'){
+            renderScheduleTable();
+        }
+
+        alert(
+            '正職整月排班完成\n\n' +
+            '新增：' + created + ' 筆\n' +
+            '其中補班：' + createdMakeup + ' 筆\n' +
+            '已存在未重複：' + duplicate + ' 筆\n' +
+            '一般週末略過：' + skippedWeekend + ' 筆\n' +
+            '指定假日略過：' + skippedHoliday + ' 筆\n' +
+            '已核准請假略過：' + skippedLeave + ' 筆'
+        );
+    };
+
+    const oldRenderScheduleTable = window.renderScheduleTable;
+
+    window.renderScheduleTable = function(){
+        const result =
+            typeof oldRenderScheduleTable === 'function'
+                ? oldRenderScheduleTable.apply(this,arguments)
+                : undefined;
+
+        setTimeout(ensureMakeupField,0);
+        return result;
+    };
+
+    const oldSetScheduleStaffType =
+        window.qyjSetScheduleStaffType;
+
+    window.qyjSetScheduleStaffType = function(type){
+        const result =
+            typeof oldSetScheduleStaffType === 'function'
+                ? oldSetScheduleStaffType.apply(this,arguments)
+                : undefined;
+
+        if(type === '正職'){
+            setTimeout(ensureMakeupField,0);
+        }
+
+        return result;
+    };
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            function(){
+                setTimeout(ensureMakeupField,500);
+            }
+        );
+    }else{
+        setTimeout(ensureMakeupField,500);
+    }
+
+    console.log('正職補班日功能已載入');
+})();
+</script>
+
+
+<!-- =========================================================
+     僅追加功能：個人請假補班時數追蹤
+     1. 員工請假可設定應補時數
+     2. 內部系統可安排多次補班
+     3. 顯示已安排／已完成／剩餘時數
+     4. 員工手機可查看自己的補班進度
+     原始程式與其他功能全部保留
+========================================================= -->
+<style>
+/* ===== 補班追蹤管理端 ===== */
+.qyj-makeup-panel{
+    margin-top:18px;
+    background:#fff;
+    border:1px solid #dbe7f5;
+    border-radius:16px;
+    padding:18px;
+    box-shadow:0 4px 14px rgba(15,23,42,.04);
+}
+.qyj-makeup-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+}
+.qyj-makeup-head h3{
+    margin:0;
+    color:#0f172a;
+    font-size:18px;
+    font-weight:900;
+}
+.qyj-makeup-filters{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+.qyj-makeup-filter{
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:#334155;
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+}
+.qyj-makeup-filter.active{
+    background:#2563eb;
+    border-color:#2563eb;
+    color:#fff;
+}
+.qyj-makeup-summary{
+    display:grid;
+    grid-template-columns:repeat(5,minmax(140px,1fr));
+    gap:10px;
+    margin-bottom:14px;
+}
+.qyj-makeup-kpi{
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+    border-radius:12px;
+    padding:12px;
+}
+.qyj-makeup-kpi .label{
+    color:#64748b;
+    font-size:11px;
+    font-weight:900;
+}
+.qyj-makeup-kpi .value{
+    color:#0f172a;
+    font-size:22px;
+    font-weight:900;
+}
+.qyj-makeup-card{
+    border:1px solid #e2e8f0;
+    border-radius:14px;
+    padding:15px;
+    margin-bottom:12px;
+    background:#fff;
+}
+.qyj-makeup-card-head{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+}
+.qyj-makeup-name{
+    font-size:17px;
+    font-weight:900;
+    color:#0f172a;
+}
+.qyj-makeup-meta{
+    color:#64748b;
+    font-size:12px;
+    line-height:1.7;
+}
+.qyj-makeup-hours{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(120px,1fr));
+    gap:8px;
+    margin:10px 0;
+}
+.qyj-makeup-hour-box{
+    border-radius:10px;
+    padding:10px;
+    background:#f8fafc;
+    border:1px solid #e2e8f0;
+}
+.qyj-makeup-hour-box span{
+    display:block;
+    color:#64748b;
+    font-size:11px;
+    font-weight:900;
+}
+.qyj-makeup-hour-box b{
+    display:block;
+    margin-top:3px;
+    font-size:17px;
+    color:#0f172a;
+}
+.qyj-makeup-badge{
+    display:inline-block;
+    border-radius:999px;
+    padding:5px 10px;
+    font-size:12px;
+    font-weight:900;
+}
+.qyj-makeup-badge.unplanned{background:#fee2e2;color:#991b1b;}
+.qyj-makeup-badge.scheduled{background:#fef3c7;color:#92400e;}
+.qyj-makeup-badge.progress{background:#dbeafe;color:#1d4ed8;}
+.qyj-makeup-badge.done{background:#dcfce7;color:#166534;}
+.qyj-makeup-table{
+    width:100%;
+    min-width:760px;
+    border-collapse:collapse;
+    font-size:12px;
+}
+.qyj-makeup-table th,
+.qyj-makeup-table td{
+    padding:9px;
+    border-bottom:1px solid #e2e8f0;
+    text-align:left;
+}
+.qyj-makeup-table th{
+    background:#f8fafc;
+    font-weight:900;
+}
+.qyj-makeup-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-top:12px;
+}
+.qyj-makeup-btn{
+    border:0;
+    border-radius:9px;
+    padding:8px 12px;
+    color:#fff;
+    font-size:12px;
+    font-weight:900;
+    cursor:pointer;
+}
+.qyj-makeup-btn.add{background:#2563eb;}
+.qyj-makeup-btn.edit{background:#0ea5e9;}
+.qyj-makeup-btn.delete{background:#ef4444;}
+.qyj-makeup-btn.complete{background:#10b981;}
+
+/* ===== 補班安排彈窗 ===== */
+.qyj-makeup-modal-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:1000000;
+    background:rgba(15,23,42,.58);
+    padding:20px;
+    overflow:auto;
+}
+.qyj-makeup-modal{
+    width:min(650px,96vw);
+    margin:30px auto;
+    background:#fff;
+    border-radius:20px;
+    padding:22px;
+    box-shadow:0 30px 90px rgba(15,23,42,.35);
+}
+.qyj-makeup-modal h3{
+    margin:0 0 16px;
+    color:#0f172a;
+    font-size:20px;
+    font-weight:900;
+}
+.qyj-makeup-form{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+.qyj-makeup-form .wide{grid-column:1/-1;}
+.qyj-makeup-form label{
+    display:block;
+    color:#475569;
+    font-size:12px;
+    font-weight:900;
+    margin-bottom:5px;
+}
+.qyj-makeup-form input,
+.qyj-makeup-form select,
+.qyj-makeup-form textarea{
+    width:100%;
+    padding:10px 11px;
+    border:1px solid #cbd5e1;
+    border-radius:9px;
+}
+.qyj-makeup-form textarea{
+    min-height:78px;
+    resize:vertical;
+}
+.qyj-makeup-modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:16px;
+}
+.qyj-makeup-modal-actions button{
+    border:0;
+    border-radius:9px;
+    padding:10px 16px;
+    color:#fff;
+    font-weight:900;
+    cursor:pointer;
+}
+.qyj-makeup-modal-actions .cancel{background:#64748b;}
+.qyj-makeup-modal-actions .save{background:#2563eb;}
+
+/* ===== 員工手機補班顯示 ===== */
+.ms-makeup-summary{
+    background:#fff;
+    border:1px solid #e2e8f0;
+    border-radius:14px;
+    padding:14px;
+    margin-top:12px;
+}
+.ms-makeup-title{
+    font-size:16px;
+    font-weight:900;
+    color:#0f172a;
+    margin-bottom:10px;
+}
+.ms-makeup-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+}
+.ms-makeup-box{
+    background:#f8fafc;
+    border-radius:10px;
+    padding:9px;
+    text-align:center;
+}
+.ms-makeup-box span{
+    display:block;
+    color:#64748b;
+    font-size:11px;
+    font-weight:900;
+}
+.ms-makeup-box b{
+    display:block;
+    margin-top:3px;
+    color:#0f172a;
+    font-size:16px;
+}
+.ms-makeup-schedule{
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px solid #e2e8f0;
+    font-size:12px;
+    line-height:1.8;
+    color:#334155;
+}
+.ms-makeup-schedule-row{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:4px 0;
+}
+.ms-makeup-schedule-row span:last-child{
+    font-weight:900;
+    text-align:right;
+}
+
+@media(max-width:900px){
+    .qyj-makeup-summary{grid-template-columns:1fr 1fr;}
+    .qyj-makeup-hours{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:650px){
+    .qyj-makeup-form{grid-template-columns:1fr;}
+    .qyj-makeup-form .wide{grid-column:auto;}
+    .ms-makeup-grid{grid-template-columns:1fr;}
+}
+</style>
+
+<script>
+(function(){
+    'use strict';
+
+    const MAKEUP_KEY = 'qyj_personal_makeup_records';
+    let makeupFilter = 'all';
+    let editingGroupId = '';
+    let editingScheduleId = '';
+
+    function esc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function uid(prefix){
+        return (
+            prefix + '_' +
+            Date.now() + '_' +
+            Math.random().toString(36).slice(2,8)
+        );
+    }
+
+    function readMakeupData(){
+        try{
+            const data = JSON.parse(
+                localStorage.getItem(MAKEUP_KEY) || '[]'
+            );
+            return Array.isArray(data) ? data : [];
+        }catch(error){
+            return [];
+        }
+    }
+
+    function writeMakeupData(data){
+        localStorage.setItem(MAKEUP_KEY,JSON.stringify(data));
+
+        if(typeof window.saveAllSilently === 'function'){
+            try{ window.saveAllSilently(); }catch(error){}
+        }else if(typeof window.saveAll === 'function'){
+            try{ window.saveAll(); }catch(error){}
+        }
+    }
+
+    function timeHours(start,end){
+        if(!start || !end) return 0;
+
+        const toMinutes = function(value){
+            const parts = String(value).split(':');
+            return Number(parts[0] || 0) * 60 +
+                   Number(parts[1] || 0);
+        };
+
+        let total = toMinutes(end) - toMinutes(start);
+        if(total < 0) total += 1440;
+
+        return Number((total / 60).toFixed(2));
+    }
+
+    function groupStats(group){
+        const schedules = Array.isArray(group.schedules)
+            ? group.schedules
+            : [];
+
+        const arranged = schedules.reduce(function(sum,item){
+            return sum + Number(
+                item.plannedHours ||
+                timeHours(item.start,item.end) ||
+                0
+            );
+        },0);
+
+        const completed = schedules
+            .filter(function(item){
+                return item.status === '已完成';
+            })
+            .reduce(function(sum,item){
+                return sum + Number(
+                    item.actualHours ||
+                    item.plannedHours ||
+                    timeHours(item.start,item.end) ||
+                    0
+                );
+            },0);
+
+        const required = Number(group.requiredHours || 0);
+        const remaining = Math.max(0,required - completed);
+
+        let status = '尚未安排';
+
+        if(remaining <= 0 && required > 0){
+            status = '補班完成';
+        }else if(completed > 0){
+            status = '補班中';
+        }else if(arranged > 0){
+            status = '已安排待完成';
+        }
+
+        return {
+            required:Number(required.toFixed(2)),
+            arranged:Number(arranged.toFixed(2)),
+            completed:Number(completed.toFixed(2)),
+            remaining:Number(remaining.toFixed(2)),
+            status:status
+        };
+    }
+
+    function statusClass(status){
+        if(status === '補班完成') return 'done';
+        if(status === '補班中') return 'progress';
+        if(status === '已安排待完成') return 'scheduled';
+        return 'unplanned';
+    }
+
+    function ensureMakeupPanel(){
+        const page = document.getElementById('page-ft_attend');
+        if(!page) return;
+
+        let panel = document.getElementById('qyjMakeupTrackingPanel');
+
+        if(!panel){
+            panel = document.createElement('section');
+            panel.id = 'qyjMakeupTrackingPanel';
+            panel.className = 'qyj-makeup-panel';
+            page.appendChild(panel);
+        }
+
+        renderMakeupPanel();
+        ensureMakeupModal();
+    }
+
+    function ensureMakeupModal(){
+        if(document.getElementById('qyjMakeupModal')) return;
+
+        const modal = document.createElement('div');
+        modal.id = 'qyjMakeupModal';
+        modal.className = 'qyj-makeup-modal-backdrop';
+        modal.innerHTML =
+            '<div class="qyj-makeup-modal">' +
+                '<h3>安排個人補班</h3>' +
+                '<div class="qyj-makeup-form">' +
+                    '<div class="wide">' +
+                        '<label>對應請假</label>' +
+                        '<input id="qyjMakeupGroupInfo" readonly>' +
+                    '</div>' +
+                    '<div>' +
+                        '<label>補班日期</label>' +
+                        '<input id="qyjMakeupDate" type="date">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label>狀態</label>' +
+                        '<select id="qyjMakeupStatus">' +
+                            '<option value="待完成">待完成</option>' +
+                            '<option value="已完成">已完成</option>' +
+                            '<option value="取消">取消</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div>' +
+                        '<label>開始時間</label>' +
+                        '<input id="qyjMakeupStart" type="time">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label>結束時間</label>' +
+                        '<input id="qyjMakeupEnd" type="time">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label>預計補班時數</label>' +
+                        '<input id="qyjMakeupPlannedHours" type="number" ' +
+                            'step="0.5" min="0">' +
+                    '</div>' +
+                    '<div>' +
+                        '<label>實際補班時數</label>' +
+                        '<input id="qyjMakeupActualHours" type="number" ' +
+                            'step="0.5" min="0">' +
+                    '</div>' +
+                    '<div class="wide">' +
+                        '<label>備註</label>' +
+                        '<textarea id="qyjMakeupNote"></textarea>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="qyj-makeup-modal-actions">' +
+                    '<button class="cancel" ' +
+                        'onclick="closeQyjMakeupModal()">取消</button>' +
+                    '<button class="save" ' +
+                        'onclick="saveQyjMakeupSchedule()">儲存</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(modal);
+
+        ['qyjMakeupStart','qyjMakeupEnd'].forEach(function(id){
+            document.getElementById(id).addEventListener('change',function(){
+                const start = document.getElementById('qyjMakeupStart').value;
+                const end = document.getElementById('qyjMakeupEnd').value;
+                const hours = timeHours(start,end);
+
+                if(hours > 0){
+                    document.getElementById(
+                        'qyjMakeupPlannedHours'
+                    ).value = hours;
+                }
+            });
+        });
+    }
+
+    function renderMakeupPanel(){
+        const panel = document.getElementById('qyjMakeupTrackingPanel');
+        if(!panel) return;
+
+        const data = readMakeupData();
+
+        const filtered = data.filter(function(group){
+            const status = groupStats(group).status;
+
+            if(makeupFilter === 'all') return true;
+            if(makeupFilter === 'unplanned'){
+                return status === '尚未安排';
+            }
+            if(makeupFilter === 'scheduled'){
+                return status === '已安排待完成';
+            }
+            if(makeupFilter === 'progress'){
+                return status === '補班中';
+            }
+            if(makeupFilter === 'done'){
+                return status === '補班完成';
+            }
+
+            return true;
+        });
+
+        const totalRequired = data.reduce(function(sum,group){
+            return sum + groupStats(group).required;
+        },0);
+
+        const totalArranged = data.reduce(function(sum,group){
+            return sum + groupStats(group).arranged;
+        },0);
+
+        const totalCompleted = data.reduce(function(sum,group){
+            return sum + groupStats(group).completed;
+        },0);
+
+        const totalRemaining = data.reduce(function(sum,group){
+            return sum + groupStats(group).remaining;
+        },0);
+
+        panel.innerHTML =
+            '<div class="qyj-makeup-head">' +
+                '<h3><i class="fas fa-clock-rotate-left"></i> ' +
+                    '個人補班追蹤</h3>' +
+                '<div class="qyj-makeup-filters">' +
+                    [
+                        ['all','全部'],
+                        ['unplanned','尚未安排'],
+                        ['scheduled','已安排待完成'],
+                        ['progress','補班中'],
+                        ['done','補班完成']
+                    ].map(function(item){
+                        return (
+                            '<button class="qyj-makeup-filter ' +
+                                (makeupFilter === item[0] ? 'active' : '') +
+                            '" onclick="setQyjMakeupFilter(\'' +
+                                item[0] +
+                            '\')">' +
+                                item[1] +
+                            '</button>'
+                        );
+                    }).join('') +
+                '</div>' +
+            '</div>' +
+
+            '<div class="qyj-makeup-summary">' +
+                '<div class="qyj-makeup-kpi">' +
+                    '<div class="label">補班案件</div>' +
+                    '<div class="value">' + data.length + '</div>' +
+                '</div>' +
+                '<div class="qyj-makeup-kpi">' +
+                    '<div class="label">應補時數</div>' +
+                    '<div class="value">' +
+                        totalRequired.toFixed(1) + 'h' +
+                    '</div>' +
+                '</div>' +
+                '<div class="qyj-makeup-kpi">' +
+                    '<div class="label">已安排</div>' +
+                    '<div class="value">' +
+                        totalArranged.toFixed(1) + 'h' +
+                    '</div>' +
+                '</div>' +
+                '<div class="qyj-makeup-kpi">' +
+                    '<div class="label">已完成</div>' +
+                    '<div class="value">' +
+                        totalCompleted.toFixed(1) + 'h' +
+                    '</div>' +
+                '</div>' +
+                '<div class="qyj-makeup-kpi">' +
+                    '<div class="label">剩餘未補</div>' +
+                    '<div class="value">' +
+                        totalRemaining.toFixed(1) + 'h' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+
+            (
+                filtered.length
+                    ? filtered.map(renderMakeupGroupCard).join('')
+                    : '<div class="staff-clock-empty">目前沒有符合條件的補班紀錄</div>'
+            );
+    }
+
+    function renderMakeupGroupCard(group){
+        const stats = groupStats(group);
+        const schedules = Array.isArray(group.schedules)
+            ? group.schedules
+            : [];
+
+        return (
+            '<div class="qyj-makeup-card">' +
+                '<div class="qyj-makeup-card-head">' +
+                    '<div>' +
+                        '<div class="qyj-makeup-name">' +
+                            esc(group.staff || '-') +
+                        '</div>' +
+                        '<div class="qyj-makeup-meta">' +
+                            '請假日期：' +
+                            esc(group.startDate || '-') +
+                            (
+                                group.endDate &&
+                                group.endDate !== group.startDate
+                                    ? ' ～ ' + esc(group.endDate)
+                                    : ''
+                            ) +
+                            '<br>假別：' +
+                            esc(group.leaveType || '-') +
+                            (
+                                group.reason
+                                    ? '｜原因：' + esc(group.reason)
+                                    : ''
+                            ) +
+                        '</div>' +
+                    '</div>' +
+                    '<span class="qyj-makeup-badge ' +
+                        statusClass(stats.status) +
+                    '">' +
+                        stats.status +
+                    '</span>' +
+                '</div>' +
+
+                '<div class="qyj-makeup-hours">' +
+                    '<div class="qyj-makeup-hour-box">' +
+                        '<span>應補時數</span>' +
+                        '<b>' + stats.required.toFixed(1) + 'h</b>' +
+                    '</div>' +
+                    '<div class="qyj-makeup-hour-box">' +
+                        '<span>已安排</span>' +
+                        '<b>' + stats.arranged.toFixed(1) + 'h</b>' +
+                    '</div>' +
+                    '<div class="qyj-makeup-hour-box">' +
+                        '<span>已完成</span>' +
+                        '<b>' + stats.completed.toFixed(1) + 'h</b>' +
+                    '</div>' +
+                    '<div class="qyj-makeup-hour-box">' +
+                        '<span>剩餘未補</span>' +
+                        '<b>' + stats.remaining.toFixed(1) + 'h</b>' +
+                    '</div>' +
+                '</div>' +
+
+                '<div class="table-responsive">' +
+                    '<table class="qyj-makeup-table">' +
+                        '<thead>' +
+                            '<tr>' +
+                                '<th>補班日期</th>' +
+                                '<th>時段</th>' +
+                                '<th>預計時數</th>' +
+                                '<th>實際時數</th>' +
+                                '<th>狀態</th>' +
+                                '<th>操作</th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody>' +
+                            (
+                                schedules.length
+                                    ? schedules.map(function(item){
+                                        return (
+                                            '<tr>' +
+                                                '<td>' +
+                                                    esc(item.date || '-') +
+                                                '</td>' +
+                                                '<td>' +
+                                                    esc(item.start || '-') +
+                                                    '－' +
+                                                    esc(item.end || '-') +
+                                                '</td>' +
+                                                '<td>' +
+                                                    Number(
+                                                        item.plannedHours ||
+                                                        timeHours(
+                                                            item.start,
+                                                            item.end
+                                                        ) ||
+                                                        0
+                                                    ).toFixed(1) +
+                                                    'h' +
+                                                '</td>' +
+                                                '<td>' +
+                                                    Number(
+                                                        item.actualHours || 0
+                                                    ).toFixed(1) +
+                                                    'h' +
+                                                '</td>' +
+                                                '<td>' +
+                                                    esc(item.status || '待完成') +
+                                                '</td>' +
+                                                '<td>' +
+                                                    '<button class="qyj-makeup-btn edit" ' +
+                                                        'onclick="openQyjMakeupModal(\'' +
+                                                            group.id +
+                                                            '\',\'' +
+                                                            item.id +
+                                                        '\')">編輯</button> ' +
+                                                    '<button class="qyj-makeup-btn delete" ' +
+                                                        'onclick="deleteQyjMakeupSchedule(\'' +
+                                                            group.id +
+                                                            '\',\'' +
+                                                            item.id +
+                                                        '\')">刪除</button>' +
+                                                '</td>' +
+                                            '</tr>'
+                                        );
+                                    }).join('')
+                                    : '<tr><td colspan="6">尚未安排補班日期</td></tr>'
+                            ) +
+                        '</tbody>' +
+                    '</table>' +
+                '</div>' +
+
+                '<div class="qyj-makeup-actions">' +
+                    '<button class="qyj-makeup-btn add" ' +
+                        'onclick="openQyjMakeupModal(\'' +
+                            group.id +
+                        '\',\'\')">＋ 安排補班</button>' +
+                    '<button class="qyj-makeup-btn delete" ' +
+                        'onclick="deleteQyjMakeupGroup(\'' +
+                            group.id +
+                        '\')">刪除整筆追蹤</button>' +
+                '</div>' +
+            '</div>'
+        );
+    }
+
+    window.setQyjMakeupFilter = function(filter){
+        makeupFilter = filter || 'all';
+        renderMakeupPanel();
+    };
+
+    window.openQyjMakeupModal = function(groupId,scheduleId){
+        const data = readMakeupData();
+        const group = data.find(function(item){
+            return item.id === groupId;
+        });
+
+        if(!group) return;
+
+        editingGroupId = groupId;
+        editingScheduleId = scheduleId || '';
+
+        const schedule = (group.schedules || []).find(function(item){
+            return item.id === scheduleId;
+        }) || {};
+
+        document.getElementById('qyjMakeupGroupInfo').value =
+            group.staff + '｜' +
+            group.startDate +
+            (
+                group.endDate && group.endDate !== group.startDate
+                    ? '～' + group.endDate
+                    : ''
+            ) +
+            '｜應補 ' +
+            Number(group.requiredHours || 0).toFixed(1) +
+            ' 小時';
+
+        document.getElementById('qyjMakeupDate').value =
+            schedule.date || '';
+        document.getElementById('qyjMakeupStart').value =
+            schedule.start || '';
+        document.getElementById('qyjMakeupEnd').value =
+            schedule.end || '';
+        document.getElementById('qyjMakeupPlannedHours').value =
+            schedule.plannedHours || '';
+        document.getElementById('qyjMakeupActualHours').value =
+            schedule.actualHours || '';
+        document.getElementById('qyjMakeupStatus').value =
+            schedule.status || '待完成';
+        document.getElementById('qyjMakeupNote').value =
+            schedule.note || '';
+
+        document.getElementById('qyjMakeupModal').style.display =
+            'block';
+    };
+
+    window.closeQyjMakeupModal = function(){
+        document.getElementById('qyjMakeupModal').style.display =
+            'none';
+        editingGroupId = '';
+        editingScheduleId = '';
+    };
+
+    window.saveQyjMakeupSchedule = function(){
+        const data = readMakeupData();
+        const group = data.find(function(item){
+            return item.id === editingGroupId;
+        });
+
+        if(!group) return;
+
+        const date =
+            document.getElementById('qyjMakeupDate').value;
+        const start =
+            document.getElementById('qyjMakeupStart').value;
+        const end =
+            document.getElementById('qyjMakeupEnd').value;
+        const plannedHours = Number(
+            document.getElementById(
+                'qyjMakeupPlannedHours'
+            ).value || timeHours(start,end) || 0
+        );
+        const actualHours = Number(
+            document.getElementById(
+                'qyjMakeupActualHours'
+            ).value || 0
+        );
+        const status =
+            document.getElementById('qyjMakeupStatus').value;
+        const note =
+            document.getElementById('qyjMakeupNote').value.trim();
+
+        if(!date){
+            alert('請選擇補班日期。');
+            return;
+        }
+
+        if(plannedHours <= 0){
+            alert('請輸入預計補班時數。');
+            return;
+        }
+
+        if(!Array.isArray(group.schedules)){
+            group.schedules = [];
+        }
+
+        let schedule = group.schedules.find(function(item){
+            return item.id === editingScheduleId;
+        });
+
+        if(!schedule){
+            schedule = {
+                id:uid('makeup_schedule'),
+                createdAt:new Date().toISOString()
+            };
+            group.schedules.push(schedule);
+        }
+
+        Object.assign(schedule,{
+            date:date,
+            start:start,
+            end:end,
+            plannedHours:plannedHours,
+            actualHours:status === '已完成'
+                ? (
+                    actualHours > 0
+                        ? actualHours
+                        : plannedHours
+                )
+                : actualHours,
+            status:status,
+            note:note,
+            updatedAt:new Date().toISOString()
+        });
+
+        group.updatedAt = new Date().toISOString();
+
+        writeMakeupData(data);
+        closeQyjMakeupModal();
+        renderMakeupPanel();
+    };
+
+    window.deleteQyjMakeupSchedule = function(groupId,scheduleId){
+        if(!confirm('確定刪除這筆補班安排嗎？')) return;
+
+        const data = readMakeupData();
+        const group = data.find(function(item){
+            return item.id === groupId;
+        });
+
+        if(!group) return;
+
+        group.schedules = (group.schedules || []).filter(
+            function(item){
+                return item.id !== scheduleId;
+            }
+        );
+
+        writeMakeupData(data);
+        renderMakeupPanel();
+    };
+
+    window.deleteQyjMakeupGroup = function(groupId){
+        if(!confirm('確定刪除整筆補班追蹤嗎？')) return;
+
+        const data = readMakeupData().filter(function(item){
+            return item.id !== groupId;
+        });
+
+        writeMakeupData(data);
+        renderMakeupPanel();
+    };
+
+    function currentStaffName(){
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                const staff = window.msGetCurrentStaff() || {};
+
+                if(typeof window.msStaffName === 'function'){
+                    const name = window.msStaffName(staff);
+                    if(name) return name;
+                }
+
+                return (
+                    staff.name ||
+                    staff.staff ||
+                    staff.realName ||
+                    staff.employeeName ||
+                    ''
+                );
+            }
+        }catch(error){}
+
+        return '';
+    }
+
+    function employeeMakeupHtml(){
+        const name = currentStaffName();
+
+        const groups = readMakeupData()
+            .filter(function(group){
+                return String(group.staff || '').trim() ===
+                    String(name || '').trim();
+            })
+            .sort(function(a,b){
+                return String(b.startDate || '').localeCompare(
+                    String(a.startDate || '')
+                );
+            });
+
+        if(!groups.length) return '';
+
+        return groups.map(function(group){
+            const stats = groupStats(group);
+            const schedules = Array.isArray(group.schedules)
+                ? group.schedules
+                : [];
+
+            return (
+                '<div class="ms-makeup-summary">' +
+                    '<div class="ms-makeup-title">' +
+                        '補班進度｜' +
+                        esc(group.startDate || '') +
+                        (
+                            group.endDate &&
+                            group.endDate !== group.startDate
+                                ? '～' + esc(group.endDate)
+                                : ''
+                        ) +
+                    '</div>' +
+
+                    '<div class="ms-makeup-grid">' +
+                        '<div class="ms-makeup-box">' +
+                            '<span>應補時數</span>' +
+                            '<b>' + stats.required.toFixed(1) + 'h</b>' +
+                        '</div>' +
+                        '<div class="ms-makeup-box">' +
+                            '<span>已完成</span>' +
+                            '<b>' + stats.completed.toFixed(1) + 'h</b>' +
+                        '</div>' +
+                        '<div class="ms-makeup-box">' +
+                            '<span>剩餘未補</span>' +
+                            '<b>' + stats.remaining.toFixed(1) + 'h</b>' +
+                        '</div>' +
+                    '</div>' +
+
+                    '<div class="ms-makeup-schedule">' +
+                        (
+                            schedules.length
+                                ? schedules.map(function(item){
+                                    return (
+                                        '<div class="ms-makeup-schedule-row">' +
+                                            '<span>' +
+                                                esc(item.date || '-') +
+                                                ' ' +
+                                                esc(item.start || '') +
+                                                (
+                                                    item.end
+                                                        ? '－' + esc(item.end)
+                                                        : ''
+                                                ) +
+                                            '</span>' +
+                                            '<span>' +
+                                                Number(
+                                                    item.status === '已完成'
+                                                        ? (
+                                                            item.actualHours ||
+                                                            item.plannedHours ||
+                                                            0
+                                                        )
+                                                        : (
+                                                            item.plannedHours ||
+                                                            0
+                                                        )
+                                                ).toFixed(1) +
+                                                'h｜' +
+                                                esc(item.status || '待完成') +
+                                            '</span>' +
+                                        '</div>'
+                                    );
+                                }).join('')
+                                : '<div>尚未安排補班日期</div>'
+                        ) +
+                    '</div>' +
+                '</div>'
+            );
+        }).join('');
+    }
+
+    /*
+     * 覆蓋手機請假送出：
+     * 支援日期區間與應補時數。
+     */
+    window.msShowLeave = function(){
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('我要請假');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        const today = new Date().toISOString().slice(0,10);
+
+        box.innerHTML =
+            '<div class="ms-card">' +
+                '<div style="font-weight:900;font-size:18px;">' +
+                    '請假申請' +
+                '</div>' +
+
+                '<div class="ms-label">請假開始日期</div>' +
+                '<input class="ms-input" id="msLeaveStartDate" ' +
+                    'type="date" value="' + today + '">' +
+
+                '<div class="ms-label">請假結束日期</div>' +
+                '<input class="ms-input" id="msLeaveEndDate" ' +
+                    'type="date" value="' + today + '">' +
+
+                '<div class="ms-label">請假假別</div>' +
+                '<select class="ms-input" id="msLeaveType">' +
+                    '<option value="事假">事假</option>' +
+                    '<option value="病假">病假</option>' +
+                    '<option value="特休假">特休假</option>' +
+                    '<option value="喪假">喪假</option>' +
+                    '<option value="家庭照顧假">家庭照顧假</option>' +
+                    '<option value="其他">其他</option>' +
+                '</select>' +
+
+                '<div class="ms-label">請假原因</div>' +
+                '<input class="ms-input" id="msLeaveReason" ' +
+                    'placeholder="請輸入請假原因">' +
+
+                '<div class="ms-label">是否需要補班</div>' +
+                '<select class="ms-input" id="msLeaveNeedMakeup" ' +
+                    'onchange="qyjToggleLeaveMakeupHours()">' +
+                    '<option value="no">不需要補班</option>' +
+                    '<option value="yes">需要補班</option>' +
+                '</select>' +
+
+                '<div id="msLeaveMakeupHoursWrap" style="display:none;">' +
+                    '<div class="ms-label">應補時數</div>' +
+                    '<input class="ms-input" id="msLeaveRequiredHours" ' +
+                        'type="number" step="0.5" min="0" ' +
+                        'placeholder="例如 21 小時">' +
+                    '<div style="font-size:12px;color:#64748b;' +
+                        'margin-top:6px;line-height:1.7;">' +
+                        '補班可分多次完成，不需要一次補完。' +
+                    '</div>' +
+                '</div>' +
+
+                '<button class="ms-primary" ' +
+                    'onclick="msSubmitLeaveApplication()">' +
+                    '送出請假申請' +
+                '</button>' +
+            '</div>' +
+
+            employeeMakeupHtml();
+    };
+
+    window.qyjToggleLeaveMakeupHours = function(){
+        const need =
+            document.getElementById('msLeaveNeedMakeup')?.value === 'yes';
+
+        const wrap =
+            document.getElementById('msLeaveMakeupHoursWrap');
+
+        if(wrap){
+            wrap.style.display = need ? 'block' : 'none';
+        }
+    };
+
+    window.msSubmitLeaveApplication = function(){
+        const staff = currentStaffName();
+        const startDate =
+            document.getElementById('msLeaveStartDate')?.value || '';
+        const endDate =
+            document.getElementById('msLeaveEndDate')?.value || '';
+        const leaveType =
+            document.getElementById('msLeaveType')?.value || '事假';
+        const reason =
+            document.getElementById('msLeaveReason')?.value.trim() || '';
+        const needMakeup =
+            document.getElementById('msLeaveNeedMakeup')?.value === 'yes';
+        const requiredHours = Number(
+            document.getElementById('msLeaveRequiredHours')?.value || 0
+        );
+
+        if(!staff){
+            alert('找不到登入人員資料，請重新登入。');
+            return;
+        }
+
+        if(!startDate || !endDate){
+            alert('請選擇請假日期。');
+            return;
+        }
+
+        if(endDate < startDate){
+            alert('結束日期不可早於開始日期。');
+            return;
+        }
+
+        if(!reason){
+            alert('請輸入請假原因。');
+            return;
+        }
+
+        if(needMakeup && requiredHours <= 0){
+            alert('請輸入應補時數。');
+            return;
+        }
+
+        const groupId = uid('leave_group');
+        const start = new Date(startDate + 'T00:00:00');
+        const end = new Date(endDate + 'T00:00:00');
+
+        for(
+            let cursor = new Date(start);
+            cursor <= end;
+            cursor.setDate(cursor.getDate() + 1)
+        ){
+            const date = cursor.toISOString().slice(0,10);
+
+            ftAttendData.push({
+                staff:staff,
+                date:date,
+                record_type:'請假',
+                reason:reason,
+                time_in:'',
+                time_out:'',
+                hours:0,
+                leave_type:leaveType,
+                approval:'待審核',
+                source:'員工手機申請',
+                leaveGroupId:groupId,
+                needMakeup:needMakeup,
+                createdAt:new Date().toISOString(),
+                updatedAt:new Date().toISOString()
+            });
+        }
+
+        if(needMakeup){
+            const data = readMakeupData();
+
+            data.push({
+                id:groupId,
+                staff:staff,
+                startDate:startDate,
+                endDate:endDate,
+                leaveType:leaveType,
+                reason:reason,
+                requiredHours:requiredHours,
+                schedules:[],
+                approval:'待審核',
+                createdAt:new Date().toISOString(),
+                updatedAt:new Date().toISOString()
+            });
+
+            writeMakeupData(data);
+        }
+
+        if(typeof window.saveAll === 'function'){
+            window.saveAll();
+        }
+
+        alert(
+            '請假申請已送出\n' +
+            '狀態：等待主管審核' +
+            (
+                needMakeup
+                    ? '\n應補時數：' +
+                      requiredHours.toFixed(1) +
+                      ' 小時'
+                    : ''
+            )
+        );
+
+        window.msShowLeave();
+    };
+
+    const oldShowAdminPage = window.showAdminPage;
+
+    window.showAdminPage = function(page){
+        const result =
+            typeof oldShowAdminPage === 'function'
+                ? oldShowAdminPage.apply(this,arguments)
+                : undefined;
+
+        if(page === 'ft_attend'){
+            setTimeout(ensureMakeupPanel,0);
+        }
+
+        return result;
+    };
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            function(){
+                setTimeout(ensureMakeupPanel,500);
+            }
+        );
+    }else{
+        setTimeout(ensureMakeupPanel,500);
+    }
+
+    console.log('個人補班時數追蹤功能已載入');
+})();
+</script>
+
 </body>
 </html>
