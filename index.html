@@ -767,6 +767,43 @@
 }
 
 </style>
+
+<script>
+/* ===== 員工手機入口：在畫面繪製前立即隱藏舊版內容 ===== */
+(function () {
+    try {
+        var params = new URLSearchParams(location.search);
+        var isStaffApp = params.get('staffApp') === '1';
+
+        if (!isStaffApp) return;
+
+        document.documentElement.classList.add('qyj-staff-fast-start');
+
+        var style = document.createElement('style');
+        style.id = 'qyjStaffFastStartStyle';
+        style.textContent = `
+            html.qyj-staff-fast-start body > * {
+                visibility: hidden !important;
+            }
+
+            html.qyj-staff-fast-start #mobileStaffApp,
+            html.qyj-staff-fast-start #mobileStaffApp *,
+            html.qyj-staff-fast-start #toast {
+                visibility: visible !important;
+            }
+
+            html.qyj-staff-fast-start body {
+                background: #f4f7fb !important;
+            }
+        `;
+
+        document.head.appendChild(style);
+    } catch (error) {
+        console.warn('員工快速入口預隱藏失敗：', error);
+    }
+})();
+</script>
+
 </head>
 <body>
 
@@ -10687,6 +10724,172 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     console.log(
         '正職排班公司已固定為：' + FULLTIME_COMPANY
     );
+})();
+</script>
+
+
+<!-- =========================================================
+     僅追加修正：員工手機入口直接顯示，不先閃出舊版首頁
+     原始程式與其他功能全部保留
+========================================================= -->
+<script>
+(function () {
+    'use strict';
+
+    function isStaffAppMode() {
+        try {
+            return new URLSearchParams(location.search).get('staffApp') === '1';
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function wantedRoute() {
+        try {
+            return (
+                new URLSearchParams(location.search).get('route') ||
+                localStorage.getItem('qyj_mobile_staff_route') ||
+                'home'
+            );
+        } catch (error) {
+            return 'home';
+        }
+    }
+
+    function hideNonMobileScreens() {
+        var ids = [
+            'login-screen',
+            'sys-screen',
+            'staff-screen'
+        ];
+
+        ids.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.style.display = 'none';
+                el.style.visibility = 'hidden';
+            }
+        });
+
+        var app = document.getElementById('mobileStaffApp');
+
+        if (app) {
+            app.style.display = 'block';
+            app.style.visibility = 'visible';
+        }
+    }
+
+    async function openStaffDirectly() {
+        if (!isStaffAppMode()) return;
+
+        hideNonMobileScreens();
+
+        var app = document.getElementById('mobileStaffApp');
+        if (!app) return;
+
+        var savedStaff = null;
+
+        try {
+            savedStaff = JSON.parse(
+                localStorage.getItem('qyj_mobile_staff_login') || 'null'
+            );
+        } catch (error) {}
+
+        /*
+         * 已登入：立即用本機資料開頁，不等待雲端。
+         */
+        if (savedStaff) {
+            try {
+                if (typeof window.msGo === 'function') {
+                    window.msGo(wantedRoute());
+                } else if (typeof window.msShowHome === 'function') {
+                    window.msShowHome();
+                }
+            } catch (error) {
+                console.warn('員工手機頁立即開啟失敗：', error);
+            }
+        } else {
+            /*
+             * 尚未登入：直接顯示員工登入，不顯示舊版首頁。
+             */
+            try {
+                if (typeof window.msShowLogin === 'function') {
+                    window.msShowLogin(wantedRoute());
+                }
+            } catch (error) {
+                console.warn('員工登入頁開啟失敗：', error);
+            }
+        }
+
+        /*
+         * 背景讀雲端，不阻塞畫面。
+         */
+        setTimeout(function () {
+            try {
+                if (typeof window.readCloud === 'function') {
+                    Promise.resolve(window.readCloud())
+                        .then(function () {
+                            if (savedStaff && typeof window.msGo === 'function') {
+                                window.msGo(wantedRoute());
+                            }
+                        })
+                        .catch(function (error) {
+                            console.warn('背景雲端同步失敗：', error);
+                        });
+                }
+            } catch (error) {
+                console.warn('背景同步啟動失敗：', error);
+            }
+        }, 0);
+
+        document.documentElement.classList.remove(
+            'qyj-staff-fast-start'
+        );
+
+        var preloadStyle = document.getElementById(
+            'qyjStaffFastStartStyle'
+        );
+
+        if (preloadStyle) {
+            preloadStyle.remove();
+        }
+    }
+
+    /*
+     * DOM 一建立就立刻處理，不等待完整圖片與外部套件載入。
+     */
+    if (document.readyState === 'loading') {
+        document.addEventListener(
+            'DOMContentLoaded',
+            openStaffDirectly,
+            { once: true }
+        );
+    } else {
+        openStaffDirectly();
+    }
+
+    /*
+     * 防止後續舊程式又把管理端畫面顯示回來。
+     */
+    window.addEventListener('load', function () {
+        if (!isStaffAppMode()) return;
+
+        hideNonMobileScreens();
+
+        var savedStaff = null;
+
+        try {
+            savedStaff = JSON.parse(
+                localStorage.getItem('qyj_mobile_staff_login') || 'null'
+            );
+        } catch (error) {}
+
+        if (savedStaff && typeof window.msGo === 'function') {
+            window.msGo(wantedRoute());
+        }
+    });
+
+    console.log('員工手機直達快速入口已載入');
 })();
 </script>
 
