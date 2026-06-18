@@ -10439,5 +10439,256 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：所有正職排班固定公司為「點籽響有限公司」
+     原始程式全部保留
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    const FULLTIME_COMPANY = '點籽響有限公司';
+
+    function currentScheduleType(){
+        try{
+            if(typeof window.qyjGetCurrentScheduleStaffType === 'function'){
+                return window.qyjGetCurrentScheduleStaffType();
+            }
+        }catch(error){}
+        return localStorage.getItem('qyj_schedule_staff_type') || '派遣';
+    }
+
+    function forceFulltimeCompanyFields(){
+        if(currentScheduleType() !== '正職') return;
+
+        const companySelect = document.getElementById('sch_company_select');
+        const companyInput = document.getElementById('sch_company_input');
+        const quickCompany = document.getElementById('sch_quick_company');
+        const modalCompany = document.getElementById('sch_modal_company');
+
+        if(companySelect){
+            const exists = [...companySelect.options].some(function(opt){
+                return opt.value === FULLTIME_COMPANY;
+            });
+
+            if(!exists){
+                const option = document.createElement('option');
+                option.value = FULLTIME_COMPANY;
+                option.textContent = FULLTIME_COMPANY;
+                companySelect.appendChild(option);
+            }
+
+            companySelect.value = FULLTIME_COMPANY;
+            companySelect.disabled = true;
+        }
+
+        if(companyInput){
+            companyInput.value = FULLTIME_COMPANY;
+            companyInput.readOnly = true;
+        }
+
+        if(quickCompany){
+            quickCompany.value = FULLTIME_COMPANY;
+            quickCompany.readOnly = true;
+        }
+
+        if(modalCompany){
+            modalCompany.value = FULLTIME_COMPANY;
+            modalCompany.readOnly = true;
+        }
+    }
+
+    function releaseCompanyFields(){
+        if(currentScheduleType() === '正職') return;
+
+        const companySelect = document.getElementById('sch_company_select');
+        const companyInput = document.getElementById('sch_company_input');
+        const quickCompany = document.getElementById('sch_quick_company');
+        const modalCompany = document.getElementById('sch_modal_company');
+
+        if(companySelect) companySelect.disabled = false;
+        if(companyInput) companyInput.readOnly = false;
+        if(quickCompany) quickCompany.readOnly = false;
+        if(modalCompany) modalCompany.readOnly = false;
+    }
+
+    /*
+     * 正職模式固定回傳點籽響有限公司，
+     * 派遣模式仍沿用原本選擇公司。
+     */
+    const originalGetScheduleCompany = window.getScheduleCompany;
+
+    window.getScheduleCompany = function(){
+        if(currentScheduleType() === '正職'){
+            return FULLTIME_COMPANY;
+        }
+
+        return typeof originalGetScheduleCompany === 'function'
+            ? originalGetScheduleCompany.apply(this,arguments)
+            : '';
+    };
+
+    const originalSetScheduleStaffType =
+        window.qyjSetScheduleStaffType;
+
+    window.qyjSetScheduleStaffType = function(type){
+        const result =
+            typeof originalSetScheduleStaffType === 'function'
+                ? originalSetScheduleStaffType.apply(this,arguments)
+                : undefined;
+
+        setTimeout(function(){
+            if(type === '正職'){
+                forceFulltimeCompanyFields();
+
+                const year = Number(
+                    document.getElementById('sch_year')?.value
+                ) || new Date().getFullYear();
+
+                const month = Number(
+                    document.getElementById('sch_month')?.value
+                ) || (new Date().getMonth() + 1);
+
+                if(typeof window.renderScheduleTable === 'function'){
+                    window.renderScheduleTable();
+                }
+            }else{
+                releaseCompanyFields();
+            }
+        },0);
+
+        return result;
+    };
+
+    /*
+     * 覆蓋正職整月排班的公司來源：
+     * 永遠寫入點籽響有限公司。
+     */
+    const originalGenerateFulltimeMonthSchedule =
+        window.qyjGenerateFulltimeMonthSchedule;
+
+    window.qyjGenerateFulltimeMonthSchedule = function(){
+        forceFulltimeCompanyFields();
+
+        const companySelect = document.getElementById('sch_company_select');
+        const companyInput = document.getElementById('sch_company_input');
+
+        if(companySelect){
+            companySelect.disabled = false;
+            companySelect.value = FULLTIME_COMPANY;
+        }
+
+        if(companyInput){
+            companyInput.value = FULLTIME_COMPANY;
+        }
+
+        const result =
+            typeof originalGenerateFulltimeMonthSchedule === 'function'
+                ? originalGenerateFulltimeMonthSchedule.apply(this,arguments)
+                : undefined;
+
+        if(companySelect){
+            companySelect.value = FULLTIME_COMPANY;
+            companySelect.disabled = true;
+        }
+
+        return result;
+    };
+
+    /*
+     * 正職快速新增與彈窗新增時，
+     * 公司欄位自動鎖定為點籽響。
+     */
+    const originalAddQuickSchedule = window.addQuickSchedule;
+
+    window.addQuickSchedule = function(){
+        if(currentScheduleType() === '正職'){
+            const quickCompany =
+                document.getElementById('sch_quick_company');
+
+            if(quickCompany){
+                quickCompany.value = FULLTIME_COMPANY;
+            }
+        }
+
+        return typeof originalAddQuickSchedule === 'function'
+            ? originalAddQuickSchedule.apply(this,arguments)
+            : undefined;
+    };
+
+    const originalSaveScheduleCell = window.saveScheduleCell;
+
+    window.saveScheduleCell = function(){
+        if(currentScheduleType() === '正職'){
+            const modalCompany =
+                document.getElementById('sch_modal_company');
+
+            if(modalCompany){
+                modalCompany.value = FULLTIME_COMPANY;
+            }
+        }
+
+        return typeof originalSaveScheduleCell === 'function'
+            ? originalSaveScheduleCell.apply(this,arguments)
+            : undefined;
+    };
+
+    const originalOpenScheduleCell = window.openScheduleCell;
+
+    window.openScheduleCell = function(){
+        const result =
+            typeof originalOpenScheduleCell === 'function'
+                ? originalOpenScheduleCell.apply(this,arguments)
+                : undefined;
+
+        setTimeout(function(){
+            if(currentScheduleType() === '正職'){
+                forceFulltimeCompanyFields();
+            }
+        },0);
+
+        return result;
+    };
+
+    const originalRenderScheduleTable = window.renderScheduleTable;
+
+    window.renderScheduleTable = function(){
+        const result =
+            typeof originalRenderScheduleTable === 'function'
+                ? originalRenderScheduleTable.apply(this,arguments)
+                : undefined;
+
+        setTimeout(function(){
+            if(currentScheduleType() === '正職'){
+                forceFulltimeCompanyFields();
+            }else{
+                releaseCompanyFields();
+            }
+        },0);
+
+        return result;
+    };
+
+    function initialize(){
+        if(currentScheduleType() === '正職'){
+            forceFulltimeCompanyFields();
+        }
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded',function(){
+            setTimeout(initialize,300);
+        });
+    }else{
+        setTimeout(initialize,300);
+    }
+
+    console.log(
+        '正職排班公司已固定為：' + FULLTIME_COMPANY
+    );
+})();
+</script>
+
 </body>
 </html>
