@@ -17072,5 +17072,816 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：
+     公告頁禁止被「今日班表同步」覆蓋
+     原始程式與其他功能全部保留
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    let qyjCurrentMobileRoute =
+        localStorage.getItem('qyj_mobile_staff_route') || 'home';
+
+    let qyjNoticeRendering = false;
+    let qyjNoticeRetryTimer = null;
+
+    function isStaffMode(){
+        try{
+            return new URLSearchParams(location.search)
+                .get('staffApp') === '1';
+        }catch(error){
+            return false;
+        }
+    }
+
+    function setRoute(route){
+        qyjCurrentMobileRoute = route || 'home';
+
+        try{
+            localStorage.setItem(
+                'qyj_mobile_staff_route',
+                qyjCurrentMobileRoute
+            );
+        }catch(error){}
+    }
+
+    function isNoticeRoute(){
+        return (
+            qyjCurrentMobileRoute === 'notice' ||
+            (
+                isStaffMode() &&
+                new URLSearchParams(location.search)
+                    .get('route') === 'notice'
+            )
+        );
+    }
+
+    /*
+     * 使用者點底部選單時，記住真正想看的頁面。
+     */
+    document.addEventListener('click',function(event){
+        const target = event.target.closest(
+            '#mobileStaffApp button, #mobileStaffApp a'
+        );
+
+        if(!target) return;
+
+        const onclick = target.getAttribute('onclick') || '';
+        const match = onclick.match(/msGo\(['"]([^'"]+)['"]\)/);
+
+        if(match){
+            setRoute(match[1]);
+            return;
+        }
+
+        const text = String(target.textContent || '')
+            .replace(/\s+/g,'');
+
+        if(text.includes('公告欄')){
+            setRoute('notice');
+        }else if(text.includes('我的班表')){
+            setRoute('schedule');
+        }else if(text.includes('出勤紀錄')){
+            setRoute('attendance');
+        }else if(text.includes('首頁')){
+            setRoute('home');
+        }else if(text.includes('更多')){
+            setRoute('more');
+        }
+    },true);
+
+    /*
+     * 包住 msGo：
+     * 公告頁開啟期間，背景程式不能把頁面切到班表或首頁。
+     */
+    const previousMsGo = window.msGo;
+
+    window.msGo = function(route){
+        const target = route || 'home';
+
+        if(
+            isNoticeRoute() &&
+            target !== 'notice' &&
+            !window.__qyjUserChangingMobileRoute
+        ){
+            return;
+        }
+
+        setRoute(target);
+
+        if(typeof previousMsGo === 'function'){
+            return previousMsGo.apply(this,arguments);
+        }
+    };
+
+    /*
+     * 公告頁顯示時加鎖。
+     */
+    const previousMsShowNotice = window.msShowNotice;
+
+    window.msShowNotice = async function(){
+        setRoute('notice');
+        qyjNoticeRendering = true;
+
+        try{
+            if(typeof previousMsShowNotice === 'function'){
+                return await previousMsShowNotice.apply(
+                    this,
+                    arguments
+                );
+            }
+        }finally{
+            setTimeout(function(){
+                qyjNoticeRendering = false;
+            },1000);
+        }
+    };
+
+    /*
+     * 監看內容區：
+     * 若公告頁被換成「正在讀取今日班表」，立刻恢復公告。
+     */
+    function installNoticeGuard(){
+        const box = document.getElementById('msContent');
+
+        if(!box || box.__qyjNoticeGuardInstalled){
+            return;
+        }
+
+        box.__qyjNoticeGuardInstalled = true;
+
+        const observer = new MutationObserver(function(){
+            if(!isNoticeRoute()) return;
+            if(qyjNoticeRendering) return;
+
+            const text = String(box.textContent || '');
+
+            const overwrittenBySchedule =
+                text.includes('正在讀取今日班表') ||
+                text.includes('今天目前沒有排班') ||
+                text.includes('我的班表');
+
+            if(!overwrittenBySchedule) return;
+
+            clearTimeout(qyjNoticeRetryTimer);
+
+            qyjNoticeRetryTimer = setTimeout(function(){
+                if(
+                    isNoticeRoute() &&
+                    typeof window.msShowNotice === 'function'
+                ){
+                    window.msShowNotice();
+                }
+            },50);
+        });
+
+        observer.observe(box,{
+            childList:true,
+            subtree:true,
+            characterData:true
+        });
+    }
+
+    /*
+     * 背景同步完成後，只更新資料，不主動切頁。
+     */
+    const previousReadCloud = window.readCloud;
+
+    window.readCloud = async function(){
+        const routeBefore = qyjCurrentMobileRoute;
+
+        const result =
+            typeof previousReadCloud === 'function'
+                ? await previousReadCloud.apply(this,arguments)
+                : undefined;
+
+        if(
+            isStaffMode() &&
+            routeBefore === 'notice'
+        ){
+            setRoute('notice');
+
+            if(typeof window.msShowNotice === 'function'){
+                setTimeout(function(){
+                    if(isNoticeRoute()){
+                        window.msShowNotice();
+                    }
+                },0);
+            }
+        }
+
+        return result;
+    };
+
+    function initialize(){
+        installNoticeGuard();
+
+        if(isNoticeRoute()){
+            setRoute('notice');
+
+            setTimeout(function(){
+                if(typeof window.msShowNotice === 'function'){
+                    window.msShowNotice();
+                }
+            },100);
+        }
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            initialize,
+            {once:true}
+        );
+    }else{
+        initialize();
+    }
+
+    window.addEventListener('load',function(){
+        installNoticeGuard();
+
+        if(isNoticeRoute()){
+            setTimeout(function(){
+                if(typeof window.msShowNotice === 'function'){
+                    window.msShowNotice();
+                }
+            },200);
+        }
+    });
+
+    console.log(
+        '公告頁防止班表同步覆蓋修正版已載入'
+    );
+})();
+</script>
+
+
+<!-- =========================================================
+     最終修正：公告雙路徑雲端同步
+     1. sysConfig.portalConf.announcementItems
+     2. 雲端最外層 announcementItems
+     手機端兩個位置都會讀取
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    function esc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function getRoot(result){
+        if(
+            result &&
+            result.data &&
+            typeof result.data === 'object'
+        ){
+            return result.data;
+        }
+
+        return result || {};
+    }
+
+    function cloudUrl(){
+        try{
+            if(typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL){
+                return SCRIPT_URL;
+            }
+        }catch(error){}
+
+        return window.SCRIPT_URL || '';
+    }
+
+    function readLocalPortal(){
+        try{
+            const local = JSON.parse(
+                localStorage.getItem('portalConf') || '{}'
+            );
+
+            return local && typeof local === 'object'
+                ? local
+                : {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function activeMode(){
+        const announcementTab =
+            document.getElementById('qyjContentTabAnnouncement');
+
+        return (
+            announcementTab &&
+            announcementTab.classList.contains('active')
+        ) ? 'announcement' : 'sop';
+    }
+
+    function selectedTitle(){
+        const active =
+            document.querySelector(
+                '#qyjContentItems .qyj-content-item.active ' +
+                '.qyj-content-item-title'
+            );
+
+        return active ? active.textContent.trim() : '';
+    }
+
+    function buildCurrentItem(mode){
+        const item = {
+            title:
+                document.getElementById('qyjContentTitle')
+                    ?.value.trim() || '',
+            summary:
+                document.getElementById('qyjContentSummary')
+                    ?.value.trim() || '',
+            audience:
+                document.getElementById('qyjContentAudience')
+                    ?.value || 'all',
+            active:
+                document.getElementById('qyjContentActive')
+                    ?.value === 'true',
+            order:Number(
+                document.getElementById('qyjContentOrder')
+                    ?.value || 1
+            ),
+            content:
+                document.getElementById('qyjContentBody')
+                    ?.value.trim() || ''
+        };
+
+        if(mode === 'announcement'){
+            item.publishDate =
+                document.getElementById('qyjContentPublishDate')
+                    ?.value || '';
+
+            item.expireDate =
+                document.getElementById('qyjContentExpireDate')
+                    ?.value || '';
+
+            item.pinned =
+                document.getElementById('qyjContentPinned')
+                    ?.value === 'true';
+        }
+
+        return item;
+    }
+
+    function upsertByTitle(list,item,oldTitle){
+        if(!Array.isArray(list)) list = [];
+
+        let index = -1;
+
+        if(oldTitle){
+            index = list.findIndex(function(record){
+                return String(record.title || '').trim() === oldTitle;
+            });
+        }
+
+        if(index < 0){
+            index = list.findIndex(function(record){
+                return String(record.title || '').trim() ===
+                    String(item.title || '').trim();
+            });
+        }
+
+        if(index >= 0){
+            list[index] = item;
+        }else{
+            list.push(item);
+        }
+
+        return list;
+    }
+
+    function portalFromCloud(root){
+        let conf = {};
+
+        if(root.sysConfig && root.sysConfig.portalConf){
+            try{
+                conf =
+                    typeof root.sysConfig.portalConf === 'string'
+                        ? JSON.parse(root.sysConfig.portalConf)
+                        : root.sysConfig.portalConf;
+            }catch(error){
+                conf = {};
+            }
+        }
+
+        if(!conf || typeof conf !== 'object'){
+            conf = {};
+        }
+
+        /*
+         * 最外層資料優先補入，兼容不同雲端版本。
+         */
+        if(Array.isArray(root.announcementItems)){
+            conf.announcementItems = root.announcementItems;
+        }
+
+        if(Array.isArray(root.sopItems)){
+            conf.sopItems = root.sopItems;
+        }
+
+        return conf;
+    }
+
+    async function jsonpRead(){
+        if(typeof window.qyjJsonpRead !== 'function'){
+            throw new Error('雲端讀取功能尚未載入');
+        }
+
+        const result = await window.qyjJsonpRead(20000);
+        return getRoot(result);
+    }
+
+    async function postFullPayload(payload){
+        const url = cloudUrl();
+
+        if(!url){
+            throw new Error('找不到雲端同步網址');
+        }
+
+        await fetch(url,{
+            method:'POST',
+            mode:'no-cors',
+            headers:{
+                'Content-Type':'text/plain;charset=utf-8'
+            },
+            body:JSON.stringify(payload)
+        });
+
+        /*
+         * Apps Script 寫入需要一點時間。
+         */
+        await new Promise(function(resolve){
+            setTimeout(resolve,1800);
+        });
+    }
+
+    function buildDualPayload(conf){
+        let payload;
+
+        try{
+            if(typeof buildCloudPayload === 'function'){
+                payload = buildCloudPayload();
+            }
+        }catch(error){}
+
+        if(!payload){
+            payload = {};
+        }
+
+        payload.sysConfig =
+            payload.sysConfig &&
+            typeof payload.sysConfig === 'object'
+                ? payload.sysConfig
+                : {};
+
+        payload.sysConfig.portalConf =
+            JSON.stringify(conf);
+
+        /*
+         * 雙路徑備援。
+         */
+        payload.announcementItems =
+            Array.isArray(conf.announcementItems)
+                ? conf.announcementItems
+                : [];
+
+        payload.sopItems =
+            Array.isArray(conf.sopItems)
+                ? conf.sopItems
+                : [];
+
+        payload.updatedAt =
+            new Date().toISOString();
+
+        return payload;
+    }
+
+    window.saveQyjContentItem = async function(){
+        const mode = activeMode();
+        const oldTitle = selectedTitle();
+        const item = buildCurrentItem(mode);
+
+        if(!item.title){
+            return showToast('請輸入標題',true);
+        }
+
+        let conf = readLocalPortal();
+
+        if(mode === 'announcement'){
+            conf.announcementItems = upsertByTitle(
+                conf.announcementItems,
+                item,
+                oldTitle
+            );
+        }else{
+            conf.sopItems = upsertByTitle(
+                conf.sopItems,
+                item,
+                oldTitle
+            );
+        }
+
+        try{
+            portalConf = Object.assign({},portalConf || {},conf);
+        }catch(error){
+            window.portalConf = conf;
+        }
+
+        localStorage.setItem(
+            'portalConf',
+            JSON.stringify(conf)
+        );
+
+        const button =
+            document.querySelector('.qyj-content-save');
+
+        const originalText =
+            button ? button.textContent : '儲存並同步';
+
+        if(button){
+            button.disabled = true;
+            button.textContent = '同步中…';
+        }
+
+        try{
+            const payload = buildDualPayload(conf);
+            await postFullPayload(payload);
+
+            const cloudRoot = await jsonpRead();
+            const cloudConf = portalFromCloud(cloudRoot);
+
+            const cloudList =
+                mode === 'announcement'
+                    ? cloudConf.announcementItems
+                    : cloudConf.sopItems;
+
+            const found =
+                Array.isArray(cloudList) &&
+                cloudList.some(function(record){
+                    return (
+                        String(record.title || '').trim() ===
+                        String(item.title || '').trim()
+                    );
+                });
+
+            if(!found){
+                throw new Error(
+                    '雲端仍未回傳這筆內容，請確認 Apps Script 是否已重新部署'
+                );
+            }
+
+            localStorage.setItem(
+                'portalConf',
+                JSON.stringify(cloudConf)
+            );
+
+            try{
+                portalConf = Object.assign({},portalConf || {},cloudConf);
+            }catch(error){}
+
+            if(typeof window.switchQyjContentMode === 'function'){
+                window.switchQyjContentMode(mode);
+            }
+
+            showToast('✅ 公告已同步到雲端');
+        }catch(error){
+            console.error('公告同步失敗：',error);
+
+            showToast(
+                '❌ 同步失敗：' + error.message,
+                true
+            );
+        }finally{
+            if(button){
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+    };
+
+    function currentStaffType(){
+        let staff = {};
+        let name = '';
+
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                staff = window.msGetCurrentStaff() || {};
+            }
+        }catch(error){}
+
+        try{
+            if(typeof window.msStaffName === 'function'){
+                name = window.msStaffName(staff) || '';
+            }
+        }catch(error){}
+
+        if(!name){
+            name =
+                staff.name ||
+                staff.staff ||
+                staff.realName ||
+                staff.employeeName ||
+                '';
+        }
+
+        try{
+            return (ftStaffData || []).some(function(item){
+                return String(item.name || item.staff || '').trim() ===
+                    String(name).trim();
+            }) ? '正職' : '派遣';
+        }catch(error){
+            return '派遣';
+        }
+    }
+
+    function allowed(item,staffType,today){
+        if(item.active === false) return false;
+
+        if(
+            item.audience === 'fulltime' &&
+            staffType !== '正職'
+        ){
+            return false;
+        }
+
+        if(
+            item.audience === 'dispatch' &&
+            staffType !== '派遣'
+        ){
+            return false;
+        }
+
+        if(item.publishDate && item.publishDate > today){
+            return false;
+        }
+
+        if(item.expireDate && item.expireDate < today){
+            return false;
+        }
+
+        return true;
+    }
+
+    function renderAnnouncements(items){
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        if(!items.length){
+            box.innerHTML =
+                '<div class="ms-card">' +
+                    '<div class="ms-empty">目前沒有公告</div>' +
+                '</div>';
+            return;
+        }
+
+        box.innerHTML = items.map(function(item){
+            return (
+                '<div class="ms-content-card open">' +
+                    '<button type="button">' +
+                        '<div class="ms-content-card-title">' +
+                            (
+                                item.pinned
+                                    ? '<span class="ms-ann-pin">置頂</span>'
+                                    : ''
+                            ) +
+                            esc(item.title || '') +
+                        '</div>' +
+
+                        (
+                            item.summary
+                                ? '<div class="ms-content-card-desc">' +
+                                    esc(item.summary) +
+                                  '</div>'
+                                : ''
+                        ) +
+
+                        '<div class="ms-ann-date">' +
+                            esc(item.publishDate || '') +
+                        '</div>' +
+                    '</button>' +
+
+                    '<div class="ms-content-card-body" ' +
+                        'style="display:block;">' +
+                        esc(item.content || '') +
+                    '</div>' +
+                '</div>'
+            );
+        }).join('');
+    }
+
+    window.msShowNotice = async function(){
+        try{
+            localStorage.setItem(
+                'qyj_mobile_staff_route',
+                'notice'
+            );
+        }catch(error){}
+
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('公告欄');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        /*
+         * 先顯示本機最近成功資料。
+         */
+        const localConf = readLocalPortal();
+        const today = new Date().toISOString().slice(0,10);
+        const staffType = currentStaffType();
+
+        const localItems =
+            Array.isArray(localConf.announcementItems)
+                ? localConf.announcementItems
+                    .filter(function(item){
+                        return allowed(item,staffType,today);
+                    })
+                : [];
+
+        if(localItems.length){
+            renderAnnouncements(localItems);
+        }else{
+            box.innerHTML =
+                '<div class="ms-card">' +
+                    '<div class="ms-empty">正在讀取最新公告…</div>' +
+                '</div>';
+        }
+
+        try{
+            const root = await jsonpRead();
+            const conf = portalFromCloud(root);
+
+            localStorage.setItem(
+                'portalConf',
+                JSON.stringify(conf)
+            );
+
+            try{
+                portalConf = Object.assign({},portalConf || {},conf);
+            }catch(error){}
+
+            const items =
+                Array.isArray(conf.announcementItems)
+                    ? conf.announcementItems
+                        .filter(function(item){
+                            return allowed(item,staffType,today);
+                        })
+                        .sort(function(a,b){
+                            return (
+                                Number(Boolean(b.pinned)) -
+                                Number(Boolean(a.pinned))
+                            ) || (
+                                String(b.publishDate || '')
+                                    .localeCompare(
+                                        String(a.publishDate || '')
+                                    )
+                            );
+                        })
+                    : [];
+
+            /*
+             * 確認使用者仍停在公告欄才更新。
+             */
+            if(
+                localStorage.getItem(
+                    'qyj_mobile_staff_route'
+                ) === 'notice'
+            ){
+                renderAnnouncements(items);
+            }
+        }catch(error){
+            console.error('公告讀取失敗：',error);
+
+            if(!localItems.length){
+                box.innerHTML =
+                    '<div class="ms-card">' +
+                        '<div style="font-weight:900;color:#dc2626;' +
+                            'margin-bottom:8px;">公告讀取失敗</div>' +
+                        '<div style="color:#64748b;line-height:1.7;">' +
+                            esc(error.message) +
+                        '</div>' +
+                        '<button class="ms-secondary" ' +
+                            'onclick="msShowNotice()">重新讀取</button>' +
+                    '</div>';
+            }
+        }
+    };
+
+    console.log('公告雙路徑雲端同步修正版已載入');
+})();
+</script>
+
 </body>
 </html>
