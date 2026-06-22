@@ -16641,5 +16641,436 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：
+     1. JSONP 同時支援直接資料與 data 包裝格式
+     2. 公告讀取期間鎖定公告頁，避免背景同步跳到其他頁
+     3. 先顯示手機快取公告，再背景更新雲端
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    let qyjWantedMobileRoute =
+        localStorage.getItem('qyj_mobile_staff_route') || 'home';
+
+    let qyjNoticeRequestToken = 0;
+
+    function esc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function getCloudRoot(result){
+        if(
+            result &&
+            result.data &&
+            typeof result.data === 'object'
+        ){
+            return result.data;
+        }
+
+        return result || {};
+    }
+
+    function parsePortalConf(result){
+        const root = getCloudRoot(result);
+
+        if(
+            !root.sysConfig ||
+            !root.sysConfig.portalConf
+        ){
+            throw new Error('雲端回傳中沒有公告資料');
+        }
+
+        const raw = root.sysConfig.portalConf;
+
+        const conf =
+            typeof raw === 'string'
+                ? JSON.parse(raw)
+                : raw;
+
+        if(!conf || typeof conf !== 'object'){
+            throw new Error('公告資料格式錯誤');
+        }
+
+        try{
+            portalConf = Object.assign(
+                {},
+                typeof defaultPortalConf !== 'undefined'
+                    ? defaultPortalConf
+                    : {},
+                conf
+            );
+        }catch(error){
+            window.portalConf = Object.assign(
+                {},
+                window.portalConf || {},
+                conf
+            );
+        }
+
+        localStorage.setItem(
+            'portalConf',
+            JSON.stringify(conf)
+        );
+
+        return conf;
+    }
+
+    async function readPortalByJsonp(){
+        if(typeof window.qyjJsonpRead !== 'function'){
+            throw new Error('雲端讀取功能尚未載入');
+        }
+
+        const result = await window.qyjJsonpRead(20000);
+        return parsePortalConf(result);
+    }
+
+    function currentPortalConf(){
+        try{
+            const local = JSON.parse(
+                localStorage.getItem('portalConf') || '{}'
+            );
+
+            if(local && typeof local === 'object'){
+                return local;
+            }
+        }catch(error){}
+
+        try{
+            return portalConf || {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function mobileStaffType(){
+        let staff = {};
+        let name = '';
+
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                staff = window.msGetCurrentStaff() || {};
+            }
+        }catch(error){}
+
+        try{
+            if(typeof window.msStaffName === 'function'){
+                name = window.msStaffName(staff) || '';
+            }
+        }catch(error){}
+
+        if(!name){
+            name =
+                staff.name ||
+                staff.staff ||
+                staff.realName ||
+                staff.employeeName ||
+                '';
+        }
+
+        try{
+            const fulltime = (ftStaffData || []).some(function(item){
+                return (
+                    String(item.name || item.staff || '').trim() ===
+                    String(name).trim()
+                );
+            });
+
+            return fulltime ? '正職' : '派遣';
+        }catch(error){
+            return '派遣';
+        }
+    }
+
+    function canView(audience,staffType){
+        if(!audience || audience === 'all') return true;
+        if(audience === 'fulltime') return staffType === '正職';
+        if(audience === 'dispatch') return staffType === '派遣';
+        return false;
+    }
+
+    function visibleAnnouncements(conf){
+        const staffType = mobileStaffType();
+        const today = new Date().toISOString().slice(0,10);
+
+        const items = Array.isArray(conf.announcementItems)
+            ? conf.announcementItems
+            : [];
+
+        return items
+            .filter(function(item){
+                if(item.active === false) return false;
+                if(!canView(item.audience,staffType)) return false;
+
+                if(
+                    item.publishDate &&
+                    String(item.publishDate) > today
+                ){
+                    return false;
+                }
+
+                if(
+                    item.expireDate &&
+                    String(item.expireDate) < today
+                ){
+                    return false;
+                }
+
+                return true;
+            })
+            .sort(function(a,b){
+                return (
+                    Number(Boolean(b.pinned)) -
+                    Number(Boolean(a.pinned))
+                ) || (
+                    String(b.publishDate || '')
+                        .localeCompare(
+                            String(a.publishDate || '')
+                        )
+                );
+            });
+    }
+
+    function renderNoticeItems(items,message){
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        if(qyjWantedMobileRoute !== 'notice') return;
+
+        if(!items.length){
+            box.innerHTML =
+                '<div class="ms-card">' +
+                    '<div class="ms-empty">' +
+                        esc(message || '目前沒有公告') +
+                    '</div>' +
+                '</div>';
+            return;
+        }
+
+        box.innerHTML = items.map(function(item){
+            return (
+                '<div class="ms-content-card open">' +
+                    '<button type="button">' +
+                        '<div class="ms-content-card-title">' +
+                            (
+                                item.pinned
+                                    ? '<span class="ms-ann-pin">置頂</span>'
+                                    : ''
+                            ) +
+                            esc(item.title || '') +
+                        '</div>' +
+
+                        (
+                            item.summary
+                                ? '<div class="ms-content-card-desc">' +
+                                    esc(item.summary) +
+                                  '</div>'
+                                : ''
+                        ) +
+
+                        '<div class="ms-ann-date">' +
+                            esc(item.publishDate || '') +
+                        '</div>' +
+                    '</button>' +
+
+                    '<div class="ms-content-card-body" ' +
+                        'style="display:block;">' +
+                        esc(item.content || '') +
+                    '</div>' +
+                '</div>'
+            );
+        }).join('');
+    }
+
+    /*
+     * 捕捉員工實際點擊的頁面，只有使用者點擊才允許切頁。
+     */
+    document.addEventListener('click',function(event){
+        const button = event.target.closest(
+            '#mobileStaffApp button, #mobileStaffApp a'
+        );
+
+        if(!button) return;
+
+        const onclick = button.getAttribute('onclick') || '';
+        const match = onclick.match(/msGo\(['"]([^'"]+)['"]\)/);
+
+        if(match){
+            qyjWantedMobileRoute = match[1];
+
+            localStorage.setItem(
+                'qyj_mobile_staff_route',
+                qyjWantedMobileRoute
+            );
+
+            qyjNoticeRequestToken++;
+            return;
+        }
+
+        const text = String(button.textContent || '')
+            .replace(/\s+/g,'');
+
+        if(text.includes('公告欄')){
+            qyjWantedMobileRoute = 'notice';
+            localStorage.setItem(
+                'qyj_mobile_staff_route',
+                'notice'
+            );
+        }
+    },true);
+
+    /*
+     * 防止背景同步在公告頁載入中把畫面切回首頁或其他頁。
+     */
+    const previousMsGo = window.msGo;
+
+    window.msGo = function(route){
+        const target = route || 'home';
+
+        if(
+            qyjWantedMobileRoute === 'notice' &&
+            target !== 'notice'
+        ){
+            return;
+        }
+
+        qyjWantedMobileRoute = target;
+
+        localStorage.setItem(
+            'qyj_mobile_staff_route',
+            target
+        );
+
+        if(typeof previousMsGo === 'function'){
+            return previousMsGo.apply(this,arguments);
+        }
+    };
+
+    window.msShowNotice = async function(){
+        qyjWantedMobileRoute = 'notice';
+
+        localStorage.setItem(
+            'qyj_mobile_staff_route',
+            'notice'
+        );
+
+        const requestToken = ++qyjNoticeRequestToken;
+
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('公告欄');
+        }
+
+        /*
+         * 先顯示手機最近一次成功讀到的公告，不讓畫面空白。
+         */
+        const cachedConf = currentPortalConf();
+        const cachedItems = visibleAnnouncements(cachedConf);
+
+        if(cachedItems.length){
+            renderNoticeItems(cachedItems);
+        }else{
+            const box = document.getElementById('msContent');
+
+            if(box){
+                box.innerHTML =
+                    '<div class="ms-card">' +
+                        '<div class="ms-empty">' +
+                            '正在讀取最新公告…' +
+                        '</div>' +
+                    '</div>';
+            }
+        }
+
+        try{
+            const cloudConf = await readPortalByJsonp();
+
+            if(
+                requestToken !== qyjNoticeRequestToken ||
+                qyjWantedMobileRoute !== 'notice'
+            ){
+                return;
+            }
+
+            const items = visibleAnnouncements(cloudConf);
+            renderNoticeItems(items,'目前沒有公告');
+        }catch(error){
+            console.error('手機公告讀取失敗：',error);
+
+            if(
+                requestToken !== qyjNoticeRequestToken ||
+                qyjWantedMobileRoute !== 'notice'
+            ){
+                return;
+            }
+
+            if(!cachedItems.length){
+                const box = document.getElementById('msContent');
+
+                if(box){
+                    box.innerHTML =
+                        '<div class="ms-card">' +
+                            '<div style="' +
+                                'font-weight:900;' +
+                                'color:#dc2626;' +
+                                'margin-bottom:8px;' +
+                            '">' +
+                                '公告讀取失敗' +
+                            '</div>' +
+
+                            '<div style="' +
+                                'color:#64748b;' +
+                                'line-height:1.7;' +
+                            '">' +
+                                esc(error.message) +
+                            '</div>' +
+
+                            '<button class="ms-secondary" ' +
+                                'onclick="msShowNotice()">' +
+                                '重新讀取' +
+                            '</button>' +
+                        '</div>';
+                }
+            }
+        }
+    };
+
+    /*
+     * 使用帶 route=notice 的網址時直接固定進公告欄。
+     */
+    try{
+        const params = new URLSearchParams(location.search);
+
+        if(
+            params.get('staffApp') === '1' &&
+            params.get('route') === 'notice'
+        ){
+            qyjWantedMobileRoute = 'notice';
+
+            localStorage.setItem(
+                'qyj_mobile_staff_route',
+                'notice'
+            );
+
+            setTimeout(function(){
+                if(typeof window.msShowNotice === 'function'){
+                    window.msShowNotice();
+                }
+            },300);
+        }
+    }catch(error){}
+
+    console.log(
+        '手機公告不跳頁與 JSONP data 包裝解析修正版已載入'
+    );
+})();
+</script>
+
 </body>
 </html>
