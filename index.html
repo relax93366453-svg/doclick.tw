@@ -16013,5 +16013,345 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：
+     公告／SOP 儲存時，以畫面作用中分頁判斷正確資料清單
+     修正「雲端回讀時找不到剛儲存的內容」
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    function getActiveContentMode(){
+        const announcementTab =
+            document.getElementById(
+                'qyjContentTabAnnouncement'
+            );
+
+        if(
+            announcementTab &&
+            announcementTab.classList.contains('active')
+        ){
+            return 'announcement';
+        }
+
+        return 'sop';
+    }
+
+    function getSelectedContentTitle(){
+        const activeItem =
+            document.querySelector(
+                '#qyjContentItems .qyj-content-item.active ' +
+                '.qyj-content-item-title'
+            );
+
+        return activeItem
+            ? activeItem.textContent.trim()
+            : '';
+    }
+
+    function getContentList(mode){
+        if(mode === 'announcement'){
+            if(
+                !Array.isArray(
+                    portalConf.announcementItems
+                )
+            ){
+                portalConf.announcementItems = [];
+            }
+
+            return portalConf.announcementItems;
+        }
+
+        if(!Array.isArray(portalConf.sopItems)){
+            portalConf.sopItems = [];
+        }
+
+        return portalConf.sopItems;
+    }
+
+    function getCloudUrl(){
+        try{
+            if(
+                typeof SCRIPT_URL !== 'undefined' &&
+                SCRIPT_URL
+            ){
+                return SCRIPT_URL;
+            }
+        }catch(error){}
+
+        return window.SCRIPT_URL || '';
+    }
+
+    async function pushContentCloud(){
+        if(typeof pushCloudData === 'function'){
+            return await pushCloudData(false);
+        }
+
+        if(typeof window.pushCloudData === 'function'){
+            return await window.pushCloudData(false);
+        }
+
+        throw new Error('找不到雲端儲存功能');
+    }
+
+    async function readCloudPortal(){
+        const url = getCloudUrl();
+
+        if(!url){
+            throw new Error('找不到雲端同步網址');
+        }
+
+        const response = await fetch(
+            url +
+            (url.includes('?') ? '&' : '?') +
+            't=' + Date.now(),
+            {cache:'no-store'}
+        );
+
+        if(!response.ok){
+            throw new Error(
+                '雲端讀取失敗：' + response.status
+            );
+        }
+
+        const result = await response.json();
+
+        const root =
+            result &&
+            result.data &&
+            typeof result.data === 'object'
+                ? result.data
+                : result;
+
+        if(
+            !root ||
+            !root.sysConfig ||
+            !root.sysConfig.portalConf
+        ){
+            throw new Error(
+                '雲端回傳中沒有 portalConf'
+            );
+        }
+
+        const raw = root.sysConfig.portalConf;
+
+        const conf =
+            typeof raw === 'string'
+                ? JSON.parse(raw)
+                : raw;
+
+        if(!conf || typeof conf !== 'object'){
+            throw new Error(
+                '雲端 portalConf 格式錯誤'
+            );
+        }
+
+        return conf;
+    }
+
+    window.saveQyjContentItem = async function(){
+        const mode = getActiveContentMode();
+
+        const title =
+            document.getElementById(
+                'qyjContentTitle'
+            )?.value.trim() || '';
+
+        if(!title){
+            return showToast(
+                '請輸入標題',
+                true
+            );
+        }
+
+        const oldSelectedTitle =
+            getSelectedContentTitle();
+
+        const item = {
+            title:title,
+            summary:
+                document.getElementById(
+                    'qyjContentSummary'
+                )?.value.trim() || '',
+            audience:
+                document.getElementById(
+                    'qyjContentAudience'
+                )?.value || 'all',
+            active:
+                document.getElementById(
+                    'qyjContentActive'
+                )?.value === 'true',
+            order:Number(
+                document.getElementById(
+                    'qyjContentOrder'
+                )?.value || 1
+            ),
+            content:
+                document.getElementById(
+                    'qyjContentBody'
+                )?.value.trim() || ''
+        };
+
+        if(mode === 'announcement'){
+            item.publishDate =
+                document.getElementById(
+                    'qyjContentPublishDate'
+                )?.value || '';
+
+            item.expireDate =
+                document.getElementById(
+                    'qyjContentExpireDate'
+                )?.value || '';
+
+            item.pinned =
+                document.getElementById(
+                    'qyjContentPinned'
+                )?.value === 'true';
+        }
+
+        const list = getContentList(mode);
+
+        let targetIndex = -1;
+
+        if(oldSelectedTitle){
+            targetIndex = list.findIndex(
+                function(record){
+                    return (
+                        String(
+                            record.title || ''
+                        ).trim() ===
+                        oldSelectedTitle
+                    );
+                }
+            );
+        }
+
+        if(targetIndex < 0){
+            targetIndex = list.findIndex(
+                function(record){
+                    return (
+                        String(
+                            record.title || ''
+                        ).trim() === title
+                    );
+                }
+            );
+        }
+
+        if(targetIndex >= 0){
+            list[targetIndex] = item;
+        }else{
+            list.push(item);
+        }
+
+        localStorage.setItem(
+            'portalConf',
+            JSON.stringify(portalConf)
+        );
+
+        const button =
+            document.querySelector(
+                '.qyj-content-save'
+            );
+
+        const originalText =
+            button
+                ? button.textContent
+                : '儲存並同步';
+
+        if(button){
+            button.disabled = true;
+            button.textContent = '同步中…';
+        }
+
+        try{
+            await pushContentCloud();
+
+            /*
+             * 稍等雲端完成寫入後再驗證，避免剛 POST 完立即 GET
+             * 還讀到上一版資料。
+             */
+            await new Promise(
+                function(resolve){
+                    setTimeout(resolve,1200);
+                }
+            );
+
+            const cloudConf =
+                await readCloudPortal();
+
+            const cloudList =
+                mode === 'announcement'
+                    ? cloudConf.announcementItems
+                    : cloudConf.sopItems;
+
+            const found =
+                Array.isArray(cloudList) &&
+                cloudList.some(function(record){
+                    return (
+                        String(
+                            record.title || ''
+                        ).trim() === title
+                    );
+                });
+
+            if(!found){
+                throw new Error(
+                    '雲端回讀時找不到剛儲存的內容'
+                );
+            }
+
+            portalConf = Object.assign(
+                {},
+                portalConf,
+                cloudConf
+            );
+
+            localStorage.setItem(
+                'portalConf',
+                JSON.stringify(portalConf)
+            );
+
+            /*
+             * 重新開啟相同分頁，讓列表顯示雲端確認後的資料。
+             */
+            if(
+                typeof window.switchQyjContentMode ===
+                'function'
+            ){
+                window.switchQyjContentMode(mode);
+            }
+
+            showToast(
+                '✅ 已成功同步到雲端'
+            );
+        }catch(error){
+            console.error(
+                '公告／SOP 同步失敗：',
+                error
+            );
+
+            showToast(
+                '❌ 尚未同步成功：' +
+                error.message,
+                true
+            );
+        }finally{
+            if(button){
+                button.disabled = false;
+                button.textContent =
+                    originalText;
+            }
+        }
+    };
+
+    console.log(
+        '公告／SOP 同步狀態判斷修正版已載入'
+    );
+})();
+</script>
+
 </body>
 </html>
