@@ -16353,5 +16353,293 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     僅追加修正：
+     手機公告欄改用系統既有 JSONP 雲端讀取
+     並正確套用 sysConfig.portalConf
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    function esc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function parseCloudPortalConf(result){
+        if(
+            !result ||
+            !result.sysConfig ||
+            !result.sysConfig.portalConf
+        ){
+            throw new Error('雲端沒有公告資料');
+        }
+
+        const raw = result.sysConfig.portalConf;
+
+        const conf =
+            typeof raw === 'string'
+                ? JSON.parse(raw)
+                : raw;
+
+        if(!conf || typeof conf !== 'object'){
+            throw new Error('公告資料格式錯誤');
+        }
+
+        portalConf = Object.assign(
+            {},
+            typeof defaultPortalConf !== 'undefined'
+                ? defaultPortalConf
+                : {},
+            conf
+        );
+
+        localStorage.setItem(
+            'portalConf',
+            JSON.stringify(portalConf)
+        );
+
+        return portalConf;
+    }
+
+    async function readPortalConfByJsonp(){
+        if(typeof window.qyjJsonpRead !== 'function'){
+            throw new Error('雲端 JSONP 讀取功能尚未載入');
+        }
+
+        const result = await window.qyjJsonpRead();
+        return parseCloudPortalConf(result);
+    }
+
+    function getMobileStaffType(){
+        let staff = {};
+        let name = '';
+
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                staff = window.msGetCurrentStaff() || {};
+            }
+        }catch(error){}
+
+        try{
+            if(typeof window.msStaffName === 'function'){
+                name = window.msStaffName(staff) || '';
+            }
+        }catch(error){}
+
+        if(!name){
+            name =
+                staff.name ||
+                staff.staff ||
+                staff.realName ||
+                staff.employeeName ||
+                '';
+        }
+
+        try{
+            const isFulltime = (ftStaffData || []).some(
+                function(item){
+                    return (
+                        String(
+                            item.name ||
+                            item.staff ||
+                            ''
+                        ).trim() ===
+                        String(name).trim()
+                    );
+                }
+            );
+
+            return isFulltime ? '正職' : '派遣';
+        }catch(error){
+            return '派遣';
+        }
+    }
+
+    function canSeeAudience(audience,staffType){
+        if(!audience || audience === 'all'){
+            return true;
+        }
+
+        if(audience === 'fulltime'){
+            return staffType === '正職';
+        }
+
+        if(audience === 'dispatch'){
+            return staffType === '派遣';
+        }
+
+        return false;
+    }
+
+    window.msShowNotice = async function(){
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('公告欄');
+        }
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        box.innerHTML =
+            '<div class="ms-card">' +
+                '<div class="ms-empty">正在讀取最新公告…</div>' +
+            '</div>';
+
+        try{
+            const conf = await readPortalConfByJsonp();
+            const staffType = getMobileStaffType();
+            const today = new Date().toISOString().slice(0,10);
+
+            const items = Array.isArray(conf.announcementItems)
+                ? conf.announcementItems
+                : [];
+
+            const visible = items
+                .filter(function(item){
+                    if(item.active === false) return false;
+
+                    if(!canSeeAudience(item.audience,staffType)){
+                        return false;
+                    }
+
+                    if(
+                        item.publishDate &&
+                        String(item.publishDate) > today
+                    ){
+                        return false;
+                    }
+
+                    if(
+                        item.expireDate &&
+                        String(item.expireDate) < today
+                    ){
+                        return false;
+                    }
+
+                    return true;
+                })
+                .sort(function(a,b){
+                    return (
+                        Number(Boolean(b.pinned)) -
+                        Number(Boolean(a.pinned))
+                    ) || (
+                        String(b.publishDate || '')
+                            .localeCompare(
+                                String(a.publishDate || '')
+                            )
+                    );
+                });
+
+            if(!visible.length){
+                box.innerHTML =
+                    '<div class="ms-card">' +
+                        '<div class="ms-empty">目前沒有公告</div>' +
+                    '</div>';
+                return;
+            }
+
+            box.innerHTML = visible
+                .map(function(item){
+                    return (
+                        '<div class="ms-content-card open">' +
+                            '<button type="button">' +
+                                '<div class="ms-content-card-title">' +
+                                    (
+                                        item.pinned
+                                            ? '<span class="ms-ann-pin">置頂</span>'
+                                            : ''
+                                    ) +
+                                    esc(item.title || '') +
+                                '</div>' +
+
+                                (
+                                    item.summary
+                                        ? '<div class="ms-content-card-desc">' +
+                                            esc(item.summary) +
+                                          '</div>'
+                                        : ''
+                                ) +
+
+                                '<div class="ms-ann-date">' +
+                                    esc(item.publishDate || '') +
+                                '</div>' +
+                            '</button>' +
+
+                            '<div class="ms-content-card-body" ' +
+                                'style="display:block;">' +
+                                esc(item.content || '') +
+                            '</div>' +
+                        '</div>'
+                    );
+                })
+                .join('');
+        }catch(error){
+            console.error('手機公告讀取失敗：',error);
+
+            box.innerHTML =
+                '<div class="ms-card">' +
+                    '<div style="' +
+                        'font-weight:900;' +
+                        'color:#dc2626;' +
+                        'margin-bottom:8px;' +
+                    '">' +
+                        '公告讀取失敗' +
+                    '</div>' +
+
+                    '<div style="' +
+                        'color:#64748b;' +
+                        'line-height:1.7;' +
+                    '">' +
+                        esc(error.message) +
+                    '</div>' +
+
+                    '<button class="ms-secondary" ' +
+                        'onclick="msShowNotice()">' +
+                        '重新讀取' +
+                    '</button>' +
+                '</div>';
+        }
+    };
+
+    /*
+     * 管理端公告儲存後，用同一套 JSONP 回讀驗證。
+     */
+    const previousSaveContentItem =
+        window.saveQyjContentItem;
+
+    window.saveQyjContentItem = async function(){
+        if(typeof previousSaveContentItem !== 'function'){
+            return;
+        }
+
+        const result =
+            await previousSaveContentItem.apply(
+                this,
+                arguments
+            );
+
+        try{
+            await new Promise(function(resolve){
+                setTimeout(resolve,1500);
+            });
+
+            await readPortalConfByJsonp();
+        }catch(error){
+            console.warn('公告 JSONP 回讀驗證失敗：',error);
+        }
+
+        return result;
+    };
+
+    console.log('手機公告 JSONP 雲端同步修正版已載入');
+})();
+</script>
+
 </body>
 </html>
