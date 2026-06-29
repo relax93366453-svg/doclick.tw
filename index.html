@@ -17883,5 +17883,251 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<!-- =========================================================
+     最終追加修正：
+     1. 手機 GPS 以物件格式保存，主管端可正確顯示定位
+     2. 打卡先立即更新畫面，再背景同步雲端
+     3. 主管端自動標示遲到／早退／缺卡／缺 GPS
+========================================================= -->
+<style>
+.clock-row-late{background:#fff7ed!important;box-shadow:inset 5px 0 0 #f97316;}
+.clock-row-abnormal{background:#fff1f2!important;box-shadow:inset 5px 0 0 #ef4444;}
+.clock-row-warning{background:#fffbeb!important;box-shadow:inset 5px 0 0 #f59e0b;}
+.clock-alerts{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;}
+.clock-alert{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;white-space:nowrap;}
+.clock-alert.late{background:#ffedd5;color:#c2410c;border:1px solid #fdba74;}
+.clock-alert.early{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;}
+.clock-alert.missing{background:#fef3c7;color:#92400e;border:1px solid #fde68a;}
+.clock-alert.gps{background:#fce7f3;color:#9d174d;border:1px solid #f9a8d4;}
+.clock-sync-state{display:inline-flex;align-items:center;border-radius:999px;padding:4px 9px;font-size:11px;font-weight:900;margin-left:8px;}
+.clock-sync-state.syncing{background:#dbeafe;color:#1d4ed8;}
+.clock-sync-state.done{background:#dcfce7;color:#166534;}
+.clock-sync-state.error{background:#fee2e2;color:#991b1b;}
+</style>
+<script>
+(function(){
+    'use strict';
+
+    function norm(v){ return String(v||'').replace(/\s+/g,'').trim(); }
+    function pad2(v){ return String(v).padStart(2,'0'); }
+    function today(){ const d=new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+    function nowTime(){ const d=new Date(); return pad2(d.getHours())+':'+pad2(d.getMinutes()); }
+    function minOf(t){ const p=String(t||'').split(':'); return Number(p[0]||0)*60+Number(p[1]||0); }
+    function diffMin(a,b){ if(!a||!b)return 0; return minOf(a)-minOf(b); }
+
+    function normalizeGps(gps){
+        if(!gps) return null;
+        if(typeof gps==='object' && gps.lat!==undefined && gps.lng!==undefined){
+            return {
+                lat:Number(gps.lat),
+                lng:Number(gps.lng),
+                accuracy:gps.accuracy!==undefined?Number(gps.accuracy):null,
+                capturedAt:gps.capturedAt||new Date().toISOString()
+            };
+        }
+        if(typeof gps==='string'){
+            const m=gps.match(/(-?\d+(?:\.\d+)?)\s*[,，]\s*(-?\d+(?:\.\d+)?)/);
+            if(m){
+                return {lat:Number(m[1]),lng:Number(m[2]),accuracy:null,capturedAt:new Date().toISOString()};
+            }
+        }
+        return null;
+    }
+
+    function staffObj(){
+        try{ if(typeof window.msGetCurrentStaff==='function') return window.msGetCurrentStaff()||{}; }catch(e){}
+        try{ return JSON.parse(localStorage.getItem('qyj_mobile_staff_login')||'{}')||{}; }catch(e){ return {}; }
+    }
+    function staffName(s){
+        try{ if(typeof window.msStaffName==='function'){ const n=window.msStaffName(s); if(n)return n; } }catch(e){}
+        return s.name||s.staff||s.realName||s.employeeName||'';
+    }
+    function todayRows(s){
+        try{ if(typeof window.qyjMobileTodayRows==='function') return window.qyjMobileTodayRows(s)||[]; }catch(e){}
+        try{ if(typeof window.msFindTodaySchedules==='function') return window.msFindTodaySchedules(s)||[]; }catch(e){}
+        return [];
+    }
+    function companyOf(row){ return row.company||row.customer||row.client||row.companyName||'總公司'; }
+    function dateOf(row){ return row.date||row.workDate||row.shiftDate||row.scheduleDate||today(); }
+    function startOf(row){ return row.start||row.startTime||row.workStart||''; }
+    function endOf(row){ return row.end||row.endTime||row.workEnd||''; }
+
+    function ensureClockArray(){
+        try{ if(!Array.isArray(staffClockData)) staffClockData=[]; return staffClockData; }catch(e){}
+        if(!Array.isArray(window.staffClockData)) window.staffClockData=[];
+        return window.staffClockData;
+    }
+    function findOrCreateClock(row,name){
+        const list=ensureClockArray();
+        let rec=list.find(x=>norm(x.staff)===norm(name)&&norm(x.company)===norm(companyOf(row))&&String(x.date||'')===String(dateOf(row))&&(!startOf(row)||String(x.scheduleStart||x.start||'')===String(startOf(row))));
+        if(!rec){
+            rec={id:'clk_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),staff:name,company:companyOf(row),date:dateOf(row),scheduleStart:startOf(row),scheduleEnd:endOf(row),restHours:Number(row.restHours||row.breakHours||0)||0,createdAt:new Date().toISOString()};
+            list.push(rec);
+        }
+        return rec;
+    }
+
+    function setSyncState(text,cls){
+        const box=document.getElementById('msContent');
+        if(!box)return;
+        let el=document.getElementById('qyjPunchSyncState');
+        if(!el){ el=document.createElement('div'); el.id='qyjPunchSyncState'; el.className='clock-sync-state'; box.prepend(el); }
+        el.className='clock-sync-state '+cls;
+        el.textContent=text;
+    }
+
+    function backgroundSave(){
+        setSyncState('雲端同步中…','syncing');
+        let p;
+        try{
+            if(typeof window.saveAllSilently==='function') p=window.saveAllSilently();
+            else if(typeof saveAllSilently==='function') p=saveAllSilently();
+            else if(typeof window.saveAll==='function') p=window.saveAll();
+            else if(typeof saveAll==='function') p=saveAll();
+        }catch(e){ p=Promise.reject(e); }
+        Promise.resolve(p).then(()=>setSyncState('已同步雲端','done')).catch(()=>setSyncState('同步失敗，請重試','error'));
+    }
+
+    window.msDoPunch=function(type,rowIndex){
+        const s=staffObj();
+        const rows=todayRows(s);
+        const row=rows[rowIndex]||{};
+        const name=staffName(s)||(row.staff||'');
+        const time=nowTime();
+        let finished=false;
+
+        function commit(pos,reason){
+            if(finished)return;
+            finished=true;
+            const gps=pos?{
+                lat:Number(pos.coords.latitude),
+                lng:Number(pos.coords.longitude),
+                accuracy:pos.coords.accuracy!==undefined?Number(pos.coords.accuracy):null,
+                capturedAt:new Date().toISOString()
+            }:null;
+
+            const rec=findOrCreateClock(row,name);
+            if(type==='上班'){
+                rec.clockIn=time;
+                rec.inGps=gps;
+            }else{
+                rec.clockOut=time;
+                rec.outGps=gps;
+            }
+            rec.device={userAgent:navigator.userAgent||'',platform:navigator.platform||'',language:navigator.language||''};
+            rec.status=rec.clockIn&&rec.clockOut?'待審核':(rec.clockIn?'上班中':'未打卡');
+            rec.updatedAt=new Date().toISOString();
+            if(!gps) rec.gpsWarning=reason||'定位未取得';
+            else if(rec.gpsWarning) delete rec.gpsWarning;
+
+            try{ localStorage.setItem('staffClockData',JSON.stringify(ensureClockArray())); }catch(e){}
+
+            // 同時保留手機本機打卡紀錄，供舊版畫面相容
+            try{
+                const key='qyj_staff_punch_records';
+                const arr=JSON.parse(localStorage.getItem(key)||'[]');
+                arr.push({staff:name,company:companyOf(row),type,date:dateOf(row),time,gps:gps,createdAt:new Date().toISOString()});
+                localStorage.setItem(key,JSON.stringify(arr));
+            }catch(e){}
+
+            // 先立即刷新，不等待雲端
+            if(typeof window.msShowPunch==='function') window.msShowPunch();
+            setSyncState(gps?'打卡成功，正在同步…':'打卡成功，但未取得定位','syncing');
+            backgroundSave();
+        }
+
+        if(!navigator.geolocation){ commit(null,'此裝置不支援定位'); return; }
+
+        navigator.geolocation.getCurrentPosition(
+            pos=>commit(pos,''),
+            err=>commit(null,err&&err.code===1?'使用者未允許定位':'定位逾時或失敗'),
+            {enableHighAccuracy:true,timeout:5000,maximumAge:15000}
+        );
+    };
+
+    // 將歷史字串 GPS 轉為物件，讓主管端可以顯示
+    function normalizeAllGps(){
+        const list=ensureClockArray();
+        let changed=false;
+        list.forEach(rec=>{
+            const a=normalizeGps(rec.inGps); const b=normalizeGps(rec.outGps);
+            if(a && (typeof rec.inGps!=='object'||rec.inGps.lat===undefined)){ rec.inGps=a; changed=true; }
+            if(b && (typeof rec.outGps!=='object'||rec.outGps.lat===undefined)){ rec.outGps=b; changed=true; }
+        });
+        if(changed){ try{ localStorage.setItem('staffClockData',JSON.stringify(list)); }catch(e){} }
+    }
+
+    function analyze(row,rec){
+        const alerts=[];
+        if(!rec||!rec.clockIn) alerts.push({type:'missing',text:'未打上班卡'});
+        if(rec&&rec.clockIn&&!rec.clockOut) alerts.push({type:'missing',text:'未打下班卡'});
+        if(rec&&rec.clockIn&&row.start){
+            const late=diffMin(rec.clockIn,row.start);
+            if(late>0) alerts.push({type:'late',text:'遲到 '+late+' 分鐘'});
+        }
+        if(rec&&rec.clockOut&&row.end){
+            const early=diffMin(row.end,rec.clockOut);
+            if(early>0) alerts.push({type:'early',text:'早退 '+early+' 分鐘'});
+        }
+        if(rec&&rec.clockIn&&!normalizeGps(rec.inGps)) alerts.push({type:'gps',text:'上班缺 GPS'});
+        if(rec&&rec.clockOut&&!normalizeGps(rec.outGps)) alerts.push({type:'gps',text:'下班缺 GPS'});
+        if(rec&&(rec.reportType||rec.status==='異常回報')) alerts.push({type:'early',text:rec.reportType||'異常回報'});
+        return alerts;
+    }
+
+    const oldRender=window.renderClockOverview;
+    window.renderClockOverview=function(){
+        normalizeAllGps();
+        const result=typeof oldRender==='function'?oldRender.apply(this,arguments):undefined;
+        setTimeout(function(){
+            let rows=[];
+            try{ rows=typeof getScheduleRowsForClockOverview==='function'?getScheduleRowsForClockOverview():[]; }catch(e){}
+            const tbody=document.getElementById('clockOverviewTable');
+            if(!tbody)return;
+            const trs=tbody.querySelectorAll('tr');
+            trs.forEach((tr,i)=>{
+                const row=rows[i]; if(!row)return;
+                let rec=null; try{ rec=typeof findClockRecord==='function'?findClockRecord(row):null; }catch(e){}
+                const alerts=analyze(row,rec);
+                tr.classList.remove('clock-row-late','clock-row-abnormal','clock-row-warning');
+                if(alerts.some(a=>a.type==='early'||a.type==='gps')) tr.classList.add('clock-row-abnormal');
+                else if(alerts.some(a=>a.type==='late')) tr.classList.add('clock-row-late');
+                else if(alerts.some(a=>a.type==='missing')) tr.classList.add('clock-row-warning');
+
+                const cells=tr.querySelectorAll('td');
+                if(cells.length>0 && alerts.length){
+                    const wrap=document.createElement('div'); wrap.className='clock-alerts';
+                    wrap.innerHTML=alerts.map(a=>'<span class="clock-alert '+a.type+'">'+a.text+'</span>').join('');
+                    cells[0].appendChild(wrap);
+                }
+
+                // GPS 欄位兼容字串與物件
+                if(rec&&cells.length>=10){
+                    const inGps=normalizeGps(rec.inGps); const outGps=normalizeGps(rec.outGps);
+                    if(inGps && typeof gpsCell==='function') cells[7].innerHTML=gpsCell(inGps);
+                    if(outGps && typeof gpsCell==='function') cells[9].innerHTML=gpsCell(outGps);
+                }
+            });
+        },0);
+        return result;
+    };
+
+    // 雲端讀取完成後自動刷新主管總覽
+    const oldRead=window.readCloud;
+    if(typeof oldRead==='function'){
+        window.readCloud=async function(){
+            const r=await oldRead.apply(this,arguments);
+            normalizeAllGps();
+            try{ if(typeof window.renderClockOverview==='function') window.renderClockOverview(); }catch(e){}
+            return r;
+        };
+    }
+
+    normalizeAllGps();
+    console.log('GPS 快速同步與遲到異常標示修正版已載入');
+})();
+</script>
+
 </body>
 </html>
