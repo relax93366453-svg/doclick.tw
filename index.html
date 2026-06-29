@@ -894,6 +894,7 @@
                                 <li><a onclick="showAdminPage('ft_staff')"><i class="fas fa-id-card"></i> 正職員工資料庫</a></li>
                                 <li><a onclick="showAdminPage('ft_attend')"><i class="fas fa-calendar-check"></i> 正職出勤與請假</a></li>
                                 <li><a onclick="showAdminPage('ft_salary')"><i class="fas fa-money-check-alt"></i> 正職薪資結算</a></li>
+                                <li><a onclick="showAdminPage('insurance')"><i class="fas fa-shield-alt"></i> 勞健保管理</a></li>
                             </ul>
                         </li>
                         <li><a onclick="showAdminPage('sales_staff')"><i class="fas fa-user-tie"></i> 業務人員管理</a></li>
@@ -1336,6 +1337,150 @@
             
             <div class="page" id="page-ft_attend"><div class="page-title"><i class="fas fa-calendar-check"></i> 正職出勤紀錄</div><div id="leave-info-panel" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;padding:15px 20px;border-radius:8px;margin-bottom:20px;"><h4 style="color:#1e3a8a;"><i class="fas fa-plane-departure"></i> <span id="leave-info-name"></span> 特休資訊</h4><div style="display:flex;gap:25px;font-size:14px;flex-wrap:wrap;margin-top:10px;"><div>年資：<b id="leave-info-tenure" style="color:#0369a1;">-</b></div><div>依法享有：<b id="leave-info-total" style="color:#10b981;">- 天</b></div><div>已用：<b id="leave-info-used" style="color:#ef4444;">- 天</b></div><div style="padding:2px 10px;background:#dcfce7;border-radius:4px;border:1px solid #bbf7d0;">剩餘：<b id="leave-info-remain" style="color:#166534;">- 天</b></div><div>下階段：<span id="leave-info-next"></span></div></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1fr 1.5fr;"><div><label>員工 *</label><input list="list_ft_staff" id="fta_staff" placeholder="搜尋員工姓名" required oninput="showLeaveInfo()"></div><div><label>日期 *</label><input type="date" id="fta_date" required></div><div><label>類型 *</label><select id="fta_record_type" onchange="toggleFtaFields()"><option value="正常出勤">正常出勤</option><option value="異常">異常</option><option value="請假">請假</option><option value="加班">加班</option><option value="換班">換班</option></select></div><div><label>原因</label><input type="text" id="fta_reason"></div></div><div class="grid" style="grid-template-columns:1fr 1fr 1.5fr 1fr;" id="fta_time_block"><div><label>上班打卡</label><input type="text" id="fta_time_in" placeholder="0900" onblur="formatTimeInput(this); calcFtaHours()"></div><div><label>下班打卡</label><input type="text" id="fta_time_out" placeholder="1800" onblur="formatTimeInput(this); calcFtaHours()"></div><div><label>合計時數</label><div style="display:flex;align-items:center;gap:10px;"><input type="number" id="fta_hours" step="0.1" style="width:90px;padding:8px;"><label style="font-size:13px;cursor:pointer;display:flex;align-items:center;color:#0369a1;font-weight:bold;margin:0;"><input type="checkbox" id="fta_deduct_break" checked onchange="calcFtaHours()" style="margin-right:5px;"> 扣除休息1h</label></div></div><div id="fta_leave_type_block" style="display:none;"><label>請假假別</label><select id="fta_leave_type"><option value="事假">事假</option><option value="病假">病假</option><option value="特休假">特休假</option><option value="喪假">喪假</option></select></div><div id="fta_approval_block" style="display:none;"><label>核准狀態</label><select id="fta_approval"><option value="已核准">已核准</option><option value="待審核">待審核</option></select></div></div><button class="btn btn-success" id="btnAddFtAttend" onclick="addFtAttend()"><i class="fas fa-save"></i> 儲存</button><button class="btn" style="background:#64748b;" onclick="clearFtAttendForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>年月</label><input type="month" id="fta_filter_month" onchange="resetPage('ft_attend'); renderFtAttendTable()"><label>搜尋員工：</label><input list="list_ft_staff" id="fta_filter_staff" placeholder="手打搜尋正職" oninput="resetPage('ft_attend'); renderFtAttendTable()"><button class="btn btn-clear-filter" onclick="clearFilters('ft_attend')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-excel" style="margin-left: auto;" onclick="exportExcel('ftAttendTableBox','出勤紀錄')"><i class="fas fa-file-excel"></i> 匯出全部</button></div><div class="table-responsive"><table id="ftAttendTableBox"><thead><tr><th>員工</th><th>日期</th><th>類型</th><th>時間/假別</th><th>時數</th><th>狀態/原因</th><th>操作</th></tr></thead><tbody id="ftAttendTable"></tbody></table></div></div>
             
+
+            <div class="page" id="page-insurance">
+                <div class="page-title"><i class="fas fa-shield-alt"></i> 勞健保管理</div>
+
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px;margin-bottom:15px;color:#1e3a8a;font-weight:700;line-height:1.7;">
+                    正職與派遣共用同一套級距版本。勞保、職災、勞退採30日制；健保依結算月底是否仍在本公司投保判斷全月或0元。
+                </div>
+
+                <div class="filter-bar" style="align-items:end;">
+                    <div>
+                        <label>結算月份</label>
+                        <input type="month" id="ins_month" onchange="renderInsuranceAll()">
+                    </div>
+                    <div>
+                        <label>人員類型</label>
+                        <select id="ins_type_filter" onchange="renderInsurancePeople()">
+                            <option value="all">全部人員</option>
+                            <option value="dispatch">派遣</option>
+                            <option value="fulltime">正職</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>搜尋姓名</label>
+                        <input id="ins_name_filter" placeholder="輸入姓名" oninput="renderInsurancePeople()">
+                    </div>
+                    <button class="btn btn-success" onclick="calculateAllInsurance()"><i class="fas fa-calculator"></i> 一鍵計算本月</button>
+                    <button class="btn btn-warning" onclick="applyAllInsuranceToSalary()"><i class="fas fa-file-invoice-dollar"></i> 全部帶入薪資</button>
+                </div>
+
+                <div style="display:grid;grid-template-columns:minmax(310px,0.9fr) minmax(520px,1.7fr);gap:15px;margin-bottom:16px;">
+                    <div class="card" style="padding:15px;">
+                        <h3 style="margin:0 0 12px;color:#1e3a8a;"><i class="fas fa-calendar-plus"></i> 投保異動登記</h3>
+                        <input type="hidden" id="ins_enroll_id">
+                        <div class="form-grid" style="grid-template-columns:1fr 1fr;">
+                            <div>
+                                <label>人員類型</label>
+                                <select id="ins_person_type" onchange="fillInsurancePersonOptions()">
+                                    <option value="dispatch">派遣</option>
+                                    <option value="fulltime">正職</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>人員姓名 *</label>
+                                <select id="ins_person_name"></select>
+                            </div>
+                            <div>
+                                <label>加保日期 *</label>
+                                <input type="date" id="ins_start_date">
+                            </div>
+                            <div>
+                                <label>退保日期</label>
+                                <input type="date" id="ins_end_date">
+                            </div>
+                            <div>
+                                <label>投保級距 *</label>
+                                <input type="number" id="ins_salary_level" placeholder="例如 29500">
+                            </div>
+                            <div>
+                                <label>眷屬人數</label>
+                                <input type="number" id="ins_dependents" min="0" value="0">
+                            </div>
+                            <div>
+                                <label>健保處理</label>
+                                <select id="ins_health_mode">
+                                    <option value="auto">自動判斷月底是否在保</option>
+                                    <option value="full">本月收全月</option>
+                                    <option value="none">本月不收</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>級距鎖定</label>
+                                <select id="ins_level_locked">
+                                    <option value="yes">鎖定此級距</option>
+                                    <option value="no">可依版本調整</option>
+                                </select>
+                            </div>
+                            <div style="grid-column:1/-1;">
+                                <label>備註</label>
+                                <input id="ins_note" placeholder="例如：短期加保、重新加保">
+                            </div>
+                        </div>
+                        <div style="margin-top:12px;">
+                            <button class="btn btn-primary" onclick="saveInsuranceEnrollment()"><i class="fas fa-save"></i> 儲存異動</button>
+                            <button class="btn" style="background:#64748b;" onclick="clearInsuranceEnrollmentForm()"><i class="fas fa-undo"></i> 清除</button>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding:15px;">
+                        <h3 style="margin:0 0 12px;color:#7c3aed;"><i class="fas fa-table"></i> 政府級距與費率版本</h3>
+                        <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr;">
+                            <div>
+                                <label>版本</label>
+                                <select id="ins_version_select" onchange="loadInsuranceVersionForm()"></select>
+                            </div>
+                            <div>
+                                <label>版本名稱</label>
+                                <input id="ins_version_name" placeholder="例如 115年度">
+                            </div>
+                            <div>
+                                <label>生效日期</label>
+                                <input type="date" id="ins_version_start">
+                            </div>
+                        </div>
+                        <div style="font-size:12px;color:#64748b;margin:10px 0 6px;font-weight:700;">
+                            每行格式：投保級距, 員工勞保, 公司勞保, 職災, 員工健保, 公司健保, 勞退6%
+                        </div>
+                        <textarea id="ins_version_rows" style="width:100%;height:145px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font-family:monospace;" placeholder="29500,738,2582,62,458,1428,1770"></textarea>
+                        <div style="margin-top:10px;">
+                            <button class="btn btn-primary" onclick="saveInsuranceVersion()"><i class="fas fa-save"></i> 儲存版本</button>
+                            <button class="btn btn-success" onclick="newInsuranceVersion()"><i class="fas fa-plus"></i> 新增版本</button>
+                            <button class="btn btn-danger" onclick="deleteInsuranceVersion()"><i class="fas fa-trash"></i> 刪除版本</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding:15px;margin-bottom:15px;">
+                    <h3 style="margin:0 0 12px;color:#1e3a8a;"><i class="fas fa-history"></i> 投保異動紀錄</h3>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>類型</th><th>姓名</th><th>投保期間</th><th>級距</th><th>健保</th><th>備註</th><th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ins_enrollment_table"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card" style="padding:15px;">
+                    <h3 style="margin:0 0 12px;color:#047857;"><i class="fas fa-coins"></i> 本月勞健保試算結果</h3>
+                    <div class="table-responsive">
+                        <table id="ins_result_table_box">
+                            <thead>
+                                <tr>
+                                    <th>類型</th><th>姓名</th><th>級距</th><th>勞保天數</th><th>員工勞保</th><th>員工健保</th><th>員工合計扣款</th><th>公司勞保</th><th>職災</th><th>公司健保</th><th>勞退</th><th>公司總負擔</th><th>狀態</th><th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ins_result_table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <div class="page" id="page-ft_salary"><div class="page-title"><i class="fas fa-money-check-alt"></i> 正職薪資結算</div><div class="filter-bar"><label>搜尋員工：</label><input list="list_ft_staff" id="fts_filter_staff" placeholder="手打搜尋正職" oninput="resetPage('ft_salary'); renderFtSalaryTable()"><label>年月</label><input type="month" id="fts_filter_month" onchange="resetPage('ft_salary'); renderFtSalaryTable()"><label>標準出勤天數 *</label><input type="number" id="fts_standard_days" value="22" style="width:80px;font-weight:bold;" onchange="renderFtSalaryTable()"><button class="btn btn-clear-filter" onclick="clearFilters('ft_salary')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div style="margin-bottom:15px;"><button class="btn btn-excel" onclick="exportExcel('ftSalaryTableBox','正職薪資')">匯出 Excel</button><button class="btn btn-pdf" onclick="generateFtPayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 薪資單</button></div><div class="table-responsive"><table id="ftSalaryTableBox"><thead><tr><th>員工</th><th>底薪</th><th>總工時</th><th>請假扣薪</th><th>加班費</th><th>勞健保代扣</th><th>實發薪資</th><th>操作</th></tr></thead><tbody id="ftSalaryTable"></tbody></table></div></div>
             
             <div class="page sys-auth" id="page-point"><div class="page-title"><i class="fas fa-calculator"></i> 點數統計</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="point_filter_company" placeholder="手打搜尋公司" oninput="resetPage('point'); renderPoint()"><button class="btn btn-success" style="margin-bottom:0;" onclick="renderPoint()">統計</button><button class="btn btn-clear-filter" onclick="clearFilters('point')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div class="table-responsive"><table id="pointTableBox"><thead><tr><th>公司</th><th>總購買點數</th><th>已扣除點數</th><th>剩餘點數</th><th>狀態</th></tr></thead><tbody id="pointTable"></tbody></table></div></div>
@@ -3767,7 +3912,7 @@ function showAdminPage(p) {
             let pin = prompt('🔒 系統安全鎖：\n請輸入高階管理密碼以解鎖設定頁面：\n(若未更改過，預設為 8888)'); 
             if(pin !== (localStorage.getItem('adminPin') || '8888')) { showToast('安全碼錯誤，拒絕存取', true); return; } 
         } 
-        if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','schedule_changes','clock_overview','ft_attend','ft_salary','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
+        if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','schedule_changes','clock_overview','ft_attend','ft_salary','insurance','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
         if(sysRole === 'sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true);
         if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true); 
         
@@ -3784,6 +3929,7 @@ function showAdminPage(p) {
         if(p==='attend') { clearAttendForm(); renderAttend(); } 
         if(p==='ft_staff') { clearFtStaffForm(); renderFtStaffTable(); } 
         if(p==='ft_attend') { clearFtAttendForm(); renderFtAttendTable(); } 
+        if(p==='insurance') { initInsurancePage(); } 
         if(p==='talent') { clearTalentForm(); renderTalentTable(); } 
         if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); } 
         if(p==='match') { clearMatchForm(); renderMatchTable(); } 
@@ -4106,8 +4252,11 @@ function renderFtSalaryTable() {
             }
         });
         
-        let lDeduct = Number(item.labor) || 0;
-        let hDeduct = Number(item.health) || 0;
+        let qyjInsDeduct = (typeof getInsuranceMonthlyDeduct === 'function')
+            ? getInsuranceMonthlyDeduct('fulltime', item.name, fM)
+            : null;
+        let lDeduct = qyjInsDeduct ? Number(qyjInsDeduct.labor)||0 : Number(item.labor)||0;
+        let hDeduct = qyjInsDeduct ? Number(qyjInsDeduct.health)||0 : Number(item.health)||0;
         
         let finalSalary = baseSal + overtimePay - leaveDeduct - lDeduct - hDeduct;
         
@@ -18702,6 +18851,532 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     console.log(
         '手動特殊時薪永久保留功能已載入'
     );
+})();
+</script>
+
+
+<script>
+/* ===== 勞健保管理模組 ===== */
+(function(){
+    'use strict';
+
+    const VERSION_KEY = 'qyjInsuranceVersions';
+    const ENROLL_KEY = 'qyjInsuranceEnrollments';
+    const MONTHLY_KEY = 'qyjInsuranceMonthlyResults';
+
+    window.insuranceVersions = readJson(VERSION_KEY, []);
+    window.insuranceEnrollments = readJson(ENROLL_KEY, []);
+    window.insuranceMonthlyResults = readJson(MONTHLY_KEY, []);
+
+    function readJson(key, fallback){
+        try{
+            const v = JSON.parse(localStorage.getItem(key) || '');
+            return Array.isArray(v) ? v : fallback;
+        }catch(e){
+            return fallback;
+        }
+    }
+
+    function saveInsuranceLocal(){
+        localStorage.setItem(VERSION_KEY, JSON.stringify(window.insuranceVersions || []));
+        localStorage.setItem(ENROLL_KEY, JSON.stringify(window.insuranceEnrollments || []));
+        localStorage.setItem(MONTHLY_KEY, JSON.stringify(window.insuranceMonthlyResults || []));
+    }
+
+    function money(v){
+        return Math.round(Number(v)||0);
+    }
+
+    function esc(v){
+        return String(v == null ? '' : v)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#039;');
+    }
+
+    function uid(prefix){
+        return prefix + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    }
+
+    function monthBounds(month){
+        const parts = String(month||'').split('-');
+        const y = Number(parts[0]);
+        const m = Number(parts[1]);
+        if(!y || !m) return null;
+        const last = new Date(y, m, 0).getDate();
+        return {
+            start: `${y}-${String(m).padStart(2,'0')}-01`,
+            end: `${y}-${String(m).padStart(2,'0')}-${String(last).padStart(2,'0')}`,
+            year:y, month:m, lastDay:last
+        };
+    }
+
+    function officialDayNumber(dateText, isMonthEnd){
+        if(!dateText) return 0;
+        const d = Number(String(dateText).slice(8,10)) || 0;
+        return isMonthEnd ? 30 : Math.min(d,30);
+    }
+
+    function calcSegmentDays(startText,endText,month){
+        const b = monthBounds(month);
+        if(!b) return 0;
+
+        const segStart = startText > b.start ? startText : b.start;
+        const realEnd = endText && endText < b.end ? endText : b.end;
+
+        if(segStart > realEnd) return 0;
+
+        const startIsMonthStart = segStart === b.start;
+        const endIsMonthEnd = realEnd === b.end;
+
+        const startNo = startIsMonthStart ? 1 : Math.min(Number(segStart.slice(8,10))||1,30);
+        const endNo = endIsMonthEnd ? 30 : Math.min(Number(realEnd.slice(8,10))||1,30);
+
+        return Math.max(0, endNo - startNo + 1);
+    }
+
+    function isActiveAtMonthEnd(record,month){
+        const b = monthBounds(month);
+        if(!b) return false;
+        return record.start_date <= b.end &&
+               (!record.end_date || record.end_date >= b.end);
+    }
+
+    function getVersionForMonth(month){
+        const date = `${month}-01`;
+        const list = (window.insuranceVersions || [])
+            .filter(v => v.start_date && v.start_date <= date)
+            .sort((a,b)=>String(b.start_date).localeCompare(String(a.start_date)));
+        return list[0] || null;
+    }
+
+    function getLevelRow(version, salaryLevel){
+        if(!version || !Array.isArray(version.rows)) return null;
+        const target = Number(salaryLevel)||0;
+        const rows = version.rows.slice().sort((a,b)=>Number(a.level)-Number(b.level));
+        return rows.find(r => Number(r.level) >= target) || rows[rows.length-1] || null;
+    }
+
+    function personList(type){
+        if(type === 'fulltime'){
+            return (window.ftStaffData || []).map(x=>({name:x.name,type:'fulltime'}));
+        }
+        return (window.staffData || []).map(x=>({name:x.name,type:'dispatch'}));
+    }
+
+    window.fillInsurancePersonOptions = function(){
+        const type = document.getElementById('ins_person_type')?.value || 'dispatch';
+        const select = document.getElementById('ins_person_name');
+        if(!select) return;
+        const old = select.value;
+        select.innerHTML = personList(type)
+            .filter(x=>x.name)
+            .sort((a,b)=>String(a.name).localeCompare(String(b.name),'zh-Hant'))
+            .map(x=>`<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('');
+        if([...select.options].some(o=>o.value===old)) select.value = old;
+    };
+
+    function seedDefaultVersion(){
+        if((window.insuranceVersions || []).length) return;
+        window.insuranceVersions = [{
+            id:uid('ver'),
+            name:'115年度（請依官方表補齊）',
+            start_date:'2026-01-01',
+            rows:[{
+                level:29500,
+                employee_labor:738,
+                employer_labor:2582,
+                occupational:62,
+                employee_health:458,
+                employer_health:1428,
+                pension:1770
+            }]
+        }];
+        saveInsuranceLocal();
+    }
+
+    window.initInsurancePage = function(){
+        seedDefaultVersion();
+        const monthInput = document.getElementById('ins_month');
+        if(monthInput && !monthInput.value){
+            const d = new Date();
+            monthInput.value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        }
+        fillInsurancePersonOptions();
+        fillInsuranceVersionOptions();
+        renderInsuranceAll();
+    };
+
+    window.renderInsuranceAll = function(){
+        renderInsuranceEnrollments();
+        renderInsurancePeople();
+    };
+
+    window.fillInsuranceVersionOptions = function(){
+        const sel = document.getElementById('ins_version_select');
+        if(!sel) return;
+        sel.innerHTML = (window.insuranceVersions || [])
+            .sort((a,b)=>String(b.start_date).localeCompare(String(a.start_date)))
+            .map(v=>`<option value="${esc(v.id)}">${esc(v.name)}｜${esc(v.start_date)}</option>`).join('');
+        loadInsuranceVersionForm();
+    };
+
+    window.loadInsuranceVersionForm = function(){
+        const id = document.getElementById('ins_version_select')?.value;
+        const v = (window.insuranceVersions || []).find(x=>x.id===id);
+        if(!v) return;
+        document.getElementById('ins_version_name').value = v.name || '';
+        document.getElementById('ins_version_start').value = v.start_date || '';
+        document.getElementById('ins_version_rows').value = (v.rows || []).map(r=>[
+            r.level,r.employee_labor,r.employer_labor,r.occupational,
+            r.employee_health,r.employer_health,r.pension
+        ].join(',')).join('\n');
+    };
+
+    window.newInsuranceVersion = function(){
+        const v = {
+            id:uid('ver'),
+            name:'新版級距',
+            start_date:'',
+            rows:[]
+        };
+        window.insuranceVersions.push(v);
+        saveInsuranceLocal();
+        fillInsuranceVersionOptions();
+        document.getElementById('ins_version_select').value = v.id;
+        loadInsuranceVersionForm();
+    };
+
+    window.saveInsuranceVersion = function(){
+        let id = document.getElementById('ins_version_select')?.value;
+        let v = (window.insuranceVersions || []).find(x=>x.id===id);
+        if(!v){
+            v={id:uid('ver'),rows:[]};
+            window.insuranceVersions.push(v);
+            id=v.id;
+        }
+
+        const name = document.getElementById('ins_version_name').value.trim();
+        const start = document.getElementById('ins_version_start').value;
+        if(!name || !start){
+            return showToast('請填寫版本名稱與生效日期',true);
+        }
+
+        const lines = document.getElementById('ins_version_rows').value
+            .split(/\r?\n/)
+            .map(x=>x.trim())
+            .filter(Boolean);
+
+        const rows = [];
+        for(const line of lines){
+            const a = line.split(/[,，\t]/).map(x=>x.trim());
+            if(a.length < 7 || !Number(a[0])){
+                return showToast('級距格式錯誤，每行需有7個數字',true);
+            }
+            rows.push({
+                level:Number(a[0])||0,
+                employee_labor:Number(a[1])||0,
+                employer_labor:Number(a[2])||0,
+                occupational:Number(a[3])||0,
+                employee_health:Number(a[4])||0,
+                employer_health:Number(a[5])||0,
+                pension:Number(a[6])||0
+            });
+        }
+
+        if(!rows.length) return showToast('請至少輸入一筆級距',true);
+
+        v.name=name;
+        v.start_date=start;
+        v.rows=rows.sort((a,b)=>a.level-b.level);
+        saveInsuranceLocal();
+        fillInsuranceVersionOptions();
+        document.getElementById('ins_version_select').value=id;
+        showToast('級距版本已儲存');
+        renderInsurancePeople();
+    };
+
+    window.deleteInsuranceVersion = function(){
+        const id = document.getElementById('ins_version_select')?.value;
+        if(!id || !confirm('確定刪除此級距版本？')) return;
+        window.insuranceVersions = (window.insuranceVersions || []).filter(x=>x.id!==id);
+        saveInsuranceLocal();
+        seedDefaultVersion();
+        fillInsuranceVersionOptions();
+        renderInsurancePeople();
+    };
+
+    window.clearInsuranceEnrollmentForm = function(){
+        ['ins_enroll_id','ins_start_date','ins_end_date','ins_salary_level','ins_note']
+            .forEach(id=>{ const e=document.getElementById(id); if(e)e.value=''; });
+        document.getElementById('ins_dependents').value='0';
+        document.getElementById('ins_health_mode').value='auto';
+        document.getElementById('ins_level_locked').value='yes';
+        fillInsurancePersonOptions();
+    };
+
+    window.saveInsuranceEnrollment = function(){
+        const id = document.getElementById('ins_enroll_id').value;
+        const record = {
+            id:id || uid('enr'),
+            person_type:document.getElementById('ins_person_type').value,
+            name:document.getElementById('ins_person_name').value,
+            start_date:document.getElementById('ins_start_date').value,
+            end_date:document.getElementById('ins_end_date').value,
+            salary_level:Number(document.getElementById('ins_salary_level').value)||0,
+            dependents:Number(document.getElementById('ins_dependents').value)||0,
+            health_mode:document.getElementById('ins_health_mode').value,
+            level_locked:document.getElementById('ins_level_locked').value,
+            note:document.getElementById('ins_note').value.trim(),
+            updated_at:new Date().toISOString()
+        };
+        if(!record.name || !record.start_date || !record.salary_level){
+            return showToast('請填寫姓名、加保日期與投保級距',true);
+        }
+        const idx = (window.insuranceEnrollments || []).findIndex(x=>x.id===record.id);
+        if(idx>=0) window.insuranceEnrollments[idx]=record;
+        else window.insuranceEnrollments.push(record);
+        saveInsuranceLocal();
+        clearInsuranceEnrollmentForm();
+        renderInsuranceAll();
+        showToast('投保異動已儲存');
+    };
+
+    window.editInsuranceEnrollment = function(id){
+        const r=(window.insuranceEnrollments||[]).find(x=>x.id===id);
+        if(!r)return;
+        document.getElementById('ins_enroll_id').value=r.id;
+        document.getElementById('ins_person_type').value=r.person_type;
+        fillInsurancePersonOptions();
+        document.getElementById('ins_person_name').value=r.name;
+        document.getElementById('ins_start_date').value=r.start_date||'';
+        document.getElementById('ins_end_date').value=r.end_date||'';
+        document.getElementById('ins_salary_level').value=r.salary_level||'';
+        document.getElementById('ins_dependents').value=r.dependents||0;
+        document.getElementById('ins_health_mode').value=r.health_mode||'auto';
+        document.getElementById('ins_level_locked').value=r.level_locked||'yes';
+        document.getElementById('ins_note').value=r.note||'';
+        window.scrollTo({top:0,behavior:'smooth'});
+    };
+
+    window.deleteInsuranceEnrollment = function(id){
+        if(!confirm('確定刪除此筆投保異動？')) return;
+        window.insuranceEnrollments=(window.insuranceEnrollments||[]).filter(x=>x.id!==id);
+        saveInsuranceLocal();
+        renderInsuranceAll();
+    };
+
+    window.renderInsuranceEnrollments = function(){
+        const body=document.getElementById('ins_enrollment_table');
+        if(!body)return;
+        const month=document.getElementById('ins_month')?.value||'';
+        const list=(window.insuranceEnrollments||[])
+            .filter(r=>!month || (r.start_date<=`${month}-31` && (!r.end_date || r.end_date>=`${month}-01`)))
+            .sort((a,b)=>String(b.start_date).localeCompare(String(a.start_date)));
+        body.innerHTML=list.map(r=>`
+            <tr>
+                <td>${r.person_type==='fulltime'?'正職':'派遣'}</td>
+                <td><b>${esc(r.name)}</b></td>
+                <td>${esc(r.start_date)} ～ ${esc(r.end_date||'仍在保')}</td>
+                <td>${money(r.salary_level).toLocaleString()}</td>
+                <td>${r.health_mode==='full'?'全月':r.health_mode==='none'?'不收':'自動'}</td>
+                <td>${esc(r.note||'')}</td>
+                <td>
+                    <button class="btn-sm btn-edit" onclick="editInsuranceEnrollment('${r.id}')">修改</button>
+                    <button class="btn-sm btn-delete" onclick="deleteInsuranceEnrollment('${r.id}')">刪除</button>
+                </td>
+            </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">尚無投保異動</td></tr>';
+    };
+
+    function calculatePerson(type,name,month){
+        const version=getVersionForMonth(month);
+        if(!version) return {error:'尚無適用級距版本'};
+
+        const records=(window.insuranceEnrollments||[])
+            .filter(r=>r.person_type===type && r.name===name)
+            .filter(r=>calcSegmentDays(r.start_date,r.end_date,month)>0)
+            .sort((a,b)=>String(a.start_date).localeCompare(String(b.start_date)));
+
+        if(!records.length) return {error:'本月無投保資料'};
+
+        let employeeLabor=0, employerLabor=0, occupational=0, pension=0;
+        let laborDays=0;
+        let healthRecord=null;
+
+        records.forEach(r=>{
+            const days=calcSegmentDays(r.start_date,r.end_date,month);
+            const row=getLevelRow(version,r.salary_level);
+            if(!row)return;
+            laborDays += days;
+            employeeLabor += Number(row.employee_labor||0)*days/30;
+            employerLabor += Number(row.employer_labor||0)*days/30;
+            occupational += Number(row.occupational||0)*days/30;
+            pension += Number(row.pension||0)*days/30;
+
+            if(r.health_mode==='full') healthRecord={record:r,row};
+            else if(r.health_mode==='auto' && isActiveAtMonthEnd(r,month)) healthRecord={record:r,row};
+        });
+
+        laborDays=Math.min(30,laborDays);
+        let employeeHealth=0, employerHealth=0;
+        if(healthRecord){
+            const dep=Math.max(0,Number(healthRecord.record.dependents)||0);
+            employeeHealth=Number(healthRecord.row.employee_health||0)*(1+dep);
+            employerHealth=Number(healthRecord.row.employer_health||0);
+        }
+
+        const last=records[records.length-1];
+        return {
+            person_type:type,
+            name,
+            month,
+            version_id:version.id,
+            version_name:version.name,
+            salary_level:last.salary_level,
+            labor_days:laborDays,
+            employee_labor:money(employeeLabor),
+            employee_health:money(employeeHealth),
+            employee_total:money(employeeLabor)+money(employeeHealth),
+            employer_labor:money(employerLabor),
+            occupational:money(occupational),
+            employer_health:money(employerHealth),
+            pension:money(pension),
+            employer_total:money(employerLabor)+money(occupational)+money(employerHealth)+money(pension),
+            health_charged:Boolean(healthRecord),
+            calculated_at:new Date().toISOString()
+        };
+    }
+
+    function allPeople(){
+        const dispatch=personList('dispatch');
+        const fulltime=personList('fulltime');
+        return [...dispatch,...fulltime]
+            .filter((x,i,a)=>x.name && a.findIndex(y=>y.type===x.type&&y.name===x.name)===i);
+    }
+
+    window.calculateAllInsurance = function(){
+        const month=document.getElementById('ins_month')?.value;
+        if(!month)return showToast('請先選擇結算月份',true);
+
+        const results=[];
+        allPeople().forEach(p=>{
+            const r=calculatePerson(p.type,p.name,month);
+            if(!r.error)results.push(r);
+        });
+
+        window.insuranceMonthlyResults=(window.insuranceMonthlyResults||[])
+            .filter(x=>x.month!==month)
+            .concat(results);
+        saveInsuranceLocal();
+        renderInsurancePeople();
+        showToast(`已完成 ${results.length} 位人員試算`);
+    };
+
+    window.renderInsurancePeople = function(){
+        const body=document.getElementById('ins_result_table');
+        if(!body)return;
+        const month=document.getElementById('ins_month')?.value||'';
+        const type=document.getElementById('ins_type_filter')?.value||'all';
+        const nameFilter=(document.getElementById('ins_name_filter')?.value||'').trim();
+
+        let people=allPeople().filter(p=>(type==='all'||p.type===type)&&(!nameFilter||p.name.includes(nameFilter)));
+        const rows=people.map(p=>{
+            const saved=(window.insuranceMonthlyResults||[]).find(x=>x.month===month&&x.person_type===p.type&&x.name===p.name);
+            const r=saved || calculatePerson(p.type,p.name,month);
+            if(r.error){
+                return `<tr>
+                    <td>${p.type==='fulltime'?'正職':'派遣'}</td><td><b>${esc(p.name)}</b></td>
+                    <td colspan="10" style="color:#94a3b8;">${esc(r.error)}</td>
+                    <td><span style="color:#d97706;">待設定</span></td>
+                    <td>-</td>
+                </tr>`;
+            }
+            return `<tr>
+                <td>${r.person_type==='fulltime'?'正職':'派遣'}</td>
+                <td><b>${esc(r.name)}</b></td>
+                <td>${money(r.salary_level).toLocaleString()}</td>
+                <td>${r.labor_days}</td>
+                <td>${money(r.employee_labor).toLocaleString()}</td>
+                <td>${money(r.employee_health).toLocaleString()}</td>
+                <td><b style="color:#dc2626;">${money(r.employee_total).toLocaleString()}</b></td>
+                <td>${money(r.employer_labor).toLocaleString()}</td>
+                <td>${money(r.occupational).toLocaleString()}</td>
+                <td>${money(r.employer_health).toLocaleString()}</td>
+                <td>${money(r.pension).toLocaleString()}</td>
+                <td><b style="color:#7c3aed;">${money(r.employer_total).toLocaleString()}</b></td>
+                <td>${saved?'<span style="color:#047857;font-weight:bold;">已保存</span>':'<span style="color:#d97706;">即時計算</span>'}</td>
+                <td><button class="btn-sm btn-edit" onclick="applyOneInsuranceToSalary('${r.person_type}','${esc(r.name)}','${month}')">帶入薪資</button></td>
+            </tr>`;
+        });
+        body.innerHTML=rows.join('')||'<tr><td colspan="14" style="text-align:center;">無人員資料</td></tr>';
+    };
+
+    window.getInsuranceMonthlyDeduct = function(type,name,month){
+        const r=(window.insuranceMonthlyResults||[]).find(x=>
+            x.person_type===type && x.name===name && x.month===month
+        );
+        if(!r)return null;
+        return {labor:Number(r.employee_labor)||0,health:Number(r.employee_health)||0,total:Number(r.employee_total)||0};
+    };
+
+    window.applyOneInsuranceToSalary = function(type,name,month){
+        let r=(window.insuranceMonthlyResults||[]).find(x=>x.person_type===type&&x.name===name&&x.month===month);
+        if(!r){
+            r=calculatePerson(type,name,month);
+            if(r.error)return showToast(r.error,true);
+            window.insuranceMonthlyResults.push(r);
+        }
+
+        if(type==='dispatch'){
+            const y=month.slice(0,4), m=month.slice(5,7);
+            const key=(typeof salaryDeductKey==='function') ? salaryDeductKey(name,y,m) : `${name}_${y}_${m}`;
+            window.salaryDeductData=(window.salaryDeductData||[]).filter(x=>x.key!==key);
+            window.salaryDeductData.push({
+                key,staff:name,year:y,month:m,
+                labor:String(money(r.employee_labor)),
+                health:String(money(r.employee_health)),
+                source:'insurance',
+                updatedAt:new Date().toISOString()
+            });
+            try{ localStorage.setItem('salaryDeductData',JSON.stringify(window.salaryDeductData)); }catch(e){}
+        }
+
+        saveInsuranceLocal();
+        if(typeof saveAllSilently==='function'){
+            try{saveAllSilently();}catch(e){}
+        }
+        showToast(`${name} ${month} 勞健保已帶入薪資`);
+        renderInsurancePeople();
+    };
+
+    window.applyAllInsuranceToSalary = function(){
+        const month=document.getElementById('ins_month')?.value;
+        if(!month)return showToast('請先選擇結算月份',true);
+        calculateAllInsurance();
+        const list=(window.insuranceMonthlyResults||[]).filter(x=>x.month===month);
+        list.forEach(r=>{
+            if(r.person_type==='dispatch'){
+                const y=month.slice(0,4),m=month.slice(5,7);
+                const key=(typeof salaryDeductKey==='function')?salaryDeductKey(r.name,y,m):`${r.name}_${y}_${m}`;
+                window.salaryDeductData=(window.salaryDeductData||[]).filter(x=>x.key!==key);
+                window.salaryDeductData.push({
+                    key,staff:r.name,year:y,month:m,
+                    labor:String(money(r.employee_labor)),
+                    health:String(money(r.employee_health)),
+                    source:'insurance',
+                    updatedAt:new Date().toISOString()
+                });
+            }
+        });
+        try{localStorage.setItem('salaryDeductData',JSON.stringify(window.salaryDeductData||[]));}catch(e){}
+        saveInsuranceLocal();
+        if(typeof saveAllSilently==='function'){try{saveAllSilently();}catch(e){}}
+        showToast(`已將 ${list.length} 位人員結果帶入薪資`);
+    };
+
+    window.renderInsuranceEnrollments = window.renderInsuranceEnrollments;
 })();
 </script>
 
