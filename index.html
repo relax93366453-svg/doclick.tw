@@ -18290,5 +18290,420 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 })();
 </script>
 
+
+<script>
+/* ===== 手動特殊時薪永久保留＋連續儲存防覆蓋 ===== */
+(function(){
+    'use strict';
+
+    const QYJ_SPECIAL_RATE_MAP_KEY =
+        'qyj_attend_manual_special_hourly_map';
+
+    let qyjAttendSaveQueue = Promise.resolve();
+
+    function qyjNorm(value){
+        return String(value == null ? '' : value).trim();
+    }
+
+    function qyjAttendKey(item){
+        item = item || {};
+
+        return [
+            qyjNorm(item.company),
+            qyjNorm(item.staff),
+            qyjNorm(item.date),
+            qyjNorm(item.service),
+            qyjNorm(item.am_s),
+            qyjNorm(item.am_e),
+            qyjNorm(item.pm_s),
+            qyjNorm(item.pm_e)
+        ].join('||');
+    }
+
+    function qyjReadSpecialRateMap(){
+        try{
+            const data = JSON.parse(
+                localStorage.getItem(
+                    QYJ_SPECIAL_RATE_MAP_KEY
+                ) || '{}'
+            );
+
+            return data && typeof data === 'object'
+                ? data
+                : {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function qyjWriteSpecialRateMap(map){
+        try{
+            localStorage.setItem(
+                QYJ_SPECIAL_RATE_MAP_KEY,
+                JSON.stringify(map || {})
+            );
+        }catch(error){}
+    }
+
+    function qyjStoreManualSpecialRate(item,rate){
+        const map = qyjReadSpecialRateMap();
+        const key = qyjAttendKey(item);
+        const value = qyjNorm(rate);
+
+        if(!key) return;
+
+        if(value !== ''){
+            map[key] = {
+                special_hourly:value,
+                updatedAt:new Date().toISOString()
+            };
+        }else{
+            delete map[key];
+        }
+
+        qyjWriteSpecialRateMap(map);
+    }
+
+    function qyjRestoreManualSpecialRates(){
+        if(!Array.isArray(attendData)) return;
+
+        const map = qyjReadSpecialRateMap();
+        let changed = false;
+
+        attendData.forEach(function(item){
+            const saved = map[qyjAttendKey(item)];
+
+            if(
+                saved &&
+                qyjNorm(saved.special_hourly) !== '' &&
+                qyjNorm(item.special_hourly) !==
+                    qyjNorm(saved.special_hourly)
+            ){
+                item.special_hourly =
+                    saved.special_hourly;
+
+                item.special_hourly_manual = true;
+                changed = true;
+            }
+        });
+
+        if(changed){
+            try{
+                localStorage.setItem(
+                    'attendData',
+                    JSON.stringify(attendData)
+                );
+            }catch(error){}
+        }
+    }
+
+    function qyjFindCurrentAttendRecord(formData){
+        if(!Array.isArray(attendData)) return null;
+
+        for(let i=attendData.length-1;i>=0;i--){
+            const item = attendData[i];
+
+            if(
+                qyjNorm(item.company) ===
+                    qyjNorm(formData.company) &&
+                qyjNorm(item.staff) ===
+                    qyjNorm(formData.staff) &&
+                qyjNorm(item.date) ===
+                    qyjNorm(formData.date) &&
+                qyjNorm(item.service) ===
+                    qyjNorm(formData.service) &&
+                qyjNorm(item.am_s) ===
+                    qyjNorm(formData.am_s) &&
+                qyjNorm(item.am_e) ===
+                    qyjNorm(formData.am_e) &&
+                qyjNorm(item.pm_s) ===
+                    qyjNorm(formData.pm_s) &&
+                qyjNorm(item.pm_e) ===
+                    qyjNorm(formData.pm_e)
+            ){
+                return item;
+            }
+        }
+
+        return null;
+    }
+
+    /*
+     * 覆蓋儲存函式：
+     * 原本 saveAll 沒有回傳 Promise，連續修改時容易同時送出。
+     * 這裡改成排隊，上一筆完成後才送下一筆。
+     */
+    const qyjOriginalPushCloudData =
+        typeof pushCloudData === 'function'
+            ? pushCloudData
+            : null;
+
+    if(qyjOriginalPushCloudData){
+        pushCloudData = function(silent){
+            const run = function(){
+                qyjRestoreManualSpecialRates();
+
+                return Promise.resolve(
+                    qyjOriginalPushCloudData.call(
+                        this,
+                        silent
+                    )
+                );
+            };
+
+            qyjAttendSaveQueue =
+                qyjAttendSaveQueue
+                    .catch(function(){
+                        // 前一筆失敗仍允許下一筆繼續
+                    })
+                    .then(run);
+
+            return qyjAttendSaveQueue;
+        };
+    }
+
+    /*
+     * 包裝派遣紀錄儲存：
+     * 儲存前先記住正在編輯的舊索引與欄位，
+     * 儲存後把特殊時薪鎖定到正確紀錄。
+     */
+    const qyjOriginalAddAttend =
+        window.addAttend;
+
+    window.addAttend = function(){
+        const oldEditIndex =
+            typeof editAttendIndex !== 'undefined'
+                ? editAttendIndex
+                : -1;
+
+        const oldItem =
+            oldEditIndex > -1 &&
+            Array.isArray(attendData)
+                ? Object.assign(
+                    {},
+                    attendData[oldEditIndex] || {}
+                )
+                : null;
+
+        const formData = {
+            company:
+                document.getElementById(
+                    'attend_company'
+                )?.value.trim() || '',
+            staff:
+                document.getElementById(
+                    'attend_staff'
+                )?.value.trim() || '',
+            date:
+                document.getElementById(
+                    'attend_date'
+                )?.value || '',
+            service:
+                document.getElementById(
+                    'attend_service'
+                )?.value || '',
+            am_s:
+                document.getElementById(
+                    'am_s'
+                )?.value || '',
+            am_e:
+                document.getElementById(
+                    'am_e'
+                )?.value || '',
+            pm_s:
+                document.getElementById(
+                    'pm_s'
+                )?.value || '',
+            pm_e:
+                document.getElementById(
+                    'pm_e'
+                )?.value || '',
+            special_hourly:
+                document.getElementById(
+                    'attend_special_hourly'
+                )?.value.trim() || ''
+        };
+
+        if(typeof qyjOriginalAddAttend !== 'function'){
+            return;
+        }
+
+        const result =
+            qyjOriginalAddAttend.apply(
+                this,
+                arguments
+            );
+
+        let savedItem = null;
+
+        if(
+            oldEditIndex > -1 &&
+            Array.isArray(attendData) &&
+            attendData[oldEditIndex]
+        ){
+            savedItem = attendData[oldEditIndex];
+        }
+
+        if(!savedItem){
+            savedItem =
+                qyjFindCurrentAttendRecord(
+                    formData
+                );
+        }
+
+        /*
+         * 如果修改時改了日期、時段或服務，
+         * 先移除舊鍵，再建立新鍵。
+         */
+        if(oldItem){
+            const map =
+                qyjReadSpecialRateMap();
+
+            const oldKey =
+                qyjAttendKey(oldItem);
+
+            const newKey =
+                qyjAttendKey(
+                    savedItem || formData
+                );
+
+            if(
+                oldKey &&
+                oldKey !== newKey
+            ){
+                delete map[oldKey];
+                qyjWriteSpecialRateMap(map);
+            }
+        }
+
+        if(savedItem){
+            savedItem.special_hourly =
+                formData.special_hourly;
+
+            savedItem.special_hourly_manual =
+                formData.special_hourly !== '';
+
+            qyjStoreManualSpecialRate(
+                savedItem,
+                formData.special_hourly
+            );
+
+            try{
+                localStorage.setItem(
+                    'attendData',
+                    JSON.stringify(attendData)
+                );
+            }catch(error){}
+
+            /*
+             * 原函式已經開始第一次儲存；
+             * 再排一筆包含鎖定欄位的最終同步，
+             * 確保雲端最後版本一定有特殊時薪。
+             */
+            try{
+                if(typeof saveAllSilently === 'function'){
+                    saveAllSilently();
+                }
+            }catch(error){}
+        }
+
+        qyjRestoreManualSpecialRates();
+
+        try{
+            if(typeof renderAttend === 'function'){
+                renderAttend();
+            }
+        }catch(error){}
+
+        return result;
+    };
+
+    /*
+     * 每次雲端資料套用後，立刻把手動特殊時薪補回，
+     * 避免舊雲端資料覆蓋本機已修改的230。
+     */
+    try{
+        if(typeof qyjApplyCloudData === 'function'){
+            const qyjOriginalApplyCloudData =
+                qyjApplyCloudData;
+
+            qyjApplyCloudData = function(){
+                const result =
+                    qyjOriginalApplyCloudData.apply(
+                        this,
+                        arguments
+                    );
+
+                qyjRestoreManualSpecialRates();
+
+                return result;
+            };
+        }
+    }catch(error){}
+
+    /*
+     * 顯示表格前也再確認一次。
+     */
+    try{
+        if(typeof renderAttend === 'function'){
+            const qyjOriginalRenderAttend =
+                renderAttend;
+
+            renderAttend = function(){
+                qyjRestoreManualSpecialRates();
+
+                return qyjOriginalRenderAttend.apply(
+                    this,
+                    arguments
+                );
+            };
+        }
+    }catch(error){}
+
+    /*
+     * 開啟編輯時，確保欄位顯示被鎖定的手動特殊時薪。
+     */
+    try{
+        if(typeof editAttend === 'function'){
+            const qyjOriginalEditAttend =
+                editAttend;
+
+            editAttend = function(index){
+                qyjRestoreManualSpecialRates();
+
+                return qyjOriginalEditAttend.apply(
+                    this,
+                    arguments
+                );
+            };
+        }
+    }catch(error){}
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            function(){
+                setTimeout(
+                    qyjRestoreManualSpecialRates,
+                    300
+                );
+            }
+        );
+    }else{
+        setTimeout(
+            qyjRestoreManualSpecialRates,
+            300
+        );
+    }
+
+    window.qyjRestoreManualSpecialRates =
+        qyjRestoreManualSpecialRates;
+
+    console.log(
+        '手動特殊時薪永久保留功能已載入'
+    );
+})();
+</script>
+
 </body>
 </html>
