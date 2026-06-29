@@ -1515,24 +1515,48 @@
                 </div>
 
                 <div class="card" style="padding:15px;margin-bottom:15px;">
-                    <h3 style="margin:0 0 12px;color:#1e3a8a;"><i class="fas fa-history"></i> 投保異動紀錄</h3>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>類型</th><th>姓名</th><th>投保期間</th><th>級距</th><th>健保</th><th>既有代扣</th><th>備註</th><th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ins_enrollment_table"></tbody>
-                        </table>
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <h3 style="margin:0;color:#1e3a8a;">
+                            <i class="fas fa-history"></i>
+                            投保異動紀錄
+                            <span id="ins_enrollment_count"
+                                  style="font-size:12px;color:#64748b;font-weight:700;margin-left:6px;">
+                                （0筆）
+                            </span>
+                        </h3>
+
+                        <button type="button"
+                                id="ins_enrollment_toggle_btn"
+                                class="btn"
+                                style="background:#475569;"
+                                onclick="toggleInsuranceEnrollmentSection()">
+                            <i class="fas fa-chevron-down"></i>
+                            展開紀錄
+                        </button>
+                    </div>
+
+                    <div id="ins_enrollment_section"
+                         style="display:none;margin-top:12px;">
+                        <div class="table-responsive"
+                             style="max-height:360px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;">
+                            <table style="margin:0;">
+                                <thead style="position:sticky;top:0;z-index:2;background:#f8fafc;">
+                                    <tr>
+                                        <th>類型</th><th>姓名</th><th>投保期間</th><th>級距</th><th>健保</th><th>既有代扣</th><th>備註</th><th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ins_enrollment_table"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
                 <div class="card" style="padding:15px;">
                     <h3 style="margin:0 0 12px;color:#047857;"><i class="fas fa-coins"></i> 本月勞健保試算結果</h3>
-                    <div class="table-responsive">
-                        <table id="ins_result_table_box">
-                            <thead>
+                    <div class="table-responsive"
+                         style="max-height:520px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;">
+                        <table id="ins_result_table_box" style="margin:0;">
+                            <thead style="position:sticky;top:0;z-index:2;background:#f8fafc;">
                                 <tr>
                                     <th>類型</th><th>姓名</th><th>級距</th><th>勞保天數</th><th>員工勞保</th><th>員工健保</th><th>員工合計扣款</th><th>公司勞保</th><th>職災</th><th>公司健保</th><th>勞退</th><th>公司總負擔</th><th>狀態</th><th>操作</th>
                                 </tr>
@@ -19137,6 +19161,10 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         fillInsurancePersonOptions();
         fillInsuranceVersionOptions();
         renderInsuranceAll();
+
+        setTimeout(function(){
+            restoreInsuranceEnrollmentSection();
+        },0);
     };
 
     window.renderInsuranceAll = function(){
@@ -19727,6 +19755,57 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         renderInsuranceAll();
     };
 
+
+    window.toggleInsuranceEnrollmentSection = function(forceOpen){
+        const section =
+            document.getElementById(
+                'ins_enrollment_section'
+            );
+
+        const button =
+            document.getElementById(
+                'ins_enrollment_toggle_btn'
+            );
+
+        if(!section || !button) return;
+
+        const currentlyOpen =
+            section.style.display !== 'none';
+
+        const shouldOpen =
+            typeof forceOpen === 'boolean'
+                ? forceOpen
+                : !currentlyOpen;
+
+        section.style.display =
+            shouldOpen ? 'block' : 'none';
+
+        button.innerHTML =
+            shouldOpen
+                ? '<i class="fas fa-chevron-up"></i> 收合紀錄'
+                : '<i class="fas fa-chevron-down"></i> 展開紀錄';
+
+        try{
+            localStorage.setItem(
+                'qyjInsuranceEnrollmentOpen',
+                shouldOpen ? '1' : '0'
+            );
+        }catch(error){}
+    };
+
+    function restoreInsuranceEnrollmentSection(){
+        let open = false;
+
+        try{
+            open =
+                localStorage.getItem(
+                    'qyjInsuranceEnrollmentOpen'
+                ) === '1';
+        }catch(error){}
+
+        toggleInsuranceEnrollmentSection(open);
+    }
+
     window.renderInsuranceEnrollments = function(){
         const body=document.getElementById('ins_enrollment_table');
         if(!body)return;
@@ -19734,11 +19813,30 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         const list=(window.insuranceEnrollments||[])
             .filter(r=>!month || (r.start_date<=`${month}-31` && (!r.end_date || r.end_date>=`${month}-01`)))
             .sort((a,b)=>String(b.start_date).localeCompare(String(a.start_date)));
+
+        const countEl =
+            document.getElementById(
+                'ins_enrollment_count'
+            );
+
+        if(countEl){
+            countEl.textContent =
+                '（' + list.length + '筆）';
+        }
+
         body.innerHTML=list.map(r=>`
             <tr>
                 <td>${r.person_type==='fulltime'?'正職':'派遣'}</td>
                 <td><b>${esc(r.name)}</b></td>
-                <td>${esc(r.start_date)} ～ ${esc(r.end_date||'仍在保')}</td>
+                <td>
+                    ${
+                        r.start_date
+                            ? esc(r.start_date) +
+                              ' ～ ' +
+                              esc(r.end_date || '仍在保')
+                            : '<span style="color:#dc2626;font-weight:800;">待補起保日</span>'
+                    }
+                </td>
                 <td>${money(r.salary_level).toLocaleString()}</td>
                 <td>${r.health_mode==='full'?'全月':r.health_mode==='none'?'不收':'自動'}</td>
                 <td>
@@ -19762,7 +19860,20 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             .filter(r=>calcSegmentDays(r.start_date,r.end_date,month)>0)
             .sort((a,b)=>String(a.start_date).localeCompare(String(b.start_date)));
 
-        if(!records.length) return {error:'本月無投保資料'};
+        if(!records.length){
+            const pending = (window.insuranceEnrollments || [])
+                .find(function(record){
+                    return record.person_type === type &&
+                           record.name === name &&
+                           !record.start_date;
+                });
+
+            return {
+                error:pending
+                    ? '已匯入既有投保資料，待補起保日'
+                    : '本月無投保資料'
+            };
+        }
 
         let employeeLabor=0, employerLabor=0, occupational=0, pension=0;
         let laborDays=0;
@@ -19918,11 +20029,34 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         }
 
         const eligible = list.filter(function(staff){
-            const status = String(staff.ins_status || '');
-            return staff &&
-                   String(staff.name || '').trim() &&
-                   status !== '都不保' &&
-                   String(staff.ins_date || '').trim();
+            if(!staff || !String(staff.name || '').trim()){
+                return false;
+            }
+
+            const status =
+                String(staff.ins_status || '').trim();
+
+            const hasInsuranceStatus =
+                status &&
+                status !== '都不保';
+
+            const hasExistingDeduction =
+                Number(staff.labor) > 0 ||
+                Number(staff.health) > 0;
+
+            const hasInsuranceDate =
+                Boolean(
+                    String(staff.ins_date || '').trim()
+                );
+
+            /*
+             * 只要有加保狀態、起保日期或既有代扣金額，
+             * 就先匯入勞健保管理。
+             * 缺起保日者標示待補，不再整筆略過。
+             */
+            return hasInsuranceStatus ||
+                   hasExistingDeduction ||
+                   hasInsuranceDate;
         });
 
         if(!eligible.length){
@@ -19944,20 +20078,45 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         let updated = 0;
         let skipped = 0;
         let needLevelReview = 0;
+        let needStartDateReview = 0;
 
         eligible.forEach(function(staff){
             const name = String(staff.name || '').trim();
-            const startDate = String(staff.ins_date || '').trim();
-            const status = String(staff.ins_status || '勞健雙保');
+            const startDate =
+                String(staff.ins_date || '').trim();
+
+            if(!startDate){
+                needStartDateReview++;
+            }
+
+            const status =
+                String(staff.ins_status || '勞健雙保');
             const labor = Number(staff.labor) || 0;
             const health = Number(staff.health) || 0;
             const deps = Math.max(0,Number(staff.ins_deps) || 0);
 
             let existing = (window.insuranceEnrollments || [])
                 .find(function(record){
-                    return record.person_type === 'dispatch' &&
-                           record.name === name &&
-                           record.start_date === startDate;
+                    if(
+                        record.person_type !== 'dispatch' ||
+                        record.name !== name
+                    ){
+                        return false;
+                    }
+
+                    if(startDate){
+                        return record.start_date === startDate;
+                    }
+
+                    /*
+                     * 原派遣資料沒有起保日時，
+                     * 以同姓名且來源為派遣資料匯入的待補紀錄配對。
+                     */
+                    return (
+                        !record.start_date &&
+                        record.source ===
+                            'dispatch_staff_import'
+                    );
                 });
 
             const inferredLevel =
@@ -20009,8 +20168,18 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                 }
 
                 if(!existing.note){
-                    existing.note =
-                        '由派遣人員資料匯入';
+                    existing.note = startDate
+                        ? '由派遣人員資料匯入'
+                        : '由派遣人員資料匯入｜待補起保日';
+                    changed = true;
+                }else if(
+                    !startDate &&
+                    !String(existing.note).includes(
+                        '待補起保日'
+                    )
+                ){
+                    existing.note +=
+                        '｜待補起保日';
                     changed = true;
                 }
 
@@ -20039,7 +20208,9 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                 dependents:deps,
                 health_mode:healthMode,
                 level_locked:'yes',
-                note:'由派遣人員資料匯入',
+                note:startDate
+                    ? '由派遣人員資料匯入'
+                    : '由派遣人員資料匯入｜待補起保日',
                 source:'dispatch_staff_import',
                 manual_employee_labor:labor,
                 manual_employee_health:health,
@@ -20074,6 +20245,12 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             message +=
                 '；另有 ' + needLevelReview +
                 ' 位無法推估級距，需補填投保級距';
+        }
+
+        if(needStartDateReview){
+            message +=
+                '；另有 ' + needStartDateReview +
+                ' 位缺少起保日，已先匯入並標示待補';
         }
 
         showToast(message, false);
