@@ -7917,95 +7917,113 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         }
 
         /*
-         * 勞健保資料跨電腦同步：
-         * 優先讀取最外層資料，若後端只保存 sysConfig，
-         * 則從 sysConfig 內的 JSON 字串還原。
+         * 勞健保跨電腦同步防覆蓋：
+         * 1. 獨立工作表為空，但 sysConfig 有內容時，使用有內容者。
+         * 2. 雲端空、本機有資料時，不允許空資料覆蓋本機。
+         * 3. 本機與雲端都有資料時，以 updatedAt 較新者為準。
+         * 4. 只有雲端有明確且較新的時間戳時，才接受「全部刪除」。
          */
         try{
-            function qyjParseInsuranceCloudArray(
-                directValue,
-                configValue
-            ){
-                if(Array.isArray(directValue)){
-                    return directValue;
-                }
-
-                if(Array.isArray(configValue)){
-                    return configValue;
+            function qyjParseInsuranceArray(value){
+                if(Array.isArray(value)){
+                    return value;
                 }
 
                 if(
-                    typeof configValue ===
-                    'string' &&
-                    configValue.trim()
+                    typeof value === 'string' &&
+                    value.trim()
                 ){
-                    const parsed =
-                        JSON.parse(configValue);
+                    try{
+                        const parsed =
+                            JSON.parse(value);
 
-                    return Array.isArray(parsed)
-                        ? parsed
-                        : [];
+                        return Array.isArray(parsed)
+                            ? parsed
+                            : null;
+                    }catch(parseError){
+                        return null;
+                    }
                 }
 
                 return null;
             }
 
-            const cloudInsuranceVersions =
-                qyjParseInsuranceCloudArray(
-                    r.insuranceVersions,
-                    r.sysConfig &&
-                    r.sysConfig.insuranceVersions
-                );
+            function qyjReadLocalInsuranceArray(key){
+                try{
+                    const parsed =
+                        JSON.parse(
+                            localStorage.getItem(key) ||
+                            '[]'
+                        );
 
-            const cloudInsuranceEnrollments =
-                qyjParseInsuranceCloudArray(
-                    r.insuranceEnrollments,
-                    r.sysConfig &&
-                    r.sysConfig.insuranceEnrollments
-                );
-
-            const cloudInsuranceMonthlyResults =
-                qyjParseInsuranceCloudArray(
-                    r.insuranceMonthlyResults,
-                    r.sysConfig &&
-                    r.sysConfig.insuranceMonthlyResults
-                );
-
-            if(cloudInsuranceVersions !== null){
-                window.insuranceVersions =
-                    cloudInsuranceVersions;
-
-                localStorage.setItem(
-                    'qyjInsuranceVersions',
-                    JSON.stringify(
-                        cloudInsuranceVersions
-                    )
-                );
+                    return Array.isArray(parsed)
+                        ? parsed
+                        : [];
+                }catch(error){
+                    return [];
+                }
             }
 
-            if(cloudInsuranceEnrollments !== null){
-                window.insuranceEnrollments =
-                    cloudInsuranceEnrollments;
+            function qyjTimeValue(value){
+                const time =
+                    Date.parse(String(value || ''));
 
-                localStorage.setItem(
-                    'qyjInsuranceEnrollments',
-                    JSON.stringify(
-                        cloudInsuranceEnrollments
-                    )
-                );
+                return Number.isFinite(time)
+                    ? time
+                    : 0;
             }
 
-            if(cloudInsuranceMonthlyResults !== null){
-                window.insuranceMonthlyResults =
-                    cloudInsuranceMonthlyResults;
+            function qyjChooseCloudInsuranceArray(
+                directValue,
+                configValue
+            ){
+                const direct =
+                    qyjParseInsuranceArray(
+                        directValue
+                    );
 
-                localStorage.setItem(
-                    'qyjInsuranceMonthlyResults',
-                    JSON.stringify(
-                        cloudInsuranceMonthlyResults
-                    )
-                );
+                const config =
+                    qyjParseInsuranceArray(
+                        configValue
+                    );
+
+                /*
+                 * 有內容者優先，避免新建立的空工作表
+                 * 蓋掉 sysConfig 裡原本已有的完整資料。
+                 */
+                if(
+                    direct &&
+                    direct.length > 0
+                ){
+                    return direct;
+                }
+
+                if(
+                    config &&
+                    config.length > 0
+                ){
+                    return config;
+                }
+
+                /*
+                 * 兩邊都只有空陣列時仍回傳空陣列，
+                 * 是否接受覆蓋交由時間戳判斷。
+                 */
+                if(direct){
+                    return direct;
+                }
+
+                if(config){
+                    return config;
+                }
+
+                return null;
             }
+
+            const localInsuranceUpdatedAt =
+                localStorage.getItem(
+                    'qyjInsuranceUpdatedAt'
+                ) || '';
 
             const cloudInsuranceUpdatedAt =
                 r.insuranceUpdatedAt ||
@@ -8015,11 +8033,166 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                 ) ||
                 '';
 
-            if(cloudInsuranceUpdatedAt){
+            const localTime =
+                qyjTimeValue(
+                    localInsuranceUpdatedAt
+                );
+
+            const cloudTime =
+                qyjTimeValue(
+                    cloudInsuranceUpdatedAt
+                );
+
+            let shouldUploadLocalInsurance =
+                false;
+
+            function qyjApplyInsuranceDataset(
+                directValue,
+                configValue,
+                localKey,
+                windowKey
+            ){
+                const cloudArray =
+                    qyjChooseCloudInsuranceArray(
+                        directValue,
+                        configValue
+                    );
+
+                const localArray =
+                    qyjReadLocalInsuranceArray(
+                        localKey
+                    );
+
+                if(cloudArray === null){
+                    /*
+                     * 雲端尚未建立資料，本機有內容就保留並補傳。
+                     */
+                    window[windowKey] =
+                        localArray;
+
+                    if(localArray.length > 0){
+                        shouldUploadLocalInsurance =
+                            true;
+                    }
+
+                    return;
+                }
+
+                if(
+                    cloudArray.length === 0 &&
+                    localArray.length > 0
+                ){
+                    /*
+                     * 若雲端沒有明確較新的時間戳，
+                     * 空陣列不可覆蓋本機完整資料。
+                     */
+                    if(
+                        cloudTime > 0 &&
+                        cloudTime > localTime
+                    ){
+                        window[windowKey] = [];
+                        localStorage.setItem(
+                            localKey,
+                            '[]'
+                        );
+                    }else{
+                        window[windowKey] =
+                            localArray;
+
+                        shouldUploadLocalInsurance =
+                            true;
+                    }
+
+                    return;
+                }
+
+                if(
+                    cloudArray.length > 0 &&
+                    localArray.length > 0 &&
+                    localTime > cloudTime
+                ){
+                    /*
+                     * 本機是較新的版本，先保留本機，
+                     * 並在讀取完成後回傳雲端。
+                     */
+                    window[windowKey] =
+                        localArray;
+
+                    shouldUploadLocalInsurance =
+                        true;
+
+                    return;
+                }
+
+                /*
+                 * 雲端有資料且不比本機舊，正常套用雲端。
+                 */
+                window[windowKey] =
+                    cloudArray;
+
+                localStorage.setItem(
+                    localKey,
+                    JSON.stringify(
+                        cloudArray
+                    )
+                );
+            }
+
+            qyjApplyInsuranceDataset(
+                r.insuranceVersions,
+                r.sysConfig &&
+                r.sysConfig.insuranceVersions,
+                'qyjInsuranceVersions',
+                'insuranceVersions'
+            );
+
+            qyjApplyInsuranceDataset(
+                r.insuranceEnrollments,
+                r.sysConfig &&
+                r.sysConfig.insuranceEnrollments,
+                'qyjInsuranceEnrollments',
+                'insuranceEnrollments'
+            );
+
+            qyjApplyInsuranceDataset(
+                r.insuranceMonthlyResults,
+                r.sysConfig &&
+                r.sysConfig.insuranceMonthlyResults,
+                'qyjInsuranceMonthlyResults',
+                'insuranceMonthlyResults'
+            );
+
+            /*
+             * 只有實際採用雲端版本時，才更新本機時間戳。
+             * 若本機較新，保留本機原時間，稍後補傳。
+             */
+            if(
+                cloudInsuranceUpdatedAt &&
+                !shouldUploadLocalInsurance &&
+                cloudTime >= localTime
+            ){
                 localStorage.setItem(
                     'qyjInsuranceUpdatedAt',
                     cloudInsuranceUpdatedAt
                 );
+            }
+
+            if(shouldUploadLocalInsurance){
+                setTimeout(function(){
+                    try{
+                        if(
+                            typeof saveAllSilently ===
+                            'function'
+                        ){
+                            saveAllSilently();
+                        }
+                    }catch(saveError){
+                        console.warn(
+                            '勞健保本機資料補傳失敗',
+                            saveError
+                        );
+                    }
+                },1200);
             }
         }catch(error){
             console.warn(
