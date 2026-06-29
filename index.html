@@ -1380,7 +1380,15 @@
                             </div>
                             <div>
                                 <label>人員姓名 *</label>
-                                <select id="ins_person_name"></select>
+                                <input id="ins_person_name"
+                                       list="ins_person_name_list"
+                                       placeholder="可直接輸入姓名或選擇"
+                                       autocomplete="off"
+                                       onfocus="fillInsurancePersonOptions()">
+                                <datalist id="ins_person_name_list"></datalist>
+                                <div style="font-size:11px;color:#64748b;margin-top:4px;">
+                                    可直接打字搜尋，不需要逐筆滑下拉選單
+                                </div>
                             </div>
                             <div>
                                 <label>加保日期 *</label>
@@ -18960,22 +18968,90 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     }
 
     function personList(type){
-        if(type === 'fulltime'){
-            return (window.ftStaffData || []).map(x=>({name:x.name,type:'fulltime'}));
+        let source = [];
+
+        try{
+            if(type === 'fulltime'){
+                source = Array.isArray(ftStaffData)
+                    ? ftStaffData
+                    : [];
+            }else{
+                source = Array.isArray(staffData)
+                    ? staffData
+                    : [];
+            }
+        }catch(error){
+            source = [];
         }
-        return (window.staffData || []).map(x=>({name:x.name,type:'dispatch'}));
+
+        return source
+            .filter(function(item){
+                return item &&
+                       String(item.name || '').trim() &&
+                       (!item.status || item.status === '在職');
+            })
+            .map(function(item){
+                return {
+                    name:String(item.name || '').trim(),
+                    type:type
+                };
+            });
     }
 
     window.fillInsurancePersonOptions = function(){
-        const type = document.getElementById('ins_person_type')?.value || 'dispatch';
-        const select = document.getElementById('ins_person_name');
-        if(!select) return;
-        const old = select.value;
-        select.innerHTML = personList(type)
-            .filter(x=>x.name)
-            .sort((a,b)=>String(a.name).localeCompare(String(b.name),'zh-Hant'))
-            .map(x=>`<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('');
-        if([...select.options].some(o=>o.value===old)) select.value = old;
+        const type =
+            document.getElementById(
+                'ins_person_type'
+            )?.value || 'dispatch';
+
+        const input =
+            document.getElementById(
+                'ins_person_name'
+            );
+
+        const list =
+            document.getElementById(
+                'ins_person_name_list'
+            );
+
+        if(!input || !list) return;
+
+        const oldValue = input.value;
+
+        const names = personList(type)
+            .map(function(item){
+                return item.name;
+            })
+            .filter(Boolean)
+            .filter(function(name,index,array){
+                return array.indexOf(name) === index;
+            })
+            .sort(function(a,b){
+                return String(a).localeCompare(
+                    String(b),
+                    'zh-Hant'
+                );
+            });
+
+        list.innerHTML = names
+            .map(function(name){
+                return '<option value="' +
+                    esc(name) +
+                    '"></option>';
+            })
+            .join('');
+
+        /*
+         * 切換正職／派遣時：
+         * 若原本輸入的姓名不在新類型中，就清空，
+         * 避免誤把正職存成派遣或反過來。
+         */
+        if(
+            oldValue &&
+            !names.includes(oldValue)
+        ){
+            input.value = '';
+        }
     };
 
     function seedDefaultVersion(){
@@ -19114,6 +19190,7 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         document.getElementById('ins_dependents').value='0';
         document.getElementById('ins_health_mode').value='auto';
         document.getElementById('ins_level_locked').value='yes';
+        document.getElementById('ins_person_name').value='';
         fillInsurancePersonOptions();
     };
 
@@ -19134,6 +19211,18 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         };
         if(!record.name || !record.start_date || !record.salary_level){
             return showToast('請填寫姓名、加保日期與投保級距',true);
+        }
+
+        const validNames = personList(record.person_type)
+            .map(function(item){
+                return item.name;
+            });
+
+        if(!validNames.includes(record.name)){
+            return showToast(
+                '找不到這位人員，請從自動提示名單選擇正確姓名',
+                true
+            );
         }
         const idx = (window.insuranceEnrollments || []).findIndex(x=>x.id===record.id);
         if(idx>=0) window.insuranceEnrollments[idx]=record;
@@ -19377,6 +19466,91 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     };
 
     window.renderInsuranceEnrollments = window.renderInsuranceEnrollments;
+})();
+</script>
+
+
+<script>
+/* ===== 勞健保人員姓名名單即時刷新 ===== */
+(function(){
+    function qyjRefreshInsuranceNames(){
+        try{
+            if(
+                document.getElementById(
+                    'page-insurance'
+                ) &&
+                typeof fillInsurancePersonOptions ===
+                    'function'
+            ){
+                fillInsurancePersonOptions();
+            }
+        }catch(error){}
+    }
+
+    /*
+     * 系統雲端資料套用後，重新讀取正職與派遣名單。
+     */
+    try{
+        if(typeof qyjApplyCloudData === 'function'){
+            const qyjInsuranceOriginalApplyCloudData =
+                qyjApplyCloudData;
+
+            qyjApplyCloudData = function(){
+                const result =
+                    qyjInsuranceOriginalApplyCloudData
+                        .apply(
+                            this,
+                            arguments
+                        );
+
+                setTimeout(
+                    qyjRefreshInsuranceNames,
+                    100
+                );
+
+                return result;
+            };
+        }
+    }catch(error){}
+
+    /*
+     * 新增或修改正職、派遣人員後，
+     * 勞健保頁姓名提示同步更新。
+     */
+    [
+        'addStaff',
+        'updateStaff',
+        'saveStaffEditModal',
+        'addFtStaff',
+        'updateFtStaff'
+    ].forEach(function(functionName){
+        try{
+            const original =
+                window[functionName];
+
+            if(typeof original !== 'function'){
+                return;
+            }
+
+            window[functionName] = function(){
+                const result =
+                    original.apply(
+                        this,
+                        arguments
+                    );
+
+                setTimeout(
+                    qyjRefreshInsuranceNames,
+                    100
+                );
+
+                return result;
+            };
+        }catch(error){}
+    });
+
+    window.qyjRefreshInsuranceNames =
+        qyjRefreshInsuranceNames;
 })();
 </script>
 
