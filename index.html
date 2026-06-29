@@ -2365,17 +2365,31 @@ function isBeforeNewSalarySystem(dateStr){
 }
 function isProtectedOriginalSalaryRule(rule){
     const r = String(rule || '');
-    // 這三類是老闆確認要保留舊制，不受 2026/06/01 新制覆蓋
-    return r.includes('早期約') || r.includes('245起跳') || r.includes('固定220') || r.includes('特殊');
+    // 固定205、早期約、固定220、特殊案例皆保留原制度，
+    // 不受 2026/06/01 新制級距覆蓋。
+    return r.includes('固定205') ||
+           r.includes('早期約') ||
+           r.includes('245起跳') ||
+           r.includes('固定220') ||
+           r.includes('特殊');
 }
 function deriveSalaryCalcRule(staffOrRule){
-    const rule = typeof staffOrRule === 'string' ? staffOrRule : (staffOrRule?.salary_rule || '');
-    // 原計薪方案屬於保留舊制者，永遠優先依原方案判斷，不能被隱藏的目前規則覆蓋
+    const rule = typeof staffOrRule === 'string'
+        ? staffOrRule
+        : (staffOrRule?.salary_rule || '');
+
+    // 原計薪方案優先於舊資料中殘留的 salary_calc_rule。
+    // 固定205不得被「新制級距」覆蓋。
+    if(rule.includes('固定205')) return '固定205制度';
     if(rule.includes('固定220')) return '早期固定220特例';
     if(rule.includes('早期約') || rule.includes('245起跳')) return '高薪保留制';
     if(rule.includes('特殊')) return '特殊案例維持';
     if(rule.includes('接案') || rule.includes('自訂')) return '接案/自訂';
-    const saved = typeof staffOrRule === 'object' ? (staffOrRule?.salary_calc_rule || '') : '';
+
+    const saved = typeof staffOrRule === 'object'
+        ? (staffOrRule?.salary_calc_rule || '')
+        : '';
+
     if(saved) return saved;
     return '新制級距';
 }
@@ -2415,7 +2429,19 @@ function calcLegacyWageByRule(rule, hours, agreed, customHourly) {
 function calcNewSystemWageByRule(rule, hours, agreed, customHourly, calcRule) {
     const actualRule = calcRule || deriveSalaryCalcRule(rule);
     const custom = Number(customHourly) || 0;
-    if(actualRule === '接案/自訂' || String(rule||'').includes('接案')) return custom || 0;
+
+    if(actualRule === '接案/自訂' || String(rule||'').includes('接案')) {
+        return custom || 0;
+    }
+
+    // 固定205制度：
+    // 0～350小時為205；351～700小時為220；
+    // 不會自動出現230。單次230必須填在該筆「單次特殊時薪」。
+    if(actualRule === '固定205制度' || String(rule||'').includes('固定205')) {
+        if(hours <= 350) return 205;
+        if(hours <= 700) return 220;
+        return agreed ? 250 : 220;
+    }
 
     if(actualRule === '新制級距') {
         if(hours <= 175) return 210;
@@ -18126,6 +18152,58 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
     normalizeAllGps();
     console.log('GPS 快速同步與遲到異常標示修正版已載入');
+})();
+</script>
+
+
+<script>
+/* ===== 固定205制度資料矯正 ===== */
+(function(){
+    function qyjFixFixed205SalaryRules(){
+        if(!Array.isArray(staffData)) return;
+
+        let changed = false;
+
+        staffData.forEach(function(staff){
+            const rule = String(staff.salary_rule || '');
+
+            if(rule.includes('固定205')){
+                if(staff.salary_calc_rule !== '固定205制度'){
+                    staff.salary_calc_rule = '固定205制度';
+                    changed = true;
+                }
+            }
+        });
+
+        if(changed){
+            try{
+                localStorage.setItem(
+                    'staffData',
+                    JSON.stringify(staffData)
+                );
+            }catch(error){}
+
+            try{
+                if(typeof saveAllSilently === 'function'){
+                    saveAllSilently();
+                }
+            }catch(error){}
+        }
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            function(){
+                setTimeout(qyjFixFixed205SalaryRules,500);
+            }
+        );
+    }else{
+        setTimeout(qyjFixFixed205SalaryRules,500);
+    }
+
+    window.qyjFixFixed205SalaryRules =
+        qyjFixFixed205SalaryRules;
 })();
 </script>
 
