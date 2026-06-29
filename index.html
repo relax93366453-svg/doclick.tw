@@ -2529,7 +2529,35 @@ function getPwd(key, def) { const v = localStorage.getItem(key); return v ? decP
 function setPwd(key, val) { if(val) localStorage.setItem(key, encPwd(val)); }
 
 function getSysConfigPayload() { 
-    return { adminAcc: localStorage.getItem('adminAcc')||'admin', adminPwd: getPwd('adminPwd','1234'), hrAcc: localStorage.getItem('hrAcc')||'hr', hrPwd: getPwd('hrPwd','1234'), salesAcc: localStorage.getItem('salesAcc')||'sales', salesPwd: getPwd('salesPwd','1234'), adminPin: getPwd('adminPin','8888'), priceTable: localStorage.getItem('priceTable'), portalConf: localStorage.getItem('portalConf'), loginLogo: localStorage.getItem('loginLogo')||'', pdfLogo: localStorage.getItem('pdfLogo')||'', loginBg: localStorage.getItem('loginBg')||'' }; 
+    return {
+        adminAcc: localStorage.getItem('adminAcc')||'admin',
+        adminPwd: getPwd('adminPwd','1234'),
+        hrAcc: localStorage.getItem('hrAcc')||'hr',
+        hrPwd: getPwd('hrPwd','1234'),
+        salesAcc: localStorage.getItem('salesAcc')||'sales',
+        salesPwd: getPwd('salesPwd','1234'),
+        adminPin: getPwd('adminPin','8888'),
+        priceTable: localStorage.getItem('priceTable'),
+        portalConf: localStorage.getItem('portalConf'),
+        loginLogo: localStorage.getItem('loginLogo')||'',
+        pdfLogo: localStorage.getItem('pdfLogo')||'',
+        loginBg: localStorage.getItem('loginBg')||'',
+
+        // 勞健保跨電腦同步資料
+        insuranceVersions: JSON.stringify(
+            window.insuranceVersions || []
+        ),
+        insuranceEnrollments: JSON.stringify(
+            window.insuranceEnrollments || []
+        ),
+        insuranceMonthlyResults: JSON.stringify(
+            window.insuranceMonthlyResults || []
+        ),
+        insuranceUpdatedAt:
+            localStorage.getItem(
+                'qyjInsuranceUpdatedAt'
+            ) || ''
+    }; 
 }
 
 function savePasswords() { 
@@ -3026,7 +3054,38 @@ function loadDataFromCloud(forceRender=false) {
 
 function buildCloudPayload(){
     standardizeData();
-    return {custData, contractData, staffData, attendData, ftStaffData, ftAttendData, talentData, supplierData, matchData, reqData, dispatchData, salesStaffData, scheduleData, staffClockData, salaryDeductData, sysConfig:getSysConfigPayload(), updatedAt:new Date().toISOString()};
+    return {
+        custData,
+        contractData,
+        staffData,
+        attendData,
+        ftStaffData,
+        ftAttendData,
+        talentData,
+        supplierData,
+        matchData,
+        reqData,
+        dispatchData,
+        salesStaffData,
+        scheduleData,
+        staffClockData,
+        salaryDeductData,
+
+        // 勞健保資料同時放在最外層與 sysConfig，增加後端相容性
+        insuranceVersions:
+            window.insuranceVersions || [],
+        insuranceEnrollments:
+            window.insuranceEnrollments || [],
+        insuranceMonthlyResults:
+            window.insuranceMonthlyResults || [],
+        insuranceUpdatedAt:
+            localStorage.getItem(
+                'qyjInsuranceUpdatedAt'
+            ) || '',
+
+        sysConfig:getSysConfigPayload(),
+        updatedAt:new Date().toISOString()
+    };
 }
 function saveLocalData(){
     try{ localStorage.setItem('custData',JSON.stringify(custData)); localStorage.setItem('contractData',JSON.stringify(contractData)); localStorage.setItem('staffData',JSON.stringify(staffData)); localStorage.setItem('attendData',JSON.stringify(attendData)); localStorage.setItem('ftStaffData',JSON.stringify(ftStaffData)); localStorage.setItem('ftAttendData',JSON.stringify(ftAttendData)); localStorage.setItem('talentData',JSON.stringify(talentData)); localStorage.setItem('supplierData',JSON.stringify(supplierData)); localStorage.setItem('matchData',JSON.stringify(matchData)); localStorage.setItem('reqData',JSON.stringify(reqData)); localStorage.setItem('dispatchData',JSON.stringify(dispatchData)); localStorage.setItem('salesStaffData',JSON.stringify(salesStaffData)); localStorage.setItem('scheduleData',JSON.stringify(scheduleData)); localStorage.setItem('staffClockData',JSON.stringify(staffClockData)); localStorage.setItem('salaryDeductData',JSON.stringify(salaryDeductData)); } catch(e) {}
@@ -7857,6 +7916,118 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                 r.salaryDeductData;
         }
 
+        /*
+         * 勞健保資料跨電腦同步：
+         * 優先讀取最外層資料，若後端只保存 sysConfig，
+         * 則從 sysConfig 內的 JSON 字串還原。
+         */
+        try{
+            function qyjParseInsuranceCloudArray(
+                directValue,
+                configValue
+            ){
+                if(Array.isArray(directValue)){
+                    return directValue;
+                }
+
+                if(Array.isArray(configValue)){
+                    return configValue;
+                }
+
+                if(
+                    typeof configValue ===
+                    'string' &&
+                    configValue.trim()
+                ){
+                    const parsed =
+                        JSON.parse(configValue);
+
+                    return Array.isArray(parsed)
+                        ? parsed
+                        : [];
+                }
+
+                return null;
+            }
+
+            const cloudInsuranceVersions =
+                qyjParseInsuranceCloudArray(
+                    r.insuranceVersions,
+                    r.sysConfig &&
+                    r.sysConfig.insuranceVersions
+                );
+
+            const cloudInsuranceEnrollments =
+                qyjParseInsuranceCloudArray(
+                    r.insuranceEnrollments,
+                    r.sysConfig &&
+                    r.sysConfig.insuranceEnrollments
+                );
+
+            const cloudInsuranceMonthlyResults =
+                qyjParseInsuranceCloudArray(
+                    r.insuranceMonthlyResults,
+                    r.sysConfig &&
+                    r.sysConfig.insuranceMonthlyResults
+                );
+
+            if(cloudInsuranceVersions !== null){
+                window.insuranceVersions =
+                    cloudInsuranceVersions;
+
+                localStorage.setItem(
+                    'qyjInsuranceVersions',
+                    JSON.stringify(
+                        cloudInsuranceVersions
+                    )
+                );
+            }
+
+            if(cloudInsuranceEnrollments !== null){
+                window.insuranceEnrollments =
+                    cloudInsuranceEnrollments;
+
+                localStorage.setItem(
+                    'qyjInsuranceEnrollments',
+                    JSON.stringify(
+                        cloudInsuranceEnrollments
+                    )
+                );
+            }
+
+            if(cloudInsuranceMonthlyResults !== null){
+                window.insuranceMonthlyResults =
+                    cloudInsuranceMonthlyResults;
+
+                localStorage.setItem(
+                    'qyjInsuranceMonthlyResults',
+                    JSON.stringify(
+                        cloudInsuranceMonthlyResults
+                    )
+                );
+            }
+
+            const cloudInsuranceUpdatedAt =
+                r.insuranceUpdatedAt ||
+                (
+                    r.sysConfig &&
+                    r.sysConfig.insuranceUpdatedAt
+                ) ||
+                '';
+
+            if(cloudInsuranceUpdatedAt){
+                localStorage.setItem(
+                    'qyjInsuranceUpdatedAt',
+                    cloudInsuranceUpdatedAt
+                );
+            }
+        }catch(error){
+            console.warn(
+                '勞健保雲端資料解析失敗',
+                error
+            );
+        }
+
         if (r.sysConfig) {
             try{
                 if (
@@ -8076,6 +8247,15 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                     cp === 'dashboard'
                 ){
                     renderDashboard();
+                } else if (
+                    cp === 'insurance'
+                ){
+                    if(
+                        typeof renderInsuranceAll ===
+                        'function'
+                    ){
+                        renderInsuranceAll();
+                    }
                 }
             }catch(e){}
         }
@@ -18964,9 +19144,31 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     }
 
     function saveInsuranceLocal(){
-        localStorage.setItem(VERSION_KEY, JSON.stringify(window.insuranceVersions || []));
-        localStorage.setItem(ENROLL_KEY, JSON.stringify(window.insuranceEnrollments || []));
-        localStorage.setItem(MONTHLY_KEY, JSON.stringify(window.insuranceMonthlyResults || []));
+        localStorage.setItem(
+            VERSION_KEY,
+            JSON.stringify(
+                window.insuranceVersions || []
+            )
+        );
+
+        localStorage.setItem(
+            ENROLL_KEY,
+            JSON.stringify(
+                window.insuranceEnrollments || []
+            )
+        );
+
+        localStorage.setItem(
+            MONTHLY_KEY,
+            JSON.stringify(
+                window.insuranceMonthlyResults || []
+            )
+        );
+
+        localStorage.setItem(
+            'qyjInsuranceUpdatedAt',
+            new Date().toISOString()
+        );
     }
 
     function money(v){
@@ -20573,6 +20775,103 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             return result;
         };
     });
+})();
+</script>
+
+
+<script>
+/* ===== 勞健保跨電腦自動同步 ===== */
+(function(){
+    'use strict';
+
+    let qyjInsuranceCloudTimer = null;
+
+    function qyjScheduleInsuranceCloudSave(){
+        clearTimeout(qyjInsuranceCloudTimer);
+
+        qyjInsuranceCloudTimer =
+            setTimeout(function(){
+                try{
+                    if(
+                        typeof saveAllSilently ===
+                        'function'
+                    ){
+                        saveAllSilently();
+                    }
+                }catch(error){}
+            },300);
+    }
+
+    [
+        'saveInsuranceVersion',
+        'deleteInsuranceVersion',
+        'saveInsuranceEnrollment',
+        'deleteInsuranceEnrollment',
+        'calculateAllInsurance',
+        'applyOneInsuranceToSalary',
+        'applyAllInsuranceToSalary',
+        'importExistingDispatchInsurance',
+        'loadInsurance115Preset'
+    ].forEach(function(functionName){
+        const original =
+            window[functionName];
+
+        if(typeof original !== 'function'){
+            return;
+        }
+
+        window[functionName] = function(){
+            const result =
+                original.apply(
+                    this,
+                    arguments
+                );
+
+            qyjScheduleInsuranceCloudSave();
+
+            return result;
+        };
+    });
+
+    /*
+     * 同事電腦按「立即讀取」後，
+     * 若目前停留勞健保頁，畫面立即更新。
+     */
+    const originalManualCloudRead =
+        window.manualCloudRead;
+
+    if(typeof originalManualCloudRead === 'function'){
+        window.manualCloudRead = function(){
+            const result =
+                originalManualCloudRead.apply(
+                    this,
+                    arguments
+                );
+
+            setTimeout(function(){
+                try{
+                    if(
+                        localStorage.getItem(
+                            'adminPage'
+                        ) === 'insurance' &&
+                        typeof renderInsuranceAll ===
+                            'function'
+                    ){
+                        renderInsuranceAll();
+                    }
+                }catch(error){}
+            },2200);
+
+            return result;
+        };
+    }
+
+    window.qyjScheduleInsuranceCloudSave =
+        qyjScheduleInsuranceCloudSave;
+
+    console.log(
+        '勞健保跨電腦雲端同步已啟用'
+    );
 })();
 </script>
 
