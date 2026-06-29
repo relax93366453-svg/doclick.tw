@@ -1448,10 +1448,61 @@
                                 <input type="date" id="ins_version_start">
                             </div>
                         </div>
-                        <div style="font-size:12px;color:#64748b;margin:10px 0 6px;font-weight:700;">
-                            每行格式：投保級距, 員工勞保, 公司勞保, 職災, 員工健保, 公司健保, 勞退6%
+                        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin:10px 0;">
+                            <div style="font-weight:800;color:#334155;margin-bottom:8px;">
+                                <i class="fas fa-bolt"></i> 快速建立級距表
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button class="btn btn-success" onclick="loadInsurance115Preset()">
+                                    <i class="fas fa-magic"></i> 一鍵載入115年度
+                                </button>
+                                <button class="btn btn-primary" onclick="document.getElementById('ins_import_file').click()">
+                                    <i class="fas fa-file-excel"></i> 匯入Excel／CSV
+                                </button>
+                                <button class="btn" style="background:#7c3aed;" onclick="pasteInsuranceTableFromClipboard()">
+                                    <i class="fas fa-paste"></i> 貼上剪貼簿表格
+                                </button>
+                                <button class="btn" style="background:#475569;" onclick="previewInsuranceVersionRows()">
+                                    <i class="fas fa-eye"></i> 預覽檢查
+                                </button>
+                                <input type="file"
+                                       id="ins_import_file"
+                                       accept=".xlsx,.xls,.csv,.txt"
+                                       style="display:none;"
+                                       onchange="importInsuranceVersionFile(this)">
+                            </div>
+                            <div style="font-size:12px;color:#64748b;margin-top:8px;line-height:1.6;">
+                                可直接從Excel複製整個範圍後按「貼上剪貼簿表格」，系統會自動辨識欄位、排序與檢查重複。
+                            </div>
                         </div>
-                        <textarea id="ins_version_rows" style="width:100%;height:145px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font-family:monospace;" placeholder="29500,738,2582,62,458,1428,1770"></textarea>
+
+                        <div style="font-size:12px;color:#64748b;margin:10px 0 6px;font-weight:700;">
+                            欄位順序：投保級距｜員工勞保｜公司勞保｜職災｜員工健保｜公司健保｜勞退6%
+                        </div>
+                        <textarea id="ins_version_rows"
+                                  style="width:100%;height:145px;border:1px solid #cbd5e1;border-radius:8px;padding:10px;font-family:monospace;"
+                                  placeholder="可貼上Excel整片資料，不必自行加逗號"></textarea>
+
+                        <div id="ins_version_preview_wrap"
+                             style="display:none;margin-top:12px;border:1px solid #cbd5e1;border-radius:10px;overflow:auto;max-height:260px;">
+                            <table style="min-width:780px;margin:0;">
+                                <thead>
+                                    <tr>
+                                        <th>投保級距</th>
+                                        <th>員工勞保</th>
+                                        <th>公司勞保</th>
+                                        <th>職災</th>
+                                        <th>員工健保</th>
+                                        <th>公司健保</th>
+                                        <th>勞退6%</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ins_version_preview_body"></tbody>
+                            </table>
+                        </div>
+                        <div id="ins_version_preview_msg"
+                             style="font-size:12px;margin-top:8px;font-weight:700;"></div>
+
                         <div style="margin-top:10px;">
                             <button class="btn btn-primary" onclick="saveInsuranceVersion()"><i class="fas fa-save"></i> 儲存版本</button>
                             <button class="btn btn-success" onclick="newInsuranceVersion()"><i class="fas fa-plus"></i> 新增版本</button>
@@ -19109,6 +19160,12 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             r.level,r.employee_labor,r.employer_labor,r.occupational,
             r.employee_health,r.employer_health,r.pension
         ].join(',')).join('\n');
+
+        setTimeout(function(){
+            if(typeof previewInsuranceVersionRows === 'function'){
+                previewInsuranceVersionRows();
+            }
+        },0);
     };
 
     window.newInsuranceVersion = function(){
@@ -19123,6 +19180,400 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         fillInsuranceVersionOptions();
         document.getElementById('ins_version_select').value = v.id;
         loadInsuranceVersionForm();
+    };
+
+
+    const INSURANCE_115_PRESET_ROWS = [[1500, 277, 972, 62, 458, 1428, 90], [3000, 277, 972, 62, 458, 1428, 180], [4500, 277, 972, 62, 458, 1428, 270], [6000, 277, 972, 62, 458, 1428, 360], [7500, 277, 972, 62, 458, 1428, 450], [8700, 277, 972, 62, 458, 1428, 522], [9900, 277, 972, 62, 458, 1428, 594], [11100, 277, 972, 62, 458, 1428, 666], [12540, 313, 1097, 62, 458, 1428, 752], [13500, 338, 1182, 62, 458, 1428, 810], [15840, 396, 1386, 62, 458, 1428, 950], [16500, 413, 1444, 62, 458, 1428, 990], [17280, 432, 1512, 62, 458, 1428, 1037], [17880, 447, 1564, 62, 458, 1428, 1073], [19047, 476, 1666, 62, 458, 1428, 1143], [20008, 500, 1751, 62, 458, 1428, 1200], [21009, 525, 1838, 62, 458, 1428, 1261], [22000, 550, 1925, 62, 458, 1428, 1320], [23100, 577, 2022, 62, 458, 1428, 1386], [24000, 600, 2100, 62, 458, 1428, 1440], [25250, 630, 2210, 62, 458, 1428, 1515], [26400, 660, 2310, 62, 458, 1428, 1584], [27600, 690, 2415, 62, 458, 1428, 1656], [28590, 715, 2501, 62, 458, 1428, 1715], [29500, 738, 2582, 62, 458, 1428, 1770], [30300, 758, 2651, 64, 470, 1466, 1818], [31800, 795, 2783, 67, 493, 1539, 1908], [33300, 833, 2914, 70, 516, 1611, 1998], [34800, 870, 3045, 73, 540, 1684, 2088], [36300, 908, 3176, 76, 563, 1757, 2178], [38200, 955, 3342, 80, 592, 1849, 2292], [40100, 1002, 3509, 84, 622, 1940, 2406], [42000, 1050, 3675, 88, 651, 2032, 2520], [43900, 1098, 3841, 92, 681, 2124, 2634], [45800, 1145, 4008, 96, 710, 2216, 2748]];
+
+    function normalizeInsuranceCell(value){
+        return String(value == null ? '' : value)
+            .replace(/[,$，\s]/g,'')
+            .trim();
+    }
+
+    function parseInsuranceTableText(text){
+        const lines = String(text || '')
+            .replace(/\r/g,'')
+            .split('\n')
+            .map(function(line){ return line.trim(); })
+            .filter(Boolean);
+
+        const rows = [];
+        const errors = [];
+
+        lines.forEach(function(line,index){
+            let cells;
+
+            if(line.includes('\t')){
+                cells = line.split('\t');
+            }else if(line.includes(',')){
+                cells = line.split(',');
+            }else if(line.includes('，')){
+                cells = line.split('，');
+            }else{
+                cells = line.split(/\s{2,}|\s+/);
+            }
+
+            cells = cells
+                .map(normalizeInsuranceCell)
+                .filter(function(v){ return v !== ''; });
+
+            /*
+             * 允許直接貼含標題列的Excel資料。
+             */
+            if(
+                cells.length &&
+                !/^\d+(\.\d+)?$/.test(cells[0])
+            ){
+                return;
+            }
+
+            if(cells.length < 7){
+                errors.push('第 ' + (index + 1) + ' 行欄位不足');
+                return;
+            }
+
+            const nums = cells.slice(0,7).map(Number);
+
+            if(nums.some(function(n){ return !Number.isFinite(n); })){
+                errors.push('第 ' + (index + 1) + ' 行含非數字資料');
+                return;
+            }
+
+            rows.push({
+                level:nums[0],
+                employee_labor:nums[1],
+                employer_labor:nums[2],
+                occupational:nums[3],
+                employee_health:nums[4],
+                employer_health:nums[5],
+                pension:nums[6]
+            });
+        });
+
+        rows.sort(function(a,b){ return a.level - b.level; });
+
+        const seen = new Set();
+        const duplicateLevels = [];
+
+        rows.forEach(function(row){
+            if(seen.has(row.level)){
+                duplicateLevels.push(row.level);
+            }
+            seen.add(row.level);
+        });
+
+        return {
+            rows:rows,
+            errors:errors,
+            duplicateLevels:duplicateLevels
+        };
+    }
+
+    function writeInsuranceRowsToTextarea(rows){
+        const area = document.getElementById('ins_version_rows');
+        if(!area) return;
+
+        area.value = (rows || []).map(function(r){
+            return [
+                r.level,
+                r.employee_labor,
+                r.employer_labor,
+                r.occupational,
+                r.employee_health,
+                r.employer_health,
+                r.pension
+            ].join(',');
+        }).join('\n');
+    }
+
+    window.loadInsurance115Preset = function(){
+        if(
+            document.getElementById('ins_version_rows').value.trim() &&
+            !confirm('目前輸入框已有資料，確定要改成115年度預設表嗎？')
+        ){
+            return;
+        }
+
+        const rows = INSURANCE_115_PRESET_ROWS.map(function(a){
+            return {
+                level:a[0],
+                employee_labor:a[1],
+                employer_labor:a[2],
+                occupational:a[3],
+                employee_health:a[4],
+                employer_health:a[5],
+                pension:a[6]
+            };
+        });
+
+        document.getElementById('ins_version_name').value =
+            '115年度勞健保級距';
+
+        document.getElementById('ins_version_start').value =
+            '2026-01-01';
+
+        writeInsuranceRowsToTextarea(rows);
+        previewInsuranceVersionRows();
+
+        showToast(
+            '已載入115年度預設表，共 ' +
+            rows.length +
+            ' 筆'
+        );
+    };
+
+    window.previewInsuranceVersionRows = function(){
+        const text =
+            document.getElementById(
+                'ins_version_rows'
+            )?.value || '';
+
+        const parsed =
+            parseInsuranceTableText(text);
+
+        const wrap =
+            document.getElementById(
+                'ins_version_preview_wrap'
+            );
+
+        const body =
+            document.getElementById(
+                'ins_version_preview_body'
+            );
+
+        const msg =
+            document.getElementById(
+                'ins_version_preview_msg'
+            );
+
+        if(!wrap || !body || !msg) return parsed;
+
+        if(!parsed.rows.length){
+            wrap.style.display = 'none';
+            msg.style.color = '#dc2626';
+            msg.textContent =
+                parsed.errors.length
+                    ? parsed.errors.join('；')
+                    : '尚未辨識到有效級距資料';
+            return parsed;
+        }
+
+        body.innerHTML = parsed.rows.map(function(r){
+            return '<tr>' +
+                '<td>' + money(r.level).toLocaleString() + '</td>' +
+                '<td>' + money(r.employee_labor).toLocaleString() + '</td>' +
+                '<td>' + money(r.employer_labor).toLocaleString() + '</td>' +
+                '<td>' + money(r.occupational).toLocaleString() + '</td>' +
+                '<td>' + money(r.employee_health).toLocaleString() + '</td>' +
+                '<td>' + money(r.employer_health).toLocaleString() + '</td>' +
+                '<td>' + money(r.pension).toLocaleString() + '</td>' +
+                '</tr>';
+        }).join('');
+
+        wrap.style.display = 'block';
+
+        const messages = [
+            '已辨識 ' + parsed.rows.length + ' 筆級距'
+        ];
+
+        if(parsed.errors.length){
+            messages.push(parsed.errors.join('；'));
+        }
+
+        if(parsed.duplicateLevels.length){
+            messages.push(
+                '重複級距：' +
+                parsed.duplicateLevels.join('、')
+            );
+        }
+
+        const hasProblem =
+            parsed.errors.length ||
+            parsed.duplicateLevels.length;
+
+        msg.style.color =
+            hasProblem ? '#dc2626' : '#047857';
+
+        msg.textContent = messages.join('｜');
+
+        return parsed;
+    };
+
+    window.pasteInsuranceTableFromClipboard = async function(){
+        try{
+            if(!navigator.clipboard || !navigator.clipboard.readText){
+                throw new Error('瀏覽器不支援直接讀取剪貼簿');
+            }
+
+            const text =
+                await navigator.clipboard.readText();
+
+            if(!text.trim()){
+                return showToast(
+                    '剪貼簿目前沒有表格資料',
+                    true
+                );
+            }
+
+            document.getElementById(
+                'ins_version_rows'
+            ).value = text;
+
+            const parsed =
+                previewInsuranceVersionRows();
+
+            if(parsed.rows.length){
+                writeInsuranceRowsToTextarea(
+                    parsed.rows
+                );
+            }
+
+            showToast(
+                '已貼上並整理 ' +
+                parsed.rows.length +
+                ' 筆級距'
+            );
+        }catch(error){
+            showToast(
+                '無法直接讀取剪貼簿，請在輸入框內按 Ctrl+V 貼上',
+                true
+            );
+
+            document.getElementById(
+                'ins_version_rows'
+            )?.focus();
+        }
+    };
+
+    function loadSheetJs(){
+        return new Promise(function(resolve,reject){
+            if(window.XLSX){
+                resolve(window.XLSX);
+                return;
+            }
+
+            const old =
+                document.getElementById(
+                    'qyj_sheetjs_loader'
+                );
+
+            if(old){
+                old.addEventListener(
+                    'load',
+                    function(){ resolve(window.XLSX); },
+                    {once:true}
+                );
+                old.addEventListener(
+                    'error',
+                    reject,
+                    {once:true}
+                );
+                return;
+            }
+
+            const script =
+                document.createElement('script');
+
+            script.id =
+                'qyj_sheetjs_loader';
+
+            script.src =
+                'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+
+            script.onload =
+                function(){ resolve(window.XLSX); };
+
+            script.onerror =
+                function(){
+                    reject(
+                        new Error('Excel讀取元件載入失敗')
+                    );
+                };
+
+            document.head.appendChild(script);
+        });
+    }
+
+    window.importInsuranceVersionFile = async function(input){
+        const file = input?.files?.[0];
+        if(!file) return;
+
+        try{
+            const ext =
+                String(file.name)
+                    .split('.')
+                    .pop()
+                    .toLowerCase();
+
+            let text = '';
+
+            if(['csv','txt'].includes(ext)){
+                text = await file.text();
+            }else{
+                const XLSX =
+                    await loadSheetJs();
+
+                const buffer =
+                    await file.arrayBuffer();
+
+                const workbook =
+                    XLSX.read(
+                        buffer,
+                        {type:'array'}
+                    );
+
+                const sheet =
+                    workbook.Sheets[
+                        workbook.SheetNames[0]
+                    ];
+
+                text =
+                    XLSX.utils.sheet_to_csv(
+                        sheet,
+                        {
+                            FS:'\t',
+                            RS:'\n',
+                            blankrows:false
+                        }
+                    );
+            }
+
+            document.getElementById(
+                'ins_version_rows'
+            ).value = text;
+
+            const parsed =
+                previewInsuranceVersionRows();
+
+            if(!parsed.rows.length){
+                return showToast(
+                    '檔案內沒有辨識到有效級距資料',
+                    true
+                );
+            }
+
+            writeInsuranceRowsToTextarea(
+                parsed.rows
+            );
+
+            previewInsuranceVersionRows();
+
+            showToast(
+                '已匯入 ' +
+                parsed.rows.length +
+                ' 筆級距'
+            );
+        }catch(error){
+            console.error(error);
+
+            showToast(
+                '匯入失敗，請改用CSV或直接從Excel複製貼上',
+                true
+            );
+        }finally{
+            input.value = '';
+        }
     };
 
     window.saveInsuranceVersion = function(){
@@ -19140,29 +19591,37 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             return showToast('請填寫版本名稱與生效日期',true);
         }
 
-        const lines = document.getElementById('ins_version_rows').value
-            .split(/\r?\n/)
-            .map(x=>x.trim())
-            .filter(Boolean);
+        const parsed = parseInsuranceTableText(
+            document.getElementById(
+                'ins_version_rows'
+            ).value
+        );
 
-        const rows = [];
-        for(const line of lines){
-            const a = line.split(/[,，\t]/).map(x=>x.trim());
-            if(a.length < 7 || !Number(a[0])){
-                return showToast('級距格式錯誤，每行需有7個數字',true);
-            }
-            rows.push({
-                level:Number(a[0])||0,
-                employee_labor:Number(a[1])||0,
-                employer_labor:Number(a[2])||0,
-                occupational:Number(a[3])||0,
-                employee_health:Number(a[4])||0,
-                employer_health:Number(a[5])||0,
-                pension:Number(a[6])||0
-            });
+        if(parsed.errors.length){
+            previewInsuranceVersionRows();
+            return showToast(
+                '級距資料有錯誤，請先查看預覽訊息',
+                true
+            );
         }
 
-        if(!rows.length) return showToast('請至少輸入一筆級距',true);
+        if(parsed.duplicateLevels.length){
+            previewInsuranceVersionRows();
+            return showToast(
+                '有重複級距：' +
+                parsed.duplicateLevels.join('、'),
+                true
+            );
+        }
+
+        const rows = parsed.rows;
+
+        if(!rows.length){
+            return showToast(
+                '請至少匯入或輸入一筆級距',
+                true
+            );
+        }
 
         v.name=name;
         v.start_date=start;
