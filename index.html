@@ -1364,6 +1364,9 @@
                     </div>
                     <button class="btn btn-success" onclick="calculateAllInsurance()"><i class="fas fa-calculator"></i> 一鍵計算本月</button>
                     <button class="btn btn-warning" onclick="applyAllInsuranceToSalary()"><i class="fas fa-file-invoice-dollar"></i> 全部帶入薪資</button>
+                    <button class="btn" style="background:#7c3aed;" onclick="importExistingDispatchInsurance()">
+                        <i class="fas fa-file-import"></i> 匯入既有派遣投保資料
+                    </button>
                 </div>
 
                 <div style="display:grid;grid-template-columns:minmax(310px,0.9fr) minmax(520px,1.7fr);gap:15px;margin-bottom:16px;">
@@ -1517,7 +1520,7 @@
                         <table>
                             <thead>
                                 <tr>
-                                    <th>類型</th><th>姓名</th><th>投保期間</th><th>級距</th><th>健保</th><th>備註</th><th>操作</th>
+                                    <th>類型</th><th>姓名</th><th>投保期間</th><th>級距</th><th>健保</th><th>既有代扣</th><th>備註</th><th>操作</th>
                                 </tr>
                             </thead>
                             <tbody id="ins_enrollment_table"></tbody>
@@ -19655,6 +19658,9 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
     window.saveInsuranceEnrollment = function(){
         const id = document.getElementById('ins_enroll_id').value;
+        const oldRecord = (window.insuranceEnrollments || [])
+            .find(function(x){ return x.id === id; }) || {};
+
         const record = {
             id:id || uid('enr'),
             person_type:document.getElementById('ins_person_type').value,
@@ -19666,6 +19672,11 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             health_mode:document.getElementById('ins_health_mode').value,
             level_locked:document.getElementById('ins_level_locked').value,
             note:document.getElementById('ins_note').value.trim(),
+            source:oldRecord.source || 'manual',
+            manual_employee_labor:oldRecord.manual_employee_labor || 0,
+            manual_employee_health:oldRecord.manual_employee_health || 0,
+            imported_ins_status:oldRecord.imported_ins_status || '',
+            inferred_level:oldRecord.inferred_level || false,
             updated_at:new Date().toISOString()
         };
         if(!record.name || !record.start_date || !record.salary_level){
@@ -19730,12 +19741,16 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                 <td>${esc(r.start_date)} ～ ${esc(r.end_date||'仍在保')}</td>
                 <td>${money(r.salary_level).toLocaleString()}</td>
                 <td>${r.health_mode==='full'?'全月':r.health_mode==='none'?'不收':'自動'}</td>
+                <td>
+                    ${Number(r.manual_employee_labor)>0 ? '勞保 '+money(r.manual_employee_labor).toLocaleString() : '-'}
+                    ${Number(r.manual_employee_health)>0 ? '<br>健保 '+money(r.manual_employee_health).toLocaleString() : ''}
+                </td>
                 <td>${esc(r.note||'')}</td>
                 <td>
                     <button class="btn-sm btn-edit" onclick="editInsuranceEnrollment('${r.id}')">修改</button>
                     <button class="btn-sm btn-delete" onclick="deleteInsuranceEnrollment('${r.id}')">刪除</button>
                 </td>
-            </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;">尚無投保異動</td></tr>';
+            </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;">尚無投保異動</td></tr>';
     };
 
     function calculatePerson(type,name,month){
@@ -19758,7 +19773,14 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             const row=getLevelRow(version,r.salary_level);
             if(!row)return;
             laborDays += days;
-            employeeLabor += Number(row.employee_labor||0)*days/30;
+            const calculatedEmployeeLabor =
+                Number(row.employee_labor||0)*days/30;
+
+            employeeLabor +=
+                Number(r.manual_employee_labor) > 0
+                    ? Number(r.manual_employee_labor)
+                    : calculatedEmployeeLabor;
+
             employerLabor += Number(row.employer_labor||0)*days/30;
             occupational += Number(row.occupational||0)*days/30;
             pension += Number(row.pension||0)*days/30;
@@ -19771,7 +19793,12 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         let employeeHealth=0, employerHealth=0;
         if(healthRecord){
             const dep=Math.max(0,Number(healthRecord.record.dependents)||0);
-            employeeHealth=Number(healthRecord.row.employee_health||0)*(1+dep);
+
+            employeeHealth =
+                Number(healthRecord.record.manual_employee_health) > 0
+                    ? Number(healthRecord.record.manual_employee_health)
+                    : Number(healthRecord.row.employee_health||0)*(1+dep);
+
             employerHealth=Number(healthRecord.row.employer_health||0);
         }
 
@@ -19803,6 +19830,307 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         return [...dispatch,...fulltime]
             .filter((x,i,a)=>x.name && a.findIndex(y=>y.type===x.type&&y.name===x.name)===i);
     }
+
+
+    function qyjInferInsuranceLevelFromExisting(staff,version){
+        if(!version || !Array.isArray(version.rows) || !version.rows.length){
+            return 0;
+        }
+
+        const labor = Number(staff.labor) || 0;
+        const health = Number(staff.health) || 0;
+        const deps = Math.max(0,Number(staff.ins_deps) || 0);
+        const baseHealth = health > 0 ? Math.round(health / (1 + deps)) : 0;
+
+        let candidates = version.rows.slice();
+
+        if(labor > 0){
+            const laborMatches = candidates.filter(function(row){
+                return Number(row.employee_labor) === labor;
+            });
+            if(laborMatches.length){
+                candidates = laborMatches;
+            }
+        }
+
+        if(baseHealth > 0){
+            const healthMatches = candidates.filter(function(row){
+                return Number(row.employee_health) === baseHealth;
+            });
+            if(healthMatches.length){
+                candidates = healthMatches;
+            }
+        }
+
+        if(candidates.length){
+            /*
+             * 同一員工勞保金額可能對應多個低級距，
+             * 選取該組最高級距，避免落到1500等過低級距。
+             */
+            return candidates
+                .slice()
+                .sort(function(a,b){
+                    return Number(b.level) - Number(a.level);
+                })[0].level;
+        }
+
+        /*
+         * 若無完全相符，改用員工負擔金額差距最小的一級。
+         */
+        let best = null;
+        let bestScore = Infinity;
+
+        version.rows.forEach(function(row){
+            let score = 0;
+
+            if(labor > 0){
+                score += Math.abs(Number(row.employee_labor||0) - labor) * 3;
+            }
+
+            if(baseHealth > 0){
+                score += Math.abs(Number(row.employee_health||0) - baseHealth);
+            }
+
+            if(score < bestScore){
+                bestScore = score;
+                best = row;
+            }
+        });
+
+        return best ? Number(best.level) || 0 : 0;
+    }
+
+    window.importExistingDispatchInsurance = function(){
+        const month =
+            document.getElementById('ins_month')?.value ||
+            new Date().toISOString().slice(0,7);
+
+        const version = getVersionForMonth(month);
+
+        let list = [];
+
+        try{
+            list = Array.isArray(staffData)
+                ? staffData
+                : [];
+        }catch(error){
+            list = [];
+        }
+
+        const eligible = list.filter(function(staff){
+            const status = String(staff.ins_status || '');
+            return staff &&
+                   String(staff.name || '').trim() &&
+                   status !== '都不保' &&
+                   String(staff.ins_date || '').trim();
+        });
+
+        if(!eligible.length){
+            return showToast(
+                '派遣人員資料中沒有可匯入的加保資料',
+                true
+            );
+        }
+
+        if(!confirm(
+            '將匯入 ' + eligible.length +
+            ' 位派遣人員的既有加保資料。\n\n' +
+            '已存在的紀錄只補空白欄位，不會覆蓋後來修改的內容。'
+        )){
+            return;
+        }
+
+        let created = 0;
+        let updated = 0;
+        let skipped = 0;
+        let needLevelReview = 0;
+
+        eligible.forEach(function(staff){
+            const name = String(staff.name || '').trim();
+            const startDate = String(staff.ins_date || '').trim();
+            const status = String(staff.ins_status || '勞健雙保');
+            const labor = Number(staff.labor) || 0;
+            const health = Number(staff.health) || 0;
+            const deps = Math.max(0,Number(staff.ins_deps) || 0);
+
+            let existing = (window.insuranceEnrollments || [])
+                .find(function(record){
+                    return record.person_type === 'dispatch' &&
+                           record.name === name &&
+                           record.start_date === startDate;
+                });
+
+            const inferredLevel =
+                qyjInferInsuranceLevelFromExisting(staff,version);
+
+            const healthMode =
+                status === '僅勞保'
+                    ? 'none'
+                    : 'auto';
+
+            if(existing){
+                let changed = false;
+
+                if(!Number(existing.salary_level) && inferredLevel){
+                    existing.salary_level = inferredLevel;
+                    existing.inferred_level = true;
+                    changed = true;
+                }
+
+                if(!Number(existing.dependents) && deps){
+                    existing.dependents = deps;
+                    changed = true;
+                }
+
+                if(
+                    !Number(existing.manual_employee_labor) &&
+                    labor > 0
+                ){
+                    existing.manual_employee_labor = labor;
+                    changed = true;
+                }
+
+                if(
+                    !Number(existing.manual_employee_health) &&
+                    health > 0
+                ){
+                    existing.manual_employee_health = health;
+                    changed = true;
+                }
+
+                if(!existing.imported_ins_status){
+                    existing.imported_ins_status = status;
+                    changed = true;
+                }
+
+                if(!existing.source){
+                    existing.source = 'dispatch_staff_import';
+                    changed = true;
+                }
+
+                if(!existing.note){
+                    existing.note =
+                        '由派遣人員資料匯入';
+                    changed = true;
+                }
+
+                if(changed){
+                    existing.updated_at =
+                        new Date().toISOString();
+                    updated++;
+                }else{
+                    skipped++;
+                }
+
+                if(!Number(existing.salary_level)){
+                    needLevelReview++;
+                }
+
+                return;
+            }
+
+            const record = {
+                id:uid('enr'),
+                person_type:'dispatch',
+                name:name,
+                start_date:startDate,
+                end_date:'',
+                salary_level:inferredLevel || 0,
+                dependents:deps,
+                health_mode:healthMode,
+                level_locked:'yes',
+                note:'由派遣人員資料匯入',
+                source:'dispatch_staff_import',
+                manual_employee_labor:labor,
+                manual_employee_health:health,
+                imported_ins_status:status,
+                inferred_level:Boolean(inferredLevel),
+                updated_at:new Date().toISOString()
+            };
+
+            window.insuranceEnrollments.push(record);
+            created++;
+
+            if(!inferredLevel){
+                needLevelReview++;
+            }
+        });
+
+        saveInsuranceLocal();
+        renderInsuranceAll();
+
+        try{
+            if(typeof saveAllSilently === 'function'){
+                saveAllSilently();
+            }
+        }catch(error){}
+
+        let message =
+            '匯入完成：新增 ' + created +
+            ' 筆、補充 ' + updated +
+            ' 筆、略過 ' + skipped + ' 筆';
+
+        if(needLevelReview){
+            message +=
+                '；另有 ' + needLevelReview +
+                ' 位無法推估級距，需補填投保級距';
+        }
+
+        showToast(message, false);
+    };
+
+    /*
+     * 派遣人員資料修改後，同步更新已匯入紀錄的
+     * 眷屬人數與實際代扣金額；不改動使用者手動設定的級距。
+     */
+    window.syncExistingDispatchInsurance = function(name){
+        if(!name) return;
+
+        let staff = null;
+
+        try{
+            staff = (staffData || []).find(function(item){
+                return item.name === name;
+            });
+        }catch(error){}
+
+        if(!staff) return;
+
+        const records = (window.insuranceEnrollments || [])
+            .filter(function(record){
+                return record.person_type === 'dispatch' &&
+                       record.name === name &&
+                       record.source === 'dispatch_staff_import';
+            });
+
+        if(!records.length) return;
+
+        records.forEach(function(record){
+            record.dependents =
+                Math.max(0,Number(staff.ins_deps) || 0);
+
+            record.manual_employee_labor =
+                Number(staff.labor) || 0;
+
+            record.manual_employee_health =
+                Number(staff.health) || 0;
+
+            record.imported_ins_status =
+                staff.ins_status || record.imported_ins_status;
+
+            if(
+                !record.start_date &&
+                staff.ins_date
+            ){
+                record.start_date = staff.ins_date;
+            }
+
+            record.updated_at =
+                new Date().toISOString();
+        });
+
+        saveInsuranceLocal();
+    };
 
     window.calculateAllInsurance = function(){
         const month=document.getElementById('ins_month')?.value;
@@ -20010,6 +20338,64 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
     window.qyjRefreshInsuranceNames =
         qyjRefreshInsuranceNames;
+})();
+</script>
+
+
+<script>
+/* ===== 派遣人員勞健保資料同步 ===== */
+(function(){
+    [
+        'addStaff',
+        'updateStaff',
+        'saveStaffEditModal'
+    ].forEach(function(functionName){
+        const original = window[functionName];
+
+        if(typeof original !== 'function'){
+            return;
+        }
+
+        window[functionName] = function(){
+            let targetName = '';
+
+            try{
+                if(functionName === 'saveStaffEditModal'){
+                    targetName =
+                        document.getElementById(
+                            'm_staff_name'
+                        )?.value.trim() || '';
+                }else{
+                    targetName =
+                        document.getElementById(
+                            'staff_name'
+                        )?.value.trim() || '';
+                }
+            }catch(error){}
+
+            const result =
+                original.apply(
+                    this,
+                    arguments
+                );
+
+            setTimeout(function(){
+                try{
+                    if(
+                        targetName &&
+                        typeof syncExistingDispatchInsurance ===
+                            'function'
+                    ){
+                        syncExistingDispatchInsurance(
+                            targetName
+                        );
+                    }
+                }catch(error){}
+            },100);
+
+            return result;
+        };
+    });
 })();
 </script>
 
