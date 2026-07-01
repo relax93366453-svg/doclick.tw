@@ -1736,8 +1736,9 @@
                     <div>
                         <div id="staffClockTodayList"></div>
                         <div class="staff-clock-card">
-                            <div class="staff-clock-title"><h3><i class="fas fa-list-check"></i> 我的打卡紀錄</h3></div>
-                            <div class="table-responsive"><table style="background:white;width:100%;min-width:650px;"><thead><tr><th>日期</th><th>公司</th><th>排班</th><th>上班</th><th>下班</th><th>狀態</th><th>備註</th></tr></thead><tbody id="staffClockHistoryTable"></tbody></table></div>
+                            <div class="staff-clock-title"><h3><i class="fas fa-calendar-days"></i> 出勤紀錄</h3></div>
+                            <div id="staffClockCalendarWrap" class="staff-calendar-wrap"></div>
+                            <div id="staffClockDayDetail" class="staff-day-detail"></div>
                         </div>
                     </div>
                     <div>
@@ -1760,7 +1761,52 @@
             <div class="page" id="staff-page-about"><div class="page-title"><i class="fas fa-building"></i> 關於公司</div><div class="rules-box" style="border-left:4px solid #10b981; background:#ecfdf5; padding:25px;"><h3 style="color:#047857;">企業精神</h3><p style="color:#334155; line-height:2;">致力於提供最專業的人才媒合與企業派遣服務。</p></div></div>
             <div class="page" id="staff-page-links"><div class="page-title"><i class="fas fa-link"></i> 常用連結</div><div class="grid" style="grid-template-columns:1fr 1fr; gap:30px;"><div id="btn_l1" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fas fa-globe" style="font-size:50px; color:#3b82f6;"></i><h3 id="staff_l1_title" style="margin-top:10px;"></h3><p id="staff_l1_desc" style="color:#64748b; font-size:13px;"></p></div><div id="btn_l2" class="dash-card" style="text-align:center; cursor:pointer; padding:40px 20px;"><i class="fab fa-instagram" style="font-size:50px; color:#e1306c;"></i><h3 id="staff_l2_title" style="margin-top:10px;"></h3><p id="staff_l2_desc" style="color:#64748b; font-size:13px;"></p></div></div></div>
         </div>
-    </div><script>
+    </div>
+<style>
+.staff-calendar-wrap{background:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;margin-top:4px;}
+.staff-calendar-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:20px 24px;background:#fff;border-bottom:1px solid #e2e8f0;}
+.staff-calendar-head h3{margin:0;font-size:22px;font-weight:900;color:#0f172a;letter-spacing:.5px;}
+.staff-calendar-nav{display:flex;align-items:center;gap:10px;}
+.staff-calendar-nav button{width:42px;height:42px;border-radius:12px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;font-size:18px;font-weight:900;cursor:pointer;}
+.staff-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:12px 16px 18px;gap:8px;}
+.staff-calendar-weekday{padding:8px 0;text-align:center;font-size:14px;font-weight:900;color:#334155;}
+.staff-calendar-cell{position:relative;min-height:58px;border-radius:14px;display:flex;align-items:flex-start;justify-content:center;padding-top:10px;font-size:18px;color:#0f172a;cursor:pointer;background:transparent;transition:.15s;}
+.staff-calendar-cell:hover{background:#eef6ff;}
+.staff-calendar-cell.muted{color:#cbd5e1;cursor:default;}
+.staff-calendar-cell.today{background:#eff6ff;color:#2563eb;font-weight:900;}
+.staff-calendar-cell.selected{box-shadow:inset 0 0 0 2px #93c5fd;background:#dbeafe;color:#1d4ed8;font-weight:900;}
+.staff-calendar-dots{position:absolute;left:50%;bottom:7px;transform:translateX(-50%);display:flex;gap:6px;align-items:center;justify-content:center;}
+.staff-calendar-dot{width:10px;height:10px;border-radius:999px;display:inline-block;}
+.staff-calendar-dot.blue{background:#3b82f6;}
+.staff-calendar-dot.red{background:#ef4444;}
+.staff-calendar-dot.orange{background:#f59e0b;}
+.staff-day-detail{margin-top:16px;display:flex;flex-direction:column;gap:12px;}
+.staff-day-card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:0 4px 14px rgba(15,23,42,.04);}
+.staff-day-card .left{display:flex;align-items:center;gap:14px;min-width:0;}
+.staff-day-dot{width:16px;height:16px;border-radius:999px;flex:0 0 auto;}
+.staff-day-dot.blue{background:#3b82f6;}
+.staff-day-dot.green{background:#10b981;}
+.staff-day-dot.red{background:#ef4444;}
+.staff-day-dot.orange{background:#f59e0b;}
+.staff-day-text{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;color:#0f172a;}
+.staff-day-main{font-size:18px;font-weight:900;}
+.staff-day-sub{font-size:15px;color:#64748b;font-weight:700;word-break:break-word;}
+.staff-day-arrow{color:#94a3b8;font-size:20px;font-weight:900;}
+.staff-day-empty{background:#fff;border:1px dashed #cbd5e1;border-radius:18px;padding:22px;text-align:center;color:#94a3b8;font-weight:900;}
+@media(max-width:768px){
+  .staff-calendar-head{padding:16px 18px;}
+  .staff-calendar-head h3{font-size:18px;}
+  .staff-calendar-nav button{width:38px;height:38px;border-radius:10px;}
+  .staff-calendar-grid{padding:10px 12px 14px;gap:4px;}
+  .staff-calendar-weekday{font-size:13px;}
+  .staff-calendar-cell{min-height:48px;padding-top:8px;font-size:16px;border-radius:10px;}
+  .staff-calendar-dots{bottom:5px;gap:4px;}
+  .staff-calendar-dot{width:8px;height:8px;}
+  .staff-day-card{padding:16px;align-items:flex-start;}
+  .staff-day-main{font-size:16px;}
+  .staff-day-sub{font-size:13px;}
+}
+</style><script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyqaY2cgSESCdCeIJIf7--LYTj0ElIL1vP7nfEScJFaoqxfqJMrlbIi41Ovg2xzkY22Q/exec';
 window.SCRIPT_URL = SCRIPT_URL;
 window.SCRIPT_URL = SCRIPT_URL;
@@ -3857,8 +3903,8 @@ function manualCloudRead(){ const blockedReason = isSafeSyncBlocked(); if(blocke
 
 
 function saveAll() {
-    pushCloudData(false)
-        .then(()=>{
+    return pushCloudData(false)
+        .then((result)=>{
             clearFormDirty();
 
             if(el('sync-status')){
@@ -3872,8 +3918,17 @@ function saveAll() {
                     loadDataFromCloud(true);
                 }catch(error){}
             },500);
+
+            return result;
         })
-        .catch(()=>{});
+        .catch((error)=>{
+            /*
+             * 雲端失敗時仍保留本機資料，
+             * 讓使用者下次可重新同步，不把剛輸入的資料清掉。
+             */
+            saveLocalData();
+            throw error;
+        });
 }
 
 function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`); }); }
@@ -5354,7 +5409,7 @@ function renderAttend(){
         const cumulative = cumulativeMap[idx] || 0;
         const fee = Number(item.project_fee) || 0;
 
-        h += `<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${cumulative.toFixed(1)}</td><td>${hrDisplay}</td><td><b style="color:#ea580c;">${fee>0?fee:"-"}</b></td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+        h += `<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${cumulative.toFixed(1)}</td><td>${hrDisplay}</td><td><b style="color:#ea580c;">${fee>0?fee:"-"}</b></td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}${item._syncState==='pending' ? '<br><span style="color:#d97706;font-size:11px;font-weight:900;">等待雲端同步</span>' : ''}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
     });
     el('attendTable').innerHTML = h || '<tr><td colspan="13" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('attend', total, totalPages); 
@@ -5372,9 +5427,64 @@ function calcAttendTemp() {
     checkHourlyUpgradeAlert(); 
 }
 
+function setAttendViewToSavedRecord(record){
+    if(!record || !record.date) return;
+
+    const parts = String(record.date).split('-').map(Number);
+    let year = parts[0] || new Date().getFullYear();
+    let month = parts[1] || (new Date().getMonth() + 1);
+    const day = parts[2] || 1;
+
+    /*
+     * 派遣薪資週期為上月26日至本月25日。
+     * 26日以後的紀錄要顯示在下一個薪資月份。
+     */
+    if(day >= 26){
+        month += 1;
+        if(month > 12){
+            month = 1;
+            year += 1;
+        }
+    }
+
+    if(el('filter_year')){
+        el('filter_year').value = String(year);
+    }
+
+    if(el('filter_month')){
+        el('filter_month').value = String(month);
+    }
+
+    if(el('filter_company')){
+        el('filter_company').value = record.company || '';
+    }
+
+    if(el('filter_staff')){
+        el('filter_staff').value = record.staff || '';
+    }
+
+    if(
+        typeof pageConfig !== 'undefined' &&
+        pageConfig.currentPage
+    ){
+        pageConfig.currentPage.attend = 1;
+    }
+}
+
+function isAttendRecordStillPresent(syncId){
+    return Boolean(
+        (attendData || []).find(function(item){
+            return item && item._syncId === syncId;
+        })
+    );
+}
+
 function addAttend() { 
-    const now=new Date().toISOString();
-    const oldItem=editAttendIndex>-1 ? attendData[editAttendIndex] : null;
+    const now = new Date().toISOString();
+    const oldItem =
+        editAttendIndex > -1
+            ? attendData[editAttendIndex]
+            : null;
 
     const o = { 
         company:el('attend_company').value.trim(),
@@ -5390,37 +5500,56 @@ function addAttend() {
         project_fee:el('attend_project_fee').value,
         deduct_points:el('attend_deduct_points').value, 
         special_hourly:el('attend_special_hourly').value,
-        _syncId:oldItem&&oldItem._syncId
-            ? oldItem._syncId
-            : (typeof qyjNewAttendId==='function'
-                ? qyjNewAttendId()
-                : 'att_'+Date.now()),
-        _createdAt:oldItem&&oldItem._createdAt
-            ? oldItem._createdAt
-            : now,
-        _updatedAt:now
+        _syncId:
+            oldItem && oldItem._syncId
+                ? oldItem._syncId
+                : (
+                    typeof qyjNewAttendId === 'function'
+                        ? qyjNewAttendId()
+                        : 'att_' + Date.now()
+                ),
+        _createdAt:
+            oldItem && oldItem._createdAt
+                ? oldItem._createdAt
+                : now,
+        _updatedAt:now,
+        _syncState:'pending'
     }; 
 
-    if(!o.company || !o.staff || !o.date) return;
+    if(!o.company || !o.staff || !o.date){
+        return showToast(
+            '請填寫公司、人員與日期',
+            true
+        );
+    }
 
-    if(editAttendIndex > -1) { 
-        attendData[editAttendIndex] = {...attendData[editAttendIndex], ...o}; 
+    if(editAttendIndex > -1){ 
+        attendData[editAttendIndex] = {
+            ...attendData[editAttendIndex],
+            ...o
+        }; 
         editAttendIndex = -1; 
-    } else { 
+    }else{ 
         attendData.push(o); 
     }
 
-    if(typeof qyjEnsureAttendIds==='function'){
+    if(typeof qyjEnsureAttendIds === 'function'){
         qyjEnsureAttendIds(attendData);
     }
 
-    saveAll(); 
-    renderAttend(); 
+    /*
+     * 先保存本機、切換篩選並顯示，
+     * 不等待網路才讓使用者看到資料。
+     */
+    saveLocalData();
+    setAttendViewToSavedRecord(o);
+    renderAttend();
 
-    const keepCompany = el('attend_company').value;
-    const keepStaff = el('attend_staff').value;
-    const keepService = el('attend_service').value;
-    const keepDate = el('attend_date').value;
+    const keepCompany = o.company;
+    const keepStaff = o.staff;
+    const keepService = o.service;
+    const keepDate = o.date;
+    const savedSyncId = o._syncId;
 
     clearAttendForm(); 
 
@@ -5428,9 +5557,47 @@ function addAttend() {
     el('attend_staff').value = keepStaff;
     el('attend_service').value = keepService;
     el('attend_date').value = keepDate;
-    el('attend_company').focus();
 
-    showToast('✅ 儲存並同步'); 
+    if(el('attend_company')){
+        el('attend_company').focus();
+    }
+
+    showToast('✅ 已儲存在本機，正在同步雲端');
+
+    saveAll()
+        .then(()=>{
+            const savedItem = (attendData || []).find(function(item){
+                return item && item._syncId === savedSyncId;
+            });
+
+            if(savedItem){
+                savedItem._syncState = 'synced';
+                savedItem._updatedAt = savedItem._updatedAt || now;
+            }
+
+            saveLocalData();
+            setAttendViewToSavedRecord(o);
+            renderAttend();
+            showToast('✅ 派遣紀錄已儲存並同步');
+        })
+        .catch(()=>{
+            const pendingItem = (attendData || []).find(function(item){
+                return item && item._syncId === savedSyncId;
+            });
+
+            if(pendingItem){
+                pendingItem._syncState = 'pending';
+            }
+
+            saveLocalData();
+            setAttendViewToSavedRecord(o);
+            renderAttend();
+
+            showToast(
+                '⚠️ 資料已保留在本機，但雲端同步失敗，請稍後按「立即讀取／重新整理」再同步',
+                true
+            );
+        });
 }
 
 function editAttend(i) { 
@@ -6501,13 +6668,146 @@ function staffClockReport(rowIndex){
     renderStaffClockPage();
     showToast('已送出異常回報');
 }
+const staffClockCalendarState = { year:null, month:null, selectedDate:'' };
+
+function initStaffClockCalendarState(){
+    const now = new Date();
+    if(!staffClockCalendarState.year) staffClockCalendarState.year = now.getFullYear();
+    if(!staffClockCalendarState.month) staffClockCalendarState.month = now.getMonth() + 1;
+    if(!staffClockCalendarState.selectedDate) staffClockCalendarState.selectedDate = todayYMD();
+}
+
+function shiftStaffClockCalendar(step){
+    initStaffClockCalendarState();
+    let year = Number(staffClockCalendarState.year);
+    let month = Number(staffClockCalendarState.month) + Number(step || 0);
+    while(month < 1){ month += 12; year -= 1; }
+    while(month > 12){ month -= 12; year += 1; }
+    staffClockCalendarState.year = year;
+    staffClockCalendarState.month = month;
+    const firstDay = `${year}-${String(month).padStart(2,'0')}-01`;
+    if(!String(staffClockCalendarState.selectedDate || '').startsWith(`${year}-${String(month).padStart(2,'0')}-`)){
+        staffClockCalendarState.selectedDate = firstDay;
+    }
+    renderStaffClockHistory();
+}
+
+function selectStaffClockCalendarDate(dateStr){
+    if(!dateStr) return;
+    staffClockCalendarState.selectedDate = dateStr;
+    renderStaffClockHistory();
+}
+
+function getStaffClockHistoryRows(){
+    if(!currentLoginStaff) return [];
+    return (staffClockData || []).filter(function(item){
+        return String(item.staff || '') === String(currentLoginStaff.name || '');
+    }).sort(function(a,b){
+        return String(a.date || '').localeCompare(String(b.date || '')) || String(a.updatedAt || '').localeCompare(String(b.updatedAt || ''));
+    });
+}
+
+function getStaffClockRecordsByDate(rows){
+    const map = {};
+    (rows || []).forEach(function(row){
+        const key = String(row.date || '');
+        if(!key) return;
+        if(!map[key]) map[key] = [];
+        map[key].push(row);
+    });
+    return map;
+}
+
+function getLateMinutesForRecord(rec){
+    const start = String(rec?.scheduleStart || '');
+    const clockIn = String(rec?.clockIn || '');
+    if(!start || !clockIn) return 0;
+    return Math.max(0, clockTimeToMin(clockIn) - clockTimeToMin(start));
+}
+
+function buildStaffClockDayEvents(records){
+    const events = [];
+    (records || []).forEach(function(rec){
+        const gpsIn = rec?.inGps ? '(GPS)' : (rec?.inGpsError ? '(未定位)' : '');
+        const gpsOut = rec?.outGps ? '(GPS)' : (rec?.outGpsError ? '(未定位)' : '');
+        if(rec?.clockIn){
+            events.push({ color:'blue', title:`上班 ${rec.clockIn}`, sub:`${rec.company || '-'}${gpsIn}` });
+        }
+        if(rec?.clockOut){
+            events.push({ color:'green', title:`下班 ${rec.clockOut}`, sub:`${rec.company || '-'}${gpsOut}` });
+        }
+        const late = getLateMinutesForRecord(rec);
+        if(late > 0){
+            events.push({ color:'red', title:`遲到 ${late} 分鐘`, sub: rec.scheduleStart ? `原排班 ${rec.scheduleStart} 上班` : '' });
+        }
+        if(rec?.status === '異常回報' || rec?.reportType || rec?.gpsWarning || rec?.returnReason){
+            events.push({ color:'orange', title: rec?.reportType || rec?.gpsWarning || rec?.returnReason || '異常回報', sub: rec?.remark || rec?.status || '' });
+        }
+        if(!rec?.clockIn && !rec?.clockOut && !rec?.reportType && !rec?.gpsWarning && !rec?.returnReason){
+            events.push({ color:'orange', title: getStaffClockStatus(rec), sub:`${rec.company || '-'}｜${rec.scheduleStart || '-'}～${rec.scheduleEnd || '-'}` });
+        }
+    });
+    return events;
+}
+
 function renderStaffClockHistory(){
-    const tb = el('staffClockHistoryTable');
-    if(!tb || !currentLoginStaff) return;
-    const rows = (staffClockData||[]).filter(c => c.staff === currentLoginStaff.name)
-        .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')))
-        .slice(0,50);
-    tb.innerHTML = rows.map(r=>`<tr><td>${r.date||'-'}</td><td>${r.company||'-'}</td><td>${r.scheduleStart||'-'}～${r.scheduleEnd||'-'}</td><td>${r.clockIn||'-'}</td><td>${r.clockOut||'-'}</td><td>${getStaffClockStatus(r)}</td><td>${[r.gpsWarning,r.reportType,r.returnReason,r.remark].filter(Boolean).join(' / ')||'-'}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;font-weight:800;">尚無打卡紀錄</td></tr>';
+    initStaffClockCalendarState();
+    const calendarBox = el('staffClockCalendarWrap');
+    const detailBox = el('staffClockDayDetail');
+    if(!calendarBox || !detailBox || !currentLoginStaff) return;
+
+    const rows = getStaffClockHistoryRows();
+    const byDate = getStaffClockRecordsByDate(rows);
+    const year = Number(staffClockCalendarState.year);
+    const month = Number(staffClockCalendarState.month);
+    const monthLabel = `${year} 年 ${month} 月`;
+    const firstWeekday = new Date(year, month - 1, 1).getDay();
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const today = todayYMD();
+    const selectedDate = staffClockCalendarState.selectedDate || `${year}-${String(month).padStart(2,'0')}-01`;
+    const weekNames = ['日','一','二','三','四','五','六'];
+
+    let gridHtml = weekNames.map(function(name){
+        return `<div class="staff-calendar-weekday">${name}</div>`;
+    }).join('');
+
+    for(let i=0;i<firstWeekday;i++){
+        gridHtml += '<div class="staff-calendar-cell muted"></div>';
+    }
+
+    for(let day=1; day<=daysInMonth; day++){
+        const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dayRows = byDate[dateStr] || [];
+        const hasClock = dayRows.some(function(rec){ return !!(rec.clockIn || rec.clockOut); });
+        const hasLate = dayRows.some(function(rec){ return getLateMinutesForRecord(rec) > 0; });
+        const hasAbnormal = dayRows.some(function(rec){ return rec?.status === '異常回報' || rec?.reportType || rec?.gpsWarning || rec?.returnReason; });
+        const classes = ['staff-calendar-cell'];
+        if(dateStr === today) classes.push('today');
+        if(dateStr === selectedDate) classes.push('selected');
+        let dots = '';
+        const dotHtml = [];
+        if(hasClock) dotHtml.push('<span class="staff-calendar-dot blue"></span>');
+        if(hasLate) dotHtml.push('<span class="staff-calendar-dot red"></span>');
+        else if(hasAbnormal) dotHtml.push('<span class="staff-calendar-dot orange"></span>');
+        if(dotHtml.length){
+            dots = `<div class="staff-calendar-dots">${dotHtml.join('')}</div>`;
+        }
+        gridHtml += `<div class="${classes.join(' ')}" onclick="selectStaffClockCalendarDate('${dateStr}')">${day}${dots}</div>`;
+    }
+
+    calendarBox.innerHTML = `<div class="staff-calendar-head"><h3>${monthLabel}</h3><div class="staff-calendar-nav"><button type="button" onclick="shiftStaffClockCalendar(-1)"><i class="fas fa-chevron-left"></i></button><button type="button" onclick="shiftStaffClockCalendar(1)"><i class="fas fa-chevron-right"></i></button></div></div><div class="staff-calendar-grid">${gridHtml}</div>`;
+
+    const selectedRows = (byDate[selectedDate] || []).sort(function(a,b){
+        return String(a.clockIn || a.scheduleStart || '').localeCompare(String(b.clockIn || b.scheduleStart || ''));
+    });
+    const events = buildStaffClockDayEvents(selectedRows);
+    if(!events.length){
+        detailBox.innerHTML = `<div class="staff-day-empty">${selectedDate}<br>這一天目前沒有出勤紀錄</div>`;
+        return;
+    }
+    detailBox.innerHTML = events.map(function(event){
+        return `<div class="staff-day-card"><div class="left"><span class="staff-day-dot ${event.color}"></span><div class="staff-day-text"><span class="staff-day-main">${event.title}</span><span class="staff-day-sub">${event.sub || ''}</span></div></div><span class="staff-day-arrow">›</span></div>`;
+    }).join('');
 }
 
 
