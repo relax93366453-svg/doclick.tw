@@ -23401,6 +23401,37 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         return true;
     }
 
+    let attendDateRightStep = 0;
+    let attendDateRightTimer = null;
+
+    function resetAttendDateRightStep(){
+        attendDateRightStep = 0;
+        clearTimeout(attendDateRightTimer);
+    }
+
+    document.addEventListener(
+        'focusin',
+        function(event){
+            if(
+                !event.target ||
+                event.target.id !== 'attend_date'
+            ){
+                resetAttendDateRightStep();
+            }
+        },
+        true
+    );
+
+    document.addEventListener(
+        'input',
+        function(event){
+            if(event.target && event.target.id === 'attend_date'){
+                resetAttendDateRightStep();
+            }
+        },
+        true
+    );
+
     document.addEventListener(
         'keydown',
         function(event){
@@ -23464,7 +23495,38 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             }
 
             /*
-             * 日期欄按右鍵會直接移到服務類型。
+             * 日期欄的右鍵先讓瀏覽器在「年 → 月 → 日」之間移動。
+             * 第三次右鍵才離開日期欄，移到服務類型。
+             */
+            if(
+                target.id === 'attend_date' &&
+                key === 'ArrowRight'
+            ){
+                attendDateRightStep += 1;
+
+                clearTimeout(attendDateRightTimer);
+                attendDateRightTimer = setTimeout(
+                    resetAttendDateRightStep,
+                    1800
+                );
+
+                if(attendDateRightStep < 3){
+                    return;
+                }
+
+                resetAttendDateRightStep();
+            }else if(
+                target.id === 'attend_date' &&
+                key === 'ArrowLeft'
+            ){
+                /* 左鍵保留日期欄原生的日 → 月 → 年切換。 */
+                resetAttendDateRightStep();
+                return;
+            }else if(target.id !== 'attend_date'){
+                resetAttendDateRightStep();
+            }
+
+            /*
              * 數字欄的上下鍵仍只做欄位導覽，不改動數字。
              */
             event.preventDefault();
