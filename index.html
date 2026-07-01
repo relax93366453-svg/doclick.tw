@@ -1121,6 +1121,18 @@
     <div id="staff-panel-create" class="staff-panel active">
         <div class="grid" style="background:#fafafa;padding:25px;border-radius:12px;border:1px solid #e2e8f0;">
             <div><label>姓名 *</label><input list="list_staff" id="staff_name" required></div><div><label>電話</label><input id="staff_tel"></div><div><label>身份證</label><input id="staff_id"></div><div><label>生日 (例:80/01/01)</label><input type="text" id="staff_birthday" placeholder="例: 80/01/01"></div><div><label>地址</label><input id="staff_addr"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入帳號 (建議電話)</label><input id="staff_account"></div><div style="background:#e0f2fe;padding:10px;border-radius:6px;margin:-10px 0;"><label>登入密碼 (預設1234)</label><input id="staff_pwd" type="password" value="1234"></div><div><label>狀態</label><select id="staff_status"><option>在職</option><option>離職</option></select></div><div><label>計薪方案</label><select id="staff_salary_rule"><option value="114年標準">114年標準(210-250)</option><option value="早期約">早期約(245-250)</option><option value="固定205">固定(無機車205)</option><option value="固定220">固定(有機車220)</option><option value="特殊225">特殊案例(225起跳)</option><option value="接案">接案/時薪自訂</option><option value="接案(固定月薪)">接案(固定專案金)</option></select></div><div style="display:none;"><label>目前薪資計算規則</label><select id="staff_salary_calc_rule"><option value="新制級距">新制級距</option><option value="早期固定220特例">早期固定220特例</option><option value="高薪保留制">高薪保留制</option><option value="特殊案例維持">特殊案例維持</option><option value="接案/自訂">接案 / 自訂</option></select></div><div><label>自訂時薪 (特殊案例 / 接案時使用)</label><input id="staff_hourly" type="number" value="0"></div>
+
+            <div class="section-divider"><i class="fas fa-user-clock"></i> 個人特殊計薪期間</div>
+            <input type="hidden" id="staff_special_period_id">
+            <div><label>特殊計薪設定</label><select id="staff_special_enabled"><option value="no">不新增／不修改特例</option><option value="yes">啟用固定特殊時薪</option></select></div>
+            <div><label>特殊時薪</label><input id="staff_special_rate" type="number" min="0" placeholder="例如 230"></div>
+            <div><label>生效日期</label><input id="staff_special_start" type="date"></div>
+            <div><label>結束日期</label><input id="staff_special_end" type="date"><div style="font-size:11px;color:#64748b;margin-top:4px;">留空＝持續套用；填寫後隔日自動恢復原計薪方案</div></div>
+            <div><label>特殊原因</label><input id="staff_special_reason" placeholder="例如：提前調薪／暫緩升級"></div>
+            <div><label>核准人</label><input id="staff_special_approved_by" placeholder="例如：老闆／主管"></div>
+            <div style="grid-column:span 2;display:flex;align-items:end;gap:8px;"><button type="button" class="btn" style="background:#64748b;margin:0;" onclick="qyjClearSpecialPayForm()"><i class="fas fa-plus"></i> 新增另一段特例</button><span style="font-size:12px;color:#64748b;font-weight:700;">既有期間會保留，不會因新增下一段而刪除。</span></div>
+            <div id="staff_special_history" style="grid-column:span 4;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px;color:#475569;font-size:13px;line-height:1.8;">尚無特殊計薪期間</div>
+
             <div class="section-divider"><i class="fas fa-university"></i> 銀行帳戶資料</div><div><label>銀行名稱</label><input id="staff_bank" placeholder="例: 國泰世華"></div><div><label>分行名稱</label><input id="staff_bank_branch" placeholder="例: 林口分行"></div><div style="grid-column: span 2;"><label>銀行帳號</label><input id="staff_bank_acc" placeholder="請輸入完整帳號"></div>
             <div class="section-divider"><i class="fas fa-notes-medical"></i> 勞健保設定區</div><div><label>加保狀態</label><select id="staff_ins_status"><option value="勞健雙保">勞健雙保</option><option value="僅勞保">僅勞保</option><option value="僅健保">僅健保</option><option value="都不保">都不保</option></select></div><div><label>勞保 起保日期</label><input type="date" id="staff_ins_date" title="設定後系統會在滿3個月時自動提醒"></div><div><label>依附眷屬人數</label><input type="number" id="staff_ins_deps" value="0" min="0" placeholder="依實際人數填寫"></div><div><label>特殊補助身分</label><select id="staff_ins_subsidy"><option value="無">一般(無補助)</option><option value="身障(輕度)減免25%">身障(輕度)減免25%</option><option value="身障(中度)減免50%">身障(中度)減免50%</option><option value="身障(重度)全額免除">身障(重度)全額免除</option><option value="其他專案補助">其他專案補助</option></select></div><div style="background:#fef2f2; padding:10px; border-radius:6px;"><label style="color:#e11d48;"><i class="fas fa-minus-circle"></i> 實際代扣勞保(元)</label><input id="staff_labor" type="number" value="0"></div><div style="background:#fef2f2; padding:10px; border-radius:6px;"><label style="color:#e11d48;"><i class="fas fa-minus-circle"></i> 實際代扣健保(元)</label><input id="staff_health" type="number" value="0"></div><div style="background:#ecfdf5; padding:10px; border-radius:6px; border:1px solid #bbf7d0;"><label style="color:#047857;font-weight:900;"><i class="fas fa-check-circle"></i> 250調薪核准狀態</label><select id="staff_raise250_status"><option value="未核准">未核准</option><option value="已核准升250">已核准升250</option><option value="暫緩調薪">暫緩調薪</option></select></div><div><label>250核准日期</label><input type="date" id="staff_raise250_date"></div><div><label>核准人</label><input id="staff_raise250_by" placeholder="例：老闆 / 主管"></div><div><label>調薪備註</label><input id="staff_raise250_note" placeholder="例：701小時後核准升250"></div><div><label>備註</label><input id="staff_remark" placeholder="一般備註，不再用來判斷升250"></div>
             <div class="section-divider"><i class="fas fa-folder"></i> 檔案管理</div><div style="grid-column: span 4;"><label>雲端資料夾</label><div style="display:flex;gap:5px;"><input id="staff_drive" style="flex:1;"><button class="btn-sm btn-warning" onclick="autoCreateSupplierFolder('staff_name', 'staff_drive', '[派遣]')"><i class="fas fa-magic"></i> 建立</button></div></div><div style="grid-column: span 4;background:#fffbeb;padding:15px;border-radius:8px;border:1px dashed #f59e0b;"><label style="color:#d97706;font-weight:bold;"><i class="fas fa-tasks"></i> 到職資料繳交狀態</label><div class="checkbox-group" style="margin-top:8px;"><label><input type="checkbox" id="staff_doc_id"> 身分證</label><label><input type="checkbox" id="staff_doc_bank"> 存摺</label><label><input type="checkbox" id="staff_doc_contract"> 契約</label><label><input type="checkbox" id="staff_doc_resume"> 履歷</label></div></div>
@@ -1573,7 +1585,7 @@
             
             <div class="page sys-auth" id="page-bill"><div class="page-title"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="bill_filter_company" placeholder="手打搜尋公司" oninput="resetPage('bill'); renderBill()"><label>結算週期</label><select id="bill_cycle" onchange="toggleBillManualDate(); renderBill()"><option value="26">26日至25日 (預設)</option><option value="1">1日至31日 (全日曆月)</option><option value="manual">自訂區間 (手動選擇)</option></select><span id="bill_manual_dates" style="display:none; align-items:center; gap:8px;"><input type="date" id="bill_start_date" onchange="renderBill()"> ~ <input type="date" id="bill_end_date" onchange="renderBill()"></span><label class="bill-ym-label">年</label><select id="bill_filter_year" class="bill-ym-label" onchange="renderBill()"></select><label class="bill-ym-label">月</label><select id="bill_filter_month" class="bill-ym-label" onchange="renderBill()"></select><button class="btn btn-clear-filter" onclick="clearFilters('bill')"><i class="fas fa-broom"></i> 清除搜尋</button></div><button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button><button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="billTableBox"><thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody id="billTable"></tbody></table></div></div>
             
-            <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select><button class="btn btn-clear-filter" onclick="clearFilters('salary')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div id="sal_milestoneRedBox" style="display:none; background:#fef2f2; border-left:5px solid #ef4444; border-radius:8px; padding:15px; margin-bottom:15px; border-right:1px solid #fecaca; border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;"><h4 style="color:#b91c1c; margin-bottom:10px; font-size:15px;"><i class="fas fa-trophy"></i> 累積工時里程碑達成日</h4><div id="sal_milestoneContent" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDeductOverrideBox" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 15px;margin:10px 0 12px;align-items:end;gap:12px;flex-wrap:wrap;"><div style="font-weight:900;color:#9a3412;margin-right:6px;"><i class="fas fa-edit"></i> 本期勞健保扣款</div><div><label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣勞保</label><input id="sal_override_labor" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></div><div><label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣健保</label><input id="sal_override_health" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></div><button class="btn btn-warning" style="margin:0;" onclick="saveSalaryDeductOverride()"><i class="fas fa-save"></i> 儲存本期扣款</button><button class="btn" style="background:#64748b;margin:0;" onclick="clearSalaryDeductOverride()"><i class="fas fa-undo"></i> 用人員預設</button><div style="font-size:12px;color:#64748b;font-weight:700;">空白＝沿用人員資料；輸入 0＝本期不扣。</div></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button><button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時累計矩陣總表 (含歷史分年)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>專案金</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
+            <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select><button class="btn btn-clear-filter" onclick="clearFilters('salary')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div id="sal_milestoneRedBox" style="display:none; background:#fef2f2; border-left:5px solid #ef4444; border-radius:8px; padding:15px; margin-bottom:15px; border-right:1px solid #fecaca; border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;"><h4 style="color:#b91c1c; margin-bottom:10px; font-size:15px;"><i class="fas fa-trophy"></i> 累積工時里程碑達成日</h4><div id="sal_milestoneContent" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDeductOverrideBox" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 15px;margin:10px 0 12px;align-items:end;gap:12px;flex-wrap:wrap;"><div style="font-weight:900;color:#9a3412;margin-right:6px;"><i class="fas fa-edit"></i> 本期勞健保扣款</div><div><label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣勞保</label><input id="sal_override_labor" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></div><div><label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣健保</label><input id="sal_override_health" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></div><button class="btn btn-warning" style="margin:0;" onclick="saveSalaryDeductOverride()"><i class="fas fa-save"></i> 儲存本期扣款</button><button class="btn" style="background:#64748b;margin:0;" onclick="clearSalaryDeductOverride()"><i class="fas fa-undo"></i> 用人員預設</button><div style="font-size:12px;color:#64748b;font-weight:700;">空白＝沿用人員資料；輸入 0＝本期不扣。</div></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn" style="background:#dc2626;" onclick="unlockDispatchPayrollMonth()"><i class="fas fa-unlock"></i> 解除本期薪資鎖定</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button><button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時累計矩陣總表 (含歷史分年)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>專案金</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
             
             <div class="page" id="page-talent"><div class="page-title"><i class="fas fa-address-card"></i> 人才招募庫</div><div style="margin-bottom: 20px;"><a href="https://forms.gle/7upE2RREx46o8Kpm8" target="_blank" class="btn" style="background:#3b82f6; text-decoration:none; display:inline-block;"><i class="fas fa-external-link-alt"></i> 前往填寫 Google 人才表單</a></div><div class="grid"><div><label>姓名 *</label><input id="tp_name"></div><div><label>電話</label><input id="tp_tel"></div><div><label>來源</label><input id="tp_source"></div><div><label>地區</label><input id="tp_location"></div><div><label>班別</label><input id="tp_shift"></div><div><label>職務</label><input id="tp_role"></div><div><label>狀態</label><select id="tp_status"><option>待聯絡</option><option>已聯絡</option><option>已錄取</option><option>淘汰</option></select></div><div><label>評價</label><input id="tp_eval"></div><div style="grid-column:span 2;"><label>履歷連結</label><input id="tp_resume"></div><div style="grid-column:span 2;"><label>備註</label><input id="tp_exp"></div></div><button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" id="btnUpdateTalent" onclick="updateTalent()" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋：</label><input type="text" id="tp_filter_role" oninput="resetPage('talent'); renderTalentTable()"><label>狀態：</label><select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select><button class="btn btn-clear-filter" onclick="clearFilters('talent')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button><button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')">匯出全部</button></div><div class="table-responsive"><table id="talentTableBox"><thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>地區</th><th>班別</th><th>職務</th><th>狀態</th><th>評價</th><th>履歷</th><th>建檔日</th><th>操作</th></tr></thead><tbody id="talentTable"></tbody></table></div></div>
             
@@ -4584,7 +4596,14 @@ function renderAttend(){
         const am = item.am_s && item.am_e ? `${item.am_s}-${item.am_e}` : '-'; 
         const pm = item.pm_s && item.pm_e ? `${item.pm_s}-${item.pm_e}` : '-';
         const hr = getHistoricalRate(item); 
-        const hrDisplay = item.special_hourly ? `<span class="badge badge-yellow">${item.special_hourly} (特)</span>` : `<span style="color:#059669; font-weight:bold;">$${hr}</span>`;
+        const qyjRateSource = (typeof qyjGetItemRateSource === 'function') ? qyjGetItemRateSource(item) : '';
+        const hrDisplay = item.special_hourly
+            ? `<span class="badge badge-yellow">${item.special_hourly} (單次特)</span>`
+            : qyjRateSource === 'period'
+                ? `<span class="badge badge-yellow">${hr} (個人特例)</span>`
+                : qyjRateSource === 'locked'
+                    ? `<span style="color:#7c3aed;font-weight:bold;">$${hr}（已鎖定）</span>`
+                    : `<span style="color:#059669; font-weight:bold;">$${hr}</span>`;
         const cumulative = cumulativeMap[idx] || 0;
         const fee = Number(item.project_fee) || 0;
 
@@ -5190,7 +5209,16 @@ function renderSalary() {
         const hr = getHistoricalRate(item); 
         const fee = Number(item.project_fee) || 0;
         const amt = fee > 0 ? fee : parseFloat((pH * hr).toFixed(1)); 
-        const hrDisplay = item.special_hourly ? `<span class="badge badge-yellow">${hr} (特)</span>` : (fee > 0 ? '-' : hr); 
+        const qyjRateSource = (typeof qyjGetItemRateSource === 'function') ? qyjGetItemRateSource(item) : '';
+        const hrDisplay = item.special_hourly
+            ? `<span class="badge badge-yellow">${hr} (單次特)</span>`
+            : fee > 0
+                ? '-'
+                : qyjRateSource === 'period'
+                    ? `<span class="badge badge-yellow">${hr} (個人特例)</span>`
+                    : qyjRateSource === 'locked'
+                        ? `<span style="color:#7c3aed;font-weight:bold;">${hr}（已鎖定）</span>`
+                        : hr; 
         h += `<tr><td>${item.staff}</td><td>${item.date}</td><td>${item.company}</td><td>${item.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hrDisplay}</td><td style="color:#ea580c;">${fee>0?fee:"-"}</td><td>${amt}</td></tr>`; 
     });
     el('salaryTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">無紀錄</td></tr>'; 
@@ -21045,6 +21073,398 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     console.log(
         '勞健保跨電腦雲端同步已啟用'
     );
+})();
+</script>
+
+
+<script>
+/* ===== 個人特殊計薪期間＋歷史薪資鎖定 ===== */
+(function(){
+    'use strict';
+
+    function qyjSpecialUid(){
+        return 'sp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+    }
+
+    function qyjNormDate(value){
+        return String(value || '').trim().replace(/\//g,'-');
+    }
+
+    function qyjGetPeriods(staff){
+        if(!staff) return [];
+        if(Array.isArray(staff.special_pay_periods)) return staff.special_pay_periods;
+        if(typeof staff.special_pay_periods === 'string'){
+            try{
+                const parsed = JSON.parse(staff.special_pay_periods);
+                return Array.isArray(parsed) ? parsed : [];
+            }catch(error){
+                return [];
+            }
+        }
+        return [];
+    }
+
+    function qyjPeriodMatches(period,date){
+        if(!period || period.enabled === false) return false;
+        const d = qyjNormDate(date);
+        const start = qyjNormDate(period.start_date);
+        const end = qyjNormDate(period.end_date);
+        if(!d || !start) return false;
+        if(d < start) return false;
+        if(end && d > end) return false;
+        return Number(period.hourly) > 0;
+    }
+
+    window.qyjGetStaffSpecialPay = function(staff,date){
+        const periods = qyjGetPeriods(staff)
+            .filter(function(period){ return qyjPeriodMatches(period,date); })
+            .sort(function(a,b){
+                return String(b.start_date || '').localeCompare(String(a.start_date || ''));
+            });
+        return periods[0] || null;
+    };
+
+    window.qyjGetSpecialPayForItem = function(item){
+        if(!item) return null;
+        const staff = (staffData || []).find(function(person){
+            return person.name === item.staff;
+        });
+        return qyjGetStaffSpecialPay(staff,item.date);
+    };
+
+    window.qyjGetItemRateSource = function(item){
+        if(!item) return '';
+        if(item.special_hourly !== undefined && item.special_hourly !== '' && Number(item.special_hourly) > 0) return 'single';
+        if(item.locked_hourly !== undefined && item.locked_hourly !== '' && Number(item.locked_hourly) > 0) return 'locked';
+        if(qyjGetSpecialPayForItem(item)) return 'period';
+        return 'system';
+    };
+
+    const qyjOriginalHistoricalRate = window.getHistoricalRate;
+
+    window.getHistoricalRate = function(item){
+        if(!item) return 0;
+        if(item.special_hourly !== undefined && item.special_hourly !== '' && Number(item.special_hourly) > 0){
+            return Number(item.special_hourly);
+        }
+        if(item.locked_hourly !== undefined && item.locked_hourly !== '' && Number(item.locked_hourly) > 0){
+            return Number(item.locked_hourly);
+        }
+        const period = qyjGetSpecialPayForItem(item);
+        if(period) return Number(period.hourly);
+        return typeof qyjOriginalHistoricalRate === 'function'
+            ? qyjOriginalHistoricalRate.apply(this,arguments)
+            : 0;
+    };
+
+    const qyjOriginalSystemHourly = window.getSystemHourlyForItem;
+
+    window.getSystemHourlyForItem = function(item){
+        if(!item) return 0;
+        if(item.special_hourly !== undefined && item.special_hourly !== '' && Number(item.special_hourly) > 0){
+            return Number(item.special_hourly);
+        }
+        if(item.locked_hourly !== undefined && item.locked_hourly !== '' && Number(item.locked_hourly) > 0){
+            return Number(item.locked_hourly);
+        }
+        const period = qyjGetSpecialPayForItem(item);
+        if(period) return Number(period.hourly);
+        return typeof qyjOriginalSystemHourly === 'function'
+            ? qyjOriginalSystemHourly.apply(this,arguments)
+            : 0;
+    };
+
+    function qyjReadSpecialForm(){
+        return {
+            period_id:document.getElementById('staff_special_period_id')?.value || '',
+            enabled:document.getElementById('staff_special_enabled')?.value === 'yes',
+            hourly:Number(document.getElementById('staff_special_rate')?.value || 0),
+            start_date:document.getElementById('staff_special_start')?.value || '',
+            end_date:document.getElementById('staff_special_end')?.value || '',
+            reason:document.getElementById('staff_special_reason')?.value.trim() || '',
+            approved_by:document.getElementById('staff_special_approved_by')?.value.trim() || ''
+        };
+    }
+
+    function qyjMergeSpecialForm(existingPeriods,form){
+        const periods = Array.isArray(existingPeriods)
+            ? existingPeriods.map(function(item){ return Object.assign({},item); })
+            : [];
+
+        if(!form.enabled) return periods;
+        if(!form.hourly || !form.start_date){
+            throw new Error('啟用特殊計薪時，必須填寫特殊時薪與生效日期');
+        }
+        if(form.end_date && form.end_date < form.start_date){
+            throw new Error('特殊計薪結束日期不可早於生效日期');
+        }
+
+        let target = form.period_id
+            ? periods.find(function(item){ return item.id === form.period_id; })
+            : null;
+
+        if(!target){
+            target = {id:qyjSpecialUid(),created_at:new Date().toISOString()};
+            periods.push(target);
+        }
+
+        target.enabled = true;
+        target.hourly = Number(form.hourly);
+        target.start_date = form.start_date;
+        target.end_date = form.end_date || '';
+        target.reason = form.reason || '';
+        target.approved_by = form.approved_by || '';
+        target.updated_at = new Date().toISOString();
+
+        return periods.sort(function(a,b){
+            return String(a.start_date || '').localeCompare(String(b.start_date || ''));
+        });
+    }
+
+    function qyjRenderSpecialHistory(staff){
+        const box = document.getElementById('staff_special_history');
+        if(!box) return;
+        const periods = qyjGetPeriods(staff).slice().sort(function(a,b){
+            return String(b.start_date || '').localeCompare(String(a.start_date || ''));
+        });
+
+        if(!periods.length){
+            box.innerHTML = '尚無特殊計薪期間';
+            return;
+        }
+
+        box.innerHTML = '<b style="color:#7c3aed;">既有特殊計薪歷程</b><br>' +
+            periods.map(function(period){
+                const end = period.end_date || '持續中';
+                return '<div style="padding:6px 0;border-bottom:1px dashed #cbd5e1;">' +
+                    '<b>$' + Number(period.hourly || 0) + '</b>｜' +
+                    (period.start_date || '-') + ' ～ ' + end +
+                    (period.reason ? '｜' + period.reason : '') +
+                    (period.approved_by ? '｜核准：' + period.approved_by : '') +
+                    '</div>';
+            }).join('');
+    }
+
+    function qyjLoadSpecialForm(staff){
+        const periods = qyjGetPeriods(staff).slice().sort(function(a,b){
+            return String(b.start_date || '').localeCompare(String(a.start_date || ''));
+        });
+        const latest = periods[0] || null;
+        const set = function(id,value){
+            const element = document.getElementById(id);
+            if(element) element.value = value == null ? '' : value;
+        };
+
+        if(latest){
+            set('staff_special_period_id',latest.id || '');
+            set('staff_special_enabled','yes');
+            set('staff_special_rate',latest.hourly || '');
+            set('staff_special_start',latest.start_date || '');
+            set('staff_special_end',latest.end_date || '');
+            set('staff_special_reason',latest.reason || '');
+            set('staff_special_approved_by',latest.approved_by || '');
+        }else{
+            qyjClearSpecialPayForm();
+        }
+        qyjRenderSpecialHistory(staff);
+    }
+
+    window.qyjClearSpecialPayForm = function(){
+        const set = function(id,value){
+            const element = document.getElementById(id);
+            if(element) element.value = value == null ? '' : value;
+        };
+        set('staff_special_period_id','');
+        set('staff_special_enabled','no');
+        set('staff_special_rate','');
+        set('staff_special_start','');
+        set('staff_special_end','');
+        set('staff_special_reason','');
+        set('staff_special_approved_by','');
+    };
+
+    const qyjOriginalAddStaff = window.addStaff;
+    if(typeof qyjOriginalAddStaff === 'function'){
+        window.addStaff = function(){
+            const form = qyjReadSpecialForm();
+            if(form.enabled && (!form.hourly || !form.start_date)){
+                return showToast('啟用特殊計薪時，請填寫特殊時薪與生效日期',true);
+            }
+
+            const name = document.getElementById('staff_name')?.value.trim() || '';
+            const result = qyjOriginalAddStaff.apply(this,arguments);
+            const staff = (staffData || []).find(function(item){ return item.name === name; });
+
+            if(staff && form.enabled){
+                try{
+                    staff.special_pay_periods = qyjMergeSpecialForm(qyjGetPeriods(staff),form);
+                    if(typeof saveAllSilently === 'function') saveAllSilently();
+                    else if(typeof saveAll === 'function') saveAll();
+                }catch(error){
+                    showToast(error.message,true);
+                }
+            }
+            return result;
+        };
+    }
+
+    const qyjOriginalUpdateStaff = window.updateStaff;
+    if(typeof qyjOriginalUpdateStaff === 'function'){
+        window.updateStaff = function(){
+            const oldIndex = typeof editStaffIndex === 'number' ? editStaffIndex : -1;
+            const oldStaff = oldIndex >= 0 ? staffData[oldIndex] : null;
+            const oldPeriods = qyjGetPeriods(oldStaff);
+            const form = qyjReadSpecialForm();
+
+            if(form.enabled && (!form.hourly || !form.start_date)){
+                return showToast('啟用特殊計薪時，請填寫特殊時薪與生效日期',true);
+            }
+
+            const result = qyjOriginalUpdateStaff.apply(this,arguments);
+            const updatedStaff = oldIndex >= 0 ? staffData[oldIndex] : null;
+
+            if(updatedStaff){
+                try{
+                    updatedStaff.special_pay_periods = form.enabled
+                        ? qyjMergeSpecialForm(oldPeriods,form)
+                        : oldPeriods;
+                    if(typeof saveAllSilently === 'function') saveAllSilently();
+                    else if(typeof saveAll === 'function') saveAll();
+                }catch(error){
+                    showToast(error.message,true);
+                }
+            }
+            return result;
+        };
+    }
+
+    const qyjOriginalEditStaff = window.editStaff;
+    if(typeof qyjOriginalEditStaff === 'function'){
+        window.editStaff = function(index){
+            const result = qyjOriginalEditStaff.apply(this,arguments);
+            setTimeout(function(){ qyjLoadSpecialForm(staffData[index]); },0);
+            return result;
+        };
+    }
+
+    const qyjOriginalClearStaffForm = window.clearStaffForm;
+    if(typeof qyjOriginalClearStaffForm === 'function'){
+        window.clearStaffForm = function(){
+            const result = qyjOriginalClearStaffForm.apply(this,arguments);
+            qyjClearSpecialPayForm();
+            qyjRenderSpecialHistory(null);
+            return result;
+        };
+    }
+
+    function qyjGetSelectedPayroll(){
+        const staff = document.getElementById('sal_filter_staff')?.value.trim() || '';
+        const year = document.getElementById('sal_filter_year')?.value || '';
+        const month = document.getElementById('sal_filter_month')?.value || '';
+        if(!staff || staff === '全部人員' || year === 'all' || month === 'all') return null;
+        return {staff:staff,year:String(year),month:String(month).padStart(2,'0')};
+    }
+
+    function qyjPayrollLockKey(staff,year,month){
+        return [staff,year,month].join('|');
+    }
+
+    function qyjLockPayrollMonth(){
+        const selected = qyjGetSelectedPayroll();
+        if(!selected) return false;
+        const lockKey = qyjPayrollLockKey(selected.staff,selected.year,selected.month);
+        let count = 0;
+
+        (attendData || []).forEach(function(item){
+            if(item.staff !== selected.staff || !isDispatchPayrollPeriod(item.date,selected.year,selected.month)) return;
+
+            if(Number(item.project_fee) > 0){
+                item.payroll_locked_key = lockKey;
+                item.payroll_locked_at = new Date().toISOString();
+                count++;
+                return;
+            }
+
+            const previousLock = item.locked_hourly;
+            delete item.locked_hourly;
+            const rate = getHistoricalRate(item);
+            if(previousLock !== undefined) item.locked_hourly = previousLock;
+
+            item.locked_hourly = Number(rate) || 0;
+            item.payroll_locked_key = lockKey;
+            item.payroll_locked_at = new Date().toISOString();
+            count++;
+        });
+
+        if(count){
+            try{
+                localStorage.setItem('attendData',JSON.stringify(attendData));
+            }catch(error){}
+            try{
+                if(typeof saveAllSilently === 'function') saveAllSilently();
+            }catch(error){}
+        }
+        return count > 0;
+    }
+
+    const qyjOriginalGeneratePayslip = window.generatePayslipPDF;
+    if(typeof qyjOriginalGeneratePayslip === 'function'){
+        window.generatePayslipPDF = function(){
+            if(qyjGetSelectedPayroll()) qyjLockPayrollMonth();
+            return qyjOriginalGeneratePayslip.apply(this,arguments);
+        };
+    }
+
+    window.unlockDispatchPayrollMonth = function(){
+        const selected = qyjGetSelectedPayroll();
+        if(!selected){
+            return showToast('請先選擇人員與年月',true);
+        }
+
+        if(!confirm('解除後，此月份會依目前最新計薪規則重新計算。\n\n確定解除本期薪資鎖定嗎？')){
+            return;
+        }
+
+        const lockKey = qyjPayrollLockKey(selected.staff,selected.year,selected.month);
+        let count = 0;
+
+        (attendData || []).forEach(function(item){
+            if(item.payroll_locked_key !== lockKey) return;
+            delete item.locked_hourly;
+            delete item.payroll_locked_key;
+            delete item.payroll_locked_at;
+            count++;
+        });
+
+        if(!count){
+            return showToast('本期目前沒有已鎖定的薪資資料',true);
+        }
+
+        try{
+            localStorage.setItem('attendData',JSON.stringify(attendData));
+        }catch(error){}
+
+        try{
+            if(typeof saveAllSilently === 'function') saveAllSilently();
+            else if(typeof saveAll === 'function') saveAll();
+        }catch(error){}
+
+        if(typeof renderSalary === 'function') renderSalary();
+        if(typeof renderAttend === 'function') renderAttend();
+
+        showToast('已解除本期薪資鎖定，可依目前規則重新計算');
+    };
+
+    function qyjNormalizeSpecialPayData(){
+        if(Array.isArray(staffData)){
+            staffData.forEach(function(staff){
+                staff.special_pay_periods = qyjGetPeriods(staff);
+            });
+        }
+    }
+
+    qyjNormalizeSpecialPayData();
+    console.log('個人特殊計薪與薪資鎖定功能已載入');
 })();
 </script>
 
