@@ -1899,6 +1899,17 @@ function shouldBlockSyncForControl(target){
 }
 
 function isSafeSyncBlocked(){
+    /*
+     * 派遣紀錄正在輸入時，無論其他背景儲存是否呼叫
+     * clearFormDirty，都禁止雲端自動讀取覆蓋表單。
+     */
+    if(
+        typeof window.qyjHasActiveAttendDraft === 'function' &&
+        window.qyjHasActiveAttendDraft()
+    ){
+        return '派遣紀錄輸入中';
+    }
+
     if (
         typeof pauseAutoCloudReadForStaffModal !== 'undefined' &&
         pauseAutoCloudReadForStaffModal
@@ -3903,8 +3914,8 @@ function manualCloudRead(){ const blockedReason = isSafeSyncBlocked(); if(blocke
 
 
 function saveAll() {
-    pushCloudData(false)
-        .then(()=>{
+    return pushCloudData(false)
+        .then((result)=>{
             clearFormDirty();
 
             if(el('sync-status')){
@@ -3918,8 +3929,17 @@ function saveAll() {
                     loadDataFromCloud(true);
                 }catch(error){}
             },500);
+
+            return result;
         })
-        .catch(()=>{});
+        .catch((error)=>{
+            /*
+             * 雲端失敗時仍保留本機資料，
+             * 讓使用者下次可重新同步，不把剛輸入的資料清掉。
+             */
+            saveLocalData();
+            throw error;
+        });
 }
 
 function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`); }); }
@@ -5400,7 +5420,7 @@ function renderAttend(){
         const cumulative = cumulativeMap[idx] || 0;
         const fee = Number(item.project_fee) || 0;
 
-        h += `<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${cumulative.toFixed(1)}</td><td>${hrDisplay}</td><td><b style="color:#ea580c;">${fee>0?fee:"-"}</b></td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+        h += `<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${cumulative.toFixed(1)}</td><td>${hrDisplay}</td><td><b style="color:#ea580c;">${fee>0?fee:"-"}</b></td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}${item._syncState==='pending' ? '<br><span style="color:#d97706;font-size:11px;font-weight:900;">等待雲端同步</span>' : ''}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
     });
     el('attendTable').innerHTML = h || '<tr><td colspan="13" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('attend', total, totalPages); 
@@ -5418,9 +5438,64 @@ function calcAttendTemp() {
     checkHourlyUpgradeAlert(); 
 }
 
+function setAttendViewToSavedRecord(record){
+    if(!record || !record.date) return;
+
+    const parts = String(record.date).split('-').map(Number);
+    let year = parts[0] || new Date().getFullYear();
+    let month = parts[1] || (new Date().getMonth() + 1);
+    const day = parts[2] || 1;
+
+    /*
+     * 派遣薪資週期為上月26日至本月25日。
+     * 26日以後的紀錄要顯示在下一個薪資月份。
+     */
+    if(day >= 26){
+        month += 1;
+        if(month > 12){
+            month = 1;
+            year += 1;
+        }
+    }
+
+    if(el('filter_year')){
+        el('filter_year').value = String(year);
+    }
+
+    if(el('filter_month')){
+        el('filter_month').value = String(month);
+    }
+
+    if(el('filter_company')){
+        el('filter_company').value = record.company || '';
+    }
+
+    if(el('filter_staff')){
+        el('filter_staff').value = record.staff || '';
+    }
+
+    if(
+        typeof pageConfig !== 'undefined' &&
+        pageConfig.currentPage
+    ){
+        pageConfig.currentPage.attend = 1;
+    }
+}
+
+function isAttendRecordStillPresent(syncId){
+    return Boolean(
+        (attendData || []).find(function(item){
+            return item && item._syncId === syncId;
+        })
+    );
+}
+
 function addAttend() { 
-    const now=new Date().toISOString();
-    const oldItem=editAttendIndex>-1 ? attendData[editAttendIndex] : null;
+    const now = new Date().toISOString();
+    const oldItem =
+        editAttendIndex > -1
+            ? attendData[editAttendIndex]
+            : null;
 
     const o = { 
         company:el('attend_company').value.trim(),
@@ -5436,37 +5511,56 @@ function addAttend() {
         project_fee:el('attend_project_fee').value,
         deduct_points:el('attend_deduct_points').value, 
         special_hourly:el('attend_special_hourly').value,
-        _syncId:oldItem&&oldItem._syncId
-            ? oldItem._syncId
-            : (typeof qyjNewAttendId==='function'
-                ? qyjNewAttendId()
-                : 'att_'+Date.now()),
-        _createdAt:oldItem&&oldItem._createdAt
-            ? oldItem._createdAt
-            : now,
-        _updatedAt:now
+        _syncId:
+            oldItem && oldItem._syncId
+                ? oldItem._syncId
+                : (
+                    typeof qyjNewAttendId === 'function'
+                        ? qyjNewAttendId()
+                        : 'att_' + Date.now()
+                ),
+        _createdAt:
+            oldItem && oldItem._createdAt
+                ? oldItem._createdAt
+                : now,
+        _updatedAt:now,
+        _syncState:'pending'
     }; 
 
-    if(!o.company || !o.staff || !o.date) return;
+    if(!o.company || !o.staff || !o.date){
+        return showToast(
+            '請填寫公司、人員與日期',
+            true
+        );
+    }
 
-    if(editAttendIndex > -1) { 
-        attendData[editAttendIndex] = {...attendData[editAttendIndex], ...o}; 
+    if(editAttendIndex > -1){ 
+        attendData[editAttendIndex] = {
+            ...attendData[editAttendIndex],
+            ...o
+        }; 
         editAttendIndex = -1; 
-    } else { 
+    }else{ 
         attendData.push(o); 
     }
 
-    if(typeof qyjEnsureAttendIds==='function'){
+    if(typeof qyjEnsureAttendIds === 'function'){
         qyjEnsureAttendIds(attendData);
     }
 
-    saveAll(); 
-    renderAttend(); 
+    /*
+     * 先保存本機、切換篩選並顯示，
+     * 不等待網路才讓使用者看到資料。
+     */
+    saveLocalData();
+    setAttendViewToSavedRecord(o);
+    renderAttend();
 
-    const keepCompany = el('attend_company').value;
-    const keepStaff = el('attend_staff').value;
-    const keepService = el('attend_service').value;
-    const keepDate = el('attend_date').value;
+    const keepCompany = o.company;
+    const keepStaff = o.staff;
+    const keepService = o.service;
+    const keepDate = o.date;
+    const savedSyncId = o._syncId;
 
     clearAttendForm(); 
 
@@ -5474,9 +5568,47 @@ function addAttend() {
     el('attend_staff').value = keepStaff;
     el('attend_service').value = keepService;
     el('attend_date').value = keepDate;
-    el('attend_company').focus();
 
-    showToast('✅ 儲存並同步'); 
+    if(el('attend_company')){
+        el('attend_company').focus();
+    }
+
+    showToast('✅ 已儲存在本機，正在同步雲端');
+
+    saveAll()
+        .then(()=>{
+            const savedItem = (attendData || []).find(function(item){
+                return item && item._syncId === savedSyncId;
+            });
+
+            if(savedItem){
+                savedItem._syncState = 'synced';
+                savedItem._updatedAt = savedItem._updatedAt || now;
+            }
+
+            saveLocalData();
+            setAttendViewToSavedRecord(o);
+            renderAttend();
+            showToast('✅ 派遣紀錄已儲存並同步');
+        })
+        .catch(()=>{
+            const pendingItem = (attendData || []).find(function(item){
+                return item && item._syncId === savedSyncId;
+            });
+
+            if(pendingItem){
+                pendingItem._syncState = 'pending';
+            }
+
+            saveLocalData();
+            setAttendViewToSavedRecord(o);
+            renderAttend();
+
+            showToast(
+                '⚠️ 資料已保留在本機，但雲端同步失敗，請稍後按「立即讀取／重新整理」再同步',
+                true
+            );
+        });
 }
 
 function editAttend(i) { 
@@ -5500,7 +5632,13 @@ function editAttend(i) {
     if(b) { b.innerHTML = '<i class="fas fa-edit"></i> 修改'; b.classList.replace('btn-success', 'btn-warning'); } 
     const c = el('btnClearAttend'); 
     if(c) c.innerHTML = '<i class="fas fa-times"></i> 取消'; 
-    checkHourlyUpgradeAlert(); 
+    checkHourlyUpgradeAlert();
+
+    if(
+        typeof window.qyjActivateAttendDraft === 'function'
+    ){
+        window.qyjActivateAttendDraft();
+    }
 }
 
 function delAttend(i) { 
@@ -5539,7 +5677,13 @@ function clearAttendForm() {
     editAttendIndex = -1; 
     const b = el('btnAddAttend'); 
     if(b) { b.innerHTML = '<i class="fas fa-save"></i> 儲存'; b.classList.replace('btn-warning', 'btn-success'); } 
-    if(el('attend_upgrade_alert')) el('attend_upgrade_alert').style.display = 'none'; 
+    if(el('attend_upgrade_alert')) el('attend_upgrade_alert').style.display = 'none';
+
+    if(
+        typeof window.qyjClearAttendDraft === 'function'
+    ){
+        window.qyjClearAttendDraft();
+    }
 }
 
 function renderMatchTable() { 
@@ -7457,6 +7601,43 @@ document.addEventListener("DOMContentLoaded", function() {
 <style>
 #mobileStaffApp{position:fixed;inset:0;background:#f4f5f7;z-index:999999;display:none;color:#222;font-family:"Microsoft JhengHei",Arial,sans-serif;overflow:auto}#mobileStaffApp *{box-sizing:border-box}.ms-top{height:58px;background:#fff;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:5}.ms-back{position:absolute;left:12px;border:0;background:transparent;font-size:30px}.ms-title{font-weight:900;font-size:18px}.ms-wrap{padding:18px 16px 92px;max-width:560px;margin:auto}.ms-card{background:#fff;border-radius:16px;padding:18px;margin-bottom:16px}.ms-logo{width:88px;height:88px;border-radius:24px;background:linear-gradient(135deg,#88ddd2,#287be8);color:#fff;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:900;margin:10px auto 14px}.ms-label{font-size:13px;color:#64748b;margin:12px 0 6px}.ms-input{width:100%;height:48px;border:1px solid #d1d5db;border-radius:12px;padding:0 14px;font-size:16px}.ms-primary{width:100%;height:50px;border:0;border-radius:14px;background:linear-gradient(90deg,#00c853,#2f8df7);color:#fff;font-weight:900;font-size:17px;margin-top:16px}.ms-secondary{width:100%;height:46px;border:1px solid #d1d5db;border-radius:13px;background:#fff;color:#334155;font-weight:800;font-size:15px;margin-top:10px}.ms-profile{display:flex;gap:14px;align-items:center}.ms-avatar{width:64px;height:64px;border-radius:50%;background:#1e5bb8;color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:900;flex:0 0 auto}.ms-name{font-size:22px;font-weight:900}.ms-sub{font-size:14px;color:#64748b;line-height:1.7}.ms-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #f1f5f9;font-size:15px}.ms-row:last-child{border-bottom:0}.ms-row span:first-child{color:#64748b}.ms-row span:last-child{font-weight:800;text-align:right}.ms-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:#fff;border-radius:18px;overflow:hidden;border:1px solid #eef2f7}.ms-grid button{min-height:96px;border:0;background:#fff;border-right:1px solid #eef2f7;border-bottom:1px solid #eef2f7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:8px 3px}.ms-grid button:nth-child(4n){border-right:0}.ms-ico{font-size:28px}.ms-gt{font-size:14px;font-weight:900}.ms-gs{font-size:11px;color:#94a3b8}.ms-punch{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}.ms-punch button{height:54px;border:0;border-radius:16px;color:#fff;font-size:17px;font-weight:900}.ms-in{background:#00b83f}.ms-out{background:#2563eb}.ms-bottom{position:fixed;left:0;right:0;bottom:0;height:70px;background:#fff;border-top:1px solid #e5e7eb;display:none;grid-template-columns:repeat(5,1fr);z-index:10}.ms-bottom button{border:0;background:#fff;color:#4b5563;font-size:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}.ms-bottom b{font-size:22px}.ms-list{background:#fff;border-radius:14px;padding:16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:12px}.ms-lt{font-size:17px;font-weight:900}.ms-ls{font-size:13px;color:#64748b;margin-top:4px}.ms-empty{text-align:center;color:#94a3b8;padding:32px 12px}.ms-logout{color:#dc2626;text-align:center;font-weight:900;padding:18px}@media(max-width:420px){.ms-grid button{min-height:90px}.ms-gs{display:none}}
 </style>
+<style>
+.ms-att-calendar{background:#fff;border-radius:18px;overflow:hidden;margin-bottom:16px;border:1px solid #edf0f4;}
+.ms-att-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px;border-bottom:1px solid #edf0f4;}
+.ms-att-head-title{font-size:24px;font-weight:900;color:#202124;}
+.ms-att-nav{display:flex;gap:12px;}
+.ms-att-nav button{border:0;background:transparent;font-size:26px;line-height:1;color:#202124;width:38px;height:38px;border-radius:10px;}
+.ms-att-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:12px 14px 20px;}
+.ms-att-week{font-size:14px;font-weight:900;text-align:center;color:#30343b;padding:8px 0;}
+.ms-att-day{position:relative;min-height:52px;border-radius:13px;display:flex;align-items:flex-start;justify-content:center;padding-top:9px;font-size:18px;color:#202124;cursor:pointer;}
+.ms-att-day.muted{color:#c3c7ce;cursor:default;}
+.ms-att-day.today{background:#e5f4ff;color:#3193ff;font-weight:900;}
+.ms-att-day.selected{box-shadow:inset 0 0 0 2px #93c5fd;background:#eaf4ff;color:#2563eb;font-weight:900;}
+.ms-att-dots{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);display:flex;gap:4px;}
+.ms-att-dot{width:8px;height:8px;border-radius:50%;display:block;}
+.ms-att-dot.blue{background:#2f8df7;}
+.ms-att-dot.red{background:#df1029;}
+.ms-att-dot.orange{background:#f59e0b;}
+.ms-att-detail{display:flex;flex-direction:column;gap:12px;}
+.ms-att-card{background:#fff;border-radius:18px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #edf0f4;}
+.ms-att-left{display:flex;align-items:center;gap:14px;min-width:0;}
+.ms-att-status-dot{width:14px;height:14px;border-radius:50%;flex:0 0 auto;}
+.ms-att-status-dot.blue{background:#2f8df7;}
+.ms-att-status-dot.green{background:#10b981;}
+.ms-att-status-dot.red{background:#df1029;}
+.ms-att-status-dot.orange{background:#f59e0b;}
+.ms-att-main{font-size:20px;font-weight:900;color:#202124;}
+.ms-att-sub{font-size:14px;color:#6b7280;margin-top:4px;word-break:break-word;}
+.ms-att-arrow{font-size:26px;color:#a1a7b0;}
+.ms-att-empty{background:#fff;border-radius:18px;padding:26px 18px;text-align:center;color:#9aa1aa;font-weight:800;border:1px dashed #d7dce2;}
+@media(max-width:420px){
+  .ms-att-head{padding:18px;}
+  .ms-att-head-title{font-size:21px;}
+  .ms-att-grid{padding:10px 10px 18px;}
+  .ms-att-day{min-height:47px;font-size:16px;}
+  .ms-att-main{font-size:18px;}
+}
+</style>
 <div id="mobileStaffApp"><div class="ms-top"><button class="ms-back" onclick="closeMobileStaffApp()">‹</button><div class="ms-title" id="msTopTitle">員工服務</div></div><div id="msContent" class="ms-wrap"></div><div class="ms-bottom" id="msBottomNav"><button onclick="msGo('attendance')"><b>📅</b><span>出勤紀錄</span></button><button onclick="msGo('schedule')"><b>📋</b><span>我的班表</span></button><button onclick="msGo('home')"><b>⌂</b><span>首頁</span></button><button onclick="msGo('notice')"><b>💬</b><span>公告欄</span></button><button onclick="msGo('more')"><b>▦</b><span>更多</span></button></div></div>
 <script>
 (function(){
@@ -7479,7 +7660,121 @@ window.msShowHome=function(){let s=msGetCurrentStaff(),n=msStaffName(s)||'員工
 window.msShowPunch=function(){let s=msGetCurrentStaff(),t=msFindTodaySchedules(s);msSetTitle('我要打卡');document.getElementById('msContent').innerHTML=t.length?t.map((x,i)=>`<div class="ms-card"><div style="font-size:18px;font-weight:900;margin-bottom:10px">${x.company||'今日班表'}</div><div class="ms-row"><span>日期</span><span>${x.date||'-'}</span></div><div class="ms-row"><span>時間</span><span>${x.start||x.startTime||'-'} - ${x.end||x.endTime||'-'}</span></div><div class="ms-punch"><button class="ms-in" onclick="msDoPunch('上班',${i})">上班打卡</button><button class="ms-out" onclick="msDoPunch('下班',${i})">下班打卡</button></div></div>`).join(''):`<div class="ms-card"><div class="ms-empty">今天目前沒有排班</div><button class="ms-secondary" onclick="msGo('home')">回首頁</button></div>`};
 window.msDoPunch=function(type,i){let s=msGetCurrentStaff(),sch=msFindTodaySchedules(s)[i]||{},now=new Date(),time=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;let done=function(pos){let gps=pos?`${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`:'未取得';let rec={staff:msStaffName(s),company:sch.company||'總公司',type,date:msTodayString(),time,gps,createdAt:now.toISOString()};let arr=JSON.parse(localStorage.getItem('qyj_staff_punch_records')||'[]');arr.push(rec);localStorage.setItem('qyj_staff_punch_records',JSON.stringify(arr));msShowPunchSuccess(rec)};navigator.geolocation?navigator.geolocation.getCurrentPosition(done,()=>done(null),{enableHighAccuracy:true,timeout:8000}):done(null)};
 window.msShowPunchSuccess=function(r){msSetTitle('打卡成功');document.getElementById('msContent').innerHTML=`<div class="ms-card"><div style="color:#00a92f;font-size:20px;font-weight:900;margin-bottom:22px">你已打卡成功</div><div style="font-size:38px;font-weight:900;margin-bottom:14px">${r.type}打卡 ${r.time}</div><div class="ms-row"><span>日期</span><span>${r.date}</span></div><div class="ms-row"><span>打卡地點</span><span>${r.company}（GPS）</span></div><div class="ms-row"><span>GPS</span><span>${r.gps}</span></div><button class="ms-secondary" onclick="msGo('attendance')">查看出勤紀錄</button><button class="ms-secondary" onclick="msGo('home')">開啟員工首頁</button></div>`};
-window.msShowAttendance=function(){let s=msGetCurrentStaff(),p=JSON.parse(localStorage.getItem('qyj_staff_punch_records')||'[]').filter(x=>x.staff===msStaffName(s)).reverse();msSetTitle('出勤紀錄');document.getElementById('msContent').innerHTML=p.map(x=>`<div class="ms-list"><div><div class="ms-lt">${x.type} ${x.time}</div><div class="ms-ls">${x.date}｜${x.company}｜GPS ${x.gps}</div></div><span>›</span></div>`).join('')||'<div class="ms-card"><div class="ms-empty">目前沒有出勤紀錄</div></div>'};
+window.msAttendanceState=window.msAttendanceState||{year:null,month:null,selected:''};
+window.msAttendanceGpsText=function(gps){
+    if(!gps) return '未取得';
+    if(typeof gps==='string') return gps;
+    if(typeof gps==='object'){
+        const lat=gps.lat??gps.latitude??gps.coords?.latitude;
+        const lng=gps.lng??gps.longitude??gps.coords?.longitude;
+        if(lat!==undefined&&lng!==undefined){
+            return `${Number(lat).toFixed(6)},${Number(lng).toFixed(6)}`;
+        }
+    }
+    return '未取得';
+};
+window.msAttendanceInit=function(){
+    const d=new Date();
+    if(!msAttendanceState.year) msAttendanceState.year=d.getFullYear();
+    if(!msAttendanceState.month) msAttendanceState.month=d.getMonth()+1;
+    if(!msAttendanceState.selected) msAttendanceState.selected=msTodayString();
+};
+window.msAttendanceShift=function(step){
+    msAttendanceInit();
+    let y=Number(msAttendanceState.year),m=Number(msAttendanceState.month)+Number(step||0);
+    while(m<1){m+=12;y--;}
+    while(m>12){m-=12;y++;}
+    msAttendanceState.year=y;
+    msAttendanceState.month=m;
+    const prefix=`${y}-${String(m).padStart(2,'0')}-`;
+    if(!String(msAttendanceState.selected||'').startsWith(prefix)){
+        msAttendanceState.selected=prefix+'01';
+    }
+    msShowAttendance();
+};
+window.msAttendanceSelect=function(date){
+    msAttendanceState.selected=date;
+    msShowAttendance();
+};
+window.msAttendanceRecords=function(){
+    const s=msGetCurrentStaff();
+    const name=msStaffName(s);
+    let local=[];
+    try{
+        local=JSON.parse(localStorage.getItem('qyj_staff_punch_records')||'[]');
+    }catch(e){local=[];}
+    const cloud=(Array.isArray(window.staffClockData)?window.staffClockData:[]).filter(x=>String(x.staff||'')===String(name));
+    const localRows=(Array.isArray(local)?local:[]).filter(x=>String(x.staff||'')===String(name));
+    const normalized=[];
+    cloud.forEach(function(r){
+        if(r.clockIn){normalized.push({type:'上班',time:r.clockIn,date:r.date,company:r.company,gps:r.inGps||r.inGpsError,status:r.status,scheduleStart:r.scheduleStart,reportType:r.reportType,gpsWarning:r.gpsWarning,remark:r.remark});}
+        if(r.clockOut){normalized.push({type:'下班',time:r.clockOut,date:r.date,company:r.company,gps:r.outGps||r.outGpsError,status:r.status,scheduleStart:r.scheduleStart,reportType:r.reportType,gpsWarning:r.gpsWarning,remark:r.remark});}
+    });
+    localRows.forEach(function(r){normalized.push(r);});
+    const seen=new Set();
+    return normalized.filter(function(r){
+        const key=[r.type||'',r.time||'',r.date||'',r.company||''].join('|');
+        if(seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }).sort(function(a,b){
+        return String(a.date||'').localeCompare(String(b.date||''))||String(a.time||'').localeCompare(String(b.time||''));
+    });
+};
+window.msAttendanceLateMinutes=function(rec){
+    if(rec.type!=='上班'||!rec.scheduleStart||!rec.time) return 0;
+    const toMin=function(v){const p=String(v).split(':');return (Number(p[0])||0)*60+(Number(p[1])||0);};
+    return Math.max(0,toMin(rec.time)-toMin(rec.scheduleStart));
+};
+window.msShowAttendance=function(){
+    msAttendanceInit();
+    msSetTitle('出勤紀錄');
+    const records=msAttendanceRecords();
+    const byDate={};
+    records.forEach(function(r){
+        if(!r.date) return;
+        (byDate[r.date]||(byDate[r.date]=[])).push(r);
+    });
+    const y=Number(msAttendanceState.year),m=Number(msAttendanceState.month);
+    const first=new Date(y,m-1,1).getDay();
+    const days=new Date(y,m,0).getDate();
+    const today=msTodayString();
+    const selected=msAttendanceState.selected;
+    const weeks=['日','一','二','三','四','五','六'];
+    let grid=weeks.map(x=>`<div class="ms-att-week">${x}</div>`).join('');
+    for(let i=0;i<first;i++) grid+='<div class="ms-att-day muted"></div>';
+    for(let d=1;d<=days;d++){
+        const date=`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const rows=byDate[date]||[];
+        const hasPunch=rows.length>0;
+        const hasLate=rows.some(r=>msAttendanceLateMinutes(r)>0);
+        const hasAbnormal=rows.some(r=>r.status==='異常回報'||r.reportType||r.gpsWarning);
+        const cls=['ms-att-day'];
+        if(date===today) cls.push('today');
+        if(date===selected) cls.push('selected');
+        const dots=[];
+        if(hasPunch) dots.push('<span class="ms-att-dot blue"></span>');
+        if(hasLate) dots.push('<span class="ms-att-dot red"></span>');
+        else if(hasAbnormal) dots.push('<span class="ms-att-dot orange"></span>');
+        grid+=`<div class="${cls.join(' ')}" onclick="msAttendanceSelect('${date}')">${d}${dots.length?`<div class="ms-att-dots">${dots.join('')}</div>`:''}</div>`;
+    }
+    const selectedRows=(byDate[selected]||[]).slice().sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
+    const eventCards=[];
+    selectedRows.forEach(function(r){
+        const color=r.type==='上班'?'blue':'green';
+        const gpsText=msAttendanceGpsText(r.gps);
+        eventCards.push(`<div class="ms-att-card"><div class="ms-att-left"><span class="ms-att-status-dot ${color}"></span><div><div class="ms-att-main">${r.type||'打卡'} ${r.time||''}</div><div class="ms-att-sub">${r.company||'-'}${gpsText&&gpsText!=='未取得'?`｜GPS ${gpsText}`:''}</div></div></div><span class="ms-att-arrow">›</span></div>`);
+        const late=msAttendanceLateMinutes(r);
+        if(late>0){
+            eventCards.push(`<div class="ms-att-card"><div class="ms-att-left"><span class="ms-att-status-dot red"></span><div><div class="ms-att-main">遲到 ${late} 分鐘</div><div class="ms-att-sub">原排班 ${r.scheduleStart} 上班</div></div></div><span class="ms-att-arrow">›</span></div>`);
+        }
+        if(r.status==='異常回報'||r.reportType||r.gpsWarning){
+            const msg=r.reportType||r.gpsWarning||'異常回報';
+            eventCards.push(`<div class="ms-att-card"><div class="ms-att-left"><span class="ms-att-status-dot orange"></span><div><div class="ms-att-main">${msg}</div><div class="ms-att-sub">${r.remark||''}</div></div></div><span class="ms-att-arrow">›</span></div>`);
+        }
+    });
+    document.getElementById('msContent').innerHTML=`<div class="ms-att-calendar"><div class="ms-att-head"><div class="ms-att-head-title">${y} 年 ${m} 月</div><div class="ms-att-nav"><button onclick="msAttendanceShift(-1)">‹</button><button onclick="msAttendanceShift(1)">›</button></div></div><div class="ms-att-grid">${grid}</div></div><div class="ms-att-detail">${eventCards.join('')||`<div class="ms-att-empty">${selected}<br>這一天目前沒有出勤紀錄</div>`}</div>`;
+};
 window.msShowSchedule=function(){let s=msGetCurrentStaff(),n=msStaffName(s),arr=(Array.isArray(window.scheduleData)?window.scheduleData:[]).filter(x=>String(x.staff||x.name||x.employee||'')===String(n)&&(x.status||x.scheduleStatus||'')!=='作廢').sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).slice(0,60);msSetTitle('我的班表');document.getElementById('msContent').innerHTML=arr.map(x=>`<div class="ms-list"><div><div class="ms-lt">${x.date||''}｜${x.company||''}</div><div class="ms-ls">${x.start||x.startTime||'-'} - ${x.end||x.endTime||'-'}</div></div><span>›</span></div>`).join('')||'<div class="ms-card"><div class="ms-empty">目前沒有班表</div></div>'};
 window.msShowLeave=function(){msSetTitle('我要請假');document.getElementById('msContent').innerHTML='<div class="ms-card"><div style="font-weight:900;font-size:18px">請假申請</div><div class="ms-label">請假日期</div><input class="ms-input" type="date"><div class="ms-label">請假原因</div><input class="ms-input" placeholder="請輸入請假原因"><button class="ms-primary" onclick="alert(\'第一階段先建立入口，後續再串主管簽核。\')">送出申請</button></div>'};
 window.msShowSalary=function(){msSetTitle('我的薪資單');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">第一階段先保留入口，後續串既有薪資單下載。</div></div>'};
@@ -22632,6 +22927,351 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
     window.qyjRestoreAutoSyncStatus =
         qyjRestoreAutoSyncStatus;
+})();
+</script>
+
+
+<script>
+/* ===== 派遣紀錄輸入中防消失＋草稿暫存 ===== */
+(function(){
+    'use strict';
+
+    const DRAFT_KEY =
+        'qyjAttendEntryDraft';
+
+    let draftActive = false;
+    let restoreRunning = false;
+    let draftSaveTimer = null;
+
+    const FIELD_IDS = [
+        'attend_company',
+        'attend_staff',
+        'attend_date',
+        'attend_service',
+        'attend_remark',
+        'am_s',
+        'am_e',
+        'pm_s',
+        'pm_e',
+        'attend_salary_hours',
+        'attend_special_hourly',
+        'attend_project_fee',
+        'attend_deduct_points'
+    ];
+
+    function getField(id){
+        return document.getElementById(id);
+    }
+
+    function collectDraft(){
+        const values = {};
+
+        FIELD_IDS.forEach(function(id){
+            const field = getField(id);
+
+            if(field){
+                values[id] = field.value;
+            }
+        });
+
+        return {
+            values:values,
+            editAttendIndex:
+                typeof editAttendIndex === 'number'
+                    ? editAttendIndex
+                    : -1,
+            savedAt:new Date().toISOString()
+        };
+    }
+
+    function hasMeaningfulValue(draft){
+        if(!draft || !draft.values){
+            return false;
+        }
+
+        const values = draft.values;
+
+        /*
+         * 公司、人員、日期、服務、備註或任一工時欄有輸入，
+         * 就視為尚未完成的派遣紀錄。
+         */
+        return FIELD_IDS.some(function(id){
+            const value =
+                String(values[id] || '').trim();
+
+            return value !== '';
+        });
+    }
+
+    function saveDraftNow(){
+        if(restoreRunning) return;
+
+        const draft = collectDraft();
+
+        if(!hasMeaningfulValue(draft)){
+            return;
+        }
+
+        draftActive = true;
+
+        try{
+            localStorage.setItem(
+                DRAFT_KEY,
+                JSON.stringify(draft)
+            );
+        }catch(error){}
+
+        try{
+            if(
+                typeof markFormDirty === 'function'
+            ){
+                markFormDirty(
+                    '派遣紀錄輸入中'
+                );
+            }
+        }catch(error){}
+    }
+
+    function scheduleSaveDraft(){
+        draftActive = true;
+
+        clearTimeout(draftSaveTimer);
+
+        draftSaveTimer =
+            setTimeout(
+                saveDraftNow,
+                120
+            );
+    }
+
+    function clearDraft(){
+        draftActive = false;
+
+        clearTimeout(draftSaveTimer);
+
+        try{
+            localStorage.removeItem(
+                DRAFT_KEY
+            );
+        }catch(error){}
+    }
+
+    function readDraft(){
+        try{
+            const raw =
+                localStorage.getItem(
+                    DRAFT_KEY
+                );
+
+            if(!raw) return null;
+
+            const draft =
+                JSON.parse(raw);
+
+            if(
+                !draft ||
+                !draft.savedAt ||
+                !draft.values
+            ){
+                return null;
+            }
+
+            /*
+             * 超過48小時的未完成草稿不自動帶回，
+             * 避免很久以前的內容突然出現。
+             */
+            const savedTime =
+                Date.parse(draft.savedAt);
+
+            if(
+                Number.isFinite(savedTime) &&
+                Date.now() - savedTime >
+                    48 * 60 * 60 * 1000
+            ){
+                clearDraft();
+                return null;
+            }
+
+            return draft;
+        }catch(error){
+            return null;
+        }
+    }
+
+    function restoreDraft(){
+        const draft = readDraft();
+
+        if(
+            !draft ||
+            !hasMeaningfulValue(draft)
+        ){
+            return;
+        }
+
+        const page =
+            document.getElementById(
+                'page-attend'
+            );
+
+        if(!page) return;
+
+        restoreRunning = true;
+
+        FIELD_IDS.forEach(function(id){
+            const field = getField(id);
+
+            if(
+                field &&
+                Object.prototype
+                    .hasOwnProperty
+                    .call(
+                        draft.values,
+                        id
+                    )
+            ){
+                field.value =
+                    draft.values[id] || '';
+            }
+        });
+
+        if(
+            typeof editAttendIndex ===
+                'number' &&
+            Number.isInteger(
+                draft.editAttendIndex
+            )
+        ){
+            editAttendIndex =
+                draft.editAttendIndex;
+        }
+
+        restoreRunning = false;
+        draftActive = true;
+
+        try{
+            if(
+                typeof checkHourlyUpgradeAlert ===
+                    'function'
+            ){
+                checkHourlyUpgradeAlert();
+            }
+        }catch(error){}
+
+        try{
+            if(
+                typeof markFormDirty ===
+                    'function'
+            ){
+                markFormDirty(
+                    '已恢復未完成派遣紀錄'
+                );
+            }
+        }catch(error){}
+
+        try{
+            if(
+                typeof showToast ===
+                    'function'
+            ){
+                showToast(
+                    '已恢復尚未儲存的派遣紀錄'
+                );
+            }
+        }catch(error){}
+    }
+
+    function isAttendEntry(target){
+        return Boolean(
+            target &&
+            target.closest &&
+            target.closest(
+                '#page-attend'
+            ) &&
+            target.classList &&
+            target.classList.contains(
+                'attend-entry'
+            )
+        );
+    }
+
+    document.addEventListener(
+        'input',
+        function(event){
+            if(isAttendEntry(event.target)){
+                scheduleSaveDraft();
+            }
+        },
+        true
+    );
+
+    document.addEventListener(
+        'change',
+        function(event){
+            if(isAttendEntry(event.target)){
+                scheduleSaveDraft();
+            }
+        },
+        true
+    );
+
+    document.addEventListener(
+        'focusin',
+        function(event){
+            if(isAttendEntry(event.target)){
+                draftActive = true;
+            }
+        },
+        true
+    );
+
+    window.qyjHasActiveAttendDraft =
+        function(){
+            if(draftActive){
+                return true;
+            }
+
+            const draft = readDraft();
+
+            return Boolean(
+                draft &&
+                hasMeaningfulValue(draft)
+            );
+        };
+
+    window.qyjActivateAttendDraft =
+        function(){
+            draftActive = true;
+            saveDraftNow();
+        };
+
+    window.qyjClearAttendDraft =
+        clearDraft;
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        function(){
+            setTimeout(
+                restoreDraft,
+                700
+            );
+        }
+    );
+
+    /*
+     * script 位於頁面底部時 DOMContentLoaded
+     * 可能已經完成，因此再補一次判斷。
+     */
+    if(
+        document.readyState ===
+            'interactive' ||
+        document.readyState ===
+            'complete'
+    ){
+        setTimeout(
+            restoreDraft,
+            700
+        );
+    }
 })();
 </script>
 
