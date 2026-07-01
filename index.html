@@ -23433,6 +23433,17 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                 return;
             }
 
+            /*
+             * 服務類型保留瀏覽器原生上下鍵：
+             * 可直接展開並往上、往下選項目。
+             */
+            if(
+                target.id === 'attend_service' &&
+                (key === 'ArrowDown' || key === 'ArrowUp')
+            ){
+                return;
+            }
+
             let step = 0;
 
             if(key === 'Tab'){
@@ -23453,8 +23464,8 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             }
 
             /*
-             * 派遣表單內的數字欄位，上下鍵只做欄位導覽，
-             * 不再讓瀏覽器自動加減數值。
+             * 日期欄按右鍵會直接移到服務類型。
+             * 數字欄的上下鍵仍只做欄位導覽，不改動數字。
              */
             event.preventDefault();
             event.stopPropagation();
