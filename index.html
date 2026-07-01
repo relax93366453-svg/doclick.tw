@@ -1782,40 +1782,212 @@ function clearFormDirty(){
     __safeSyncPausedReason = '';
     __safeSyncPendingCloud = false;
 }
-function isSafeSyncBlocked(){
-    if (typeof pauseAutoCloudReadForStaffModal !== 'undefined' && pauseAutoCloudReadForStaffModal) return '彈窗編輯中';
-    if (typeof isStaffEditModalOpen === 'function' && isStaffEditModalOpen()) return '彈窗編輯中';
-    if (__safeSyncDirty) return __safeSyncPausedReason || '有未儲存資料';
-    const a = document.activeElement;
-    if(a){
-        const tag = (a.tagName || '').toUpperCase();
-        if(['INPUT','TEXTAREA','SELECT'].includes(tag) || a.isContentEditable) return '輸入中';
+function isSyncViewOnlyControl(target){
+    if(!target || !target.matches) return false;
+
+    /*
+     * 搜尋、年月、篩選與檢視用控制項只改變畫面，
+     * 不代表資料尚未儲存，不能因此停止跨電腦同步。
+     */
+    if(target.closest('.filter-bar')) return true;
+
+    const id = String(target.id || '').toLowerCase();
+    const name = String(target.name || '').toLowerCase();
+
+    const viewOnlyPatterns = [
+        'filter',
+        'search',
+        'keyword',
+        'query',
+        'page_size',
+        'page-size',
+        'sort',
+        'view_year',
+        'view_month'
+    ];
+
+    if(
+        viewOnlyPatterns.some(function(pattern){
+            return id.includes(pattern) ||
+                   name.includes(pattern);
+        })
+    ){
+        return true;
     }
+
+    /*
+     * 常見的純檢視年月、清單切換欄位。
+     */
+    const viewOnlyIds = new Set([
+        'staff_my_year',
+        'staff_my_month',
+        'boss_year',
+        'boss_month',
+        'sl_year',
+        'sl_month',
+        'settlement_year',
+        'settlement_month',
+        'ins_month',
+        'ins_type_filter',
+        'ins_name_filter',
+        'ins_version_select'
+    ]);
+
+    if(viewOnlyIds.has(id)) return true;
+
+    return false;
+}
+
+function shouldBlockSyncForControl(target){
+    if(!target || !target.matches) return false;
+
+    const isEditable =
+        target.matches('input, textarea, select') ||
+        target.isContentEditable;
+
+    if(!isEditable) return false;
+    if(target.disabled || target.readOnly) return false;
+    if(isSyncViewOnlyControl(target)) return false;
+
+    return true;
+}
+
+function isSafeSyncBlocked(){
+    if (
+        typeof pauseAutoCloudReadForStaffModal !== 'undefined' &&
+        pauseAutoCloudReadForStaffModal
+    ){
+        return '彈窗編輯中';
+    }
+
+    if (
+        typeof isStaffEditModalOpen === 'function' &&
+        isStaffEditModalOpen()
+    ){
+        return '彈窗編輯中';
+    }
+
+    if (__safeSyncDirty){
+        return __safeSyncPausedReason ||
+            '有未儲存資料';
+    }
+
+    const active =
+        document.activeElement;
+
+    /*
+     * 只有真正的資料輸入欄位取得焦點時才暫停。
+     * 搜尋人員、年份與月份即使保持焦點，也可正常讀取雲端。
+     */
+    if(
+        active &&
+        shouldBlockSyncForControl(active)
+    ){
+        return '輸入中';
+    }
+
     return '';
 }
-function isUserTypingOrEditing(){ return !!isSafeSyncBlocked(); }
+
+function isUserTypingOrEditing(){
+    return !!isSafeSyncBlocked();
+}
+
 function setupSafeSyncGuards(){
     if (window.__safeSyncGuardsReady) return;
+
     window.__safeSyncGuardsReady = true;
-    document.addEventListener('input', e => {
-        if (e.target && (e.target.matches('input, textarea, select') || e.target.isContentEditable)) markFormDirty('輸入中');
-    }, true);
-    document.addEventListener('change', e => {
-        if (e.target && (e.target.matches('input, textarea, select') || e.target.isContentEditable)) markFormDirty('資料已變更');
-    }, true);
-    document.addEventListener('focusin', e => {
-        if (e.target && (e.target.matches('input, textarea, select') || e.target.isContentEditable)) {
-            __safeSyncLastInputAt = Date.now();
-            if (el('sync-status')) updateSyncStatus('<i class="fas fa-keyboard"></i> 輸入中，暫停自動讀取');
+
+    document.addEventListener(
+        'input',
+        function(event){
+            if(
+                event.target &&
+                shouldBlockSyncForControl(
+                    event.target
+                )
+            ){
+                markFormDirty('輸入中');
+            }
+        },
+        true
+    );
+
+    document.addEventListener(
+        'change',
+        function(event){
+            if(
+                event.target &&
+                shouldBlockSyncForControl(
+                    event.target
+                )
+            ){
+                markFormDirty('資料已變更');
+            }
+        },
+        true
+    );
+
+    document.addEventListener(
+        'focusin',
+        function(event){
+            if(
+                event.target &&
+                shouldBlockSyncForControl(
+                    event.target
+                )
+            ){
+                __safeSyncLastInputAt =
+                    Date.now();
+
+                if(el('sync-status')){
+                    updateSyncStatus(
+                        '<i class="fas fa-keyboard"></i> 輸入中，暫停自動讀取'
+                    );
+                }
+            }
+        },
+        true
+    );
+
+    /*
+     * 篩選欄位操作後，如果目前沒有真正未儲存資料，
+     * 恢復自動同步狀態。
+     */
+    document.addEventListener(
+        'change',
+        function(event){
+            if(
+                event.target &&
+                isSyncViewOnlyControl(
+                    event.target
+                ) &&
+                !__safeSyncDirty
+            ){
+                __safeSyncPausedReason = '';
+
+                if(el('sync-status')){
+                    updateSyncStatus(
+                        '<i class="fas fa-cloud-download-alt"></i> 自動同步中'
+                    );
+                }
+            }
+        },
+        true
+    );
+
+    window.addEventListener(
+        'beforeunload',
+        function(event){
+            if (__safeSyncDirty) {
+                event.preventDefault();
+                event.returnValue =
+                    '你有尚未儲存的資料，確定要離開嗎？';
+
+                return event.returnValue;
+            }
         }
-    }, true);
-    window.addEventListener('beforeunload', e => {
-        if (__safeSyncDirty) {
-            e.preventDefault();
-            e.returnValue = '你有尚未儲存的資料，確定要離開嗎？';
-            return e.returnValue;
-        }
-    });
+    );
 }
 setInterval(() => {
     const role = localStorage.getItem('loginRole');
@@ -22230,6 +22402,57 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             error
         );
     }
+})();
+</script>
+
+
+<script>
+/* ===== 篩選欄位不再誤判未儲存 ===== */
+(function(){
+    function qyjRestoreAutoSyncStatus(){
+        try{
+            const active =
+                document.activeElement;
+
+            if(
+                typeof isSyncViewOnlyControl ===
+                    'function' &&
+                isSyncViewOnlyControl(active)
+            ){
+                if(
+                    typeof clearFormDirty ===
+                    'function'
+                ){
+                    clearFormDirty();
+                }
+
+                if(
+                    document.getElementById(
+                        'sync-status'
+                    ) &&
+                    typeof updateSyncStatus ===
+                        'function'
+                ){
+                    updateSyncStatus(
+                        '<i class="fas fa-cloud-download-alt"></i> 自動同步中'
+                    );
+                }
+            }
+        }catch(error){}
+    }
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        function(){
+            setTimeout(
+                qyjRestoreAutoSyncStatus,
+                500
+            );
+        }
+    );
+
+    window.qyjRestoreAutoSyncStatus =
+        qyjRestoreAutoSyncStatus;
 })();
 </script>
 
