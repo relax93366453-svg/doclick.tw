@@ -3903,8 +3903,8 @@ function manualCloudRead(){ const blockedReason = isSafeSyncBlocked(); if(blocke
 
 
 function saveAll() {
-    return pushCloudData(false)
-        .then((result)=>{
+    pushCloudData(false)
+        .then(()=>{
             clearFormDirty();
 
             if(el('sync-status')){
@@ -3918,17 +3918,8 @@ function saveAll() {
                     loadDataFromCloud(true);
                 }catch(error){}
             },500);
-
-            return result;
         })
-        .catch((error)=>{
-            /*
-             * 雲端失敗時仍保留本機資料，
-             * 讓使用者下次可重新同步，不把剛輸入的資料清掉。
-             */
-            saveLocalData();
-            throw error;
-        });
+        .catch(()=>{});
 }
 
 function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`); }); }
@@ -5409,7 +5400,7 @@ function renderAttend(){
         const cumulative = cumulativeMap[idx] || 0;
         const fee = Number(item.project_fee) || 0;
 
-        h += `<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${cumulative.toFixed(1)}</td><td>${hrDisplay}</td><td><b style="color:#ea580c;">${fee>0?fee:"-"}</b></td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}${item._syncState==='pending' ? '<br><span style="color:#d97706;font-size:11px;font-weight:900;">等待雲端同步</span>' : ''}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
+        h += `<tr><td>${item.company}</td><td>${item.staff}</td><td>${item.date}</td><td>${item.service||'-'}</td><td>${am}</td><td>${pm}</td><td>${getItemSalaryHours(item)}</td><td style="color:#2563eb; font-weight:bold;">${cumulative.toFixed(1)}</td><td>${hrDisplay}</td><td><b style="color:#ea580c;">${fee>0?fee:"-"}</b></td><td><b class="red">${getItemDeductPoints(item)}</b></td><td>${item.remark||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editAttend(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delAttend(${idx})"><i class="fas fa-trash"></i></button></td></tr>`;
     });
     el('attendTable').innerHTML = h || '<tr><td colspan="13" style="text-align:center;">無資料</td></tr>'; 
     renderPagination('attend', total, totalPages); 
@@ -5427,64 +5418,9 @@ function calcAttendTemp() {
     checkHourlyUpgradeAlert(); 
 }
 
-function setAttendViewToSavedRecord(record){
-    if(!record || !record.date) return;
-
-    const parts = String(record.date).split('-').map(Number);
-    let year = parts[0] || new Date().getFullYear();
-    let month = parts[1] || (new Date().getMonth() + 1);
-    const day = parts[2] || 1;
-
-    /*
-     * 派遣薪資週期為上月26日至本月25日。
-     * 26日以後的紀錄要顯示在下一個薪資月份。
-     */
-    if(day >= 26){
-        month += 1;
-        if(month > 12){
-            month = 1;
-            year += 1;
-        }
-    }
-
-    if(el('filter_year')){
-        el('filter_year').value = String(year);
-    }
-
-    if(el('filter_month')){
-        el('filter_month').value = String(month);
-    }
-
-    if(el('filter_company')){
-        el('filter_company').value = record.company || '';
-    }
-
-    if(el('filter_staff')){
-        el('filter_staff').value = record.staff || '';
-    }
-
-    if(
-        typeof pageConfig !== 'undefined' &&
-        pageConfig.currentPage
-    ){
-        pageConfig.currentPage.attend = 1;
-    }
-}
-
-function isAttendRecordStillPresent(syncId){
-    return Boolean(
-        (attendData || []).find(function(item){
-            return item && item._syncId === syncId;
-        })
-    );
-}
-
 function addAttend() { 
-    const now = new Date().toISOString();
-    const oldItem =
-        editAttendIndex > -1
-            ? attendData[editAttendIndex]
-            : null;
+    const now=new Date().toISOString();
+    const oldItem=editAttendIndex>-1 ? attendData[editAttendIndex] : null;
 
     const o = { 
         company:el('attend_company').value.trim(),
@@ -5500,56 +5436,37 @@ function addAttend() {
         project_fee:el('attend_project_fee').value,
         deduct_points:el('attend_deduct_points').value, 
         special_hourly:el('attend_special_hourly').value,
-        _syncId:
-            oldItem && oldItem._syncId
-                ? oldItem._syncId
-                : (
-                    typeof qyjNewAttendId === 'function'
-                        ? qyjNewAttendId()
-                        : 'att_' + Date.now()
-                ),
-        _createdAt:
-            oldItem && oldItem._createdAt
-                ? oldItem._createdAt
-                : now,
-        _updatedAt:now,
-        _syncState:'pending'
+        _syncId:oldItem&&oldItem._syncId
+            ? oldItem._syncId
+            : (typeof qyjNewAttendId==='function'
+                ? qyjNewAttendId()
+                : 'att_'+Date.now()),
+        _createdAt:oldItem&&oldItem._createdAt
+            ? oldItem._createdAt
+            : now,
+        _updatedAt:now
     }; 
 
-    if(!o.company || !o.staff || !o.date){
-        return showToast(
-            '請填寫公司、人員與日期',
-            true
-        );
-    }
+    if(!o.company || !o.staff || !o.date) return;
 
-    if(editAttendIndex > -1){ 
-        attendData[editAttendIndex] = {
-            ...attendData[editAttendIndex],
-            ...o
-        }; 
+    if(editAttendIndex > -1) { 
+        attendData[editAttendIndex] = {...attendData[editAttendIndex], ...o}; 
         editAttendIndex = -1; 
-    }else{ 
+    } else { 
         attendData.push(o); 
     }
 
-    if(typeof qyjEnsureAttendIds === 'function'){
+    if(typeof qyjEnsureAttendIds==='function'){
         qyjEnsureAttendIds(attendData);
     }
 
-    /*
-     * 先保存本機、切換篩選並顯示，
-     * 不等待網路才讓使用者看到資料。
-     */
-    saveLocalData();
-    setAttendViewToSavedRecord(o);
-    renderAttend();
+    saveAll(); 
+    renderAttend(); 
 
-    const keepCompany = o.company;
-    const keepStaff = o.staff;
-    const keepService = o.service;
-    const keepDate = o.date;
-    const savedSyncId = o._syncId;
+    const keepCompany = el('attend_company').value;
+    const keepStaff = el('attend_staff').value;
+    const keepService = el('attend_service').value;
+    const keepDate = el('attend_date').value;
 
     clearAttendForm(); 
 
@@ -5557,47 +5474,9 @@ function addAttend() {
     el('attend_staff').value = keepStaff;
     el('attend_service').value = keepService;
     el('attend_date').value = keepDate;
+    el('attend_company').focus();
 
-    if(el('attend_company')){
-        el('attend_company').focus();
-    }
-
-    showToast('✅ 已儲存在本機，正在同步雲端');
-
-    saveAll()
-        .then(()=>{
-            const savedItem = (attendData || []).find(function(item){
-                return item && item._syncId === savedSyncId;
-            });
-
-            if(savedItem){
-                savedItem._syncState = 'synced';
-                savedItem._updatedAt = savedItem._updatedAt || now;
-            }
-
-            saveLocalData();
-            setAttendViewToSavedRecord(o);
-            renderAttend();
-            showToast('✅ 派遣紀錄已儲存並同步');
-        })
-        .catch(()=>{
-            const pendingItem = (attendData || []).find(function(item){
-                return item && item._syncId === savedSyncId;
-            });
-
-            if(pendingItem){
-                pendingItem._syncState = 'pending';
-            }
-
-            saveLocalData();
-            setAttendViewToSavedRecord(o);
-            renderAttend();
-
-            showToast(
-                '⚠️ 資料已保留在本機，但雲端同步失敗，請稍後按「立即讀取／重新整理」再同步',
-                true
-            );
-        });
+    showToast('✅ 儲存並同步'); 
 }
 
 function editAttend(i) { 
