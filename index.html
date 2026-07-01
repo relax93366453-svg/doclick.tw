@@ -3893,19 +3893,56 @@ function pushCloudData(silent=false){
 }
 let qyjSilentCloudReadTimer = null;
 
+/*
+ * 儲存後讀回雲端時，必須遵守輸入保護。
+ * 派遣紀錄尚未儲存時不可使用 forceRender=true，
+ * 否則會把正在輸入的表單內容覆蓋掉。
+ */
+function qyjScheduleSafeCloudRead(delay){
+    clearTimeout(qyjSilentCloudReadTimer);
+
+    qyjSilentCloudReadTimer =
+        setTimeout(function checkAndRead(){
+            const blockedReason =
+                typeof isSafeSyncBlocked === 'function'
+                    ? isSafeSyncBlocked()
+                    : '';
+
+            if(blockedReason){
+                /*
+                 * 仍在輸入時繼續延後，不強制讀取。
+                 */
+                qyjSilentCloudReadTimer =
+                    setTimeout(
+                        checkAndRead,
+                        1200
+                    );
+
+                return;
+            }
+
+            try{
+                loadDataFromCloud(false);
+            }catch(error){}
+        }, Number(delay) || 900);
+}
+
 function saveAllSilently() {
     pushCloudData(true)
         .then(()=>{
-            clearFormDirty();
+            const hasAttendDraft =
+                typeof window.qyjHasActiveAttendDraft ===
+                    'function' &&
+                window.qyjHasActiveAttendDraft();
 
-            clearTimeout(qyjSilentCloudReadTimer);
+            /*
+             * 有派遣草稿時不可清除輸入中狀態。
+             */
+            if(!hasAttendDraft){
+                clearFormDirty();
+            }
 
-            qyjSilentCloudReadTimer =
-                setTimeout(()=>{
-                    try{
-                        loadDataFromCloud(true);
-                    }catch(error){}
-                },900);
+            qyjScheduleSafeCloudRead(900);
         })
         .catch(()=>{});
 }
@@ -3916,19 +3953,28 @@ function manualCloudRead(){ const blockedReason = isSafeSyncBlocked(); if(blocke
 function saveAll() {
     return pushCloudData(false)
         .then((result)=>{
-            clearFormDirty();
+            const hasAttendDraft =
+                typeof window.qyjHasActiveAttendDraft ===
+                    'function' &&
+                window.qyjHasActiveAttendDraft();
+
+            if(!hasAttendDraft){
+                clearFormDirty();
+            }
 
             if(el('sync-status')){
                 updateSyncStatus(
-                    '<i class="fas fa-cloud-check-alt"></i> 已儲存，正在確認雲端資料'
+                    hasAttendDraft
+                        ? '<i class="fas fa-keyboard"></i> 派遣紀錄輸入中，暫緩讀取雲端'
+                        : '<i class="fas fa-cloud-check-alt"></i> 已儲存，正在確認雲端資料'
                 );
             }
 
-            setTimeout(()=>{
-                try{
-                    loadDataFromCloud(true);
-                }catch(error){}
-            },500);
+            /*
+             * 不再強制 loadDataFromCloud(true)。
+             * 表單仍在輸入時會延後，儲存或清除後才讀回雲端。
+             */
+            qyjScheduleSafeCloudRead(500);
 
             return result;
         })
@@ -23272,6 +23318,154 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             700
         );
     }
+})();
+</script>
+
+
+<script>
+/* ===== 派遣紀錄鍵盤導覽修正 ===== */
+(function(){
+    'use strict';
+
+    const ATTEND_NAV_IDS = [
+        'attend_company',
+        'attend_staff',
+        'attend_date',
+        'attend_service',
+        'attend_remark',
+        'am_s',
+        'am_e',
+        'pm_s',
+        'pm_e',
+        'attend_salary_hours',
+        'attend_special_hourly',
+        'attend_project_fee',
+        'attend_deduct_points',
+        'btnAddAttend',
+        'btnClearAttend'
+    ];
+
+    function getAttendNavElements(){
+        return ATTEND_NAV_IDS
+            .map(function(id){
+                return document.getElementById(id);
+            })
+            .filter(function(element){
+                return element &&
+                       !element.disabled &&
+                       element.offsetParent !== null;
+            });
+    }
+
+    function focusAttendElement(element){
+        if(!element) return;
+
+        element.focus({preventScroll:false});
+
+        if(
+            element.tagName === 'INPUT' &&
+            ['text','number','search','tel','url'].includes(
+                String(element.type || '').toLowerCase()
+            )
+        ){
+            try{
+                element.select();
+            }catch(error){}
+        }
+
+        try{
+            element.scrollIntoView({
+                block:'nearest',
+                inline:'nearest',
+                behavior:'smooth'
+            });
+        }catch(error){}
+    }
+
+    function moveAttendFocus(current,step){
+        const elements = getAttendNavElements();
+        const index = elements.indexOf(current);
+
+        if(index < 0) return false;
+
+        const nextIndex = index + step;
+
+        if(
+            nextIndex < 0 ||
+            nextIndex >= elements.length
+        ){
+            return false;
+        }
+
+        focusAttendElement(elements[nextIndex]);
+        return true;
+    }
+
+    document.addEventListener(
+        'keydown',
+        function(event){
+            const target = event.target;
+
+            if(
+                !target ||
+                !target.closest ||
+                !target.closest('#page-attend')
+            ){
+                return;
+            }
+
+            const elements = getAttendNavElements();
+
+            if(!elements.includes(target)){
+                return;
+            }
+
+            const key = event.key;
+            const isButton = target.tagName === 'BUTTON';
+
+            /*
+             * 儲存按鈕仍保留 Enter / Space 的原生點擊行為。
+             */
+            if(
+                isButton &&
+                (key === 'Enter' || key === ' ')
+            ){
+                return;
+            }
+
+            let step = 0;
+
+            if(key === 'Tab'){
+                step = event.shiftKey ? -1 : 1;
+            }else if(
+                key === 'ArrowRight' ||
+                key === 'ArrowDown' ||
+                key === 'Enter'
+            ){
+                step = 1;
+            }else if(
+                key === 'ArrowLeft' ||
+                key === 'ArrowUp'
+            ){
+                step = -1;
+            }else{
+                return;
+            }
+
+            /*
+             * 派遣表單內的數字欄位，上下鍵只做欄位導覽，
+             * 不再讓瀏覽器自動加減數值。
+             */
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+
+            moveAttendFocus(target,step);
+        },
+        true
+    );
+
+    console.log('派遣紀錄鍵盤導覽修正已啟用');
 })();
 </script>
 
