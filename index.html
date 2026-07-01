@@ -3662,13 +3662,46 @@ function pushCloudData(silent=false){
             throw e;
         });
 }
-function saveAllSilently() { pushCloudData(true).then(()=>{ clearFormDirty(); }).catch(()=>{}); }
+let qyjSilentCloudReadTimer = null;
+
+function saveAllSilently() {
+    pushCloudData(true)
+        .then(()=>{
+            clearFormDirty();
+
+            clearTimeout(qyjSilentCloudReadTimer);
+
+            qyjSilentCloudReadTimer =
+                setTimeout(()=>{
+                    try{
+                        loadDataFromCloud(true);
+                    }catch(error){}
+                },900);
+        })
+        .catch(()=>{});
+}
 function manualCloudSync(){ pushCloudData(false).then(()=>{ showToast('✅ 已同步到雲端'); loadDataFromCloud(false); }).catch(()=>{}); }
 function manualCloudRead(){ const blockedReason = isSafeSyncBlocked(); if(blockedReason){ showToast('請先儲存目前資料，再讀取雲端（目前：' + blockedReason + '）', true); return; } if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 讀取雲端...'); loadDataFromCloud(false); showToast('✅ 已讀取雲端最新資料'); }
 
 
 function saveAll() {
-    pushCloudData(false).then(()=>{ clearFormDirty(); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud-check-alt"></i> 已儲存，恢復自動讀取'); }).catch(()=>{});
+    pushCloudData(false)
+        .then(()=>{
+            clearFormDirty();
+
+            if(el('sync-status')){
+                updateSyncStatus(
+                    '<i class="fas fa-cloud-check-alt"></i> 已儲存，正在確認雲端資料'
+                );
+            }
+
+            setTimeout(()=>{
+                try{
+                    loadDataFromCloud(true);
+                }catch(error){}
+            },500);
+        })
+        .catch(()=>{});
 }
 
 function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`); }); }
@@ -22180,8 +22213,23 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     window.qyjSaveAttendDeletedIds=saveDeletedIds;
     window.attendDeletedIds=readDeletedIds();
 
-    ensureIds(window.attendData||[]);
-    try{localStorage.setItem('attendData',JSON.stringify(window.attendData||[]));}catch(error){}
+    /*
+     * attendData 是原系統以 let 宣告的全域資料，
+     * 不是 window.attendData。
+     */
+    try{
+        ensureIds(attendData || []);
+
+        localStorage.setItem(
+            'attendData',
+            JSON.stringify(attendData || [])
+        );
+    }catch(error){
+        console.warn(
+            '派遣紀錄同步初始化失敗',
+            error
+        );
+    }
 })();
 </script>
 
