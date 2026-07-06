@@ -4082,6 +4082,439 @@ ${d.contentHtml}
 
 
 
+<!-- =========================================================
+     修正：員工手機版按「首頁」後，不會被背景同步 / 舊路由 / URL route 自動拉回打卡頁
+     修改範圍：只包裝員工手機版 msGo / openMobileStaffApp，不改原本資料、計算、版面與同步邏輯
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    const ROUTE_KEY = 'qyj_mobile_staff_route';
+    const ACTIVE_ROUTE_KEY = 'qyj_mobile_staff_active_route';
+    const FORCE_HOME_KEY = 'qyj_mobile_staff_force_home_until';
+    const MANUAL_PUNCH_KEY = 'qyj_mobile_staff_manual_punch_until';
+
+    function timeNow(){
+        return Date.now ? Date.now() : new Date().getTime();
+    }
+
+    function getSession(key){
+        try{
+            return sessionStorage.getItem(key) || '';
+        }catch(error){
+            return '';
+        }
+    }
+
+    function setSession(key,value){
+        try{
+            sessionStorage.setItem(key,String(value || ''));
+        }catch(error){}
+    }
+
+    function getLocal(key){
+        try{
+            return localStorage.getItem(key) || '';
+        }catch(error){
+            return '';
+        }
+    }
+
+    function setLocal(key,value){
+        try{
+            localStorage.setItem(key,String(value || ''));
+        }catch(error){}
+    }
+
+    function activeRoute(){
+        return getSession(ACTIVE_ROUTE_KEY) || getLocal(ROUTE_KEY) || 'home';
+    }
+
+    function setActiveRoute(route){
+        route = route || 'home';
+        setSession(ACTIVE_ROUTE_KEY, route);
+        setLocal(ROUTE_KEY, route);
+    }
+
+    function forceHome(seconds){
+        const until = timeNow() + ((seconds || 30) * 1000);
+        setSession(FORCE_HOME_KEY, String(until));
+        setLocal(ROUTE_KEY, 'home');
+        setSession(ACTIVE_ROUTE_KEY, 'home');
+    }
+
+    function isHomeForced(){
+        const until = Number(getSession(FORCE_HOME_KEY) || 0);
+        return until && timeNow() < until;
+    }
+
+    function clearHomeForce(){
+        setSession(FORCE_HOME_KEY, '');
+    }
+
+    function markManualPunch(){
+        const until = timeNow() + 3000;
+        setSession(MANUAL_PUNCH_KEY, String(until));
+        clearHomeForce();
+    }
+
+    function isManualPunch(){
+        const until = Number(getSession(MANUAL_PUNCH_KEY) || 0);
+        return until && timeNow() < until;
+    }
+
+    function textOf(el){
+        return String(el && el.textContent ? el.textContent : '')
+            .replace(/\s+/g,'')
+            .trim();
+    }
+
+    function onclickOf(el){
+        return String(el && el.getAttribute ? (el.getAttribute('onclick') || '') : '');
+    }
+
+    function detectRouteFromElement(el){
+        const clickText = onclickOf(el);
+        const match = clickText.match(/msGo\(['"]([^'"]+)['"]\)/);
+        if(match && match[1]) return match[1];
+
+        const t = textOf(el);
+
+        if(
+            t.indexOf('首頁') !== -1 ||
+            t.indexOf('回首頁') !== -1 ||
+            t === 'Home'
+        ){
+            return 'home';
+        }
+
+        if(
+            t.indexOf('我要打卡') !== -1 ||
+            t.indexOf('打卡') !== -1 ||
+            t.indexOf('上班打卡') !== -1 ||
+            t.indexOf('下班打卡') !== -1
+        ){
+            return 'punch';
+        }
+
+        return '';
+    }
+
+    /*
+     * 使用者真的點按時才更新「本人想去的頁面」。
+     * 這樣背景同步、重新整理班表、雲端讀取完成時，不會把首頁自動拉去打卡。
+     */
+    document.addEventListener('click',function(event){
+        const el = event.target.closest('#mobileStaffApp button, #mobileStaffApp a, #mobileStaffApp [onclick]');
+        if(!el) return;
+
+        const route = detectRouteFromElement(el);
+
+        if(route === 'home'){
+            forceHome(60);
+            return;
+        }
+
+        if(route === 'punch'){
+            markManualPunch();
+            setActiveRoute('punch');
+            return;
+        }
+
+        if(route){
+            clearHomeForce();
+            setActiveRoute(route);
+        }
+    },true);
+
+    function installMsGoGuard(){
+        if(typeof window.msGo !== 'function'){
+            setTimeout(installMsGoGuard,80);
+            return;
+        }
+
+        if(window.msGo.__qyjHomeNoAutoPunchFixed) return;
+
+        const originalMsGo = window.msGo;
+
+        window.msGo = function(route){
+            let target = route || 'home';
+
+            /*
+             * 核心修正：
+             * 只要使用者剛按過首頁，或目前明確停在首頁，
+             * 任何非使用者點擊造成的 punch 都不允許把畫面拉走。
+             */
+            if(
+                target === 'punch' &&
+                !isManualPunch() &&
+                (
+                    isHomeForced() ||
+                    activeRoute() === 'home'
+                )
+            ){
+                setActiveRoute('home');
+                return originalMsGo.call(window,'home');
+            }
+
+            if(target === 'home'){
+                forceHome(60);
+            }else{
+                setActiveRoute(target);
+            }
+
+            return originalMsGo.apply(window,arguments);
+        };
+
+        window.msGo.__qyjHomeNoAutoPunchFixed = true;
+    }
+
+    function installOpenMobileGuard(){
+        if(typeof window.openMobileStaffApp !== 'function'){
+            setTimeout(installOpenMobileGuard,120);
+            return;
+        }
+
+        if(window.openMobileStaffApp.__qyjHomeNoAutoPunchFixed) return;
+
+        const originalOpenMobileStaffApp = window.openMobileStaffApp;
+
+        window.openMobileStaffApp = function(route){
+            let target = route || 'home';
+
+            /*
+             * 有些舊程式會從網址 route=punch 或 localStorage 的舊紀錄讀到 punch。
+             * 如果使用者已經按了首頁，就強制維持首頁。
+             */
+            if(
+                target === 'punch' &&
+                !isManualPunch() &&
+                (
+                    isHomeForced() ||
+                    activeRoute() === 'home'
+                )
+            ){
+                target = 'home';
+                setActiveRoute('home');
+            }
+
+            return originalOpenMobileStaffApp.call(window,target);
+        };
+
+        window.openMobileStaffApp.__qyjHomeNoAutoPunchFixed = true;
+    }
+
+    function installShowHomeGuard(){
+        if(typeof window.msShowHome !== 'function'){
+            setTimeout(installShowHomeGuard,120);
+            return;
+        }
+
+        if(window.msShowHome.__qyjHomeNoAutoPunchFixed) return;
+
+        const originalShowHome = window.msShowHome;
+
+        window.msShowHome = function(){
+            forceHome(60);
+            return originalShowHome.apply(window,arguments);
+        };
+
+        window.msShowHome.__qyjHomeNoAutoPunchFixed = true;
+    }
+
+    function installAll(){
+        installMsGoGuard();
+        installOpenMobileGuard();
+        installShowHomeGuard();
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded',installAll);
+    }else{
+        installAll();
+    }
+
+    /*
+     * 保險補裝：
+     * 原檔案中有多段後置修正會覆蓋 msGo / openMobileStaffApp，
+     * 所以這裡延遲補裝，確保最後生效。
+     */
+    setTimeout(installAll,300);
+    setTimeout(installAll,800);
+    setTimeout(installAll,1500);
+    setTimeout(installAll,3000);
+
+    console.log('已修正：員工手機版首頁不會自動跳到打卡畫面');
+})();
+</script>
+
+
+
+<!-- =========================================================
+     新增：員工手機版公告欄 已讀 / 未讀
+     只新增公告欄顯示與本機已讀紀錄，不影響打卡、排班、薪資、同步邏輯
+========================================================= -->
+<style>
+.ms-notice-tabs{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px 0;}
+.ms-notice-tab-left{display:flex;gap:8px;align-items:center;}
+.ms-notice-tab{border:0;background:#eef2f7;color:#64748b;border-radius:999px;padding:8px 14px;font-weight:900;font-size:14px;cursor:pointer;}
+.ms-notice-tab.active{background:#2563eb;color:#fff;}
+.ms-notice-readall{border:0;background:transparent;color:#2563eb;font-size:14px;font-weight:900;cursor:pointer;padding:8px 4px;}
+.ms-notice-card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px;margin-bottom:12px;box-shadow:0 4px 14px rgba(15,23,42,.04);}
+.ms-notice-card.unread{border-left:5px solid #2563eb;}
+.ms-notice-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.ms-notice-title{font-size:18px;font-weight:900;color:#0f172a;line-height:1.45;}
+.ms-notice-badge{flex:0 0 auto;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;}
+.ms-notice-badge.unread{background:#dbeafe;color:#1d4ed8;}
+.ms-notice-badge.read{background:#f1f5f9;color:#64748b;}
+.ms-notice-content{font-size:15px;color:#475569;line-height:1.8;white-space:pre-wrap;word-break:break-word;margin-top:8px;}
+.ms-notice-actions{display:flex;justify-content:flex-end;margin-top:14px;}
+.ms-notice-actions button{border:0;border-radius:12px;background:#2563eb;color:#fff;font-weight:900;padding:10px 14px;cursor:pointer;}
+</style>
+<script>
+(function(){
+    'use strict';
+
+    const NOTICE_READ_KEY = 'qyj_mobile_staff_notice_read_v1';
+
+    function safeText(v){
+        return String(v == null ? '' : v)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#39;');
+    }
+
+    function noticeHash(str){
+        str = String(str || '');
+        let h = 0;
+        for(let i=0;i<str.length;i++){
+            h = ((h << 5) - h) + str.charCodeAt(i);
+            h |= 0;
+        }
+        return 'n_' + Math.abs(h);
+    }
+
+    function getNoticeStaffKey(){
+        try{
+            const s = typeof window.msGetCurrentStaff === 'function' ? window.msGetCurrentStaff() : null;
+            const acc = s && typeof window.msStaffAccount === 'function' ? window.msStaffAccount(s) : '';
+            const name = s && typeof window.msStaffName === 'function' ? window.msStaffName(s) : '';
+            return String(acc || name || 'guest');
+        }catch(error){
+            return 'guest';
+        }
+    }
+
+    function readNoticeMap(){
+        try{
+            const obj = JSON.parse(localStorage.getItem(NOTICE_READ_KEY) || '{}');
+            return obj && typeof obj === 'object' ? obj : {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function saveNoticeMap(obj){
+        try{ localStorage.setItem(NOTICE_READ_KEY, JSON.stringify(obj || {})); }catch(error){}
+    }
+
+    function getReadList(){
+        const map = readNoticeMap();
+        const key = getNoticeStaffKey();
+        return Array.isArray(map[key]) ? map[key] : [];
+    }
+
+    function setReadList(list){
+        const map = readNoticeMap();
+        map[getNoticeStaffKey()] = Array.from(new Set(list || []));
+        saveNoticeMap(map);
+    }
+
+    function getNotices(){
+        const conf = window.portalConf || {};
+        const title = String(conf.sysNoticeTitle || conf.adminNoticeTitle || '').trim();
+        const content = String(conf.sysNoticeContent || conf.adminNoticeContent || '').trim();
+
+        if(!title && !content) return [];
+
+        const finalTitle = title || '系統公告';
+        const finalContent = content || '';
+        const id = noticeHash(finalTitle + '|' + finalContent);
+
+        return [{
+            id,
+            title: finalTitle,
+            content: finalContent,
+            createdAt: conf.sysNoticeUpdatedAt || conf.noticeUpdatedAt || ''
+        }];
+    }
+
+    window.qyjNoticeMarkRead = function(id){
+        const list = getReadList();
+        if(id && !list.includes(id)) list.push(id);
+        setReadList(list);
+        if(typeof window.msShowNotice === 'function') window.msShowNotice('all');
+    };
+
+    window.qyjNoticeMarkAllRead = function(){
+        const ids = getNotices().map(n => n.id);
+        setReadList(ids);
+        if(typeof window.msShowNotice === 'function') window.msShowNotice('all');
+    };
+
+    window.msShowNotice = function(tab){
+        tab = tab || window.__qyjNoticeTab || 'unread';
+        window.__qyjNoticeTab = tab;
+
+        if(typeof window.msSetTitle === 'function') window.msSetTitle('公告欄');
+
+        const box = document.getElementById('msContent');
+        if(!box) return;
+
+        const notices = getNotices();
+        const readList = getReadList();
+        const rows = tab === 'unread' ? notices.filter(n => !readList.includes(n.id)) : notices;
+
+        const tabs = `
+            <div class="ms-notice-tabs">
+                <div class="ms-notice-tab-left">
+                    <button class="ms-notice-tab ${tab === 'unread' ? 'active' : ''}" onclick="msShowNotice('unread')">未讀</button>
+                    <button class="ms-notice-tab ${tab === 'all' ? 'active' : ''}" onclick="msShowNotice('all')">全部</button>
+                </div>
+                <button class="ms-notice-readall" onclick="qyjNoticeMarkAllRead()">全部已讀</button>
+            </div>`;
+
+        if(!notices.length){
+            box.innerHTML = tabs + '<div class="ms-card"><div class="ms-empty">目前沒有公告</div></div>';
+            return;
+        }
+
+        if(!rows.length){
+            box.innerHTML = tabs + '<div class="ms-card"><div class="ms-empty">目前沒有未讀公告</div></div>';
+            return;
+        }
+
+        box.innerHTML = tabs + rows.map(function(n){
+            const isRead = readList.includes(n.id);
+            return `
+                <div class="ms-notice-card ${isRead ? 'read' : 'unread'}">
+                    <div class="ms-notice-head">
+                        <div class="ms-notice-title">${safeText(n.title)}</div>
+                        <span class="ms-notice-badge ${isRead ? 'read' : 'unread'}">${isRead ? '已讀' : '未讀'}</span>
+                    </div>
+                    <div class="ms-notice-content">${safeText(n.content)}</div>
+                    ${isRead ? '' : `<div class="ms-notice-actions"><button onclick="qyjNoticeMarkRead('${n.id}')">標示已讀</button></div>`}
+                </div>`;
+        }).join('');
+    };
+
+    console.log('已新增：員工手機版公告欄已讀 / 未讀功能');
+})();
+</script>
+
 </body>
 </html>`);
     w.document.close();
@@ -23539,6 +23972,273 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     );
 
     console.log('派遣紀錄鍵盤導覽修正已啟用');
+})();
+</script>
+
+<!-- =========================================================
+     修正：員工手機版按「首頁」後，不會被背景同步 / 舊路由 / URL route 自動拉回打卡頁
+     修改範圍：只包裝員工手機版 msGo / openMobileStaffApp，不改原本資料、計算、版面與同步邏輯
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    const ROUTE_KEY = 'qyj_mobile_staff_route';
+    const ACTIVE_ROUTE_KEY = 'qyj_mobile_staff_active_route';
+    const FORCE_HOME_KEY = 'qyj_mobile_staff_force_home_until';
+    const MANUAL_PUNCH_KEY = 'qyj_mobile_staff_manual_punch_until';
+
+    function timeNow(){
+        return Date.now ? Date.now() : new Date().getTime();
+    }
+
+    function getSession(key){
+        try{
+            return sessionStorage.getItem(key) || '';
+        }catch(error){
+            return '';
+        }
+    }
+
+    function setSession(key,value){
+        try{
+            sessionStorage.setItem(key,String(value || ''));
+        }catch(error){}
+    }
+
+    function getLocal(key){
+        try{
+            return localStorage.getItem(key) || '';
+        }catch(error){
+            return '';
+        }
+    }
+
+    function setLocal(key,value){
+        try{
+            localStorage.setItem(key,String(value || ''));
+        }catch(error){}
+    }
+
+    function activeRoute(){
+        return getSession(ACTIVE_ROUTE_KEY) || getLocal(ROUTE_KEY) || 'home';
+    }
+
+    function setActiveRoute(route){
+        route = route || 'home';
+        setSession(ACTIVE_ROUTE_KEY, route);
+        setLocal(ROUTE_KEY, route);
+    }
+
+    function forceHome(seconds){
+        const until = timeNow() + ((seconds || 30) * 1000);
+        setSession(FORCE_HOME_KEY, String(until));
+        setLocal(ROUTE_KEY, 'home');
+        setSession(ACTIVE_ROUTE_KEY, 'home');
+    }
+
+    function isHomeForced(){
+        const until = Number(getSession(FORCE_HOME_KEY) || 0);
+        return until && timeNow() < until;
+    }
+
+    function clearHomeForce(){
+        setSession(FORCE_HOME_KEY, '');
+    }
+
+    function markManualPunch(){
+        const until = timeNow() + 3000;
+        setSession(MANUAL_PUNCH_KEY, String(until));
+        clearHomeForce();
+    }
+
+    function isManualPunch(){
+        const until = Number(getSession(MANUAL_PUNCH_KEY) || 0);
+        return until && timeNow() < until;
+    }
+
+    function textOf(el){
+        return String(el && el.textContent ? el.textContent : '')
+            .replace(/\s+/g,'')
+            .trim();
+    }
+
+    function onclickOf(el){
+        return String(el && el.getAttribute ? (el.getAttribute('onclick') || '') : '');
+    }
+
+    function detectRouteFromElement(el){
+        const clickText = onclickOf(el);
+        const match = clickText.match(/msGo\(['"]([^'"]+)['"]\)/);
+        if(match && match[1]) return match[1];
+
+        const t = textOf(el);
+
+        if(
+            t.indexOf('首頁') !== -1 ||
+            t.indexOf('回首頁') !== -1 ||
+            t === 'Home'
+        ){
+            return 'home';
+        }
+
+        if(
+            t.indexOf('我要打卡') !== -1 ||
+            t.indexOf('打卡') !== -1 ||
+            t.indexOf('上班打卡') !== -1 ||
+            t.indexOf('下班打卡') !== -1
+        ){
+            return 'punch';
+        }
+
+        return '';
+    }
+
+    /*
+     * 使用者真的點按時才更新「本人想去的頁面」。
+     * 這樣背景同步、重新整理班表、雲端讀取完成時，不會把首頁自動拉去打卡。
+     */
+    document.addEventListener('click',function(event){
+        const el = event.target.closest('#mobileStaffApp button, #mobileStaffApp a, #mobileStaffApp [onclick]');
+        if(!el) return;
+
+        const route = detectRouteFromElement(el);
+
+        if(route === 'home'){
+            forceHome(60);
+            return;
+        }
+
+        if(route === 'punch'){
+            markManualPunch();
+            setActiveRoute('punch');
+            return;
+        }
+
+        if(route){
+            clearHomeForce();
+            setActiveRoute(route);
+        }
+    },true);
+
+    function installMsGoGuard(){
+        if(typeof window.msGo !== 'function'){
+            setTimeout(installMsGoGuard,80);
+            return;
+        }
+
+        if(window.msGo.__qyjHomeNoAutoPunchFixed) return;
+
+        const originalMsGo = window.msGo;
+
+        window.msGo = function(route){
+            let target = route || 'home';
+
+            /*
+             * 核心修正：
+             * 只要使用者剛按過首頁，或目前明確停在首頁，
+             * 任何非使用者點擊造成的 punch 都不允許把畫面拉走。
+             */
+            if(
+                target === 'punch' &&
+                !isManualPunch() &&
+                (
+                    isHomeForced() ||
+                    activeRoute() === 'home'
+                )
+            ){
+                setActiveRoute('home');
+                return originalMsGo.call(window,'home');
+            }
+
+            if(target === 'home'){
+                forceHome(60);
+            }else{
+                setActiveRoute(target);
+            }
+
+            return originalMsGo.apply(window,arguments);
+        };
+
+        window.msGo.__qyjHomeNoAutoPunchFixed = true;
+    }
+
+    function installOpenMobileGuard(){
+        if(typeof window.openMobileStaffApp !== 'function'){
+            setTimeout(installOpenMobileGuard,120);
+            return;
+        }
+
+        if(window.openMobileStaffApp.__qyjHomeNoAutoPunchFixed) return;
+
+        const originalOpenMobileStaffApp = window.openMobileStaffApp;
+
+        window.openMobileStaffApp = function(route){
+            let target = route || 'home';
+
+            /*
+             * 有些舊程式會從網址 route=punch 或 localStorage 的舊紀錄讀到 punch。
+             * 如果使用者已經按了首頁，就強制維持首頁。
+             */
+            if(
+                target === 'punch' &&
+                !isManualPunch() &&
+                (
+                    isHomeForced() ||
+                    activeRoute() === 'home'
+                )
+            ){
+                target = 'home';
+                setActiveRoute('home');
+            }
+
+            return originalOpenMobileStaffApp.call(window,target);
+        };
+
+        window.openMobileStaffApp.__qyjHomeNoAutoPunchFixed = true;
+    }
+
+    function installShowHomeGuard(){
+        if(typeof window.msShowHome !== 'function'){
+            setTimeout(installShowHomeGuard,120);
+            return;
+        }
+
+        if(window.msShowHome.__qyjHomeNoAutoPunchFixed) return;
+
+        const originalShowHome = window.msShowHome;
+
+        window.msShowHome = function(){
+            forceHome(60);
+            return originalShowHome.apply(window,arguments);
+        };
+
+        window.msShowHome.__qyjHomeNoAutoPunchFixed = true;
+    }
+
+    function installAll(){
+        installMsGoGuard();
+        installOpenMobileGuard();
+        installShowHomeGuard();
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded',installAll);
+    }else{
+        installAll();
+    }
+
+    /*
+     * 保險補裝：
+     * 原檔案中有多段後置修正會覆蓋 msGo / openMobileStaffApp，
+     * 所以這裡延遲補裝，確保最後生效。
+     */
+    setTimeout(installAll,300);
+    setTimeout(installAll,800);
+    setTimeout(installAll,1500);
+    setTimeout(installAll,3000);
+
+    console.log('已修正：員工手機版首頁不會自動跳到打卡畫面');
 })();
 </script>
 
