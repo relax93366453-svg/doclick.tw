@@ -2,8 +2,7 @@
 <html lang="zh-TW">
 <head>
 <script>
-/* ===== 雲端資料後台網址：公告、打卡、同步都使用這個 Apps Script =====
-   必須放在所有其他 script 前面，避免公告欄先執行時出現 SCRIPT_URL is not defined。 */
+/* 只補後台連線網址：修正 SCRIPT_URL is not defined，其餘程式不變 */
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyqaY2cgSESCdCeIJIf7--LYTj0ElIL1vP7nfEScJFaoqxfqJMrlbIi41Ovg2xzkY22Q/exec';
 window.SCRIPT_URL = SCRIPT_URL;
 </script>
@@ -1814,8 +1813,9 @@ window.SCRIPT_URL = SCRIPT_URL;
   .staff-day-sub{font-size:13px;}
 }
 </style><script>
-/* SCRIPT_URL 已在 <head> 最前面用 var 宣告，這裡只同步到 window，避免重複宣告造成錯誤。 */
-window.SCRIPT_URL = window.SCRIPT_URL || SCRIPT_URL;
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzyqaY2cgSESCdCeIJIf7--LYTj0ElIL1vP7nfEScJFaoqxfqJMrlbIi41Ovg2xzkY22Q/exec';
+window.SCRIPT_URL = SCRIPT_URL;
+window.SCRIPT_URL = SCRIPT_URL;
 const el = id => document.getElementById(id);
 
 // ✅ 安全雲端同步模式：平常每 15 秒讀取；輸入中 / 彈窗開啟 / 未儲存時暫停，避免資料被洗掉
