@@ -4082,6 +4082,583 @@ ${d.contentHtml}
 
 
 
+
+
+<!-- =========================================================
+     只針對員工手機版公告欄修正：改成「未讀／全部／全部已讀」樣式
+     以原日期年月日右鍵導覽版為基礎，其他功能與版面不動
+========================================================= -->
+<style>
+#mobileStaffApp.qyj-line-notice-mode{
+    background:#fff!important;
+}
+#mobileStaffApp.qyj-line-notice-mode .ms-top{
+    height:74px!important;
+    background:#fff!important;
+    border-bottom:1px solid #edf0f4!important;
+    position:sticky!important;
+    top:0!important;
+    z-index:20!important;
+}
+#mobileStaffApp.qyj-line-notice-mode .ms-back{
+    left:18px!important;
+    font-size:46px!important;
+    color:#111827!important;
+    line-height:1!important;
+}
+#mobileStaffApp.qyj-line-notice-mode .ms-title{
+    font-size:34px!important;
+    font-weight:900!important;
+    color:#111827!important;
+    letter-spacing:.03em!important;
+}
+#mobileStaffApp.qyj-line-notice-mode #msContent.ms-wrap{
+    max-width:none!important;
+    width:100%!important;
+    margin:0!important;
+    padding:0!important;
+    background:#fff!important;
+    min-height:calc(100vh - 74px)!important;
+}
+#mobileStaffApp.qyj-line-notice-mode #msBottomNav{
+    display:none!important;
+}
+.qyj-notice-line-tabs{
+    height:72px;
+    display:flex;
+    align-items:flex-end;
+    background:#fff;
+    border-bottom:1px solid #edf0f4;
+    padding:0 20px;
+    gap:34px;
+}
+.qyj-notice-tab{
+    border:0;
+    background:transparent;
+    color:#333;
+    font-size:27px;
+    line-height:1;
+    padding:0 0 18px;
+    position:relative;
+    cursor:pointer;
+}
+.qyj-notice-tab.active{
+    color:#1687ff;
+    font-weight:800;
+}
+.qyj-notice-tab.active::after{
+    content:'';
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:0;
+    height:5px;
+    background:#1687ff;
+    border-radius:4px 4px 0 0;
+}
+.qyj-notice-mark-all{
+    margin-left:auto;
+    border:0;
+    background:transparent;
+    color:#1687ff;
+    font-size:25px;
+    padding:0 0 18px;
+    cursor:pointer;
+}
+.qyj-notice-line-body{
+    min-height:calc(100vh - 146px);
+    background:#fff;
+    display:block;
+}
+.qyj-notice-empty{
+    min-height:calc(100vh - 230px);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:70px 24px 120px;
+    color:#8a8a8a;
+    text-align:center;
+}
+.qyj-notice-empty-icon{
+    width:270px;
+    height:270px;
+    border-radius:50%;
+    background:#f4f4f6;
+    position:relative;
+    margin-bottom:22px;
+    overflow:hidden;
+}
+.qyj-notice-empty-icon::before{
+    content:'';
+    position:absolute;
+    width:168px;
+    height:74px;
+    left:51px;
+    bottom:48px;
+    background:#dedede;
+    clip-path:polygon(0 28%,50% 0,100% 28%,82% 100%,18% 100%);
+}
+.qyj-notice-empty-icon::after{
+    content:'•••';
+    position:absolute;
+    left:72px;
+    top:72px;
+    width:126px;
+    height:62px;
+    border-radius:8px;
+    background:#cfcfcf;
+    color:#fff;
+    font-size:46px;
+    line-height:43px;
+    letter-spacing:8px;
+    text-align:center;
+    box-shadow:0 0 0 1px rgba(0,0,0,.04) inset;
+}
+.qyj-notice-empty-text{
+    font-size:25px;
+    color:#777;
+}
+.qyj-notice-line-list{
+    padding:18px 20px 40px;
+    background:#fff;
+}
+.qyj-notice-line-item{
+    border-bottom:1px solid #edf0f4;
+    padding:18px 4px 20px;
+    cursor:pointer;
+}
+.qyj-notice-line-item:first-child{
+    border-top:0;
+}
+.qyj-notice-line-head{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    margin-bottom:8px;
+}
+.qyj-notice-dot{
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:#1687ff;
+    flex:0 0 auto;
+}
+.qyj-notice-dot.read{
+    background:transparent;
+}
+.qyj-notice-line-title{
+    color:#111827;
+    font-size:21px;
+    font-weight:900;
+    line-height:1.35;
+}
+.qyj-notice-line-date{
+    color:#9aa8bd;
+    font-size:17px;
+    margin:4px 0 12px 19px;
+}
+.qyj-notice-line-content{
+    color:#334155;
+    font-size:18px;
+    line-height:1.7;
+    white-space:pre-wrap;
+    margin-left:19px;
+}
+.qyj-notice-loading,
+.qyj-notice-error{
+    padding:28px 24px;
+    color:#777;
+    font-size:20px;
+}
+.qyj-notice-error strong{
+    display:block;
+    color:#dc2626;
+    margin-bottom:8px;
+}
+@media(max-width:430px){
+    #mobileStaffApp.qyj-line-notice-mode .ms-top{height:70px!important;}
+    #mobileStaffApp.qyj-line-notice-mode .ms-title{font-size:30px!important;}
+    #mobileStaffApp.qyj-line-notice-mode .ms-back{font-size:42px!important;}
+    .qyj-notice-line-tabs{height:66px;padding:0 19px;gap:28px;}
+    .qyj-notice-tab{font-size:24px;padding-bottom:16px;}
+    .qyj-notice-mark-all{font-size:22px;padding-bottom:16px;}
+    .qyj-notice-empty-icon{width:210px;height:210px;}
+    .qyj-notice-empty-icon::before{width:132px;height:58px;left:39px;bottom:38px;}
+    .qyj-notice-empty-icon::after{left:56px;top:56px;width:98px;height:48px;font-size:36px;line-height:34px;letter-spacing:6px;}
+    .qyj-notice-empty-text{font-size:22px;}
+}
+</style>
+<script>
+(function(){
+    'use strict';
+
+    const READ_PREFIX = 'qyj_mobile_notice_read_';
+    let noticeMode = 'unread';
+    let noticeItemsCache = [];
+    let noticeLoadingToken = 0;
+
+    function esc(value){
+        return String(value == null ? '' : value)
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#39;');
+    }
+
+    function todayString(){
+        const d = new Date();
+        return d.getFullYear() + '-' +
+            String(d.getMonth()+1).padStart(2,'0') + '-' +
+            String(d.getDate()).padStart(2,'0');
+    }
+
+    function currentStaff(){
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                return window.msGetCurrentStaff() || {};
+            }
+        }catch(error){}
+        return {};
+    }
+
+    function staffKey(){
+        const staff = currentStaff();
+        const raw =
+            staff.account || staff.username || staff.phone || staff.mobile ||
+            staff.tel || staff.id || staff.code || staff.staffId ||
+            staff.name || staff.staff || staff.realName || staff.employeeName ||
+            'guest';
+        return READ_PREFIX + String(raw).replace(/\s+/g,'_');
+    }
+
+    function readMap(){
+        try{
+            return JSON.parse(localStorage.getItem(staffKey()) || '{}') || {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function saveMap(map){
+        try{
+            localStorage.setItem(staffKey(), JSON.stringify(map || {}));
+        }catch(error){}
+    }
+
+    function itemId(item,index){
+        return String(
+            item.id || item._id || item.uid || item.key ||
+            [item.title || '', item.publishDate || item.date || '', item.body || item.content || item.text || '', index].join('|')
+        );
+    }
+
+    function getPortalFromLocal(){
+        const result = {};
+        try{
+            const direct = JSON.parse(localStorage.getItem('portalConf') || '{}');
+            Object.assign(result,direct || {});
+        }catch(error){}
+        try{
+            const sys = JSON.parse(localStorage.getItem('sysConfig') || '{}');
+            const pc = sys && sys.portalConf;
+            if(pc){
+                Object.assign(result, typeof pc === 'string' ? JSON.parse(pc) : pc);
+            }
+        }catch(error){}
+        try{
+            if(window.portalConf && typeof window.portalConf === 'object'){
+                Object.assign(result, window.portalConf);
+            }
+        }catch(error){}
+        try{
+            if(Array.isArray(window.announcementItems)){
+                result.announcementItems = window.announcementItems;
+            }
+        }catch(error){}
+        return result;
+    }
+
+    function cloudUrl(){
+        return window.SCRIPT_URL ||
+            (typeof SCRIPT_URL !== 'undefined' ? SCRIPT_URL : '');
+    }
+
+    function readCloud(){
+        return new Promise(function(resolve,reject){
+            const url = cloudUrl();
+            if(!url){
+                reject(new Error('SCRIPT_URL is not defined'));
+                return;
+            }
+
+            const cb = 'qyjNoticeJsonp_' + Date.now() + '_' + Math.floor(Math.random()*100000);
+            const script = document.createElement('script');
+            let done = false;
+
+            window[cb] = function(data){
+                if(done) return;
+                done = true;
+                cleanup();
+                resolve(data || {});
+            };
+
+            function cleanup(){
+                try{ delete window[cb]; }catch(error){ window[cb] = undefined; }
+                if(script.parentNode) script.parentNode.removeChild(script);
+            }
+
+            script.onerror = function(){
+                if(done) return;
+                done = true;
+                cleanup();
+                reject(new Error('公告讀取失敗'));
+            };
+
+            script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') +
+                'callback=' + encodeURIComponent(cb) +
+                '&_=' + Date.now();
+
+            document.head.appendChild(script);
+
+            setTimeout(function(){
+                if(done) return;
+                done = true;
+                cleanup();
+                reject(new Error('公告讀取逾時'));
+            },15000);
+        });
+    }
+
+    function portalFromCloud(root){
+        root = root || {};
+        let conf = {};
+        if(root.data && typeof root.data === 'object') root = root.data;
+        if(root.sysConfig && root.sysConfig.portalConf){
+            try{
+                conf = typeof root.sysConfig.portalConf === 'string'
+                    ? JSON.parse(root.sysConfig.portalConf)
+                    : root.sysConfig.portalConf;
+            }catch(error){
+                conf = {};
+            }
+        }
+        if(Array.isArray(root.announcementItems)){
+            conf.announcementItems = root.announcementItems;
+        }
+        return conf || {};
+    }
+
+    function staffType(){
+        const staff = currentStaff();
+        const text = String(
+            staff.type || staff.role || staff.status || staff.dept || staff.department || ''
+        );
+        if(/正職|full/i.test(text)) return 'fulltime';
+        return 'dispatch';
+    }
+
+    function audienceAllowed(item){
+        const value = String(item.audience || item.target || item.type || 'all').toLowerCase();
+        const type = staffType();
+        if(!value || value === 'all' || value === '全部員工') return true;
+        if(type === 'fulltime') return /full|正職|all|全部/.test(value);
+        return /dispatch|派遣|兼職|part|all|全部/.test(value);
+    }
+
+    function isActive(item){
+        if(item && item.active === false) return false;
+        if(item && item.enabled === false) return false;
+        const today = todayString();
+        const publish = String(item.publishDate || item.date || '').slice(0,10);
+        const expire = String(item.expireDate || item.endDate || '').slice(0,10);
+        if(publish && publish > today) return false;
+        if(expire && expire < today) return false;
+        return audienceAllowed(item || {});
+    }
+
+    function normalizeItems(conf){
+        const list = Array.isArray(conf && conf.announcementItems)
+            ? conf.announcementItems
+            : [];
+        return list
+            .filter(isActive)
+            .map(function(item,index){
+                const normalized = Object.assign({},item);
+                normalized.__id = itemId(item,index);
+                normalized.__date = String(item.publishDate || item.date || item.createdAt || '').slice(0,10);
+                normalized.__title = item.title || item.name || '公告';
+                normalized.__body = item.body || item.content || item.text || item.desc || '';
+                return normalized;
+            })
+            .sort(function(a,b){
+                return Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) ||
+                    String(b.__date || '').localeCompare(String(a.__date || ''));
+            });
+    }
+
+    function markRead(id){
+        const map = readMap();
+        map[id] = true;
+        saveMap(map);
+    }
+
+    function setLineNoticeMode(on){
+        const app = document.getElementById('mobileStaffApp');
+        if(!app) return;
+        app.classList.toggle('qyj-line-notice-mode', Boolean(on));
+        const nav = document.getElementById('msBottomNav');
+        if(nav){
+            nav.style.display = on ? 'none' : 'grid';
+        }
+    }
+
+    function emptyHtml(){
+        return '<div class="qyj-notice-empty">' +
+            '<div class="qyj-notice-empty-icon"></div>' +
+            '<div class="qyj-notice-empty-text">目前沒有內容喔！</div>' +
+        '</div>';
+    }
+
+    function renderNotice(){
+        const box = document.getElementById('msContent');
+        if(!box) return;
+        setLineNoticeMode(true);
+
+        const read = readMap();
+        const visible = noticeMode === 'unread'
+            ? noticeItemsCache.filter(function(item){ return !read[item.__id]; })
+            : noticeItemsCache;
+
+        const listHtml = visible.length
+            ? '<div class="qyj-notice-line-list">' + visible.map(function(item){
+                const isRead = Boolean(read[item.__id]);
+                return '<div class="qyj-notice-line-item" data-notice-id="' + esc(item.__id) + '">' +
+                    '<div class="qyj-notice-line-head">' +
+                        '<span class="qyj-notice-dot ' + (isRead ? 'read' : '') + '"></span>' +
+                        '<div class="qyj-notice-line-title">' + esc(item.__title) + '</div>' +
+                    '</div>' +
+                    '<div class="qyj-notice-line-date">' + esc(item.__date || '') + '</div>' +
+                    '<div class="qyj-notice-line-content">' + esc(item.__body) + '</div>' +
+                '</div>';
+            }).join('') + '</div>'
+            : emptyHtml();
+
+        box.innerHTML =
+            '<div class="qyj-notice-line-tabs">' +
+                '<button type="button" class="qyj-notice-tab ' + (noticeMode === 'unread' ? 'active' : '') + '" data-notice-tab="unread">未讀</button>' +
+                '<button type="button" class="qyj-notice-tab ' + (noticeMode === 'all' ? 'active' : '') + '" data-notice-tab="all">全部</button>' +
+                '<button type="button" class="qyj-notice-mark-all" data-notice-mark-all="1">全部已讀</button>' +
+            '</div>' +
+            '<div class="qyj-notice-line-body">' + listHtml + '</div>';
+    }
+
+    async function loadNotice(){
+        const token = ++noticeLoadingToken;
+        const localConf = getPortalFromLocal();
+        noticeItemsCache = normalizeItems(localConf);
+        renderNotice();
+
+        try{
+            const root = await readCloud();
+            if(token !== noticeLoadingToken) return;
+            const conf = portalFromCloud(root);
+            try{
+                localStorage.setItem('portalConf',JSON.stringify(conf));
+                if(conf.announcementItems){
+                    localStorage.setItem('announcementItems',JSON.stringify(conf.announcementItems));
+                }
+            }catch(error){}
+            try{
+                window.portalConf = Object.assign({},window.portalConf || {},conf);
+                if(Array.isArray(conf.announcementItems)){
+                    window.announcementItems = conf.announcementItems;
+                }
+            }catch(error){}
+            noticeItemsCache = normalizeItems(conf);
+            renderNotice();
+        }catch(error){
+            console.warn('公告讀取失敗：',error);
+            if(!noticeItemsCache.length){
+                renderNotice();
+            }
+        }
+    }
+
+    const oldMsGo = window.msGo;
+    window.msGo = function(route){
+        const target = route || 'home';
+        if(target !== 'notice'){
+            setLineNoticeMode(false);
+        }
+        if(typeof oldMsGo === 'function'){
+            return oldMsGo.apply(this,arguments);
+        }
+    };
+
+    window.msShowNotice = function(){
+        try{
+            localStorage.setItem('qyj_mobile_staff_route','notice');
+        }catch(error){}
+        if(typeof window.msSetTitle === 'function'){
+            window.msSetTitle('公告欄');
+        }
+        noticeMode = 'unread';
+        setLineNoticeMode(true);
+        const box = document.getElementById('msContent');
+        if(box){
+            box.innerHTML =
+                '<div class="qyj-notice-line-tabs">' +
+                    '<button type="button" class="qyj-notice-tab active" data-notice-tab="unread">未讀</button>' +
+                    '<button type="button" class="qyj-notice-tab" data-notice-tab="all">全部</button>' +
+                    '<button type="button" class="qyj-notice-mark-all" data-notice-mark-all="1">全部已讀</button>' +
+                '</div>' +
+                '<div class="qyj-notice-line-body">' +
+                    '<div class="qyj-notice-loading">正在讀取最新公告…</div>' +
+                '</div>';
+        }
+        loadNotice();
+    };
+
+    document.addEventListener('click',function(event){
+        const tab = event.target.closest('[data-notice-tab]');
+        if(tab){
+            noticeMode = tab.getAttribute('data-notice-tab') === 'all' ? 'all' : 'unread';
+            renderNotice();
+            return;
+        }
+
+        const markAll = event.target.closest('[data-notice-mark-all]');
+        if(markAll){
+            const map = readMap();
+            noticeItemsCache.forEach(function(item){ map[item.__id] = true; });
+            saveMap(map);
+            noticeMode = 'unread';
+            renderNotice();
+            return;
+        }
+
+        const item = event.target.closest('[data-notice-id]');
+        if(item){
+            markRead(item.getAttribute('data-notice-id'));
+            renderNotice();
+        }
+    },true);
+
+    try{
+        const params = new URLSearchParams(location.search);
+        if(params.get('staffApp') === '1' && params.get('route') === 'notice'){
+            setTimeout(function(){
+                if(typeof window.msShowNotice === 'function'){
+                    window.msShowNotice();
+                }
+            },350);
+        }
+    }catch(error){}
+})();
+</script>
+
 </body>
 </html>`);
     w.document.close();
