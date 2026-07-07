@@ -6267,7 +6267,46 @@ function renderSalary() {
         if(pm === 0) { pm = 12; py -= 1; } 
         const periodEndDate = `${y}-${String(m).padStart(2,'0')}-25`;
         const cumulativeHours = getStaffTotalHoursUntil(s, periodEndDate);
-        el('salResult').innerHTML = `[${s}] ${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25 結算：<br><span style="color:#059669;">本月結算工時：${sumH.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#2563eb;">截至本期累積工時：${cumulativeHours.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#d97706;">應發金額：${sumAmt.toFixed(1)} 元</span>`; 
+        let welfareReminderHtml = '';
+        const welfareRules = [
+            {
+                hours: 3100,
+                title: '滿 3100 小時福利門檻',
+                items: ['時數獎勵金：$3,800', '三節獎金：$1,000', '交通／油資補助：每月 $500'],
+                note: '提醒：請記得每月發放交通／油資補助 $500'
+            },
+            {
+                hours: 2100,
+                title: '滿 2100 小時福利門檻',
+                items: ['時數獎勵金：$2,800', '三節獎金：$1,000', '交通／油資補助：每月 $400'],
+                note: '提醒：請記得每月發放交通／油資補助 $400'
+            },
+            {
+                hours: 1100,
+                title: '滿 1100 小時福利門檻',
+                items: ['時數獎勵金：$1,800', '三節獎金：$800', '交通／油資補助：每月 $200'],
+                note: '提醒：請記得每月發放交通／油資補助 $200'
+            },
+            {
+                hours: 700,
+                title: '滿 700 小時福利門檻',
+                items: ['三節獎金：$600'],
+                note: ''
+            }
+        ];
+        const reachedWelfare = welfareRules.find(rule => cumulativeHours >= rule.hours);
+        const nextWelfare = welfareRules.slice().reverse().find(rule => cumulativeHours < rule.hours);
+        if(reachedWelfare){
+            welfareReminderHtml = `
+                <div style="margin-top:12px;background:#ecfdf5;border:1px solid #86efac;border-left:5px solid #16a34a;border-radius:10px;padding:12px 14px;line-height:1.8;color:#064e3b;">
+                    <div style="font-weight:900;color:#166534;margin-bottom:4px;"><i class="fas fa-gift"></i> 福利制度提醒｜${reachedWelfare.title}</div>
+                    <div>${reachedWelfare.items.join('　｜　')}</div>
+                    ${reachedWelfare.note ? `<div style="margin-top:4px;color:#b45309;font-weight:900;">${reachedWelfare.note}</div>` : ''}
+                    ${nextWelfare ? `<div style="margin-top:4px;color:#64748b;font-size:13px;font-weight:700;">距離下一階段 ${nextWelfare.title} 還差 ${(nextWelfare.hours - cumulativeHours).toFixed(1)} 小時</div>` : ''}
+                    <div style="margin-top:4px;color:#64748b;font-size:12px;font-weight:700;">此區塊僅提醒用，不會自動加進薪資，避免誤發。</div>
+                </div>`;
+        }
+        el('salResult').innerHTML = `[${s}] ${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25 結算：<br><span style="color:#059669;">本月結算工時：${sumH.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#2563eb;">截至本期累積工時：${cumulativeHours.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#d97706;">應發金額：${sumAmt.toFixed(1)} 元</span>${welfareReminderHtml}`; 
     } else { 
         el('salDetailResult').style.display = 'none'; 
         if(el('salDeductOverrideBox')) el('salDeductOverrideBox').style.display = 'none';
@@ -23540,6 +23579,225 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
     console.log('派遣紀錄鍵盤導覽修正已啟用');
 })();
+
+
+/* =========================================================
+   只加：派遣薪資計算福利加項加入薪資
+   - 交通／油資補助：符合門檻後預設每月加入
+   - 時數獎勵金、三節獎金：本期勾選才加入，避免重複發放
+   - 不改登入、員工端、公告、排班與其他畫面
+========================================================= */
+(function(){
+    window.qyjSalaryBenefitContext = null;
+
+    window.qyjSalaryBenefitRules = [
+        {hours:3100,title:'滿 3100 小時福利門檻', bonus:3800, festival:1000, transport:500},
+        {hours:2100,title:'滿 2100 小時福利門檻', bonus:2800, festival:1000, transport:400},
+        {hours:1100,title:'滿 1100 小時福利門檻', bonus:1800, festival:800, transport:200},
+        {hours:700,title:'滿 700 小時福利門檻', bonus:0, festival:600, transport:0}
+    ];
+
+    window.qyjGetSalaryBenefitRule = function(hours){
+        hours = Number(hours) || 0;
+        return window.qyjSalaryBenefitRules.find(function(rule){ return hours >= rule.hours; }) || null;
+    };
+
+    window.qyjGetSalaryBenefitStorage = function(){
+        try{
+            return JSON.parse(localStorage.getItem('qyj_salary_benefit_additions_v1') || '{}') || {};
+        }catch(e){ return {}; }
+    };
+
+    window.qyjSetSalaryBenefitStorage = function(data){
+        try{ localStorage.setItem('qyj_salary_benefit_additions_v1', JSON.stringify(data || {})); }catch(e){}
+    };
+
+    window.qyjSalaryBenefitKey = function(staff, y, m){
+        return [String(staff||''), String(y||''), String(m||'').padStart(2,'0')].join('|');
+    };
+
+    window.qyjGetSalaryBenefitSelection = function(staff, y, m, rule){
+        var key = window.qyjSalaryBenefitKey(staff, y, m);
+        var all = window.qyjGetSalaryBenefitStorage();
+        if(!all[key]){
+            all[key] = {
+                transport: !!(rule && Number(rule.transport) > 0),
+                bonus: false,
+                festival: false
+            };
+            window.qyjSetSalaryBenefitStorage(all);
+        }
+        return all[key];
+    };
+
+    window.qyjToggleSalaryBenefit = function(type, checked){
+        var ctx = window.qyjSalaryBenefitContext;
+        if(!ctx) return;
+        var all = window.qyjGetSalaryBenefitStorage();
+        var key = window.qyjSalaryBenefitKey(ctx.staff, ctx.year, ctx.month);
+        var old = all[key] || {};
+        old[type] = !!checked;
+        all[key] = old;
+        window.qyjSetSalaryBenefitStorage(all);
+        window.qyjUpdateSalaryBenefitNet();
+    };
+
+    window.qyjUpdateSalaryBenefitNet = function(){
+        var ctx = window.qyjSalaryBenefitContext;
+        if(!ctx || !ctx.rule) return;
+        var sel = window.qyjGetSalaryBenefitSelection(ctx.staff, ctx.year, ctx.month, ctx.rule);
+        var transport = sel.transport ? Number(ctx.rule.transport || 0) : 0;
+        var bonus = sel.bonus ? Number(ctx.rule.bonus || 0) : 0;
+        var festival = sel.festival ? Number(ctx.rule.festival || 0) : 0;
+        var addTotal = transport + bonus + festival;
+        var finalNet = Math.round((Number(ctx.baseNet) || 0) + addTotal);
+        if(el('salBenefitAddTotal')) el('salBenefitAddTotal').textContent = addTotal;
+        if(el('salBenefitFinalNet')) el('salBenefitFinalNet').textContent = finalNet;
+        if(el('salNet')) el('salNet').textContent = finalNet;
+    };
+
+    window.qyjBuildSalaryBenefitBox = function(staff, y, m, cumulativeHours, baseNet){
+        var rule = window.qyjGetSalaryBenefitRule(cumulativeHours);
+        if(!rule) return '';
+        var nextRule = window.qyjSalaryBenefitRules.slice().reverse().find(function(r){ return cumulativeHours < r.hours; });
+        var sel = window.qyjGetSalaryBenefitSelection(staff, y, m, rule);
+        window.qyjSalaryBenefitContext = {staff:staff, year:y, month:m, rule:rule, baseNet:baseNet};
+
+        var transportRow = rule.transport > 0 ? `
+            <label style="display:flex;align-items:center;gap:8px;background:#ffffff;border:1px solid #bbf7d0;border-radius:10px;padding:9px 12px;font-weight:900;color:#065f46;">
+                <input type="checkbox" ${sel.transport?'checked':''} onchange="qyjToggleSalaryBenefit('transport', this.checked)">
+                交通／油資補助 $${rule.transport} <span style="font-size:12px;color:#64748b;font-weight:700;">每月補助，符合資格預設加入</span>
+            </label>` : '';
+        var bonusRow = rule.bonus > 0 ? `
+            <label style="display:flex;align-items:center;gap:8px;background:#ffffff;border:1px solid #fed7aa;border-radius:10px;padding:9px 12px;font-weight:900;color:#9a3412;">
+                <input type="checkbox" ${sel.bonus?'checked':''} onchange="qyjToggleSalaryBenefit('bonus', this.checked)">
+                本期發放時數獎勵金 $${rule.bonus} <span style="font-size:12px;color:#64748b;font-weight:700;">勾選才加入，避免重複發放</span>
+            </label>` : '';
+        var festivalRow = rule.festival > 0 ? `
+            <label style="display:flex;align-items:center;gap:8px;background:#ffffff;border:1px solid #bfdbfe;border-radius:10px;padding:9px 12px;font-weight:900;color:#1e40af;">
+                <input type="checkbox" ${sel.festival?'checked':''} onchange="qyjToggleSalaryBenefit('festival', this.checked)">
+                本期發放三節獎金 $${rule.festival} <span style="font-size:12px;color:#64748b;font-weight:700;">三節當期勾選才加入</span>
+            </label>` : '';
+
+        var checkedTotal = (sel.transport ? Number(rule.transport||0) : 0) + (sel.bonus ? Number(rule.bonus||0) : 0) + (sel.festival ? Number(rule.festival||0) : 0);
+        var finalNet = Math.round((Number(baseNet)||0) + checkedTotal);
+
+        return `
+            <div id="salBenefitBox" style="margin-top:12px;background:#ecfdf5;border:1px solid #86efac;border-left:5px solid #16a34a;border-radius:10px;padding:12px 14px;line-height:1.8;color:#064e3b;">
+                <div style="font-weight:900;color:#166534;margin-bottom:6px;"><i class="fas fa-gift"></i> 福利制度加項｜${rule.title}</div>
+                <div style="display:flex;flex-direction:column;gap:8px;margin:8px 0;">
+                    ${transportRow}${bonusRow}${festivalRow}
+                </div>
+                <div style="background:#f8fafc;border:1px solid #dbe7f5;border-radius:10px;padding:9px 12px;margin-top:8px;font-weight:900;color:#0f172a;">
+                    福利加項合計：<span id="salBenefitAddTotal" style="color:#d97706;">${checkedTotal}</span> 元
+                    <span style="margin-left:18px;color:#1e3a8a;">加項後實付金額：<span id="salBenefitFinalNet">${finalNet}</span> 元</span>
+                </div>
+                ${nextRule ? `<div style="margin-top:4px;color:#64748b;font-size:13px;font-weight:700;">距離下一階段 ${nextRule.title} 還差 ${(nextRule.hours - cumulativeHours).toFixed(1)} 小時</div>` : ''}
+                <div style="margin-top:4px;color:#b45309;font-size:12px;font-weight:900;">提醒：交通／油資補助為每月項目；時數獎勵金與三節獎金請確認本期要發放再勾選。</div>
+            </div>`;
+    };
+})();
+
+function renderSalary() { 
+    const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value; 
+    calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
+    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
+    l.sort((a,b) => new Date(a.date) - new Date(b.date)); 
+    const {pagedList, total, totalPages} = getPagedData(l, 'salary'); 
+    let h = ''; 
+    let sumH = 0, sumAmt = 0;
+    l.forEach(item => { 
+        const pH = getItemSalaryHours(item); 
+        sumH += pH; 
+        let fee = Number(item.project_fee) || 0;
+        sumAmt += fee > 0 ? fee : parseFloat((pH * getHistoricalRate(item)).toFixed(1));
+    });
+    pagedList.forEach(item => { 
+        const pH = getItemSalaryHours(item); 
+        const hr = getHistoricalRate(item); 
+        const fee = Number(item.project_fee) || 0;
+        const amt = fee > 0 ? fee : parseFloat((pH * hr).toFixed(1)); 
+        const qyjRateSource = (typeof qyjGetItemRateSource === 'function') ? qyjGetItemRateSource(item) : '';
+        const hrDisplay = item.special_hourly
+            ? `<span class="badge badge-yellow">${hr} (單次特)</span>`
+            : fee > 0
+                ? '-'
+                : qyjRateSource === 'period'
+                    ? `<span class="badge badge-yellow">${hr} (個人特例)</span>`
+                    : qyjRateSource === 'locked'
+                        ? `<span style="color:#7c3aed;font-weight:bold;">${hr}（已鎖定）</span>`
+                        : hr; 
+        h += `<tr><td>${item.staff}</td><td>${item.date}</td><td>${item.company}</td><td>${item.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${hrDisplay}</td><td style="color:#ea580c;">${fee>0?fee:"-"}</td><td>${amt}</td></tr>`; 
+    });
+    el('salaryTable').innerHTML = h || '<tr><td colspan="8" style="text-align:center;">無紀錄</td></tr>'; 
+    renderPagination('salary', total, totalPages); 
+    if(s && s !== '全部人員' && y !== 'all' && m !== 'all') { 
+        const si = staffData.find(x => x.name === s) || {};
+        const deduct = getSalaryDeductAmounts(s, y, m, si);
+        const lb = deduct.labor, hl = deduct.health;
+        syncSalaryDeductInputs(s, y, m);
+        const baseNet = Math.round(sumAmt - lb - hl);
+        el('salLabor').textContent = lb; 
+        el('salHealth').textContent = hl; 
+        el('salNet').textContent = baseNet; 
+        el('salDetailResult').style.display = 'block';
+        if(el('salDeductOverrideBox')) el('salDeductOverrideBox').style.display = 'flex';
+        let pm = parseInt(m) - 1, py = parseInt(y); 
+        if(pm === 0) { pm = 12; py -= 1; } 
+        const periodEndDate = `${y}-${String(m).padStart(2,'0')}-25`;
+        const cumulativeHours = getStaffTotalHoursUntil(s, periodEndDate);
+        const welfareBox = qyjBuildSalaryBenefitBox(s, y, m, cumulativeHours, baseNet);
+        el('salResult').innerHTML = `[${s}] ${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25 結算：<br><span style="color:#059669;">本月結算工時：${sumH.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#2563eb;">截至本期累積工時：${cumulativeHours.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#d97706;">應發金額：${sumAmt.toFixed(1)} 元</span>${welfareBox}`; 
+        qyjUpdateSalaryBenefitNet();
+    } else { 
+        window.qyjSalaryBenefitContext = null;
+        el('salDetailResult').style.display = 'none'; 
+        if(el('salDeductOverrideBox')) el('salDeductOverrideBox').style.display = 'none';
+        if(el('sal_override_labor')) el('sal_override_labor').value='';
+        if(el('sal_override_health')) el('sal_override_health').value='';
+        el('salResult').innerHTML = ''; 
+    } 
+}
+
+function generatePayslipPDF() { 
+    const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value;
+    if(!s || s === '全部人員' || y === 'all' || m === 'all') return showToast('請選人員與年月', true); 
+    let pm = parseInt(m) - 1, py = parseInt(y); 
+    if(pm === 0) { pm = 12; py -= 1; } 
+    let ptxt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25`; 
+    const periodEndDate = `${y}-${String(m).padStart(2,'0')}-25`;
+    const cumulativeHours = getStaffTotalHoursUntil(s, periodEndDate);
+    let ats = attendData.filter(x => x.staff === s && isDispatchPayrollPeriod(x.date, y, m)).sort((a,b) => new Date(a.date) - new Date(b.date)); 
+    if(ats.length === 0) return showToast('無紀錄', true);
+    const si = staffData.find(x => x.name === s) || {}; 
+    let tAmt = 0, tHours = 0, ah = ''; 
+    ats.forEach(i => { 
+        let pH = getItemSalaryHours(i); 
+        tHours += pH;
+        let hy = getHistoricalRate(i); 
+        let fee = Number(i.project_fee) || 0;
+        let exactAmt = fee > 0 ? fee : parseFloat((pH * hy).toFixed(1)); 
+        tAmt += exactAmt; 
+        ah += `<tr><td>${i.date}</td><td>${i.company}</td><td>${i.service||'-'}</td><td>${pH.toFixed(1)}</td><td>${fee>0?'專案':hy}</td><td>${exactAmt}</td></tr>`; 
+    });
+    const deduct = getSalaryDeductAmounts(s, y, m, si);
+    let lb = deduct.labor, hl = deduct.health;
+    let baseNet = Math.round(tAmt - lb - hl);
+    const benefitRule = qyjGetSalaryBenefitRule(cumulativeHours);
+    let benefitAddTotal = 0;
+    let benefitRows = '';
+    if(benefitRule){
+        const benefitSel = qyjGetSalaryBenefitSelection(s, y, m, benefitRule);
+        if(benefitSel.transport && Number(benefitRule.transport) > 0){ benefitAddTotal += Number(benefitRule.transport); benefitRows += `<tr><td colspan="5" style="text-align:right;font-weight:900;color:#065f46;">交通／油資補助</td><td style="color:#065f46;font-weight:900;">${benefitRule.transport}</td></tr>`; }
+        if(benefitSel.bonus && Number(benefitRule.bonus) > 0){ benefitAddTotal += Number(benefitRule.bonus); benefitRows += `<tr><td colspan="5" style="text-align:right;font-weight:900;color:#9a3412;">時數獎勵金</td><td style="color:#9a3412;font-weight:900;">${benefitRule.bonus}</td></tr>`; }
+        if(benefitSel.festival && Number(benefitRule.festival) > 0){ benefitAddTotal += Number(benefitRule.festival); benefitRows += `<tr><td colspan="5" style="text-align:right;font-weight:900;color:#1e40af;">三節獎金</td><td style="color:#1e40af;font-weight:900;">${benefitRule.festival}</td></tr>`; }
+    }
+    let net = Math.round(baseNet + benefitAddTotal); 
+    const lh = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" style="height:60px;margin-right:15px;vertical-align:middle;">` : ''; 
+    let benefitSummaryCell = benefitAddTotal > 0 ? `<td>福利加項<br><strong style="font-size:24px;color:#16a34a;">+${benefitAddTotal}</strong></td>` : '';
+    let c = `<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #f59e0b;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#d97706;">愜易居有限公司 - 薪資明細單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>人員姓名：</strong> ${s}<br><strong>結算期間：</strong> ${ptxt}<br><strong>本月結算工時：</strong> ${tHours.toFixed(1)} h<br><strong>截至本期累積工時：</strong> ${cumulativeHours.toFixed(1)} h</td><td style="text-align:right;"><strong>入帳帳戶：</strong><br>${si.bank||''} ${si.bank_branch||''}<br>${si.bank_acc||''}</td></tr></table><table class="summary-table" style="width:100%;margin-bottom:20px;border:1px solid #fde68a;"><tr><td>本月結算工時<br><strong style="font-size:24px;color:#059669;">${tHours.toFixed(1)} h</strong></td><td>截至本期累積工時<br><strong style="font-size:24px;color:#2563eb;">${cumulativeHours.toFixed(1)} h</strong></td><td>應發總額<br><strong style="font-size:24px;color:#1e293b;">${tAmt.toFixed(1)}</strong></td>${benefitSummaryCell}<td>本期代扣勞保<br><strong style="font-size:24px;color:#ef4444;">-${lb}</strong></td><td>本期代扣健保<br><strong style="font-size:24px;color:#ef4444;">-${hl}</strong></td><td style="background:#fffbeb;">實付金額<br><strong style="font-size:28px;color:#d97706;">${net}</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>公司</th><th>服務</th><th>工時</th><th>時薪/專案</th><th>金額</th></tr></thead><tbody>${ah}${benefitRows}</tbody></table><div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
+    openPreview(`${s}的薪資單`, c, si.drive||'', s); 
+}
 </script>
 
 </body>
