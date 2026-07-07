@@ -23798,6 +23798,163 @@ function generatePayslipPDF() {
     let c = `<div style="text-align:center;margin-bottom:25px;border-bottom:3px solid #f59e0b;padding-bottom:15px;display:flex;align-items:center;justify-content:center;">${lh}<h2 style="font-size:30px;margin:0;color:#d97706;">愜易居有限公司 - 薪資明細單</h2></div><table class="info-table" style="margin-bottom:20px;width:100%;"><tr><td style="font-size:15px;line-height:1.8;color:#333;"><strong>人員姓名：</strong> ${s}<br><strong>結算期間：</strong> ${ptxt}<br><strong>本月結算工時：</strong> ${tHours.toFixed(1)} h<br><strong>截至本期累積工時：</strong> ${cumulativeHours.toFixed(1)} h</td><td style="text-align:right;"><strong>入帳帳戶：</strong><br>${si.bank||''} ${si.bank_branch||''}<br>${si.bank_acc||''}</td></tr></table><table class="summary-table" style="width:100%;margin-bottom:20px;border:1px solid #fde68a;"><tr><td>本月結算工時<br><strong style="font-size:24px;color:#059669;">${tHours.toFixed(1)} h</strong></td><td>截至本期累積工時<br><strong style="font-size:24px;color:#2563eb;">${cumulativeHours.toFixed(1)} h</strong></td><td>應發總額<br><strong style="font-size:24px;color:#1e293b;">${tAmt.toFixed(1)}</strong></td>${benefitSummaryCell}<td>本期代扣勞保<br><strong style="font-size:24px;color:#ef4444;">-${lb}</strong></td><td>本期代扣健保<br><strong style="font-size:24px;color:#ef4444;">-${hl}</strong></td><td style="background:#fffbeb;">實付金額<br><strong style="font-size:28px;color:#d97706;">${net}</strong></td></tr></table><table style="width:100%;border-collapse:collapse;text-align:center;"><thead><tr style="background:#f1f5f9;"><th>日期</th><th>公司</th><th>服務</th><th>工時</th><th>時薪/專案</th><th>金額</th></tr></thead><tbody>${ah}${benefitRows}</tbody></table><div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>`;
     openPreview(`${s}的薪資單`, c, si.drive||'', s); 
 }
+
+/* =========================================================
+   只加：福利制度達標追蹤表
+   - 顯示每位人員滿 1100 / 2100 / 3100 小時日期
+   - 顯示時數獎勵金是否已勾選加入薪資
+   - 不改登入、員工端、公告、排班與既有薪資計算邏輯
+========================================================= */
+(function(){
+    window.qyjBenefitTrackRules = [
+        {hours:1100, label:'滿 1100 小時', bonus:1800},
+        {hours:2100, label:'滿 2100 小時', bonus:2800},
+        {hours:3100, label:'滿 3100 小時', bonus:3800}
+    ];
+
+    function qyjEnsureBenefitTrackerBox(){
+        var page = document.getElementById('page-salary');
+        if(!page) return null;
+        var box = document.getElementById('qyjBenefitTrackerBox');
+        if(box) return box;
+        box = document.createElement('div');
+        box.id = 'qyjBenefitTrackerBox';
+        box.style.cssText = 'display:none;background:#fff;border:1px solid #dbe7f5;border-left:5px solid #2563eb;border-radius:12px;padding:14px 16px;margin:12px 0 14px;box-shadow:0 4px 12px rgba(15,23,42,.03);';
+        var target = document.getElementById('salDeductOverrideBox') || document.getElementById('salDetailResult') || document.getElementById('salaryTableBox');
+        if(target && target.parentNode){
+            target.parentNode.insertBefore(box, target);
+        }else{
+            page.appendChild(box);
+        }
+        return box;
+    }
+
+    window.qyjGetBenefitReachInfo = function(staff, threshold){
+        var records = (attendData || [])
+            .filter(function(x){ return x && x.staff === staff && x.date; })
+            .sort(function(a,b){
+                var da = String(a.date || '');
+                var db = String(b.date || '');
+                if(da === db) return 0;
+                return da > db ? 1 : -1;
+            });
+        var total = 0;
+        for(var i=0;i<records.length;i++){
+            total += Number(getItemSalaryHours(records[i])) || 0;
+            if(total >= Number(threshold)){
+                return {reached:true, date:String(records[i].date || ''), hours:total};
+            }
+        }
+        return {reached:false, date:'', hours:total};
+    };
+
+    window.qyjFindBenefitBonusPaid = function(staff, threshold){
+        var storage = (typeof qyjGetSalaryBenefitStorage === 'function') ? qyjGetSalaryBenefitStorage() : {};
+        var found = null;
+        Object.keys(storage || {}).forEach(function(key){
+            if(found) return;
+            var parts = key.split('|');
+            if(parts.length < 3) return;
+            if(parts[0] !== String(staff || '')) return;
+            var sel = storage[key] || {};
+            if(!sel.bonus) return;
+            var yy = parts[1];
+            var mm = String(parts[2] || '').padStart(2,'0');
+            var periodEnd = yy + '-' + mm + '-25';
+            var cum = (typeof getStaffTotalHoursUntil === 'function') ? getStaffTotalHoursUntil(staff, periodEnd) : 0;
+            var rule = (typeof qyjGetSalaryBenefitRule === 'function') ? qyjGetSalaryBenefitRule(cum) : null;
+            if(rule && Number(rule.hours) === Number(threshold)){
+                found = {paid:true, year:yy, month:mm, key:key, amount:Number(rule.bonus)||0, cumulativeHours:cum};
+            }
+        });
+        return found || {paid:false};
+    };
+
+    function qyjGetBenefitTrackerStaffList(){
+        var selected = document.getElementById('sal_filter_staff') ? document.getElementById('sal_filter_staff').value.trim() : '';
+        if(selected && selected !== '全部人員') return [selected];
+        var map = {};
+        (staffData || []).forEach(function(s){ if(s && s.name) map[s.name] = true; });
+        (attendData || []).forEach(function(r){ if(r && r.staff) map[r.staff] = true; });
+        return Object.keys(map).sort();
+    }
+
+    function qyjStatusBadge(html, bg, color, border){
+        return '<span style="display:inline-block;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900;background:'+bg+';color:'+color+';border:1px solid '+border+';white-space:nowrap;">'+html+'</span>';
+    }
+
+    window.qyjRenderSalaryBenefitTracker = function(){
+        var box = qyjEnsureBenefitTrackerBox();
+        if(!box) return;
+        var staffList = qyjGetBenefitTrackerStaffList();
+        if(!staffList.length){
+            box.style.display = 'none';
+            return;
+        }
+        var selected = document.getElementById('sal_filter_staff') ? document.getElementById('sal_filter_staff').value.trim() : '';
+        var showLimit = selected && selected !== '全部人員' ? staffList.length : Math.min(staffList.length, 80);
+        var rows = '';
+        staffList.slice(0, showLimit).forEach(function(staff){
+            (window.qyjBenefitTrackRules || []).forEach(function(rule){
+                var reach = qyjGetBenefitReachInfo(staff, rule.hours);
+                var paid = qyjFindBenefitBonusPaid(staff, rule.hours);
+                var reachText = reach.reached
+                    ? '<b style="color:#0f172a;">'+reach.date+'</b><div style="font-size:11px;color:#64748b;font-weight:700;">達標當下累積 '+(Number(reach.hours)||0).toFixed(1)+' h</div>'
+                    : qyjStatusBadge('尚未達標', '#f8fafc', '#64748b', '#e2e8f0') + '<div style="font-size:11px;color:#64748b;font-weight:700;">目前累積 '+(Number(reach.hours)||0).toFixed(1)+' h</div>';
+                var paidText = '-';
+                if(reach.reached){
+                    paidText = paid.paid
+                        ? qyjStatusBadge('已加入薪資', '#dcfce7', '#166534', '#bbf7d0') + '<div style="font-size:11px;color:#64748b;font-weight:700;margin-top:3px;">發放月份：'+paid.year+'/'+paid.month+'，金額 $'+paid.amount+'</div>'
+                        : qyjStatusBadge('尚未加入', '#fee2e2', '#991b1b', '#fecaca') + '<div style="font-size:11px;color:#b45309;font-weight:700;margin-top:3px;">請到達標月份勾選時數獎勵金 $'+rule.bonus+'</div>';
+                }
+                rows += '<tr>'+
+                    '<td style="font-weight:900;color:#0f172a;">'+staff+'</td>'+
+                    '<td>'+rule.label+'</td>'+
+                    '<td>'+reachText+'</td>'+
+                    '<td style="color:#9a3412;font-weight:900;">$'+rule.bonus+'</td>'+
+                    '<td>'+paidText+'</td>'+
+                '</tr>';
+            });
+        });
+        if(!rows){
+            box.style.display = 'none';
+            return;
+        }
+        box.style.display = 'block';
+        box.innerHTML = ''+
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">'+
+                '<div style="font-size:15px;font-weight:900;color:#1e3a8a;"><i class="fas fa-clipboard-check"></i> 福利制度達標追蹤</div>'+
+                '<div style="font-size:12px;color:#64748b;font-weight:800;">查看滿 1100 / 2100 / 3100 小時日期，以及時數獎勵金是否已加入薪資</div>'+
+            '</div>'+
+            '<div class="table-responsive" style="border:1px solid #e2e8f0;border-radius:10px;">'+
+                '<table style="min-width:820px;width:100%;font-size:13px;">'+
+                    '<thead><tr>'+ 
+                        '<th>人員</th><th>門檻</th><th>達標日期</th><th>時數獎勵金</th><th>是否已加入薪資</th>'+ 
+                    '</tr></thead>'+ 
+                    '<tbody>'+rows+'</tbody>'+ 
+                '</table>'+ 
+            '</div>'+ 
+            (staffList.length > showLimit ? '<div style="margin-top:8px;color:#b45309;font-size:12px;font-weight:900;">人員較多，目前先顯示前 '+showLimit+' 位；可搜尋單一人員查看完整追蹤。</div>' : '')+
+            '<div style="margin-top:8px;color:#64748b;font-size:12px;font-weight:800;">判斷依據：系統會以派遣紀錄累積工時計算達標日；「已加入薪資」是依照薪資頁勾選的「本期發放時數獎勵金」紀錄判斷。</div>';
+    };
+
+    var oldRenderSalary = window.renderSalary;
+    window.renderSalary = function(){
+        if(typeof oldRenderSalary === 'function') oldRenderSalary.apply(this, arguments);
+        setTimeout(function(){
+            try{ qyjRenderSalaryBenefitTracker(); }catch(e){ console.warn('福利制度達標追蹤顯示失敗', e); }
+        }, 0);
+    };
+
+    var oldToggleSalaryBenefit = window.qyjToggleSalaryBenefit;
+    window.qyjToggleSalaryBenefit = function(type, checked){
+        if(typeof oldToggleSalaryBenefit === 'function') oldToggleSalaryBenefit.apply(this, arguments);
+        setTimeout(function(){
+            try{ qyjRenderSalaryBenefitTracker(); }catch(e){}
+        }, 0);
+    };
+})();
+
 </script>
 
 </body>
