@@ -23800,8 +23800,8 @@ function generatePayslipPDF() {
 }
 
 /* =========================================================
-   只加：福利制度達標追蹤表（精簡版）
-   - 一位人員只顯示一列，避免畫面太長
+   只加：福利制度達標追蹤表（展開式）
+   - 一位人員只顯示一列，預設顯示前 5 位，按鈕展開完整名單
    - 顯示 1100 / 2100 / 3100 小時達標日
    - 顯示時數獎勵金是否已加入薪資
    - 不改登入、員工端、公告、排班與既有薪資計算邏輯
@@ -23812,6 +23812,12 @@ function generatePayslipPDF() {
         {hours:2100, label:'2100h', bonus:2800},
         {hours:3100, label:'3100h', bonus:3800}
     ];
+
+    window.qyjBenefitTrackerExpanded = false;
+    window.qyjToggleBenefitTrackerExpand = function(){
+        window.qyjBenefitTrackerExpanded = !window.qyjBenefitTrackerExpanded;
+        try{ qyjRenderSalaryBenefitTracker(); }catch(e){}
+    };
 
     function qyjEnsureBenefitTrackerBox(){
         var page = document.getElementById('page-salary');
@@ -23911,7 +23917,10 @@ function generatePayslipPDF() {
             return;
         }
         var selected = document.getElementById('sal_filter_staff') ? document.getElementById('sal_filter_staff').value.trim() : '';
-        var showLimit = selected && selected !== '全部人員' ? staffList.length : Math.min(staffList.length, 30);
+        var isSingleStaff = selected && selected !== '全部人員';
+        var collapsedLimit = 5;
+        var showLimit = isSingleStaff ? staffList.length : (window.qyjBenefitTrackerExpanded ? staffList.length : Math.min(staffList.length, collapsedLimit));
+        var canExpand = !isSingleStaff && staffList.length > collapsedLimit;
         var rows = '';
         staffList.slice(0, showLimit).forEach(function(staff){
             var currentHours = 0;
@@ -23931,12 +23940,13 @@ function generatePayslipPDF() {
             return;
         }
         box.style.display = 'block';
+        var expandBtn = canExpand ? '<button type="button" onclick="qyjToggleBenefitTrackerExpand()" style="border:1px solid #93c5fd;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:900;cursor:pointer;">'+(window.qyjBenefitTrackerExpanded ? '收合名單' : '展開全部 '+staffList.length+' 人')+'</button>' : '';
         box.innerHTML = ''+
             '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;">'+
                 '<div style="font-size:15px;font-weight:900;color:#1e3a8a;"><i class="fas fa-clipboard-check"></i> 福利制度達標追蹤</div>'+ 
-                '<div style="font-size:12px;color:#64748b;font-weight:800;">一人一列，查看達標日與時數獎勵金是否已加入薪資</div>'+ 
+                '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:#64748b;font-weight:800;">一人一列，查看達標日與時數獎勵金是否已加入薪資 '+expandBtn+'</div>'+ 
             '</div>'+ 
-            '<div class="table-responsive" style="border:1px solid #e2e8f0;border-radius:10px;max-height:360px;overflow:auto;">'+
+            '<div class="table-responsive" style="border:1px solid #e2e8f0;border-radius:10px;overflow-x:auto;overflow-y:visible;">'+
                 '<table style="min-width:760px;width:100%;font-size:12px;">'+
                     '<thead style="position:sticky;top:0;z-index:2;"><tr>'+ 
                         '<th style="width:120px;">人員</th><th style="width:90px;">目前累積</th><th>滿 1100h</th><th>滿 2100h</th><th>滿 3100h</th>'+ 
@@ -23944,7 +23954,7 @@ function generatePayslipPDF() {
                     '<tbody>'+rows+'</tbody>'+ 
                 '</table>'+ 
             '</div>'+ 
-            (staffList.length > showLimit ? '<div style="margin-top:8px;color:#b45309;font-size:12px;font-weight:900;">人員較多，目前先顯示前 '+showLimit+' 位；可搜尋單一人員查看。</div>' : '')+
+            (canExpand && !window.qyjBenefitTrackerExpanded ? '<div style="margin-top:8px;color:#b45309;font-size:12px;font-weight:900;">目前先顯示前 '+showLimit+' 位；按「展開全部」可查看完整名單，也可搜尋單一人員查看。</div>' : '')+
             '<div style="margin-top:8px;color:#64748b;font-size:12px;font-weight:800;">說明：日期＝達標日；「未加獎金」代表尚未在薪資頁勾選本期發放時數獎勵金。</div>';
     };
 
