@@ -1817,6 +1817,23 @@ let __safeSyncDirty = false;
 let __safeSyncLastInputAt = 0;
 let __safeSyncPendingCloud = false;
 let __safeSyncPausedReason = '';
+let __safeSyncActiveControlUntil = 0;
+function markActiveControlBusy(){
+    __safeSyncActiveControlUntil = Date.now() + 5000;
+}
+function isEditableOrSearchControl(target){
+    if(!target || !target.matches) return false;
+    if(target.disabled || target.readOnly) return false;
+    return (
+        target.matches('input, textarea, select') ||
+        target.isContentEditable
+    );
+}
+function isActiveControlBusy(){
+    const active = document.activeElement;
+    if(active && isEditableOrSearchControl(active)) return true;
+    return Date.now() < __safeSyncActiveControlUntil;
+}
 function markFormDirty(reason='輸入中'){
     __safeSyncDirty = true;
     __safeSyncLastInputAt = Date.now();
@@ -1900,6 +1917,14 @@ function shouldBlockSyncForControl(target){
 
 function isSafeSyncBlocked(){
     /*
+     * 使用者正在輸入、搜尋、切換年月或操作篩選欄時，
+     * 暫停雲端自動讀取，避免畫面重繪後搜尋值跳回舊內容。
+     */
+    if(isActiveControlBusy()){
+        return '輸入／搜尋中';
+    }
+
+    /*
      * 派遣紀錄正在輸入時，無論其他背景儲存是否呼叫
      * clearFormDirty，都禁止雲端自動讀取覆蓋表單。
      */
@@ -1954,6 +1979,21 @@ function setupSafeSyncGuards(){
     if (window.__safeSyncGuardsReady) return;
 
     window.__safeSyncGuardsReady = true;
+
+    ['input','keydown','compositionstart','compositionend','focusin','change'].forEach(function(evtName){
+        document.addEventListener(
+            evtName,
+            function(event){
+                if(
+                    event.target &&
+                    isEditableOrSearchControl(event.target)
+                ){
+                    markActiveControlBusy();
+                }
+            },
+            true
+        );
+    });
 
     document.addEventListener(
         'input',
@@ -4081,297 +4121,6 @@ ${d.contentHtml}
 <!-- 真正顯示在主系統中的排班異動彈窗 -->
 
 
-
-
-
-<script>
-/* =========================================================
-   修正：輸入資料／搜尋時被自動同步或重繪跳回舊內容
-   只處理欄位保護，不改既有表格、計算、福利、公告、打卡功能
-========================================================= */
-(function(){
-    'use strict';
-
-    if (window.__qyjInputSearchNoJumpFixReady) return;
-    window.__qyjInputSearchNoJumpFixReady = true;
-
-    var protectedDrafts = {};
-    var lastActiveKey = '';
-    var lastActiveAt = 0;
-    var restoreTimer = null;
-    var internalSet = false;
-
-    function isEditableControl(el){
-        return !!(
-            el &&
-            (
-                el.matches && el.matches('input, textarea, select') ||
-                el.isContentEditable
-            ) &&
-            !el.disabled &&
-            !el.readOnly
-        );
-    }
-
-    function isSearchOrFilterControl(el){
-        if (!el || !el.matches) return false;
-        if (el.closest('.filter-bar')) return true;
-
-        var id = String(el.id || '').toLowerCase();
-        var name = String(el.name || '').toLowerCase();
-        var ph = String(el.getAttribute('placeholder') || '').toLowerCase();
-
-        return [
-            'filter', 'search', 'keyword', 'query',
-            '搜尋', '關鍵字', '查詢'
-        ].some(function(k){
-            return id.indexOf(k) >= 0 ||
-                   name.indexOf(k) >= 0 ||
-                   ph.indexOf(k) >= 0;
-        });
-    }
-
-    function shouldProtect(el){
-        if (!isEditableControl(el)) return false;
-        if (el.type === 'hidden') return false;
-        return true;
-    }
-
-    function getKey(el){
-        if (!el) return '';
-        if (el.id) return 'id:' + el.id;
-
-        var parts = [];
-        var page = el.closest ? el.closest('.page, #mobileStaffApp, body') : null;
-        if (page && page.id) parts.push(page.id);
-        parts.push((el.tagName || '').toLowerCase());
-        if (el.name) parts.push('name=' + el.name);
-        if (el.getAttribute && el.getAttribute('placeholder')) {
-            parts.push('ph=' + el.getAttribute('placeholder'));
-        }
-
-        var parent = el.parentElement;
-        if (parent) {
-            var list = Array.prototype.slice.call(parent.querySelectorAll('input, textarea, select'));
-            parts.push('idx=' + Math.max(0, list.indexOf(el)));
-        }
-        return parts.join('|');
-    }
-
-    function readValue(el){
-        if (!el) return '';
-        if (el.type === 'checkbox' || el.type === 'radio') return !!el.checked;
-        if (el.isContentEditable) return el.innerHTML;
-        return el.value;
-    }
-
-    function writeValue(el, value){
-        if (!el) return;
-        internalSet = true;
-        try {
-            if (el.type === 'checkbox' || el.type === 'radio') {
-                el.checked = !!value;
-            } else if (el.isContentEditable) {
-                el.innerHTML = value || '';
-            } else {
-                el.value = value == null ? '' : value;
-            }
-        } finally {
-            internalSet = false;
-        }
-    }
-
-    function saveDraft(el){
-        if (!shouldProtect(el)) return;
-        var key = getKey(el);
-        if (!key) return;
-
-        protectedDrafts[key] = {
-            value: readValue(el),
-            selStart: typeof el.selectionStart === 'number' ? el.selectionStart : null,
-            selEnd: typeof el.selectionEnd === 'number' ? el.selectionEnd : null,
-            scrollX: window.scrollX || 0,
-            scrollY: window.scrollY || 0,
-            isFilter: isSearchOrFilterControl(el),
-            at: Date.now()
-        };
-
-        lastActiveKey = key;
-        lastActiveAt = Date.now();
-    }
-
-    function restoreOneByKey(key, refocus){
-        var draft = protectedDrafts[key];
-        if (!draft) return false;
-        if (Date.now() - draft.at > 10 * 60 * 1000) return false;
-
-        var el = null;
-        if (key.indexOf('id:') === 0) {
-            el = document.getElementById(key.slice(3));
-        }
-        if (!el || !shouldProtect(el)) return false;
-
-        if (readValue(el) !== draft.value) {
-            writeValue(el, draft.value);
-        }
-
-        if (refocus && Date.now() - lastActiveAt < 10000) {
-            try {
-                el.focus({preventScroll:true});
-                if (
-                    typeof draft.selStart === 'number' &&
-                    typeof draft.selEnd === 'number' &&
-                    typeof el.setSelectionRange === 'function' &&
-                    el.type !== 'number' &&
-                    el.type !== 'date' &&
-                    el.type !== 'month'
-                ) {
-                    el.setSelectionRange(draft.selStart, draft.selEnd);
-                }
-            } catch(e) {}
-        }
-        return true;
-    }
-
-    function restoreDrafts(refocus){
-        Object.keys(protectedDrafts).forEach(function(key){
-            restoreOneByKey(key, refocus && key === lastActiveKey);
-        });
-
-        var activeDraft = protectedDrafts[lastActiveKey];
-        if (activeDraft && Date.now() - lastActiveAt < 10000) {
-            try { window.scrollTo(activeDraft.scrollX, activeDraft.scrollY); } catch(e) {}
-        }
-    }
-
-    function scheduleRestore(){
-        clearTimeout(restoreTimer);
-        restoreTimer = setTimeout(function(){
-            restoreDrafts(true);
-        }, 0);
-    }
-
-    document.addEventListener('focusin', function(e){
-        if (shouldProtect(e.target)) saveDraft(e.target);
-    }, true);
-
-    document.addEventListener('input', function(e){
-        if (internalSet) return;
-        if (shouldProtect(e.target)) saveDraft(e.target);
-    }, true);
-
-    document.addEventListener('change', function(e){
-        if (internalSet) return;
-        if (shouldProtect(e.target)) saveDraft(e.target);
-    }, true);
-
-    document.addEventListener('keydown', function(e){
-        if (shouldProtect(e.target)) saveDraft(e.target);
-    }, true);
-
-    document.addEventListener('keyup', function(e){
-        if (shouldProtect(e.target)) saveDraft(e.target);
-    }, true);
-
-    /*
-     * 保護正在使用的欄位：
-     * 背景同步或 render 重新設定 value 時，不讓它把目前輸入值改回舊值。
-     */
-    function patchValueSetter(proto, prop){
-        var desc = Object.getOwnPropertyDescriptor(proto, prop);
-        if (!desc || !desc.set || !desc.get) return;
-        if (desc.set.__qyjNoJumpPatched) return;
-
-        var originalGet = desc.get;
-        var originalSet = desc.set;
-
-        var newSet = function(value){
-            if (!internalSet && shouldProtect(this)) {
-                var key = getKey(this);
-                var draft = protectedDrafts[key];
-                var isActive = document.activeElement === this;
-
-                if (
-                    draft &&
-                    isActive &&
-                    Date.now() - draft.at < 10000 &&
-                    String(value == null ? '' : value) !== String(draft.value == null ? '' : draft.value)
-                ) {
-                    return;
-                }
-            }
-            return originalSet.call(this, value);
-        };
-        newSet.__qyjNoJumpPatched = true;
-
-        Object.defineProperty(proto, prop, {
-            configurable: true,
-            enumerable: desc.enumerable,
-            get: originalGet,
-            set: newSet
-        });
-    }
-
-    try { patchValueSetter(HTMLInputElement.prototype, 'value'); } catch(e) {}
-    try { patchValueSetter(HTMLTextAreaElement.prototype, 'value'); } catch(e) {}
-    try { patchValueSetter(HTMLSelectElement.prototype, 'value'); } catch(e) {}
-
-    var observer = new MutationObserver(function(){
-        scheduleRestore();
-    });
-
-    try {
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    } catch(e) {}
-
-    /*
-     * 原本系統只有資料輸入會擋自動同步；
-     * 這裡補上搜尋欄／篩選欄也要暫停自動讀取，
-     * 避免搜尋 A 改成 B 後又被舊同步畫面拉回 A。
-     */
-    var oldIsSafeSyncBlocked = window.isSafeSyncBlocked;
-    window.isSafeSyncBlocked = function(){
-        var active = document.activeElement;
-
-        if (shouldProtect(active)) {
-            if (isSearchOrFilterControl(active)) return '搜尋中';
-            return '輸入中';
-        }
-
-        if (typeof oldIsSafeSyncBlocked === 'function') {
-            return oldIsSafeSyncBlocked.apply(this, arguments);
-        }
-
-        return '';
-    };
-
-    /*
-     * render 後補還原一次，避免某些頁面用 innerHTML 重建搜尋欄。
-     */
-    [
-        'renderCustTable', 'renderStaffTable', 'renderAttendTable',
-        'renderSalary', 'renderSupplierTable', 'renderDispatchTable',
-        'renderReqTable', 'renderTalentTable', 'renderPoint',
-        'renderBill', 'renderScheduleTable', 'renderClockOverview'
-    ].forEach(function(fn){
-        var oldFn = window[fn];
-        if (typeof oldFn !== 'function' || oldFn.__qyjNoJumpWrapped) return;
-
-        var wrapped = function(){
-            var result = oldFn.apply(this, arguments);
-            scheduleRestore();
-            return result;
-        };
-        wrapped.__qyjNoJumpWrapped = true;
-        window[fn] = wrapped;
-    });
-
-    console.log('已修正：輸入與搜尋時不會被自動同步跳回舊內容');
-})();
-</script>
 
 </body>
 </html>`);
