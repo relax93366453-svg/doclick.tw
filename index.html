@@ -4082,6 +4082,200 @@ ${d.contentHtml}
 
 
 
+
+
+<!-- =========================================================
+     修正：Key 資料 / 搜尋時不被自動同步或重新渲染覆蓋
+     只修「輸入跳掉、搜尋 B 又跳回 A」問題
+     其他登入、打卡、公告、排班、薪資、福利制度皆不改
+========================================================= -->
+<script>
+(function () {
+    'use strict';
+
+    if (window.__qyjInputSearchGuardInstalled) return;
+    window.__qyjInputSearchGuardInstalled = true;
+
+    var lastTypingAt = 0;
+    var lastActiveId = '';
+    var lastSelectionStart = null;
+    var lastSelectionEnd = null;
+
+    function now() {
+        return Date.now();
+    }
+
+    function isEditable(el) {
+        if (!el) return false;
+        var tag = String(el.tagName || '').toLowerCase();
+        return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
+    }
+
+    function markTyping(el) {
+        if (!isEditable(el)) return;
+        lastTypingAt = now();
+        lastActiveId = el.id || '';
+        try {
+            if (typeof el.selectionStart === 'number') {
+                lastSelectionStart = el.selectionStart;
+                lastSelectionEnd = el.selectionEnd;
+            }
+        } catch (err) {}
+    }
+
+    function isTypingRecently() {
+        var active = document.activeElement;
+        if (isEditable(active)) return true;
+        return now() - lastTypingAt < 5000;
+    }
+
+    function getActivePage() {
+        return document.querySelector('.page.active') || document.body;
+    }
+
+    function captureControls() {
+        var root = getActivePage();
+        var map = {};
+        var controls = root.querySelectorAll('input[id], textarea[id], select[id]');
+        controls.forEach(function (el) {
+            if (!el.id) return;
+            if (el.type === 'file') return;
+            map[el.id] = {
+                value: el.value,
+                checked: !!el.checked,
+                type: el.type || el.tagName,
+                scrollTop: el.scrollTop || 0
+            };
+        });
+        return {
+            map: map,
+            activeId: lastActiveId || (document.activeElement && document.activeElement.id) || '',
+            selectionStart: lastSelectionStart,
+            selectionEnd: lastSelectionEnd
+        };
+    }
+
+    function restoreControls(state) {
+        if (!state || !state.map) return;
+        Object.keys(state.map).forEach(function (id) {
+            var el = document.getElementById(id);
+            var saved = state.map[id];
+            if (!el || !saved) return;
+            if (el.type === 'file') return;
+
+            try {
+                if (el.type === 'checkbox' || el.type === 'radio') {
+                    el.checked = saved.checked;
+                } else if (String(el.value) !== String(saved.value)) {
+                    el.value = saved.value;
+                }
+                if (saved.scrollTop) el.scrollTop = saved.scrollTop;
+            } catch (err) {}
+        });
+
+        var active = state.activeId ? document.getElementById(state.activeId) : null;
+        if (active && isEditable(active)) {
+            try {
+                active.focus({ preventScroll: true });
+                if (
+                    typeof active.setSelectionRange === 'function' &&
+                    typeof state.selectionStart === 'number' &&
+                    typeof state.selectionEnd === 'number'
+                ) {
+                    active.setSelectionRange(state.selectionStart, state.selectionEnd);
+                }
+            } catch (err) {}
+        }
+    }
+
+    function preserveWhile(fn, context, args) {
+        if (!isTypingRecently()) {
+            return fn.apply(context, args || []);
+        }
+
+        var state = captureControls();
+        var result = fn.apply(context, args || []);
+
+        restoreControls(state);
+        setTimeout(function () { restoreControls(state); }, 50);
+        setTimeout(function () { restoreControls(state); }, 250);
+        setTimeout(function () { restoreControls(state); }, 800);
+        setTimeout(function () { restoreControls(state); }, 1600);
+
+        return result;
+    }
+
+    ['input', 'keydown', 'keyup', 'change', 'compositionstart', 'compositionend', 'focusin'].forEach(function (eventName) {
+        document.addEventListener(eventName, function (event) {
+            if (isEditable(event.target)) {
+                markTyping(event.target);
+            }
+        }, true);
+    });
+
+    function wrapFunction(name) {
+        if (typeof window[name] !== 'function') return;
+        if (window[name].__qyjInputSearchGuardWrapped) return;
+
+        var original = window[name];
+        window[name] = function () {
+            return preserveWhile(original, this, arguments);
+        };
+        window[name].__qyjInputSearchGuardWrapped = true;
+    }
+
+    function installWrappers() {
+        [
+            'loadDataFromCloud',
+            'showAdminPage',
+            'renderDashboard',
+            'renderCustTable',
+            'renderContractTable',
+            'renderStaffTable',
+            'renderAttend',
+            'renderSalary',
+            'renderTalentTable',
+            'renderSupplierTable',
+            'renderMatchTable',
+            'renderReqTable',
+            'renderDispatchTable',
+            'renderScheduleTable',
+            'renderClockOverview',
+            'renderPoint',
+            'renderBill',
+            'showBoss',
+            'renderSalesStaffTable',
+            'renderSalesDashboard',
+            'renderFtStaffTable',
+            'renderFtAttendTable',
+            'renderFtSalaryTable'
+        ].forEach(wrapFunction);
+    }
+
+    installWrappers();
+    setTimeout(installWrappers, 500);
+    setTimeout(installWrappers, 1500);
+    setTimeout(installWrappers, 3000);
+
+    /*
+      額外保護：原系統 15 秒自動讀取雲端時，
+      如果使用者正在任何輸入框或搜尋框操作，就先暫停讀取，避免把 B 洗回 A。
+    */
+    if (typeof window.isSafeSyncBlocked === 'function' && !window.isSafeSyncBlocked.__qyjInputSearchGuardWrapped) {
+        var originalIsSafeSyncBlocked = window.isSafeSyncBlocked;
+        window.isSafeSyncBlocked = function () {
+            if (isTypingRecently()) {
+                return '輸入或搜尋中';
+            }
+            return originalIsSafeSyncBlocked.apply(this, arguments);
+        };
+        window.isSafeSyncBlocked.__qyjInputSearchGuardWrapped = true;
+    }
+
+    console.log('已啟用：Key 資料 / 搜尋時不被同步覆蓋');
+})();
+</script>
+
 </body>
 </html>`);
     w.document.close();
