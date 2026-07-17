@@ -1817,23 +1817,6 @@ let __safeSyncDirty = false;
 let __safeSyncLastInputAt = 0;
 let __safeSyncPendingCloud = false;
 let __safeSyncPausedReason = '';
-let __safeSyncActiveControlUntil = 0;
-function markActiveControlBusy(){
-    __safeSyncActiveControlUntil = Date.now() + 5000;
-}
-function isEditableOrSearchControl(target){
-    if(!target || !target.matches) return false;
-    if(target.disabled || target.readOnly) return false;
-    return (
-        target.matches('input, textarea, select') ||
-        target.isContentEditable
-    );
-}
-function isActiveControlBusy(){
-    const active = document.activeElement;
-    if(active && isEditableOrSearchControl(active)) return true;
-    return Date.now() < __safeSyncActiveControlUntil;
-}
 function markFormDirty(reason='輸入中'){
     __safeSyncDirty = true;
     __safeSyncLastInputAt = Date.now();
@@ -1917,14 +1900,6 @@ function shouldBlockSyncForControl(target){
 
 function isSafeSyncBlocked(){
     /*
-     * 使用者正在輸入、搜尋、切換年月或操作篩選欄時，
-     * 暫停雲端自動讀取，避免畫面重繪後搜尋值跳回舊內容。
-     */
-    if(isActiveControlBusy()){
-        return '輸入／搜尋中';
-    }
-
-    /*
      * 派遣紀錄正在輸入時，無論其他背景儲存是否呼叫
      * clearFormDirty，都禁止雲端自動讀取覆蓋表單。
      */
@@ -1979,21 +1954,6 @@ function setupSafeSyncGuards(){
     if (window.__safeSyncGuardsReady) return;
 
     window.__safeSyncGuardsReady = true;
-
-    ['input','keydown','compositionstart','compositionend','focusin','change'].forEach(function(evtName){
-        document.addEventListener(
-            evtName,
-            function(event){
-                if(
-                    event.target &&
-                    isEditableOrSearchControl(event.target)
-                ){
-                    markActiveControlBusy();
-                }
-            },
-            true
-        );
-    });
 
     document.addEventListener(
         'input',
@@ -4121,6 +4081,238 @@ ${d.contentHtml}
 <!-- 真正顯示在主系統中的排班異動彈窗 -->
 
 
+
+
+
+<script>
+/* =========================================================
+   最小修正：Key資料 / 搜尋 / 篩選時，禁止自動讀雲端重畫畫面
+   目的：避免正在輸入或搜尋人員時，15秒自動同步把畫面跳回舊人員/舊搜尋字
+   不修改登入、打卡、排班、薪資計算邏輯，只攔截「自動讀取雲端後重畫」
+========================================================= */
+(function(){
+    'use strict';
+
+    var qyjAutoReadPausedUntil = 0;
+    var qyjLastFocusAt = 0;
+    var qyjLastActiveId = '';
+
+    function qyjIsEditableControl(el){
+        if(!el) return false;
+        var tag = String(el.tagName || '').toLowerCase();
+        if(tag !== 'input' && tag !== 'textarea' && tag !== 'select') return false;
+        if(el.disabled || el.readOnly) return false;
+        var type = String(el.type || '').toLowerCase();
+        if(type === 'button' || type === 'submit' || type === 'reset' || type === 'hidden') return false;
+        return true;
+    }
+
+    function qyjMarkEditing(ms){
+        qyjAutoReadPausedUntil = Date.now() + (ms || 12000);
+    }
+
+    function qyjShouldPauseCloudRead(){
+        var active = document.activeElement;
+
+        if(qyjIsEditableControl(active)){
+            return true;
+        }
+
+        if(Date.now() < qyjAutoReadPausedUntil){
+            return true;
+        }
+
+        return false;
+    }
+
+    function qyjPauseReason(){
+        var active = document.activeElement;
+        if(qyjIsEditableControl(active)){
+            var label = active.id || active.name || '';
+            if(/search|filter|keyword|query|staff|name|year|month|date/i.test(label)){
+                return '搜尋／篩選操作中';
+            }
+            return '輸入中';
+        }
+        if(Date.now() < qyjAutoReadPausedUntil){
+            return '剛輸入完成，暫緩自動讀取';
+        }
+        return '';
+    }
+
+    ['input','keydown','compositionstart','compositionend','change','focusin','click'].forEach(function(evt){
+        document.addEventListener(evt,function(e){
+            if(qyjIsEditableControl(e.target)){
+                qyjLastFocusAt = Date.now();
+                qyjLastActiveId = e.target.id || e.target.name || '';
+                qyjMarkEditing(12000);
+
+                if(typeof updateSyncStatus === 'function' && typeof el === 'function' && el('sync-status')){
+                    try{
+                        updateSyncStatus('<i class="fas fa-keyboard"></i> 輸入／搜尋中，暫停自動讀取');
+                    }catch(error){}
+                }
+            }
+        },true);
+    });
+
+    document.addEventListener('blur',function(e){
+        if(qyjIsEditableControl(e.target)){
+            qyjMarkEditing(3500);
+        }
+    },true);
+
+    /*
+      覆蓋原本判斷：
+      原本把 search / filter / year / month 視為「可自動讀取」，
+      所以才會搜尋 A 改 B 後又被雲端重畫跳回 A。
+      這裡改成：只要正在操作任何輸入、搜尋、下拉、年月，都暫停自動讀取。
+    */
+    try{
+        var qyjOldSafeSyncBlocked =
+            typeof window.isSafeSyncBlocked === 'function'
+                ? window.isSafeSyncBlocked
+                : (typeof isSafeSyncBlocked === 'function' ? isSafeSyncBlocked : null);
+
+        window.isSafeSyncBlocked = isSafeSyncBlocked = function(){
+            var oldReason = '';
+            try{
+                oldReason = qyjOldSafeSyncBlocked ? qyjOldSafeSyncBlocked() : '';
+            }catch(error){
+                oldReason = '';
+            }
+
+            if(oldReason){
+                return oldReason;
+            }
+
+            return qyjPauseReason();
+        };
+    }catch(error){}
+
+    function qyjRememberFocusedValues(){
+        var items = [];
+        document.querySelectorAll('input, textarea, select').forEach(function(elm){
+            if(!qyjIsEditableControl(elm)) return;
+            var id = elm.id || '';
+            var name = elm.name || '';
+            if(!id && !name) return;
+
+            var keyText = (id + ' ' + name).toLowerCase();
+            if(
+                /search|filter|keyword|query|staff|name|year|month|date/.test(keyText) ||
+                document.activeElement === elm
+            ){
+                items.push({
+                    id:id,
+                    name:name,
+                    value:elm.value,
+                    active:document.activeElement === elm,
+                    selectionStart:typeof elm.selectionStart === 'number' ? elm.selectionStart : null,
+                    selectionEnd:typeof elm.selectionEnd === 'number' ? elm.selectionEnd : null
+                });
+            }
+        });
+        return items;
+    }
+
+    function qyjRestoreFocusedValues(items){
+        if(!items || !items.length) return;
+        items.forEach(function(item){
+            var selector = item.id ? ('#' + CSS.escape(item.id)) : ('[name="' + String(item.name).replace(/"/g,'\\"') + '"]');
+            var elm = null;
+            try{ elm = document.querySelector(selector); }catch(error){}
+            if(!elm || !qyjIsEditableControl(elm)) return;
+            if(String(elm.value || '') !== String(item.value || '')){
+                elm.value = item.value;
+                try{
+                    elm.dispatchEvent(new Event('input',{bubbles:true}));
+                    elm.dispatchEvent(new Event('change',{bubbles:true}));
+                }catch(error){}
+            }
+            if(item.active){
+                try{
+                    elm.focus();
+                    if(item.selectionStart !== null && typeof elm.setSelectionRange === 'function'){
+                        elm.setSelectionRange(item.selectionStart,item.selectionEnd);
+                    }
+                }catch(error){}
+            }
+        });
+    }
+
+    function qyjInstallLoadGuard(){
+        var currentLoad =
+            typeof window.loadDataFromCloud === 'function'
+                ? window.loadDataFromCloud
+                : (typeof loadDataFromCloud === 'function' ? loadDataFromCloud : null);
+
+        if(!currentLoad || currentLoad.__qyjHardInputGuard) return;
+
+        var guarded = function(forceRender){
+            forceRender = !!forceRender;
+
+            if(!forceRender && qyjShouldPauseCloudRead()){
+                if(typeof updateSyncStatus === 'function' && typeof el === 'function' && el('sync-status')){
+                    try{
+                        updateSyncStatus('<i class="fas fa-lock"></i> ' + qyjPauseReason() + '，已暫停自動讀取');
+                    }catch(error){}
+                }
+                return Promise.resolve(null);
+            }
+
+            var savedValues = qyjRememberFocusedValues();
+            var result = currentLoad.apply(this,arguments);
+
+            Promise.resolve(result).finally(function(){
+                if(qyjShouldPauseCloudRead()){
+                    setTimeout(function(){ qyjRestoreFocusedValues(savedValues); },0);
+                    setTimeout(function(){ qyjRestoreFocusedValues(savedValues); },80);
+                    setTimeout(function(){ qyjRestoreFocusedValues(savedValues); },250);
+                }
+            });
+
+            return result;
+        };
+
+        guarded.__qyjHardInputGuard = true;
+        window.loadDataFromCloud = loadDataFromCloud = guarded;
+    }
+
+    qyjInstallLoadGuard();
+    setTimeout(qyjInstallLoadGuard,500);
+    setTimeout(qyjInstallLoadGuard,1500);
+    setTimeout(qyjInstallLoadGuard,3000);
+
+    /*
+      保險：如果有其他函式直接呼叫 showAdminPage / renderXXX 重畫，
+      在搜尋輸入中仍嘗試把目前搜尋/篩選值補回去。
+    */
+    ['showAdminPage','renderStaffTable','renderAttend','renderSalary','renderClockOverview','renderScheduleTable','renderDashboard'].forEach(function(fnName){
+        try{
+            var fn = window[fnName] || (typeof globalThis !== 'undefined' ? globalThis[fnName] : null);
+            if(typeof fn !== 'function' || fn.__qyjRestoreFilterGuard) return;
+            var wrapped = function(){
+                var savedValues = qyjRememberFocusedValues();
+                var result = fn.apply(this,arguments);
+                if(qyjShouldPauseCloudRead()){
+                    setTimeout(function(){ qyjRestoreFocusedValues(savedValues); },0);
+                    setTimeout(function(){ qyjRestoreFocusedValues(savedValues); },120);
+                }
+                return result;
+            };
+            wrapped.__qyjRestoreFilterGuard = true;
+            window[fnName] = globalThis[fnName] = wrapped;
+        }catch(error){}
+    });
+
+    window.qyjPauseAutoCloudReadForInput = function(seconds){
+        qyjMarkEditing((Number(seconds) || 12) * 1000);
+    };
+
+    console.log('✅ 已啟用硬性保護：輸入 / 搜尋 / 篩選時不自動讀雲端、不跳回舊人員');
+})();
+</script>
 
 </body>
 </html>`);
