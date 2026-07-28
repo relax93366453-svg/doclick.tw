@@ -24086,5 +24086,477 @@ function generatePayslipPDF() {
 })();
 </script>
 
+
+<!-- ===== 累計工時稽核與重複紀錄防呆修正（2026-07-28） ===== -->
+<script>
+(function(){
+    'use strict';
+
+    function qyjNorm(v){
+        return String(v == null ? '' : v).replace(/\s+/g,'').trim();
+    }
+
+    function qyjNum(v, digits){
+        const n = Number(v);
+        return Number.isFinite(n) ? n.toFixed(digits == null ? 2 : digits) : '0.00';
+    }
+
+    function qyjHours(item){
+        try{
+            if(typeof getItemSalaryHours === 'function'){
+                const n = Number(getItemSalaryHours(item));
+                return Number.isFinite(n) ? n : 0;
+            }
+        }catch(error){}
+        const n = Number(item && item.salary_hours);
+        return Number.isFinite(n) ? n : 0;
+    }
+
+    /*
+     * 用實際工作內容判斷是否為同一筆資料。
+     * 不使用 _syncId，因為舊資料在不同電腦同步時可能被配到不同 ID。
+     */
+    function qyjAttendBusinessKey(item){
+        item = item || {};
+        return [
+            qyjNorm(item.company),
+            qyjNorm(item.staff),
+            String(item.date || ''),
+            qyjNorm(item.service),
+            String(item.am_s || ''),
+            String(item.am_e || ''),
+            String(item.pm_s || ''),
+            String(item.pm_e || ''),
+            qyjNum(qyjHours(item), 3),
+            qyjNum(item.project_fee, 2),
+            qyjNum(item.deduct_points, 3),
+            qyjNum(item.special_hourly, 2),
+            qyjNorm(item.remark)
+        ].join('|');
+    }
+
+    function qyjAttendCoreKey(item){
+        item = item || {};
+        return [
+            qyjNorm(item.company),
+            qyjNorm(item.staff),
+            String(item.date || ''),
+            qyjNorm(item.service),
+            String(item.am_s || ''),
+            String(item.am_e || ''),
+            String(item.pm_s || ''),
+            String(item.pm_e || ''),
+            qyjNum(qyjHours(item), 3),
+            qyjNum(item.project_fee, 2)
+        ].join('|');
+    }
+
+    window.qyjAttendBusinessKey = qyjAttendBusinessKey;
+
+    function qyjEnsureAttendIdsSafe(){
+        try{
+            if(typeof qyjEnsureAttendIds === 'function'){
+                qyjEnsureAttendIds(attendData || []);
+            }
+        }catch(error){}
+    }
+
+    function qyjMarkDeleted(records){
+        qyjEnsureAttendIdsSafe();
+        const ids = new Set(window.attendDeletedIds || []);
+        (records || []).forEach(function(entry){
+            const item = entry && entry.item ? entry.item : entry;
+            if(item && item._syncId) ids.add(item._syncId);
+        });
+        window.attendDeletedIds = Array.from(ids);
+        try{
+            if(typeof qyjSaveAttendDeletedIds === 'function'){
+                qyjSaveAttendDeletedIds(window.attendDeletedIds);
+            }else{
+                localStorage.setItem('qyjAttendDeletedIds', JSON.stringify(window.attendDeletedIds));
+            }
+        }catch(error){}
+    }
+
+    function qyjAuditStaff(staffName, startDate){
+        const target = qyjNorm(staffName);
+        const rows = (attendData || [])
+            .map(function(item,index){
+                return {item:item,index:index,hours:qyjHours(item)};
+            })
+            .filter(function(entry){
+                return qyjNorm(entry.item && entry.item.staff) === target;
+            })
+            .sort(function(a,b){
+                const d = String(a.item.date || '').localeCompare(String(b.item.date || ''));
+                return d || a.index - b.index;
+            });
+
+        const beforeStart = [];
+        const duplicates = [];
+        const valid = [];
+        const seen = new Map();
+
+        rows.forEach(function(entry){
+            const date = String(entry.item.date || '');
+            if(startDate && date && date < startDate){
+                beforeStart.push(entry);
+                return;
+            }
+
+            const key = qyjAttendBusinessKey(entry.item);
+            if(seen.has(key)){
+                duplicates.push(entry);
+                return;
+            }
+
+            seen.set(key, entry.index);
+            valid.push(entry);
+        });
+
+        function total(list){
+            return list.reduce(function(sum,entry){
+                return sum + (Number(entry.hours) || 0);
+            },0);
+        }
+
+        return {
+            rows:rows,
+            valid:valid,
+            beforeStart:beforeStart,
+            duplicates:duplicates,
+            rawTotal:total(rows),
+            beforeStartTotal:total(beforeStart),
+            duplicateTotal:total(duplicates),
+            correctedTotal:total(valid)
+        };
+    }
+
+    function qyjFormatAuditRows(entries){
+        if(!entries || !entries.length) return '無';
+        return entries.slice(0,20).map(function(entry){
+            const item = entry.item || {};
+            return `${item.date || '-'}｜${item.company || '-'}｜${qyjHours(item).toFixed(1)}h`;
+        }).join('\n') + (entries.length > 20 ? `\n另有 ${entries.length - 20} 筆` : '');
+    }
+
+    window.qyjAuditCurrentStaffHours = function(){
+        const staffInput = document.getElementById('filter_staff');
+        const staffName = qyjNorm(staffInput && staffInput.value);
+
+        if(!staffName || staffName === '全部人員'){
+            alert('請先在「搜尋人員」選擇一位人員，再按工時檢查。');
+            return;
+        }
+
+        const info = (staffData || []).find(function(item){
+            return qyjNorm(item && item.name) === staffName;
+        }) || null;
+
+        const staffRows = (attendData || [])
+            .filter(function(item){ return qyjNorm(item && item.staff) === staffName; })
+            .sort(function(a,b){ return String(a.date || '').localeCompare(String(b.date || '')); });
+
+        const defaultStart =
+            (info && (info.work_start_date || info.ins_date)) ||
+            (staffRows[0] && staffRows[0].date) ||
+            '';
+
+        const startDate = prompt(
+            `請輸入「${staffName}」累計工時的起算日\n例如：2025-04-01`,
+            defaultStart
+        );
+
+        if(startDate === null) return;
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(startDate)){
+            alert('日期格式不正確，請輸入 YYYY-MM-DD，例如 2025-04-01。');
+            return;
+        }
+
+        const expectedText = prompt(
+            `請輸入你人工核對後的正確累計工時。\n「${staffName}」目前你核對的是多少小時？`,
+            ''
+        );
+
+        if(expectedText === null) return;
+        const expected = Number(expectedText);
+        if(!Number.isFinite(expected) || expected < 0){
+            alert('請輸入正確的工時數字。');
+            return;
+        }
+
+        const audit = qyjAuditStaff(staffName,startDate);
+        const diff = Number((audit.rawTotal - expected).toFixed(3));
+        const suspicious = Number((audit.beforeStartTotal + audit.duplicateTotal).toFixed(3));
+        const corrected = Number(audit.correctedTotal.toFixed(3));
+
+        let message =
+            `【${staffName} 工時稽核】\n\n` +
+            `系統原始累計：${audit.rawTotal.toFixed(1)} h\n` +
+            `人工正確累計：${expected.toFixed(1)} h\n` +
+            `相差：${diff.toFixed(1)} h\n\n` +
+            `起算日前紀錄：${audit.beforeStart.length} 筆，共 ${audit.beforeStartTotal.toFixed(1)} h\n` +
+            `完全重複紀錄：${audit.duplicates.length} 筆，共 ${audit.duplicateTotal.toFixed(1)} h\n` +
+            `排除後累計：${corrected.toFixed(1)} h\n\n`;
+
+        if(Math.abs(corrected - expected) > 0.001){
+            message +=
+                `目前找到的異常共 ${suspicious.toFixed(1)} h，排除後仍未等於 ${expected.toFixed(1)} h。\n` +
+                `為避免誤刪，系統不會自動刪除。\n\n` +
+                `起算日前紀錄：\n${qyjFormatAuditRows(audit.beforeStart)}\n\n` +
+                `完全重複紀錄：\n${qyjFormatAuditRows(audit.duplicates)}`;
+            alert(message);
+            return;
+        }
+
+        message +=
+            `已精準找到多出的 ${suspicious.toFixed(1)} h。\n\n` +
+            `起算日前紀錄：\n${qyjFormatAuditRows(audit.beforeStart)}\n\n` +
+            `完全重複紀錄：\n${qyjFormatAuditRows(audit.duplicates)}\n\n` +
+            `按「確定」會刪除以上異常資料，並同步到雲端。`;
+
+        if(!confirm(message)) return;
+
+        const removeEntries = audit.beforeStart.concat(audit.duplicates);
+        const removeIndexSet = new Set(removeEntries.map(function(entry){ return entry.index; }));
+
+        qyjMarkDeleted(removeEntries);
+        attendData = (attendData || []).filter(function(item,index){
+            return !removeIndexSet.has(index);
+        });
+
+        if(info){
+            info.work_start_date = startDate;
+        }
+
+        try{
+            if(typeof saveLocalData === 'function') saveLocalData();
+            else localStorage.setItem('attendData',JSON.stringify(attendData));
+        }catch(error){}
+
+        try{
+            if(typeof saveAll === 'function') saveAll();
+        }catch(error){}
+
+        try{
+            if(typeof renderAttend === 'function') renderAttend();
+            if(typeof renderStaffTable === 'function') renderStaffTable();
+            if(typeof renderSalary === 'function') renderSalary();
+        }catch(error){}
+
+        alert(`修正完成：${staffName} 的累計工時已由 ${audit.rawTotal.toFixed(1)} h 修正為 ${corrected.toFixed(1)} h。`);
+    };
+
+    function qyjInstallAuditButton(){
+        const page = document.getElementById('page-attend');
+        if(!page || document.getElementById('qyjAttendAuditBtn')) return;
+
+        const filterStaff = document.getElementById('filter_staff');
+        const bar = filterStaff && filterStaff.closest('.filter-bar');
+        if(!bar) return;
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = 'qyjAttendAuditBtn';
+        btn.className = 'btn';
+        btn.style.cssText = 'background:#7c3aed;margin-bottom:0;';
+        btn.innerHTML = '<i class="fas fa-magnifying-glass-chart"></i> 工時檢查';
+        btn.onclick = window.qyjAuditCurrentStaffHours;
+
+        const exportBtn = Array.from(bar.querySelectorAll('button')).find(function(button){
+            return String(button.textContent || '').includes('匯出全部');
+        });
+
+        if(exportBtn) bar.insertBefore(btn,exportBtn);
+        else bar.appendChild(btn);
+    }
+
+    /* 手動新增派遣紀錄時阻擋完全相同的重複資料。 */
+    const originalAddAttend = window.addAttend;
+    if(typeof originalAddAttend === 'function'){
+        window.addAttend = function(){
+            try{
+                const editing = typeof editAttendIndex === 'number' ? editAttendIndex : -1;
+                const candidate = {
+                    company:document.getElementById('attend_company')?.value.trim() || '',
+                    staff:document.getElementById('attend_staff')?.value.trim() || '',
+                    date:document.getElementById('attend_date')?.value || '',
+                    service:document.getElementById('attend_service')?.value || '',
+                    am_s:document.getElementById('am_s')?.value || '',
+                    am_e:document.getElementById('am_e')?.value || '',
+                    pm_s:document.getElementById('pm_s')?.value || '',
+                    pm_e:document.getElementById('pm_e')?.value || '',
+                    salary_hours:document.getElementById('attend_salary_hours')?.value || '',
+                    project_fee:document.getElementById('attend_project_fee')?.value || '',
+                    deduct_points:document.getElementById('attend_deduct_points')?.value || '',
+                    special_hourly:document.getElementById('attend_special_hourly')?.value || '',
+                    remark:document.getElementById('attend_remark')?.value || ''
+                };
+
+                const key = qyjAttendBusinessKey(candidate);
+                const duplicateIndex = (attendData || []).findIndex(function(item,index){
+                    return index !== editing && qyjAttendBusinessKey(item) === key;
+                });
+
+                if(editing < 0 && duplicateIndex > -1){
+                    if(typeof showToast === 'function'){
+                        showToast('這筆派遣紀錄已存在，系統已阻止重複新增',true);
+                    }else{
+                        alert('這筆派遣紀錄已存在，系統已阻止重複新增。');
+                    }
+                    return;
+                }
+            }catch(error){}
+
+            return originalAddAttend.apply(this,arguments);
+        };
+    }
+
+    /* 智慧排班轉派遣紀錄：只新增尚未存在的資料。 */
+    window.createAttendFromSchedule = function(){
+        const company = getScheduleCompany();
+        const y = getScheduleYear();
+        const m = getScheduleMonth();
+        const ym = `${y}-${pad2(m)}-`;
+        const list = (scheduleData || []).filter(function(d){
+            return (!company || d.company === company) &&
+                String(d.date || '').startsWith(ym) &&
+                getScheduleStaffList(d.staffs).length;
+        });
+
+        if(!list.length) return showToast('本月沒有可轉入的排班',true);
+        if(!confirm(`確定將本月排班轉成派遣紀錄？\n系統會自動略過已存在的資料。`)) return;
+
+        let added = 0;
+        let skipped = 0;
+        const existingCoreKeys = new Set((attendData || []).map(qyjAttendCoreKey));
+        const now = new Date().toISOString();
+
+        list.forEach(function(d){
+            getScheduleStaffList(d.staffs).forEach(function(name){
+                const hours = d.hours || calcScheduleNetHours(d.start,d.end,d.breakStart,d.breakEnd,d.breakHours);
+                const candidate = {
+                    company:d.company,
+                    staff:name,
+                    date:d.date,
+                    service:d.shift || '排班派遣',
+                    am_s:d.start,
+                    am_e:d.end,
+                    pm_s:d.breakStart || '',
+                    pm_e:d.breakEnd || '',
+                    salary_hours:hours,
+                    deduct_points:hours,
+                    project_fee:0,
+                    special_hourly:'',
+                    remark:`由智慧排班轉入：${d.remark || ''}`,
+                    _syncId:typeof qyjNewAttendId === 'function' ? qyjNewAttendId() : `att_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+                    _createdAt:now,
+                    _updatedAt:now,
+                    _syncState:'pending'
+                };
+
+                const coreKey = qyjAttendCoreKey(candidate);
+                if(existingCoreKeys.has(coreKey)){
+                    skipped++;
+                    return;
+                }
+
+                existingCoreKeys.add(coreKey);
+                attendData.push(candidate);
+                added++;
+            });
+        });
+
+        if(!added){
+            return showToast(`沒有新增資料，已略過 ${skipped} 筆重複排班`,true);
+        }
+
+        saveAll();
+        showToast(`✅ 新增 ${added} 筆，略過 ${skipped} 筆重複資料`);
+    };
+
+    /* 員工打卡轉派遣：同日同公司同時段已存在時直接阻擋。 */
+    window.confirmClockToAttend = function(rowIndex){
+        const row = getScheduleRowsForClockOverview()[rowIndex];
+        if(!row) return;
+        const rec = findClockRecord(row);
+        if(!rec || !rec.clockIn || !rec.clockOut){
+            return showToast('需有上班與下班打卡，才能轉派遣紀錄',true);
+        }
+        if(!rec.inGps || !rec.outGps){
+            if(!confirm('這筆缺少上班或下班 GPS 定位，仍要轉派遣紀錄嗎？')) return;
+        }
+
+        const calcHours = Math.max(0,clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0));
+        const hours = (rec.overrideHours !== undefined && rec.overrideHours !== '' && rec.overrideHours !== null)
+            ? Number(rec.overrideHours)
+            : calcHours;
+
+        const candidate = {
+            company:row.company,
+            staff:row.staff,
+            date:row.date,
+            service:'排班派遣',
+            am_s:rec.clockIn,
+            am_e:rec.clockOut,
+            pm_s:'',
+            pm_e:'',
+            salary_hours:Number(hours.toFixed(1)),
+            deduct_points:Number(hours.toFixed(1)),
+            project_fee:0,
+            special_hourly:'',
+            remark:`由員工打卡確認轉入｜上班GPS:${formatGpsText(rec.inGps)}｜下班GPS:${formatGpsText(rec.outGps)}${rec.gpsWarning?'｜'+rec.gpsWarning:''}`
+        };
+
+        const coreKey = qyjAttendCoreKey(candidate);
+        const exists = (attendData || []).some(function(item){
+            return qyjAttendCoreKey(item) === coreKey;
+        });
+
+        if(exists){
+            rec.status = '已轉派遣紀錄';
+            rec.updatedAt = new Date().toISOString();
+            saveAll();
+            renderClockOverview();
+            return showToast('這筆派遣紀錄已存在，未重複新增',true);
+        }
+
+        const now = new Date().toISOString();
+        candidate._syncId = typeof qyjNewAttendId === 'function' ? qyjNewAttendId() : `att_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        candidate._createdAt = now;
+        candidate._updatedAt = now;
+        candidate._syncState = 'pending';
+        attendData.push(candidate);
+
+        rec.status = '已轉派遣紀錄';
+        rec.updatedAt = now;
+        saveAll();
+        renderClockOverview();
+        showToast('✅ 已轉入正式派遣紀錄');
+    };
+
+    function install(){
+        qyjInstallAuditButton();
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded',function(){ setTimeout(install,300); });
+    }else{
+        setTimeout(install,300);
+    }
+
+    const originalShowAdminPage = window.showAdminPage;
+    if(typeof originalShowAdminPage === 'function'){
+        window.showAdminPage = function(page){
+            const result = originalShowAdminPage.apply(this,arguments);
+            if(page === 'attend') setTimeout(install,50);
+            return result;
+        };
+    }
+
+    console.log('累計工時稽核與重複紀錄防呆修正已載入');
+})();
+</script>
+
 </body>
 </html>
