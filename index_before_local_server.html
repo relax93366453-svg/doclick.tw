@@ -1248,9 +1248,14 @@
                             <ul class="hr-submenu-2">
                                 <li><a onclick="showAdminDispatchCase('pending')"><i class="fas fa-hourglass-half"></i> 待完成案件</a></li>
                                 <li><a onclick="showAdminDispatchCase('done')"><i class="fas fa-check-circle"></i> 已完成案件</a></li>
-                            </ul>
+                                <li>
+        <a onclick="showAdminPage('job_posts')">
+            <i class="fas fa-briefcase"></i>
+            官網職缺管理
+        </a>
+    </li>
+    </ul>
                         </li>
-                        <li><a onclick="showAdminPage('job_posts')"><i class="fas fa-briefcase"></i> 官網職缺管理</a></li>
                         <li><a onclick="showAdminPage('talent')"><i class="fas fa-address-card"></i> 人才招募庫</a></li>
                     </ul>
                 </li>
@@ -1907,121 +1912,16 @@
             
             <div class="page sys-auth" id="page-point"><div class="page-title"><i class="fas fa-calculator"></i> 點數統計</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="point_filter_company" placeholder="手打搜尋公司" oninput="resetPage('point'); renderPoint()"><button class="btn btn-success" style="margin-bottom:0;" onclick="renderPoint()">統計</button><button class="btn btn-clear-filter" onclick="clearFilters('point')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div class="table-responsive"><table id="pointTableBox"><thead><tr><th>公司</th><th>總購買點數</th><th>已扣除點數</th><th>剩餘點數</th><th>狀態</th></tr></thead><tbody id="pointTable"></tbody></table></div></div>
             
-            <div class="page sys-auth" id="page-bill">
-                <div class="page-title"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</div>
-                <div class="filter-bar">
-                    <label>搜尋公司：</label>
-                    <input list="list_cust" id="bill_filter_company" placeholder="手打搜尋公司" oninput="resetPage('bill'); renderBill()">
-                    <label>結算週期</label>
-                    <select id="bill_cycle" onchange="toggleBillManualDate(); renderBill()">
-                        <option value="26">26日至25日 (預設)</option>
-                        <option value="1">1日至31日 (全日曆月)</option>
-                        <option value="manual">自訂區間 (手動選擇)</option>
-                    </select>
-                    <span id="bill_manual_dates" style="display:none; align-items:center; gap:8px;">
-                        <input type="date" id="bill_start_date" onchange="renderBill()"> ~
-                        <input type="date" id="bill_end_date" onchange="renderBill()">
-                    </span>
-                    <label class="bill-ym-label">年</label>
-                    <select id="bill_filter_year" class="bill-ym-label" onchange="renderBill()"></select>
-                    <label class="bill-ym-label">月</label>
-                    <select id="bill_filter_month" class="bill-ym-label" onchange="renderBill()"></select>
-                    <button class="btn btn-clear-filter" onclick="clearFilters('bill')"><i class="fas fa-broom"></i> 清除搜尋</button>
-                </div>
-                <button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button>
-                <button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
-                <div class="table-responsive">
-                    <table id="billTableBox">
-                        <thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead>
-                        <tbody id="billTable"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="page" id="page-salary">
-                <div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div>
-                <div class="filter-bar">
-                    <label>搜尋人員：</label>
-                    <input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()">
-                    <label>年</label>
-                    <select id="sal_filter_year" onchange="renderSalary()"></select>
-                    <label>月</label>
-                    <select id="sal_filter_month" onchange="renderSalary()"></select>
-                    <button class="btn btn-clear-filter" onclick="clearFilters('salary')"><i class="fas fa-broom"></i> 清除搜尋</button>
-                </div>
-                <div id="sal_milestoneRedBox" style="display:none; background:#fef2f2; border-left:5px solid #ef4444; border-radius:8px; padding:15px; margin-bottom:15px; border-right:1px solid #fecaca; border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;">
-                    <h4 style="color:#b91c1c; margin-bottom:10px; font-size:15px;"><i class="fas fa-trophy"></i> 累積工時里程碑達成日</h4>
-                    <div id="sal_milestoneContent" style="display:flex; gap:15px; flex-wrap:wrap;"></div>
-                </div>
-                <div id="salResult" style="font-weight:bold;margin:10px 0;"></div>
-                <div id="salDeductOverrideBox" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 15px;margin:10px 0 12px;align-items:end;gap:12px;flex-wrap:wrap;">
-                    <div style="font-weight:900;color:#9a3412;margin-right:6px;"><i class="fas fa-edit"></i> 本期勞健保扣款</div>
-                    <div>
-                        <label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣勞保</label>
-                        <input id="sal_override_labor" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣健保</label>
-                        <input id="sal_override_health" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;">
-                    </div>
-                    <button class="btn btn-warning" style="margin:0;" onclick="saveSalaryDeductOverride()"><i class="fas fa-save"></i> 儲存本期扣款</button>
-                    <button class="btn" style="background:#64748b;margin:0;" onclick="clearSalaryDeductOverride()"><i class="fas fa-undo"></i> 用人員預設</button>
-                    <div style="font-size:12px;color:#64748b;font-weight:700;">空白＝沿用人員資料；輸入 0＝本期不扣。</div>
-                </div>
-                <div id="salDetailResult" style="display:none;background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;">
-                    <span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣勞保: <span id="salLabor">0</span></span>
-                    <span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣健保: <span id="salHealth">0</span></span>
-                    <b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b>
-                </div>
-                <button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button>
-                <button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button>
-                <button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button>
-                <button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時累計矩陣總表 (含歷史分年)</button>
-                <div class="table-responsive">
-                    <table id="salaryTableBox">
-                        <thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>專案金</th><th>金額</th></tr></thead>
-                        <tbody id="salaryTable"></tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="page" id="page-talent">
-                <div class="page-title"><i class="fas fa-address-card"></i> 人才招募庫</div>
-                <div style="margin-bottom:20px;">
-                    <a href="https://forms.gle/7upE2RREx46o8Kpm8" target="_blank" class="btn" style="background:#3b82f6;text-decoration:none;display:inline-block;color:#fff;"><i class="fas fa-external-link-alt"></i> 開啟人才履歷表單</a>
-                </div>
-                <div class="grid">
-                    <div><label>姓名 *</label><input id="tp_name"></div>
-                    <div><label>電話</label><input id="tp_tel"></div>
-                    <div><label>來源</label><input id="tp_source"></div>
-                    <div><label>地區</label><input id="tp_location"></div>
-                    <div><label>班別</label><input id="tp_shift"></div>
-                    <div><label>職務</label><input id="tp_role"></div>
-                    <div><label>狀態</label><select id="tp_status"><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select></div>
-                    <div><label>評價</label><input id="tp_eval"></div>
-                    <div style="grid-column:span 2;"><label>履歷連結</label><input id="tp_resume"></div>
-                    <div style="grid-column:span 2;"><label>備註</label><input id="tp_exp"></div>
-                </div>
-                <button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button>
-                <button class="btn btn-warning" id="btnUpdateTalent" onclick="updateTalent()" style="display:none"><i class="fas fa-edit"></i> 修改</button>
-                <button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空表單</button>
-                <div class="filter-bar" style="margin-top:20px;">
-                    <label>搜尋：</label>
-                    <input type="text" id="tp_filter_role" placeholder="搜尋職務" oninput="resetPage('talent'); renderTalentTable()">
-                    <label>狀態：</label>
-                    <select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select>
-                    <button class="btn btn-clear-filter" onclick="clearFilters('talent')"><i class="fas fa-broom"></i> 清除搜尋</button>
-                    <button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button>
-                    <button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')">匯出全部</button>
-                </div>
-                <div class="table-responsive">
-                    <table id="talentTableBox">
-                        <thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>地區</th><th>班別</th><th>職務</th><th>狀態</th><th>評價</th><th>履歷</th><th>建檔日</th><th>操作</th></tr></thead>
-                        <tbody id="talentTable"></tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="page sys-auth" id="page-bill"><div class="page-title"><i class="fas fa-file-invoice-dollar"></i> 對帳單生成</div><div class="filter-bar"><label>搜尋公司：</label><input list="list_cust" id="bill_filter_company" placeholder="手打搜尋公司" oninput="resetPage('bill'); renderBill()"><label>結算週期</label><select id="bill_cycle" onchange="toggleBillManualDate(); renderBill()"><option value="26">26日至25日 (預設)</option><option value="1">1日至31日 (全日曆月)</option><option value="manual">自訂區間 (手動選擇)</option></select><span id="bill_manual_dates" style="display:none; align-items:center; gap:8px;"><input type="date" id="bill_start_date" onchange="renderBill()"> ~ <input type="date" id="bill_end_date" onchange="renderBill()"></span><label class="bill-ym-label">年</label><select id="bill_filter_year" class="bill-ym-label" onchange="renderBill()"></select><label class="bill-ym-label">月</label><select id="bill_filter_month" class="bill-ym-label" onchange="renderBill()"></select><button class="btn btn-clear-filter" onclick="clearFilters('bill')"><i class="fas fa-broom"></i> 清除搜尋</button></div><button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button><button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button><div class="table-responsive"><table id="billTableBox"><thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead><tbody id="billTable"></tbody></table></div></div>
+            
+            <div class="page" id="page-salary"><div class="page-title"><i class="fas fa-wallet"></i> 派遣薪資計算</div><div class="filter-bar"><label>搜尋人員：</label><input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()"><label>年</label><select id="sal_filter_year" onchange="renderSalary()"></select><label>月</label><select id="sal_filter_month" onchange="renderSalary()"></select><button class="btn btn-clear-filter" onclick="clearFilters('salary')"><i class="fas fa-broom"></i> 清除搜尋</button></div><div id="sal_milestoneRedBox" style="display:none; background:#fef2f2; border-left:5px solid #ef4444; border-radius:8px; padding:15px; margin-bottom:15px; border-right:1px solid #fecaca; border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;"><h4 style="color:#b91c1c; margin-bottom:10px; font-size:15px;"><i class="fas fa-trophy"></i> 累積工時里程碑達成日</h4><div id="sal_milestoneContent" style="display:flex; gap:15px; flex-wrap:wrap;"></div></div><div id="salResult" style="font-weight:bold;margin:10px 0;"></div><div id="salDeductOverrideBox" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 15px;margin:10px 0 12px;align-items:end;gap:12px;flex-wrap:wrap;"><div style="font-weight:900;color:#9a3412;margin-right:6px;"><i class="fas fa-edit"></i> 本期勞健保扣款</div><div><label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣勞保</label><input id="sal_override_labor" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></div><div><label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:4px;">本期代扣健保</label><input id="sal_override_health" type="number" placeholder="空白=人員預設" style="width:150px;padding:8px;border:1px solid #cbd5e1;border-radius:8px;"></div><button class="btn btn-warning" style="margin:0;" onclick="saveSalaryDeductOverride()"><i class="fas fa-save"></i> 儲存本期扣款</button><button class="btn" style="background:#64748b;margin:0;" onclick="clearSalaryDeductOverride()"><i class="fas fa-undo"></i> 用人員預設</button><div style="font-size:12px;color:#64748b;font-weight:700;">空白＝沿用人員資料；輸入 0＝本期不扣。</div></div><div id="salDetailResult" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;"><span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣勞保: <span id="salLabor">0</span></span><span style="color:#ef4444;margin-right:20px;font-weight:bold;">本期代扣健保: <span id="salHealth">0</span></span><b style="font-size:18px; color:#1e3a8a;">實付金額: <span id="salNet">0</span> 元</b></div><button class="btn btn-success" onclick="generatePayslipPDF()"><i class="fas fa-eye"></i> 預覽/下載 個人薪資單</button><button class="btn" style="background:#dc2626;" onclick="unlockDispatchPayrollMonth()"><i class="fas fa-unlock"></i> 解除本期薪資鎖定</button><button class="btn btn-excel" onclick="exportBossSalaryExcel()"><i class="fas fa-file-excel"></i> 匯出 老闆彙整表</button><button class="btn btn-pdf" style="background:#8b5cf6;" onclick="exportAllStaffHoursSummary()"><i class="fas fa-users"></i> 匯出 調薪進度明細</button><button class="btn btn-warning" style="background:#f59e0b; color:white;" onclick="exportStaffYearlyMatrix()"><i class="fas fa-table"></i> 匯出 年度工時累計矩陣總表 (含歷史分年)</button><div class="table-responsive"><table id="salaryTableBox"><thead><tr><th>人員</th><th>日期</th><th>公司</th><th>項目</th><th>工時</th><th>當次時薪</th><th>專案金</th><th>金額</th></tr></thead><tbody id="salaryTable"></tbody></table></div></div>
+            
+            <div class="page" id="page-talent"><div class="page-title"><i class="fas fa-address-card"></i> 人才招募庫</div><div style="margin-bottom: 20px;"><a href="https://forms.gle/7upE2RREx46o8Kpm8" target="_blank" class="btn" style="background:#3b82f6; text-decoration:none; display:inline-block;"><i class="fas fa-external-link-alt"></i> 前往填寫 Google 人才表單</a></div><div class="grid"><div><label>姓名 *</label><input id="tp_name"></div><div><label>電話</label><input id="tp_tel"></div><div><label>來源</label><input id="tp_source"></div><div><label>地區</label><input id="tp_location"></div><div><label>班別</label><input id="tp_shift"></div><div><label>職務</label><input id="tp_role"></div><div><label>狀態</label><select id="tp_status"><option>待聯絡</option><option>已聯絡</option><option>已錄取</option><option>淘汰</option></select></div><div><label>評價</label><input id="tp_eval"></div><div style="grid-column:span 2;"><label>履歷連結</label><input id="tp_resume"></div><div style="grid-column:span 2;"><label>備註</label><input id="tp_exp"></div></div><button class="btn btn-success" id="btnAddTalent" onclick="addTalent()"><i class="fas fa-save"></i> 儲存</button><button class="btn btn-warning" id="btnUpdateTalent" onclick="updateTalent()" style="display:none"><i class="fas fa-edit"></i> 修改</button><button class="btn" style="background:#888;" onclick="clearTalentForm()"><i class="fas fa-eraser"></i> 清空表單</button><div class="filter-bar" style="margin-top: 20px;"><label>搜尋：</label><input type="text" id="tp_filter_role" oninput="resetPage('talent'); renderTalentTable()"><label>狀態：</label><select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select><button class="btn btn-clear-filter" onclick="clearFilters('talent')"><i class="fas fa-broom"></i> 清除搜尋</button><button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button><button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')">匯出全部</button></div><div class="table-responsive"><table id="talentTableBox"><thead><tr><th>姓名</th><th>電話</th><th>來源</th><th>地區</th><th>班別</th><th>職務</th><th>狀態</th><th>評價</th><th>履歷</th><th>建檔日</th><th>操作</th></tr></thead><tbody id="talentTable"></tbody></table></div></div>
+            
+            
             <div class="page" id="page-job_posts">
                 <div class="job-post-page-heading">
-            <div>
+                    <div>
                         <div class="page-title job-post-page-title">
                             <i class="fas fa-briefcase"></i>
                             官網職缺管理
@@ -2089,7 +1989,7 @@
                     <strong>目前尚未建立職缺</strong>
                     <span>點擊右上方「新增職缺」開始建立</span>
                 </div>
-            </div>
+
                 <div id="jobPostModal" class="job-post-modal-backdrop" aria-hidden="true">
                     <div class="job-post-modal" role="dialog" aria-modal="true" aria-labelledby="jobPostModalTitle">
                         <div class="job-post-modal-header">
@@ -2207,6 +2107,8 @@
                         </form>
                     </div>
                 </div>
+            </div>
+
 <div class="page sys-auth" id="page-boss">
                 <div class="page-title"><i class="fas fa-user-tie"></i> 老闆專區</div>
                 <div class="panel" style="margin-bottom: 20px; border-top: 4px solid #10b981;">
@@ -5557,7 +5459,7 @@ function expandHrMenuByPage(p){
     const map={
         staff:['people'], sales_staff:['people'], ft_staff:['people','fulltime'], ft_attend:['people','fulltime'], ft_salary:['people','fulltime'],
         schedule:['schedule'], schedule_changes:['schedule'], clock_overview:['schedule'],
-        match:['dispatch'], dispatch:['dispatch','dispatch_cases'], talent:['dispatch'], job_posts:['dispatch']
+        match:['dispatch'], dispatch:['dispatch','dispatch_cases'], talent:['dispatch']
     };
     const arr=map[p]||[];
     document.querySelectorAll('.hr-menu-group,.hr-subgroup').forEach(g=>{
@@ -5589,7 +5491,7 @@ function showAdminPage(p) {
             let pin = prompt('🔒 系統安全鎖：\n請輸入高階管理密碼以解鎖設定頁面：\n(若未更改過，預設為 8888)'); 
             if(pin !== (localStorage.getItem('adminPin') || '8888')) { showToast('安全碼錯誤，拒絕存取', true); return; } 
         } 
-        if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','schedule_changes','clock_overview','ft_attend','ft_salary','insurance','talent','dispatch','job_posts'].includes(p)) return showToast('無權限訪問', true); 
+        if(sysRole === 'hr' && !['dashboard','staff','sales_staff','ft_staff','match','schedule','schedule_changes','clock_overview','ft_attend','ft_salary','insurance','talent','dispatch'].includes(p)) return showToast('無權限訪問', true); 
         if(sysRole === 'sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true);
         if(currentWorkspace==='sales' && !['dashboard','customer','req','dispatch','sales_staff','sales_settlement'].includes(p)) return showToast('無權限訪問', true); 
         
@@ -5607,7 +5509,6 @@ function showAdminPage(p) {
         if(p==='ft_staff') { clearFtStaffForm(); renderFtStaffTable(); } 
         if(p==='ft_attend') { clearFtAttendForm(); renderFtAttendTable(); } 
         if(p==='insurance') { initInsurancePage(); } 
-        if(p==='salary') { renderSalary(); } 
         if(p==='talent') { clearTalentForm(); renderTalentTable(); } 
         if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); } 
         if(p==='match') { clearMatchForm(); renderMatchTable(); } 
@@ -12597,13 +12498,6 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             AUTO_SETTING_KEY,
             JSON.stringify(settings)
         );
-    
-        if (
-            typeof window.qyjQueueExtraCloudSync ===
-            'function'
-        ) {
-            window.qyjQueueExtraCloudSync();
-        }
     }
 
     function fulltimeNames(){
@@ -15249,13 +15143,6 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             AUTO_SETTING_KEY,
             JSON.stringify(settings)
         );
-    
-        if (
-            typeof window.qyjQueueExtraCloudSync ===
-            'function'
-        ) {
-            window.qyjQueueExtraCloudSync();
-        }
     }
 
     function ensureMakeupField(){
@@ -21012,13 +20899,6 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                 JSON.stringify(map || {})
             );
         }catch(error){}
-    
-        if (
-            typeof window.qyjQueueExtraCloudSync ===
-            'function'
-        ) {
-            window.qyjQueueExtraCloudSync();
-        }
     }
 
     function qyjStoreManualSpecialRate(item,rate){
@@ -24292,19 +24172,7 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
     };
 
     window.qyjSetSalaryBenefitStorage = function(data){
-        try{
-            localStorage.setItem(
-                'qyj_salary_benefit_additions_v1',
-                JSON.stringify(data || {})
-            );
-        }catch(e){}
-
-        if(
-            typeof window.qyjQueueExtraCloudSync ===
-            'function'
-        ){
-            window.qyjQueueExtraCloudSync();
-        }
+        try{ localStorage.setItem('qyj_salary_benefit_additions_v1', JSON.stringify(data || {})); }catch(e){}
     };
 
     window.qyjSalaryBenefitKey = function(staff, y, m){
@@ -25217,8 +25085,8 @@ function generatePayslipPDF() {
 
     const STORAGE_KEY = 'jobPostData';
     const JOB_API_TOKEN_STORAGE_KEY = 'jobPostAdminToken';
-    // GitHub Pages 正式版改用主 Google Apps Script 雲端，不再依賴本機代理或 Railway。
-    const JOB_API_URL = '';
+    // Google Apps Script 正式部署網址。管理 Token 不再寫死於 HTML，改存於此瀏覽器的 localStorage。
+    const JOB_API_URL = 'https://script.google.com/macros/s/AKfycbxf5sgRpnMaiU8lWPJ_0_n34jaJgc1-pKUnyjf5d7nvAIP5v0hF_ZRss-NJru5zLnux/exec';
     let cloudSyncTimer = null;
     const DISTRICTS = {
         '台北市': ['中正區', '大同區', '中山區', '松山區', '大安區', '萬華區', '信義區', '士林區', '北投區', '內湖區', '南港區', '文山區'],
@@ -25250,18 +25118,15 @@ function generatePayslipPDF() {
     }
 
     function getJobApiToken() {
-        return '';
+        return String(localStorage.getItem(JOB_API_TOKEN_STORAGE_KEY) || '').trim();
     }
 
     function isCloudConfigured() {
-        try {
-            return Boolean(
-                (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL) ||
-                window.SCRIPT_URL
-            );
-        } catch (error) {
-            return Boolean(window.SCRIPT_URL);
-        }
+        const token = getJobApiToken();
+        return /^https:\/\/script\.google\.com\/macros\/s\//.test(JOB_API_URL)
+            && Boolean(token)
+            && !token.startsWith('PASTE_')
+            && token !== 'JOB_ADMIN_TOKEN';
     }
 
     function setCloudStatus(text, color, title) {
@@ -25274,144 +25139,164 @@ function generatePayslipPDF() {
     }
 
     window.configureJobCloud = function () {
-        setCloudStatus('重新連線中…', '#2563eb');
+        const current = getJobApiToken();
+        const input = window.prompt(
+            '請貼上 Apps Script「指令碼屬性」中的 JOB_ADMIN_TOKEN。\nToken 只會儲存在這台電腦的瀏覽器，不會寫入 HTML。',
+            current
+        );
+
+        if (input === null) return;
+        const token = String(input).trim();
+
+        if (!token) {
+            localStorage.removeItem(JOB_API_TOKEN_STORAGE_KEY);
+            setCloudStatus('雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
+            return;
+        }
+
+        localStorage.setItem(JOB_API_TOKEN_STORAGE_KEY, token);
+        setCloudStatus('驗證雲端中…', '#2563eb');
         loadCloudJobPosts();
     };
 
     function jobApiBridge(action, params, timeoutMs) {
-        return new Promise(async function (resolve, reject) {
+        return new Promise(function (resolve, reject) {
             if (!isCloudConfigured()) {
-                reject(new Error('請用「啟動愜易居系統.bat」開啟，不要直接雙擊 index.html'));
+                reject(new Error('雲端職缺 API 尚未設定'));
                 return;
             }
 
-            const controller = new AbortController();
+            const requestId = 'jobPost_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            const iframe = document.createElement('iframe');
+            iframe.id = 'jobPostCloudBridgeFrame';
+            iframe.setAttribute('aria-hidden', 'true');
+            iframe.style.position = 'fixed';
+            iframe.style.width = '1px';
+            iframe.style.height = '1px';
+            iframe.style.opacity = '0';
+            iframe.style.pointerEvents = 'none';
+            iframe.style.border = '0';
+            iframe.style.left = '-9999px';
+
+            let settled = false;
             const timer = window.setTimeout(function () {
-                controller.abort();
+                cleanup();
+                reject(new Error('雲端職缺 API 逾時'));
             }, timeoutMs || 20000);
 
-            try {
-                const url = new URL(JOB_API_URL, window.location.href);
-                url.searchParams.set('action', action);
-                url.searchParams.set('_', String(Date.now()));
+            function cleanup() {
+                window.clearTimeout(timer);
+                window.removeEventListener('message', onMessage);
+                if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+            }
 
-                Object.keys(params || {}).forEach(function (key) {
-                    if (key === 'token') return;
-                    if (params[key] !== undefined && params[key] !== null) {
-                        url.searchParams.set(key, String(params[key]));
-                    }
-                });
+            function onMessage(event) {
+                const origin = String(event.origin || '');
+                const allowedOrigin = origin === 'https://script.google.com'
+                    || origin === 'https://script.googleusercontent.com'
+                    || /\.googleusercontent\.com$/.test(origin)
+                    || /\.google\.com$/.test(origin);
 
-                const response = await fetch(url.toString(), {
-                    method: 'GET',
-                    cache: 'no-store',
-                    credentials: 'same-origin',
-                    signal: controller.signal
-                });
+                if (!allowedOrigin) return;
 
-                if (!response.ok) {
-                    throw new Error('本機代理回應失敗：HTTP ' + response.status);
-                }
+                const data = event.data;
+                if (!data || data.source !== 'doclick-job-api') return;
+                if (data.requestId !== requestId) return;
+                if (settled) return;
 
-                const payload = await response.json();
+                settled = true;
+                cleanup();
+
+                const payload = data.payload;
                 if (!payload || payload.ok === false) {
-                    throw new Error((payload && payload.message) || '雲端職缺 API 失敗');
+                    reject(new Error((payload && payload.message) || '雲端職缺 API 失敗'));
+                    return;
                 }
 
                 resolve(payload);
-            } catch (error) {
-                if (error && error.name === 'AbortError') {
-                    reject(new Error('雲端職缺 API 逾時'));
-                } else {
-                    reject(error);
-                }
-            } finally {
-                window.clearTimeout(timer);
             }
+
+            iframe.onerror = function () {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                reject(new Error('雲端橋接頁面載入失敗'));
+            };
+
+            const url = new URL(JOB_API_URL);
+            url.searchParams.set('action', action);
+            url.searchParams.set('transport', 'iframe');
+            url.searchParams.set('requestId', requestId);
+            url.searchParams.set('_', String(Date.now()));
+
+            Object.keys(params || {}).forEach(function (key) {
+                if (params[key] !== undefined && params[key] !== null) {
+                    url.searchParams.set(key, String(params[key]));
+                }
+            });
+
+            window.addEventListener('message', onMessage);
+            iframe.src = url.toString();
+            document.body.appendChild(iframe);
         });
     }
 
     async function loadCloudJobPosts() {
-        setCloudStatus('讀取 Google 雲端中…', '#2563eb');
+        if (!isCloudConfigured()) {
+            setCloudStatus('雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
+            return;
+        }
 
+        setCloudStatus('讀取雲端中…', '#2563eb');
         try {
-            if (typeof loadDataFromCloud === 'function') {
-                await loadDataFromCloud(true);
+            const payload = await jobApiBridge('all', { token: getJobApiToken() });
+            if (Array.isArray(payload.jobs)) {
+                jobPosts = payload.jobs;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(jobPosts));
+                window.jobPostData = jobPosts;
+                window.renderJobPosts();
             }
-
-            const parsed = JSON.parse(
-                localStorage.getItem(STORAGE_KEY) || '[]'
-            );
-
-            jobPosts = Array.isArray(parsed) ? parsed : [];
-            window.jobPostData = jobPosts;
-            window.renderJobPosts();
-
-            setCloudStatus(
-                'Google 雲端已連線｜' + jobPosts.length + ' 筆',
-                '#16a34a'
-            );
+            setCloudStatus('已連線｜' + jobPosts.length + ' 筆', '#16a34a');
         } catch (error) {
             console.error(error);
-
-            /*
-             * 雲端讀取失敗時保留目前電腦上的資料，
-             * 不會清空已經建立的職缺。
-             */
-            loadJobPosts();
-            window.renderJobPosts();
-
-            const reason =
-                error && error.message
-                    ? error.message
-                    : '未知錯誤';
-
-            setCloudStatus(
-                '雲端讀取失敗（點此重試）',
-                '#dc2626',
-                reason
-            );
+            const reason = error && error.message ? error.message : '未知錯誤';
+            setCloudStatus('讀取失敗：' + reason + '（點此重設）', '#dc2626', reason);
         }
     }
 
     async function syncJobPostsToCloud() {
-        setCloudStatus('同步至 Google 雲端中…', '#2563eb');
+        if (!isCloudConfigured()) {
+            setCloudStatus('雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
+            return;
+        }
 
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(jobPosts)
-        );
-
-        window.jobPostData = jobPosts;
+        setCloudStatus('同步中…', '#2563eb');
+        const body = new URLSearchParams();
+        body.set('action', 'syncAll');
+        body.set('token', getJobApiToken());
+        body.set('payload', JSON.stringify({ jobs: jobPosts }));
 
         try {
-            if (
-                typeof window.qyjQueueExtraCloudSync ===
-                'function'
-            ) {
-                await window.qyjQueueExtraCloudSync(true);
-            } else if (
-                typeof pushCloudData === 'function'
-            ) {
-                await pushCloudData(true);
-            } else {
-                throw new Error('找不到 Google 雲端同步功能');
-            }
+            await fetch(JOB_API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: body.toString()
+            });
 
-            setCloudStatus(
-                '已同步｜' + jobPosts.length + ' 筆',
-                '#16a34a'
-            );
+            window.setTimeout(async function () {
+                try {
+                    const verify = await jobApiBridge('all', { token: getJobApiToken() });
+                    const count = Array.isArray(verify.jobs) ? verify.jobs.length : 0;
+                    setCloudStatus('已同步｜' + count + ' 筆', '#16a34a');
+                } catch (error) {
+                    console.error(error);
+                    setCloudStatus('同步驗證失敗（點此重設）', '#dc2626', error && error.message ? error.message : '同步驗證失敗');
+                }
+            }, 1200);
         } catch (error) {
             console.error(error);
-
-            setCloudStatus(
-                '同步失敗（點此重試）',
-                '#dc2626',
-                error && error.message
-                    ? error.message
-                    : '同步失敗'
-            );
+            setCloudStatus('同步失敗（點此重設）', '#dc2626', error && error.message ? error.message : '同步失敗');
         }
     }
 
@@ -25830,464 +25715,5 @@ function generatePayslipPDF() {
 })();
 </script>
 
-<script id="qyjGithubPagesCloudSyncPatch">
-/* =========================================================
-   GitHub Pages 正式版雲端同步補強
-   - 不使用 Railway／本機代理
-   - 新增功能資料直接寫入原 Google Apps Script／試算表
-   - 第一次升級時，雲端空白不會覆蓋目前電腦既有資料
-========================================================= */
-(function(){
-    'use strict';
-
-    const EXTRA_MIGRATION_KEY =
-        'qyj_extra_cloud_migrated_v1';
-
-    const EXTRA_KEYS = {
-        personalMakeupData:
-            'qyj_personal_makeup_records',
-        fulltimeAutoScheduleSettings:
-            'qyj_fulltime_auto_schedule_settings',
-        salaryBenefitAdditions:
-            'qyj_salary_benefit_additions_v1',
-        attendManualSpecialHourlyMap:
-            'qyj_attend_manual_special_hourly_map',
-        jobPostData:
-            'jobPostData'
-    };
-
-    let extraSyncTimer = null;
-    let extraSyncPromise = null;
-    let extraNeedsUpload = false;
-
-    function readJson(key,fallback){
-        try{
-            const raw = localStorage.getItem(key);
-
-            if(raw === null || raw === ''){
-                return fallback;
-            }
-
-            const parsed = JSON.parse(raw);
-
-            return parsed === null ||
-                   typeof parsed === 'undefined'
-                ? fallback
-                : parsed;
-        }catch(error){
-            return fallback;
-        }
-    }
-
-    function writeJson(key,value){
-        try{
-            localStorage.setItem(
-                key,
-                JSON.stringify(value)
-            );
-        }catch(error){
-            console.warn(
-                '本機資料寫入失敗：' + key,
-                error
-            );
-        }
-    }
-
-    function hasArrayData(value){
-        return Array.isArray(value) &&
-               value.length > 0;
-    }
-
-    function hasObjectData(value){
-        return Boolean(
-            value &&
-            typeof value === 'object' &&
-            !Array.isArray(value) &&
-            Object.keys(value).length > 0
-        );
-    }
-
-    function isMigrated(){
-        return localStorage.getItem(
-            EXTRA_MIGRATION_KEY
-        ) === '1';
-    }
-
-    function markMigrated(){
-        localStorage.setItem(
-            EXTRA_MIGRATION_KEY,
-            '1'
-        );
-    }
-
-    function readPortalConf(){
-        try{
-            if(
-                typeof portalConf !== 'undefined' &&
-                portalConf &&
-                typeof portalConf === 'object'
-            ){
-                return portalConf;
-            }
-        }catch(error){}
-
-        return readJson('portalConf',{});
-    }
-
-    /*
-     * 讓原本的 buildCloudPayload 一次帶上新版所有資料。
-     */
-    const originalBuildCloudPayload =
-        window.buildCloudPayload;
-
-    if(
-        typeof originalBuildCloudPayload ===
-        'function'
-    ){
-        window.buildCloudPayload = function(){
-            const payload =
-                originalBuildCloudPayload.apply(
-                    this,
-                    arguments
-                ) || {};
-
-            payload.personalMakeupData =
-                readJson(
-                    EXTRA_KEYS.personalMakeupData,
-                    []
-                );
-
-            payload.fulltimeAutoScheduleSettings =
-                readJson(
-                    EXTRA_KEYS.fulltimeAutoScheduleSettings,
-                    {}
-                );
-
-            payload.salaryBenefitAdditions =
-                readJson(
-                    EXTRA_KEYS.salaryBenefitAdditions,
-                    {}
-                );
-
-            payload.attendManualSpecialHourlyMap =
-                readJson(
-                    EXTRA_KEYS.attendManualSpecialHourlyMap,
-                    {}
-                );
-
-            const localJobs =
-                Array.isArray(window.jobPostData)
-                    ? window.jobPostData
-                    : readJson(
-                        EXTRA_KEYS.jobPostData,
-                        []
-                    );
-
-            payload.jobPostData =
-                Array.isArray(localJobs)
-                    ? localJobs
-                    : [];
-
-            /*
-             * 公告與 SOP 同時保留在 sysConfig.portalConf
-             * 以及獨立工作表，避免新版、舊版互相看不到。
-             */
-            const conf = readPortalConf();
-
-            payload.announcementItems =
-                Array.isArray(conf.announcementItems)
-                    ? conf.announcementItems
-                    : [];
-
-            payload.sopItems =
-                Array.isArray(conf.sopItems)
-                    ? conf.sopItems
-                    : [];
-
-            return payload;
-        };
-
-        /*
-         * function 宣告建立的全域名稱也指向新版函式。
-         */
-        try{
-            buildCloudPayload =
-                window.buildCloudPayload;
-        }catch(error){}
-    }
-
-    function applyArrayValue(
-        cloudValue,
-        localKey,
-        windowKey
-    ){
-        const cloud =
-            Array.isArray(cloudValue)
-                ? cloudValue
-                : [];
-
-        const local =
-            readJson(localKey,[]);
-
-        let chosen = cloud;
-
-        /*
-         * 僅在第一次升級、且雲端尚未建立資料時，
-         * 保留這台電腦過去已經 Key 的內容並補傳。
-         */
-        if(
-            !isMigrated() &&
-            cloud.length === 0 &&
-            Array.isArray(local) &&
-            local.length > 0
-        ){
-            chosen = local;
-            extraNeedsUpload = true;
-        }
-
-        writeJson(localKey,chosen);
-
-        if(windowKey){
-            window[windowKey] = chosen;
-        }
-
-        return chosen;
-    }
-
-    function applyObjectValue(
-        cloudValue,
-        localKey
-    ){
-        const cloud =
-            cloudValue &&
-            typeof cloudValue === 'object' &&
-            !Array.isArray(cloudValue)
-                ? cloudValue
-                : {};
-
-        const local =
-            readJson(localKey,{});
-
-        let chosen = cloud;
-
-        if(
-            !isMigrated() &&
-            !hasObjectData(cloud) &&
-            hasObjectData(local)
-        ){
-            chosen = local;
-            extraNeedsUpload = true;
-        }
-
-        writeJson(localKey,chosen);
-
-        return chosen;
-    }
-
-    /*
-     * 雲端讀回後補套新版資料。
-     */
-    const originalApplyCloudData =
-        window.qyjApplyCloudData;
-
-    if(
-        typeof originalApplyCloudData ===
-        'function'
-    ){
-        window.qyjApplyCloudData = function(
-            result,
-            forceRender
-        ){
-            const originalResult =
-                originalApplyCloudData.apply(
-                    this,
-                    arguments
-                );
-
-            const root =
-                result &&
-                result.data &&
-                typeof result.data === 'object'
-                    ? result.data
-                    : (result || {});
-
-            applyArrayValue(
-                root.personalMakeupData,
-                EXTRA_KEYS.personalMakeupData,
-                'personalMakeupData'
-            );
-
-            applyObjectValue(
-                root.fulltimeAutoScheduleSettings,
-                EXTRA_KEYS.fulltimeAutoScheduleSettings
-            );
-
-            applyObjectValue(
-                root.salaryBenefitAdditions,
-                EXTRA_KEYS.salaryBenefitAdditions
-            );
-
-            applyObjectValue(
-                root.attendManualSpecialHourlyMap,
-                EXTRA_KEYS.attendManualSpecialHourlyMap
-            );
-
-            const jobs = applyArrayValue(
-                root.jobPostData,
-                EXTRA_KEYS.jobPostData,
-                'jobPostData'
-            );
-
-            if(
-                hasArrayData(root.personalMakeupData) ||
-                hasArrayData(root.jobPostData) ||
-                hasObjectData(
-                    root.fulltimeAutoScheduleSettings
-                ) ||
-                hasObjectData(
-                    root.salaryBenefitAdditions
-                ) ||
-                hasObjectData(
-                    root.attendManualSpecialHourlyMap
-                )
-            ){
-                markMigrated();
-            }
-
-            try{
-                if(
-                    typeof window.renderJobPosts ===
-                    'function'
-                ){
-                    window.renderJobPosts();
-                }
-            }catch(error){}
-
-            if(
-                extraNeedsUpload &&
-                !extraSyncPromise
-            ){
-                window.setTimeout(
-                    function(){
-                        window.qyjQueueExtraCloudSync();
-                    },
-                    500
-                );
-            }
-
-            return originalResult;
-        };
-
-        try{
-            qyjApplyCloudData =
-                window.qyjApplyCloudData;
-        }catch(error){}
-    }
-
-    /*
-     * 新版資料統一排隊寫入 Google 雲端。
-     */
-    window.qyjQueueExtraCloudSync =
-        function(immediate){
-            window.clearTimeout(extraSyncTimer);
-
-            return new Promise(function(
-                resolve,
-                reject
-            ){
-                const run = function(){
-                    if(extraSyncPromise){
-                        extraSyncPromise
-                            .then(resolve)
-                            .catch(reject);
-                        return;
-                    }
-
-                    if(
-                        typeof pushCloudData !==
-                        'function'
-                    ){
-                        reject(
-                            new Error(
-                                '找不到 Google 雲端同步功能'
-                            )
-                        );
-                        return;
-                    }
-
-                    extraSyncPromise =
-                        Promise.resolve(
-                            pushCloudData(true)
-                        )
-                        .then(function(result){
-                            extraNeedsUpload = false;
-                            markMigrated();
-                            return result;
-                        })
-                        .finally(function(){
-                            extraSyncPromise = null;
-                        });
-
-                    extraSyncPromise
-                        .then(resolve)
-                        .catch(reject);
-                };
-
-                if(immediate){
-                    run();
-                }else{
-                    extraSyncTimer =
-                        window.setTimeout(
-                            run,
-                            450
-                        );
-                }
-            });
-        };
-
-    /*
-     * 首次開啟正式版後，讀取原雲端；若發現新版資料
-     * 只存在目前電腦，會自動補傳一次。
-     */
-    function initialExtraMigration(){
-        if(
-            typeof loadDataFromCloud !==
-            'function'
-        ){
-            return;
-        }
-
-        Promise.resolve(
-            loadDataFromCloud(false)
-        ).catch(function(error){
-            console.warn(
-                '新版資料首次雲端檢查失敗',
-                error
-            );
-        });
-    }
-
-    if(document.readyState === 'loading'){
-        document.addEventListener(
-            'DOMContentLoaded',
-            function(){
-                window.setTimeout(
-                    initialExtraMigration,
-                    900
-                );
-            }
-        );
-    }else{
-        window.setTimeout(
-            initialExtraMigration,
-            900
-        );
-    }
-
-    console.log(
-        'GitHub Pages 正式版 Google 雲端同步補強已載入'
-    );
-})();
-</script>
 </body>
 </html>
