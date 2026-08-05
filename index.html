@@ -25217,8 +25217,8 @@ function generatePayslipPDF() {
 
     const STORAGE_KEY = 'jobPostData';
     const JOB_API_TOKEN_STORAGE_KEY = 'jobPostAdminToken';
-    // GitHub Pages 正式版改用主 Google Apps Script 雲端，不再依賴本機代理或 Railway。
-    const JOB_API_URL = '';
+    // 對外官網職缺專用 Apps Script API：內部上架後，外部官網 /jobs 讀取同一份 JobPosts 資料。
+    const JOB_API_URL = 'https://script.google.com/macros/s/AKfycbxf5sgRpnMaiU8lWPJ_0_n34jaJgc1-pKUnyjf5d7nvAIP5v0hF_ZRss-NJru5zLnux/exec';
     let cloudSyncTimer = null;
     const DISTRICTS = {
         '台北市': ['中正區', '大同區', '中山區', '松山區', '大安區', '萬華區', '信義區', '士林區', '北投區', '內湖區', '南港區', '文山區'],
@@ -25250,18 +25250,15 @@ function generatePayslipPDF() {
     }
 
     function getJobApiToken() {
-        return '';
+        return String(localStorage.getItem(JOB_API_TOKEN_STORAGE_KEY) || '').trim();
     }
 
     function isCloudConfigured() {
-        try {
-            return Boolean(
-                (typeof SCRIPT_URL !== 'undefined' && SCRIPT_URL) ||
-                window.SCRIPT_URL
-            );
-        } catch (error) {
-            return Boolean(window.SCRIPT_URL);
-        }
+        const token = getJobApiToken();
+        return /^https:\/\/script\.google\.com\/macros\/s\//.test(JOB_API_URL)
+            && Boolean(token)
+            && !token.startsWith('PASTE_')
+            && token !== 'JOB_ADMIN_TOKEN';
     }
 
     function setCloudStatus(text, color, title) {
@@ -25274,144 +25271,157 @@ function generatePayslipPDF() {
     }
 
     window.configureJobCloud = function () {
-        setCloudStatus('重新連線中…', '#2563eb');
+        const current = getJobApiToken();
+        const input = window.prompt(
+            '請貼上職缺 API 的 JOB_ADMIN_TOKEN。\nToken 只會儲存在這台電腦的瀏覽器，不會寫進 GitHub。',
+            current
+        );
+
+        if (input === null) return;
+        const token = String(input).trim();
+
+        if (!token) {
+            localStorage.removeItem(JOB_API_TOKEN_STORAGE_KEY);
+            setCloudStatus('職缺雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
+            return;
+        }
+
+        localStorage.setItem(JOB_API_TOKEN_STORAGE_KEY, token);
+        setCloudStatus('驗證職缺雲端中…', '#2563eb');
         loadCloudJobPosts();
     };
 
     function jobApiBridge(action, params, timeoutMs) {
-        return new Promise(async function (resolve, reject) {
+        return new Promise(function (resolve, reject) {
             if (!isCloudConfigured()) {
-                reject(new Error('請用「啟動愜易居系統.bat」開啟，不要直接雙擊 index.html'));
+                reject(new Error('職缺雲端尚未設定，請點右上角狀態文字輸入 JOB_ADMIN_TOKEN'));
                 return;
             }
 
-            const controller = new AbortController();
+            const callbackName = '__doclickJobCallback_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            const script = document.createElement('script');
+            let settled = false;
+
             const timer = window.setTimeout(function () {
-                controller.abort();
+                cleanup();
+                reject(new Error('職缺雲端 API 逾時'));
             }, timeoutMs || 20000);
 
-            try {
-                const url = new URL(JOB_API_URL, window.location.href);
-                url.searchParams.set('action', action);
-                url.searchParams.set('_', String(Date.now()));
+            function cleanup() {
+                window.clearTimeout(timer);
+                try { delete window[callbackName]; } catch (error) { window[callbackName] = undefined; }
+                if (script.parentNode) script.parentNode.removeChild(script);
+            }
 
-                Object.keys(params || {}).forEach(function (key) {
-                    if (key === 'token') return;
-                    if (params[key] !== undefined && params[key] !== null) {
-                        url.searchParams.set(key, String(params[key]));
-                    }
-                });
+            window[callbackName] = function (payload) {
+                if (settled) return;
+                settled = true;
+                cleanup();
 
-                const response = await fetch(url.toString(), {
-                    method: 'GET',
-                    cache: 'no-store',
-                    credentials: 'same-origin',
-                    signal: controller.signal
-                });
-
-                if (!response.ok) {
-                    throw new Error('本機代理回應失敗：HTTP ' + response.status);
-                }
-
-                const payload = await response.json();
                 if (!payload || payload.ok === false) {
-                    throw new Error((payload && payload.message) || '雲端職缺 API 失敗');
+                    reject(new Error((payload && payload.message) || '職缺雲端 API 失敗'));
+                    return;
                 }
 
                 resolve(payload);
-            } catch (error) {
-                if (error && error.name === 'AbortError') {
-                    reject(new Error('雲端職缺 API 逾時'));
-                } else {
-                    reject(error);
+            };
+
+            script.onerror = function () {
+                if (settled) return;
+                settled = true;
+                cleanup();
+                reject(new Error('職缺雲端 API 載入失敗'));
+            };
+
+            const url = new URL(JOB_API_URL);
+            url.searchParams.set('action', action);
+            url.searchParams.set('callback', callbackName);
+            url.searchParams.set('_', String(Date.now()));
+
+            Object.keys(params || {}).forEach(function (key) {
+                if (params[key] !== undefined && params[key] !== null) {
+                    url.searchParams.set(key, String(params[key]));
                 }
-            } finally {
-                window.clearTimeout(timer);
-            }
+            });
+
+            script.src = url.toString();
+            document.head.appendChild(script);
         });
     }
 
     async function loadCloudJobPosts() {
-        setCloudStatus('讀取 Google 雲端中…', '#2563eb');
-
-        try {
-            if (typeof loadDataFromCloud === 'function') {
-                await loadDataFromCloud(true);
-            }
-
-            const parsed = JSON.parse(
-                localStorage.getItem(STORAGE_KEY) || '[]'
-            );
-
-            jobPosts = Array.isArray(parsed) ? parsed : [];
-            window.jobPostData = jobPosts;
-            window.renderJobPosts();
-
-            setCloudStatus(
-                'Google 雲端已連線｜' + jobPosts.length + ' 筆',
-                '#16a34a'
-            );
-        } catch (error) {
-            console.error(error);
-
-            /*
-             * 雲端讀取失敗時保留目前電腦上的資料，
-             * 不會清空已經建立的職缺。
-             */
+        if (!isCloudConfigured()) {
             loadJobPosts();
             window.renderJobPosts();
+            setCloudStatus('職缺雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
+            return;
+        }
 
-            const reason =
-                error && error.message
-                    ? error.message
-                    : '未知錯誤';
+        setCloudStatus('讀取官網職缺雲端中…', '#2563eb');
 
-            setCloudStatus(
-                '雲端讀取失敗（點此重試）',
-                '#dc2626',
-                reason
-            );
+        try {
+            const payload = await jobApiBridge('all', { token: getJobApiToken() });
+            if (Array.isArray(payload.jobs)) {
+                jobPosts = payload.jobs;
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(jobPosts));
+                window.jobPostData = jobPosts;
+                window.renderJobPosts();
+            }
+            setCloudStatus('官網已連線｜' + jobPosts.length + ' 筆', '#16a34a');
+        } catch (error) {
+            console.error(error);
+            loadJobPosts();
+            window.renderJobPosts();
+            const reason = error && error.message ? error.message : '未知錯誤';
+            setCloudStatus('官網職缺讀取失敗（點此重試）', '#dc2626', reason);
         }
     }
 
     async function syncJobPostsToCloud() {
-        setCloudStatus('同步至 Google 雲端中…', '#2563eb');
+        if (!isCloudConfigured()) {
+            setCloudStatus('職缺雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
+            return;
+        }
 
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(jobPosts)
-        );
-
+        setCloudStatus('同步到外部官網中…', '#2563eb');
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(jobPosts));
         window.jobPostData = jobPosts;
 
+        const body = new URLSearchParams();
+        body.set('action', 'syncAll');
+        body.set('token', getJobApiToken());
+        body.set('payload', JSON.stringify({ jobs: jobPosts }));
+
         try {
-            if (
-                typeof window.qyjQueueExtraCloudSync ===
-                'function'
-            ) {
-                await window.qyjQueueExtraCloudSync(true);
-            } else if (
-                typeof pushCloudData === 'function'
-            ) {
-                await pushCloudData(true);
-            } else {
-                throw new Error('找不到 Google 雲端同步功能');
+            await fetch(JOB_API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: body.toString()
+            });
+
+            // 同時保留在內部主資料雲端，作為額外備份。
+            try {
+                if (typeof window.qyjQueueExtraCloudSync === 'function') {
+                    window.qyjQueueExtraCloudSync(true);
+                }
+            } catch (backupError) {
+                console.warn('內部主資料備份同步失敗：', backupError);
             }
 
-            setCloudStatus(
-                '已同步｜' + jobPosts.length + ' 筆',
-                '#16a34a'
-            );
+            window.setTimeout(async function () {
+                try {
+                    const verify = await jobApiBridge('all', { token: getJobApiToken() });
+                    const count = Array.isArray(verify.jobs) ? verify.jobs.length : 0;
+                    setCloudStatus('外部官網已同步｜' + count + ' 筆', '#16a34a');
+                } catch (error) {
+                    console.error(error);
+                    setCloudStatus('同步驗證失敗（點此重試）', '#dc2626', error && error.message ? error.message : '同步驗證失敗');
+                }
+            }, 1500);
         } catch (error) {
             console.error(error);
-
-            setCloudStatus(
-                '同步失敗（點此重試）',
-                '#dc2626',
-                error && error.message
-                    ? error.message
-                    : '同步失敗'
-            );
+            setCloudStatus('外部官網同步失敗（點此重試）', '#dc2626', error && error.message ? error.message : '同步失敗');
         }
     }
 
