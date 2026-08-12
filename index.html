@@ -26299,5 +26299,642 @@ function generatePayslipPDF() {
     );
 })();
 </script>
+
+
+<script id="qyjMultiUserSafeSyncV1">
+/* =========================================================
+   愜易居｜多人協作安全同步 v1
+   目的：
+   1. 只送「真的有改變」的內部資料區塊，不再每次整包覆蓋。
+   2. 每個資料區塊帶 baseVersion；後端版本不同就拒絕覆蓋。
+   3. 派遣紀錄沿用 _syncId / _updatedAt / 刪除 tombstone 合併。
+   4. 發生衝突時保留本機修改，不自動用雲端洗掉。
+   5. 外部官網職缺仍以獨立 JOB_API_URL 為唯一正式來源；
+      jobPostData 不參與內部主雲端的版本衝突同步。
+========================================================= */
+(function(){
+    'use strict';
+
+    const SYNC_PROTOCOL = 'delta-v1';
+    const VERSION_STORE = 'qyj_sync_versions_v1';
+    const HASH_STORE = 'qyj_sync_hashes_v1';
+    const CLIENT_STORE = 'qyj_sync_client_id_v1';
+    const CONFLICT_BACKUP_STORE = 'qyj_sync_conflict_backup_v1';
+
+    const SYNC_KEYS = [
+        'custData',
+        'contractData',
+        'staffData',
+        'attendData',
+        'attendDeletedIds',
+        'ftStaffData',
+        'ftAttendData',
+        'talentData',
+        'supplierData',
+        'matchData',
+        'reqData',
+        'dispatchData',
+        'salesStaffData',
+        'scheduleData',
+        'staffClockData',
+        'salaryDeductData',
+        'insuranceVersions',
+        'insuranceEnrollments',
+        'insuranceMonthlyResults',
+        'insuranceUpdatedAt',
+        'personalMakeupData',
+        'fulltimeAutoScheduleSettings',
+        'salaryBenefitAdditions',
+        'attendManualSpecialHourlyMap',
+        // jobPostData 故意不放：外部官網職缺使用獨立 JobPosts API。
+        'announcementItems',
+        'sopItems',
+        'sysConfig'
+    ];
+
+    const KEY_LABELS = {
+        custData:'客戶資料',
+        contractData:'合約方案',
+        staffData:'派遣人員',
+        attendData:'派遣紀錄',
+        attendDeletedIds:'派遣刪除紀錄',
+        ftStaffData:'正職人員',
+        ftAttendData:'正職出勤',
+        talentData:'內部人才招募庫',
+        supplierData:'供應商',
+        matchData:'派工媒合',
+        reqData:'客戶需求單',
+        dispatchData:'待派發案件',
+        salesStaffData:'業務人員',
+        scheduleData:'公司排班',
+        staffClockData:'員工打卡',
+        salaryDeductData:'薪資扣款',
+        insuranceVersions:'勞健保級距',
+        insuranceEnrollments:'投保異動',
+        insuranceMonthlyResults:'勞健保月結',
+        insuranceUpdatedAt:'勞健保更新時間',
+        personalMakeupData:'補班資料',
+        fulltimeAutoScheduleSettings:'正職排班設定',
+        salaryBenefitAdditions:'薪資福利加項',
+        attendManualSpecialHourlyMap:'特殊時薪設定',
+        announcementItems:'公告',
+        sopItems:'SOP',
+        sysConfig:'系統設定'
+    };
+
+    let cloudVersions = readObject(VERSION_STORE);
+    let cloudHashes = readObject(HASH_STORE);
+    let baselineReady = Object.keys(cloudVersions).length > 0;
+    let conflictLocked = false;
+    let syncQueue = Promise.resolve();
+    let lastSuccessAt = '';
+
+    function readObject(key){
+        try{
+            const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+            return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+                ? parsed
+                : {};
+        }catch(error){
+            return {};
+        }
+    }
+
+    function writeObject(key,value){
+        try{
+            localStorage.setItem(key,JSON.stringify(value || {}));
+        }catch(error){}
+    }
+
+    function getClientId(){
+        let id = localStorage.getItem(CLIENT_STORE) || '';
+        if(!id){
+            id = 'web_' + Date.now() + '_' + Math.random().toString(36).slice(2,10);
+            localStorage.setItem(CLIENT_STORE,id);
+        }
+        return id;
+    }
+
+    function canonical(value){
+        if(Array.isArray(value)){
+            return value.map(canonical);
+        }
+        if(value && typeof value === 'object'){
+            const out = {};
+            Object.keys(value).sort().forEach(function(key){
+                out[key] = canonical(value[key]);
+            });
+            return out;
+        }
+        return value;
+    }
+
+    function fingerprint(value){
+        let text;
+        try{
+            text = JSON.stringify(canonical(value));
+        }catch(error){
+            text = String(value);
+        }
+
+        let hash = 2166136261;
+        for(let i=0;i<text.length;i++){
+            hash ^= text.charCodeAt(i);
+            hash +=
+                (hash << 1) +
+                (hash << 4) +
+                (hash << 7) +
+                (hash << 8) +
+                (hash << 24);
+        }
+        return text.length + ':' + (hash >>> 0).toString(36);
+    }
+
+    function normalizeVersions(value){
+        const src = value && typeof value === 'object' ? value : {};
+        const out = {};
+        Object.keys(src).forEach(function(key){
+            const n = Number(src[key]);
+            out[key] = Number.isFinite(n) ? n : 0;
+        });
+        return out;
+    }
+
+    function captureCloudState(result){
+        if(!result || result.status === 'error') return;
+
+        cloudVersions = normalizeVersions(result._syncVersions || {});
+        const nextHashes = {};
+
+        SYNC_KEYS.forEach(function(key){
+            if(typeof result[key] !== 'undefined'){
+                nextHashes[key] = fingerprint(result[key]);
+            }
+        });
+
+        cloudHashes = nextHashes;
+        baselineReady = true;
+        lastSuccessAt = new Date().toLocaleTimeString('zh-TW',{hour12:false});
+        writeObject(VERSION_STORE,cloudVersions);
+        writeObject(HASH_STORE,cloudHashes);
+    }
+
+    function status(html,isError){
+        try{
+            if(typeof updateSyncStatus === 'function' && document.getElementById('sync-status')){
+                updateSyncStatus(html,Boolean(isError));
+            }
+        }catch(error){}
+    }
+
+    function toast(message,isError){
+        try{
+            if(typeof showToast === 'function'){
+                showToast(message,Boolean(isError));
+            }
+        }catch(error){}
+    }
+
+    function rawCloudRead(){
+        if(typeof window.qyjJsonpRead !== 'function'){
+            return Promise.reject(new Error('找不到內部雲端讀取功能'));
+        }
+        return window.qyjJsonpRead(60000);
+    }
+
+    function jsonpAction(action,params,timeoutMs){
+        return new Promise(function(resolve,reject){
+            const callbackName =
+                '__qyjSyncAction_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+            const script = document.createElement('script');
+            let finished = false;
+
+            const timer = window.setTimeout(function(){
+                cleanup();
+                reject(new Error('同步結果確認逾時'));
+            }, timeoutMs || 15000);
+
+            function cleanup(){
+                window.clearTimeout(timer);
+                try{ delete window[callbackName]; }
+                catch(error){ window[callbackName] = undefined; }
+                if(script.parentNode) script.parentNode.removeChild(script);
+            }
+
+            window[callbackName] = function(payload){
+                if(finished) return;
+                finished = true;
+                cleanup();
+                resolve(payload || {});
+            };
+
+            script.onerror = function(){
+                if(finished) return;
+                finished = true;
+                cleanup();
+                reject(new Error('同步結果確認失敗'));
+            };
+
+            const url = new URL(window.SCRIPT_URL || SCRIPT_URL);
+            url.searchParams.set('action',action);
+            url.searchParams.set('callback',callbackName);
+            url.searchParams.set('_',String(Date.now()));
+            Object.keys(params || {}).forEach(function(key){
+                if(params[key] !== undefined && params[key] !== null){
+                    url.searchParams.set(key,String(params[key]));
+                }
+            });
+
+            script.src = url.toString();
+            document.head.appendChild(script);
+        });
+    }
+
+    function pollReceipt(operationId,attempt){
+        attempt = attempt || 0;
+        return jsonpAction(
+            'syncStatus',
+            {operationId:operationId},
+            10000
+        ).then(function(result){
+            if(result && result.status !== 'pending'){
+                return result;
+            }
+            if(attempt >= 20){
+                throw new Error('雲端已收到資料，但同步結果確認逾時');
+            }
+            return new Promise(function(resolve){
+                setTimeout(resolve,500);
+            }).then(function(){
+                return pollReceipt(operationId,attempt + 1);
+            });
+        });
+    }
+
+    function changedKeys(fullPayload){
+        const changed = [];
+        SYNC_KEYS.forEach(function(key){
+            if(typeof fullPayload[key] === 'undefined') return;
+            const current = fingerprint(fullPayload[key]);
+            const cloud = cloudHashes[key];
+            if(typeof cloud === 'undefined' || current !== cloud){
+                changed.push(key);
+            }
+        });
+        return changed;
+    }
+
+    function addRelatedKeys(keys,fullPayload){
+        const set = new Set(keys);
+
+        // 派遣紀錄與刪除 tombstone 必須一起送。
+        if(set.has('attendData') || set.has('attendDeletedIds')){
+            set.add('attendData');
+            set.add('attendDeletedIds');
+        }
+
+        // 勞健保四項視為同一組，避免時間戳與內容不同步。
+        const insuranceGroup = [
+            'insuranceVersions',
+            'insuranceEnrollments',
+            'insuranceMonthlyResults',
+            'insuranceUpdatedAt'
+        ];
+        if(insuranceGroup.some(function(key){return set.has(key);} )){
+            insuranceGroup.forEach(function(key){
+                if(typeof fullPayload[key] !== 'undefined') set.add(key);
+            });
+        }
+
+        // 公告 / SOP 與 sysConfig.portalConf 保持一致。
+        const portalGroup = ['announcementItems','sopItems','sysConfig'];
+        if(portalGroup.some(function(key){return set.has(key);} )){
+            portalGroup.forEach(function(key){
+                if(typeof fullPayload[key] !== 'undefined') set.add(key);
+            });
+        }
+
+        return Array.from(set);
+    }
+
+    function backupConflict(fullPayload,keys,receipt){
+        try{
+            const data = {
+                savedAt:new Date().toISOString(),
+                keys:keys,
+                receipt:receipt || {},
+                values:{}
+            };
+            keys.forEach(function(key){
+                data.values[key] = fullPayload[key];
+            });
+            localStorage.setItem(
+                CONFLICT_BACKUP_STORE,
+                JSON.stringify(data)
+            );
+        }catch(error){}
+    }
+
+    function keyNames(keys){
+        return (keys || []).map(function(key){
+            return KEY_LABELS[key] || key;
+        }).join('、');
+    }
+
+    const originalLoadDataFromCloud =
+        typeof loadDataFromCloud === 'function'
+            ? loadDataFromCloud
+            : null;
+
+    if(originalLoadDataFromCloud){
+        const safeLoad = function(forceRender){
+            forceRender = Boolean(forceRender);
+
+            // 同步衝突尚未處理前，背景自動讀取不可洗掉本機剛修改內容。
+            if(conflictLocked && !forceRender){
+                status(
+                    '<i class="fas fa-shield-alt"></i> 同步衝突待處理｜已暫停自動覆蓋'
+                );
+                return Promise.resolve(null);
+            }
+
+            return Promise.resolve(
+                originalLoadDataFromCloud.call(this,forceRender)
+            ).then(function(result){
+                if(result){
+                    captureCloudState(result);
+                    conflictLocked = false;
+                }
+                return result;
+            }).catch(function(error){
+                if(!forceRender){
+                    status(
+                        '<i class="fas fa-wifi"></i> 暫時無法更新｜保留上次成功資料' +
+                        (lastSuccessAt ? ' ' + lastSuccessAt : '')
+                    );
+                    return null;
+                }
+                throw error;
+            });
+        };
+
+        try{ loadDataFromCloud = safeLoad; }catch(error){}
+        window.loadDataFromCloud = safeLoad;
+    }
+
+    function runDeltaPush(silent){
+        silent = Boolean(silent);
+
+        if(conflictLocked){
+            const error = new Error(
+                '雲端已有同事更新，請先按「立即讀取」取得最新版後再儲存。你的衝突修改已備份在本機。'
+            );
+            if(!silent) toast('⚠️ ' + error.message,true);
+            return Promise.reject(error);
+        }
+
+        try{
+            if(typeof window.qyjRestoreManualSpecialRates === 'function'){
+                window.qyjRestoreManualSpecialRates();
+            }
+        }catch(error){}
+
+        if(!baselineReady){
+            status('<i class="fas fa-spinner fa-spin"></i> 正在建立多人同步基準…');
+            return rawCloudRead().then(function(result){
+                captureCloudState(result);
+                const error = new Error(
+                    '已取得雲端最新版本。為避免第一次操作覆蓋同事資料，請確認畫面後再按一次儲存。'
+                );
+                if(!silent) toast('⚠️ ' + error.message,true);
+                throw error;
+            });
+        }
+
+        const fullPayload =
+            typeof buildCloudPayload === 'function'
+                ? buildCloudPayload()
+                : {};
+
+        try{
+            if(typeof saveLocalData === 'function') saveLocalData();
+        }catch(error){}
+
+        let keys = addRelatedKeys(
+            changedKeys(fullPayload),
+            fullPayload
+        );
+
+        if(keys.length === 0){
+            status('<i class="fas fa-cloud-check-alt"></i> 雲端已是最新');
+            return Promise.resolve({status:'nochange',savedKeys:[]});
+        }
+
+        const operationId =
+            'op_' + Date.now() + '_' + Math.random().toString(36).slice(2,10);
+        const delta = {
+            _syncMode:SYNC_PROTOCOL,
+            _operationId:operationId,
+            _clientId:getClientId(),
+            _baseVersions:{}
+        };
+
+        keys.forEach(function(key){
+            delta[key] = fullPayload[key];
+            delta._baseVersions[key] = Number(cloudVersions[key] || 0);
+        });
+
+        if(!silent){
+            status(
+                '<i class="fas fa-spinner fa-spin"></i> 安全同步中｜' +
+                keyNames(keys)
+            );
+        }
+
+        return fetch(
+            window.SCRIPT_URL || SCRIPT_URL,
+            {
+                method:'POST',
+                mode:'no-cors',
+                headers:{'Content-Type':'text/plain;charset=utf-8'},
+                body:JSON.stringify(delta)
+            }
+        ).then(function(){
+            return pollReceipt(operationId,0);
+        }).then(function(receipt){
+            if(receipt && receipt.status === 'conflict'){
+                conflictLocked = true;
+                const conflictKeys =
+                    Array.isArray(receipt.conflictKeys)
+                        ? receipt.conflictKeys
+                        : keys;
+
+                backupConflict(fullPayload,conflictKeys,receipt);
+                status(
+                    '<i class="fas fa-shield-alt"></i> 已阻止覆蓋｜' +
+                    keyNames(conflictKeys),
+                    true
+                );
+
+                const error = new Error(
+                    '其他同事已更新【' + keyNames(conflictKeys) +
+                    '】。系統已阻止你的舊版本覆蓋雲端，且已把你剛才的修改備份在這台電腦。'
+                );
+                if(!silent) toast('⚠️ ' + error.message,true);
+                throw error;
+            }
+
+            if(!receipt || receipt.status !== 'success'){
+                const error = new Error(
+                    receipt && receipt.message
+                        ? receipt.message
+                        : '雲端同步失敗'
+                );
+                if(!silent) toast('❌ ' + error.message,true);
+                throw error;
+            }
+
+            if(receipt.currentVersions){
+                cloudVersions = normalizeVersions(receipt.currentVersions);
+                writeObject(VERSION_STORE,cloudVersions);
+            }
+
+            // 先把本次已確認成功的內容當成新的同步基準。
+            // 即使畫面仍有輸入保護、暫時不能立刻重讀，也不會把同一批資料重送。
+            keys.forEach(function(key){
+                if(typeof fullPayload[key] !== 'undefined'){
+                    cloudHashes[key] = fingerprint(fullPayload[key]);
+                }
+            });
+            writeObject(HASH_STORE,cloudHashes);
+
+            // 成功後立刻嘗試讀回最新雲端，吸收其他同事在不同區塊的更新。
+            if(originalLoadDataFromCloud){
+                return Promise.resolve(
+                    originalLoadDataFromCloud.call(window,false)
+                ).then(function(latest){
+                    if(latest) captureCloudState(latest);
+                    return receipt;
+                });
+            }
+
+            return rawCloudRead().then(function(latest){
+                captureCloudState(latest);
+                return receipt;
+            });
+        }).then(function(receipt){
+            try{
+                if(typeof clearFormDirty === 'function') clearFormDirty();
+            }catch(error){}
+
+            status(
+                '<i class="fas fa-cloud-check-alt"></i> 多人同步完成｜' +
+                new Date().toLocaleTimeString('zh-TW',{hour12:false})
+            );
+            if(!silent){
+                toast('✅ 已安全同步，並取得同事最新資料');
+            }
+            return receipt;
+        }).catch(function(error){
+            if(!conflictLocked){
+                status(
+                    '<i class="fas fa-exclamation-triangle"></i> 同步未完成｜本機資料仍保留',
+                    true
+                );
+            }
+            throw error;
+        });
+    }
+
+    const safePushCloudData = function(silent){
+        syncQueue = syncQueue
+            .catch(function(){})
+            .then(function(){
+                return runDeltaPush(silent);
+            });
+        return syncQueue;
+    };
+
+    try{ pushCloudData = safePushCloudData; }catch(error){}
+    window.pushCloudData = safePushCloudData;
+
+    // 衝突後必須由使用者明確確認，才會以雲端最新版覆蓋目前畫面。
+    const safeManualCloudRead = function(){
+        if(
+            typeof isSafeSyncBlocked === 'function' &&
+            isSafeSyncBlocked()
+        ){
+            toast(
+                '請先儲存或清除目前正在輸入的表單，再讀取雲端。',
+                true
+            );
+            return;
+        }
+
+        if(conflictLocked){
+            const ok = window.confirm(
+                '剛才偵測到其他同事已更新同一資料區塊。\n\n' +
+                '你的衝突修改已備份在這台電腦。\n' +
+                '現在讀取會讓畫面改成「雲端最新版本」。\n\n' +
+                '確定要讀取最新資料嗎？'
+            );
+            if(!ok) return;
+        }
+
+        status('<i class="fas fa-spinner fa-spin"></i> 讀取雲端最新資料…');
+
+        const loader = window.loadDataFromCloud || originalLoadDataFromCloud;
+        if(!loader) return;
+
+        Promise.resolve(loader(true))
+            .then(function(result){
+                if(result){
+                    captureCloudState(result);
+                    conflictLocked = false;
+                    toast('✅ 已讀取雲端最新資料');
+                }
+            })
+            .catch(function(error){
+                toast('❌ ' + (error && error.message ? error.message : '讀取失敗'),true);
+            });
+    };
+
+    try{ manualCloudRead = safeManualCloudRead; }catch(error){}
+    window.manualCloudRead = safeManualCloudRead;
+
+    // 頁面啟動後盡快建立版本基準；不改原本每 60 秒自動讀取機制。
+    function establishBaseline(){
+        if(conflictLocked) return;
+
+        const loader = window.loadDataFromCloud || originalLoadDataFromCloud;
+        if(!loader) return;
+
+        Promise.resolve(loader(false))
+            .then(function(result){
+                if(result) captureCloudState(result);
+            })
+            .catch(function(){});
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded',function(){
+            setTimeout(establishBaseline,350);
+        });
+    }else{
+        setTimeout(establishBaseline,350);
+    }
+
+    window.__qyjMultiUserSync = {
+        protocol:SYNC_PROTOCOL,
+        getVersions:function(){return Object.assign({},cloudVersions);},
+        isBaselineReady:function(){return baselineReady;},
+        isConflictLocked:function(){return conflictLocked;},
+        conflictBackupKey:CONFLICT_BACKUP_STORE
+    };
+
+    console.log('愜易居多人協作安全同步 v1 已載入');
+})();
+</script>
+
 </body>
 </html>
