@@ -25553,71 +25553,147 @@ function generatePayslipPDF() {
         loadCloudJobPosts();
     };
 
-    async function internalJobProxy(action, payload, timeoutMs) {
+    function internalJobJsonpRead(timeoutMs) {
         if (!isCloudConfigured()) {
-            throw new Error('內部雲端 SCRIPT_URL 未設定');
+            return Promise.reject(
+                new Error('內部雲端 SCRIPT_URL 未設定')
+            );
         }
 
-        const controller =
-            typeof AbortController !== 'undefined'
-                ? new AbortController()
-                : null;
+        timeoutMs = timeoutMs || 60000;
 
-        const timer = window.setTimeout(function () {
-            if (controller) controller.abort();
-        }, timeoutMs || 30000);
+        return new Promise(function(resolve, reject) {
+            const callbackName =
+                '__qyjJobCloudCallback_' +
+                Date.now() +
+                '_' +
+                Math.random()
+                    .toString(36)
+                    .slice(2);
 
-        try {
-            const body = Object.assign(
+            const script =
+                document.createElement('script');
+
+            let settled = false;
+
+            const timer =
+                window.setTimeout(function() {
+                    cleanup();
+
+                    reject(
+                        new Error(
+                            '中央職缺雲端讀取逾時'
+                        )
+                    );
+                }, timeoutMs);
+
+            function cleanup() {
+                if (settled) return;
+                settled = true;
+
+                window.clearTimeout(timer);
+
+                try {
+                    delete window[callbackName];
+                } catch (_) {
+                    window[callbackName] =
+                        undefined;
+                }
+
+                if (
+                    script &&
+                    script.parentNode
+                ) {
+                    script.parentNode
+                        .removeChild(script);
+                }
+            }
+
+            window[callbackName] =
+                function(data) {
+                    cleanup();
+
+                    if (
+                        !data ||
+                        data.status !== 'success'
+                    ) {
+                        reject(
+                            new Error(
+                                data &&
+                                data.message
+                                  ? data.message
+                                  : '中央職缺雲端回傳錯誤'
+                            )
+                        );
+                        return;
+                    }
+
+                    resolve(data);
+                };
+
+            script.onerror =
+                function() {
+                    cleanup();
+
+                    reject(
+                        new Error(
+                            '中央職缺雲端載入失敗'
+                        )
+                    );
+                };
+
+            const url =
+                getInternalCloudUrl() +
+                (
+                    getInternalCloudUrl()
+                        .includes('?')
+                      ? '&'
+                      : '?'
+                ) +
+                'action=getJobPosts' +
+                '&callback=' +
+                encodeURIComponent(
+                    callbackName
+                ) +
+                '&_=' +
+                Date.now();
+
+            script.src = url;
+
+            document.head
+                .appendChild(script);
+        });
+    }
+
+    function internalJobPostNoCors(
+        action,
+        payload
+    ) {
+        if (!isCloudConfigured()) {
+            return Promise.reject(
+                new Error('內部雲端 SCRIPT_URL 未設定')
+            );
+        }
+
+        const body =
+            Object.assign(
                 {},
                 payload || {},
                 { action: action }
             );
 
-            const response = await fetch(
-                getInternalCloudUrl(),
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type':
-                            'text/plain;charset=utf-8'
-                    },
-                    body: JSON.stringify(body),
-                    redirect: 'follow',
-                    signal: controller
-                        ? controller.signal
-                        : undefined
-                }
-            );
-
-            const result = await response.json();
-
-            if (
-                !result ||
-                result.status !== 'success'
-            ) {
-                throw new Error(
-                    result && result.message
-                        ? result.message
-                        : '中央職缺雲端操作失敗'
-                );
+        return fetch(
+            getInternalCloudUrl(),
+            {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type':
+                        'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify(body)
             }
-
-            return result;
-        } catch (error) {
-            if (
-                error &&
-                error.name === 'AbortError'
-            ) {
-                throw new Error(
-                    '中央職缺雲端逾時'
-                );
-            }
-
-            throw error;
-        } finally {
-            window.clearTimeout(timer);
-        }
+        );
     }
 
     async function loadCloudJobPosts() {
@@ -25643,10 +25719,8 @@ function generatePayslipPDF() {
 
         try {
             const payload =
-                await internalJobProxy(
-                    'getJobPosts',
-                    {},
-                    30000
+                await internalJobJsonpRead(
+                    60000
                 );
 
             if (Array.isArray(payload.jobs)) {
@@ -25722,14 +25796,26 @@ function generatePayslipPDF() {
         window.jobPostData = jobPosts;
 
         try {
+            await internalJobPostNoCors(
+                'syncJobPosts',
+                {
+                    jobs: jobPosts,
+                    baseIds: cloudBaseIds
+                }
+            );
+
+            // Apps Script no-cors POST 無法直接讀取 response，
+            // 等待伺服器寫入後，再用 JSONP 重新讀取並確認正式結果。
+            await new Promise(function(resolve) {
+                window.setTimeout(
+                    resolve,
+                    1800
+                );
+            });
+
             const result =
-                await internalJobProxy(
-                    'syncJobPosts',
-                    {
-                        jobs: jobPosts,
-                        baseIds: cloudBaseIds
-                    },
-                    45000
+                await internalJobJsonpRead(
+                    60000
                 );
 
             if (Array.isArray(result.jobs)) {
