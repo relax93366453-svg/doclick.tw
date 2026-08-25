@@ -25494,10 +25494,12 @@ function generatePayslipPDF() {
     'use strict';
 
     const STORAGE_KEY = 'jobPostData';
-    const JOB_API_TOKEN_STORAGE_KEY = 'jobPostAdminToken';
-    // 對外官網職缺專用 Apps Script API：內部上架後，外部官網 /jobs 讀取同一份 JobPosts 資料。
-    const JOB_API_URL = 'https://script.google.com/macros/s/AKfycbxf5sgRpnMaiU8lWPJ_0_n34jaJgc1-pKUnyjf5d7nvAIP5v0hF_ZRss-NJru5zLnux/exec';
+    // 官網職缺改走「內部雲端 Apps Script」中央代理。
+    // JOB_ADMIN_TOKEN 只存在伺服器端 Script Properties，
+    // 所有同事不用再各自在瀏覽器輸入 Token。
     let cloudSyncTimer = null;
+    let cloudBaseIds = [];
+    let cloudReadInFlight = false;
     const DISTRICTS = {
         '台北市': ['中正區', '大同區', '中山區', '松山區', '大安區', '萬華區', '信義區', '士林區', '北投區', '內湖區', '南港區', '文山區'],
         '新北市': ['板橋區', '三重區', '中和區', '永和區', '新莊區', '新店區', '土城區', '蘆洲區', '樹林區', '汐止區', '鶯歌區', '三峽區', '淡水區', '瑞芳區', '五股區', '泰山區', '林口區', '深坑區', '石碇區', '坪林區', '三芝區', '石門區', '八里區', '平溪區', '雙溪區', '貢寮區', '金山區', '萬里區', '烏來區'],
@@ -25527,16 +25529,14 @@ function generatePayslipPDF() {
         }
     }
 
-    function getJobApiToken() {
-        return String(localStorage.getItem(JOB_API_TOKEN_STORAGE_KEY) || '').trim();
+    function getInternalCloudUrl() {
+        return String(window.SCRIPT_URL || '').trim();
     }
 
     function isCloudConfigured() {
-        const token = getJobApiToken();
-        return /^https:\/\/script\.google\.com\/macros\/s\//.test(JOB_API_URL)
-            && Boolean(token)
-            && !token.startsWith('PASTE_')
-            && token !== 'JOB_ADMIN_TOKEN';
+        return /^https:\/\/script\.google\.com\/macros\/s\//.test(
+            getInternalCloudUrl()
+        );
     }
 
     function setCloudStatus(text, color, title) {
@@ -25549,157 +25549,255 @@ function generatePayslipPDF() {
     }
 
     window.configureJobCloud = function () {
-        const current = getJobApiToken();
-        const input = window.prompt(
-            '請貼上職缺 API 的 JOB_ADMIN_TOKEN。\nToken 只會儲存在這台電腦的瀏覽器，不會寫進 GitHub。',
-            current
-        );
-
-        if (input === null) return;
-        const token = String(input).trim();
-
-        if (!token) {
-            localStorage.removeItem(JOB_API_TOKEN_STORAGE_KEY);
-            setCloudStatus('職缺雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
-            return;
-        }
-
-        localStorage.setItem(JOB_API_TOKEN_STORAGE_KEY, token);
-        setCloudStatus('驗證職缺雲端中…', '#2563eb');
+        // 已改為中央設定，不再讓每台電腦輸入 Token。
         loadCloudJobPosts();
     };
 
-    function jobApiBridge(action, params, timeoutMs) {
-        return new Promise(function (resolve, reject) {
-            if (!isCloudConfigured()) {
-                reject(new Error('職缺雲端尚未設定，請點右上角狀態文字輸入 JOB_ADMIN_TOKEN'));
-                return;
+    async function internalJobProxy(action, payload, timeoutMs) {
+        if (!isCloudConfigured()) {
+            throw new Error('內部雲端 SCRIPT_URL 未設定');
+        }
+
+        const controller =
+            typeof AbortController !== 'undefined'
+                ? new AbortController()
+                : null;
+
+        const timer = window.setTimeout(function () {
+            if (controller) controller.abort();
+        }, timeoutMs || 30000);
+
+        try {
+            const body = Object.assign(
+                {},
+                payload || {},
+                { action: action }
+            );
+
+            const response = await fetch(
+                getInternalCloudUrl(),
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type':
+                            'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify(body),
+                    redirect: 'follow',
+                    signal: controller
+                        ? controller.signal
+                        : undefined
+                }
+            );
+
+            const result = await response.json();
+
+            if (
+                !result ||
+                result.status !== 'success'
+            ) {
+                throw new Error(
+                    result && result.message
+                        ? result.message
+                        : '中央職缺雲端操作失敗'
+                );
             }
 
-            const callbackName = '__doclickJobCallback_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-            const script = document.createElement('script');
-            let settled = false;
-
-            const timer = window.setTimeout(function () {
-                cleanup();
-                reject(new Error('職缺雲端 API 逾時'));
-            }, timeoutMs || 20000);
-
-            function cleanup() {
-                window.clearTimeout(timer);
-                try { delete window[callbackName]; } catch (error) { window[callbackName] = undefined; }
-                if (script.parentNode) script.parentNode.removeChild(script);
+            return result;
+        } catch (error) {
+            if (
+                error &&
+                error.name === 'AbortError'
+            ) {
+                throw new Error(
+                    '中央職缺雲端逾時'
+                );
             }
 
-            window[callbackName] = function (payload) {
-                if (settled) return;
-                settled = true;
-                cleanup();
-
-                if (!payload || payload.ok === false) {
-                    reject(new Error((payload && payload.message) || '職缺雲端 API 失敗'));
-                    return;
-                }
-
-                resolve(payload);
-            };
-
-            script.onerror = function () {
-                if (settled) return;
-                settled = true;
-                cleanup();
-                reject(new Error('職缺雲端 API 載入失敗'));
-            };
-
-            const url = new URL(JOB_API_URL);
-            url.searchParams.set('action', action);
-            url.searchParams.set('callback', callbackName);
-            url.searchParams.set('_', String(Date.now()));
-
-            Object.keys(params || {}).forEach(function (key) {
-                if (params[key] !== undefined && params[key] !== null) {
-                    url.searchParams.set(key, String(params[key]));
-                }
-            });
-
-            script.src = url.toString();
-            document.head.appendChild(script);
-        });
+            throw error;
+        } finally {
+            window.clearTimeout(timer);
+        }
     }
 
     async function loadCloudJobPosts() {
+        if (cloudReadInFlight) return;
+
         if (!isCloudConfigured()) {
             loadJobPosts();
             window.renderJobPosts();
-            setCloudStatus('職缺雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
+            setCloudStatus(
+                '內部雲端未設定',
+                '#dc2626',
+                '找不到內部雲端 SCRIPT_URL'
+            );
             return;
         }
 
-        setCloudStatus('讀取官網職缺雲端中…', '#2563eb');
+        cloudReadInFlight = true;
+
+        setCloudStatus(
+            '讀取官網職缺雲端中…',
+            '#2563eb'
+        );
 
         try {
-            const payload = await jobApiBridge('all', { token: getJobApiToken() });
+            const payload =
+                await internalJobProxy(
+                    'getJobPosts',
+                    {},
+                    30000
+                );
+
             if (Array.isArray(payload.jobs)) {
                 jobPosts = payload.jobs;
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(jobPosts));
+
+                cloudBaseIds = jobPosts
+                    .map(function (item) {
+                        return String(
+                            item && item.id || ''
+                        ).trim();
+                    })
+                    .filter(Boolean);
+
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(jobPosts)
+                );
+
                 window.jobPostData = jobPosts;
                 window.renderJobPosts();
             }
-            setCloudStatus('官網已連線｜' + jobPosts.length + ' 筆', '#16a34a');
+
+            setCloudStatus(
+                '官網已連線｜' +
+                    jobPosts.length +
+                    ' 筆',
+                '#16a34a',
+                '中央雲端正常；點此立即重新讀取'
+            );
         } catch (error) {
             console.error(error);
+
+            // 讀取失敗時保留畫面既有資料，
+            // 不再用另一台電腦自己的 Token/設定。
             loadJobPosts();
             window.renderJobPosts();
-            const reason = error && error.message ? error.message : '未知錯誤';
-            setCloudStatus('官網職缺讀取失敗（點此重試）', '#dc2626', reason);
+
+            const reason =
+                error && error.message
+                    ? error.message
+                    : '未知錯誤';
+
+            setCloudStatus(
+                '官網職缺讀取失敗（點此重試）',
+                '#dc2626',
+                reason
+            );
+        } finally {
+            cloudReadInFlight = false;
         }
     }
 
     async function syncJobPostsToCloud() {
         if (!isCloudConfigured()) {
-            setCloudStatus('職缺雲端未設定（點此設定）', '#94a3b8', '點一下設定 JOB_ADMIN_TOKEN');
+            setCloudStatus(
+                '內部雲端未設定',
+                '#dc2626',
+                '找不到內部雲端 SCRIPT_URL'
+            );
             return;
         }
 
-        setCloudStatus('同步到外部官網中…', '#2563eb');
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(jobPosts));
+        setCloudStatus(
+            '同步到外部官網中…',
+            '#2563eb'
+        );
+
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(jobPosts)
+        );
+
         window.jobPostData = jobPosts;
 
-        const body = new URLSearchParams();
-        body.set('action', 'syncAll');
-        body.set('token', getJobApiToken());
-        body.set('payload', JSON.stringify({ jobs: jobPosts }));
-
         try {
-            await fetch(JOB_API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                body: body.toString()
-            });
+            const result =
+                await internalJobProxy(
+                    'syncJobPosts',
+                    {
+                        jobs: jobPosts,
+                        baseIds: cloudBaseIds
+                    },
+                    45000
+                );
 
-            // 同時保留在內部主資料雲端，作為額外備份。
-            try {
-                if (typeof window.qyjQueueExtraCloudSync === 'function') {
-                    window.qyjQueueExtraCloudSync(true);
-                }
-            } catch (backupError) {
-                console.warn('內部主資料備份同步失敗：', backupError);
+            if (Array.isArray(result.jobs)) {
+                jobPosts = result.jobs;
+
+                cloudBaseIds = jobPosts
+                    .map(function (item) {
+                        return String(
+                            item && item.id || ''
+                        ).trim();
+                    })
+                    .filter(Boolean);
+
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(jobPosts)
+                );
+
+                window.jobPostData = jobPosts;
+                window.renderJobPosts();
             }
 
-            window.setTimeout(async function () {
-                try {
-                    const verify = await jobApiBridge('all', { token: getJobApiToken() });
-                    const count = Array.isArray(verify.jobs) ? verify.jobs.length : 0;
-                    setCloudStatus('外部官網已同步｜' + count + ' 筆', '#16a34a');
-                } catch (error) {
-                    console.error(error);
-                    setCloudStatus('同步驗證失敗（點此重試）', '#dc2626', error && error.message ? error.message : '同步驗證失敗');
+            // 同步後仍保留在內部主資料雲端作額外備份。
+            try {
+                if (
+                    typeof window
+                        .qyjQueueExtraCloudSync ===
+                    'function'
+                ) {
+                    window.qyjQueueExtraCloudSync(
+                        true
+                    );
                 }
-            }, 1500);
+            } catch (backupError) {
+                console.warn(
+                    '內部主資料備份同步失敗：',
+                    backupError
+                );
+            }
+
+            setCloudStatus(
+                '外部官網已同步｜' +
+                    jobPosts.length +
+                    ' 筆',
+                '#16a34a',
+                '所有同事共用中央職缺資料'
+            );
         } catch (error) {
             console.error(error);
-            setCloudStatus('外部官網同步失敗（點此重試）', '#dc2626', error && error.message ? error.message : '同步失敗');
+
+            setCloudStatus(
+                '外部官網同步失敗（點此重試）',
+                '#dc2626',
+                error && error.message
+                    ? error.message
+                    : '同步失敗'
+            );
+
+            notify(
+                '職缺雲端同步失敗：' +
+                    (
+                        error &&
+                        error.message
+                            ? error.message
+                            : '未知錯誤'
+                    ),
+                true
+            );
         }
     }
 
@@ -26042,7 +26140,7 @@ function generatePayslipPDF() {
         });
 
         byId('jobPostCloudStatus')?.addEventListener('click', function () {
-            window.configureJobCloud();
+            loadCloudJobPosts();
         });
 
         byId('jobPostCloseBtn')?.addEventListener('click', window.closeJobPostModal);
@@ -26105,12 +26203,31 @@ function generatePayslipPDF() {
         init();
     }
 
+    window.setInterval(function () {
+        const page = byId('page-job_posts');
+        const modal = byId('jobPostModal');
+
+        if (
+            page &&
+            page.classList.contains('active') &&
+            !(
+                modal &&
+                modal.classList.contains('active')
+            )
+        ) {
+            loadCloudJobPosts();
+        }
+    }, 30000);
+
     const originalShowAdminPage = window.showAdminPage;
     if (typeof originalShowAdminPage === 'function') {
         window.showAdminPage = function (page) {
             const result = originalShowAdminPage.apply(this, arguments);
             if (page === 'job_posts') {
-                setTimeout(window.renderJobPosts, 0);
+                setTimeout(function () {
+                    window.renderJobPosts();
+                    loadCloudJobPosts();
+                }, 0);
             }
             return result;
         };
