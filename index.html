@@ -2009,7 +2009,7 @@
                     <label>狀態：</label>
                     <select id="tp_filter_status" onchange="resetPage('talent'); renderTalentTable()"><option value="all">全部</option><option value="待聯絡">待聯絡</option><option value="已聯絡">已聯絡</option><option value="已錄取">已錄取</option><option value="淘汰">淘汰</option></select>
                     <button class="btn btn-clear-filter" onclick="clearFilters('talent')"><i class="fas fa-broom"></i> 清除搜尋</button>
-                    <button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 雲端表單同步</button>
+                    <button class="btn btn-sync" onclick="syncTalentFromForm()" style="margin-left:auto;"><i class="fas fa-cloud-download-alt"></i> 同步人才資料</button>
                     <button class="btn btn-excel" onclick="exportExcel('talentTableBox','人才庫')">匯出全部</button>
                 </div>
                 <div class="table-responsive">
@@ -4649,7 +4649,44 @@ function saveAll() {
         });
 }
 
-function syncTalentFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 已讀取 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}｜15秒自動更新`); }); }
+async function syncTalentFromForm() {
+    if(el('sync-status')) {
+        updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 同步人才資料中...');
+    }
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method:'POST',
+            body:JSON.stringify({action:'syncTalentSources'}),
+            headers:{'Content-Type':'text/plain;charset=utf-8'}
+        });
+
+        const result = await response.json();
+
+        if(!result || result.status !== 'success') {
+            throw new Error((result && result.message) || '人才同步失敗');
+        }
+
+        // 再讀一次雲端：同時保留原 Google 表單匯入流程，並取得剛同步的官網人才。
+        await loadDataFromCloud(false);
+
+        const added = Number(result.websiteAdded || 0);
+        const updated = Number(result.websiteUpdated || 0);
+        const skipped = Number(result.websiteSkipped || 0);
+
+        showToast(`✅ 人才同步完成｜官網新增 ${added}、更新 ${updated}${skipped ? `、略過 ${skipped}` : ''}`);
+
+        if(el('sync-status')) {
+            updateSyncStatus(`<i class="fas fa-cloud-download-alt"></i> 人才資料已同步 ${new Date().toLocaleTimeString('zh-TW',{hour12:false})}`);
+        }
+    } catch(e) {
+        console.error('syncTalentFromForm error:', e);
+        showToast('❌ 人才同步失敗：' + (e && e.message ? e.message : '網路錯誤'), true);
+        if(el('sync-status')) {
+            updateSyncStatus('<i class="fas fa-exclamation-triangle"></i> 人才同步失敗', true);
+        }
+    }
+}
 function syncReqFromForm() { if(el('sync-status')) updateSyncStatus('<i class="fas fa-spinner fa-spin"></i>...'); fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({action:'syncForm'}), headers:{'Content-Type':'text/plain;charset=utf-8'} }).then(r=>r.json()).then(r=>{ showToast(`✅ 同步完成！`); loadDataFromCloud(true); }).catch(e=>{ showToast('❌ 網路錯誤',true); if(el('sync-status')) updateSyncStatus('<i class="fas fa-cloud"></i> 就緒'); }); }
 
 
@@ -6462,24 +6499,78 @@ function clearMatchForm() {
     const b = el('btnAddMatch'); if(b) b.style.display = 'inline-block'; 
 }
 
-function renderTalentTable() { 
-    const tr = el('tp_filter_role').value.toLowerCase(), ts = el('tp_filter_status').value; 
-    let l = talentData.filter(x => (ts === 'all' || x.status === ts) && (!tr || (x.role||'').toLowerCase().includes(tr))); 
-    const {pagedList, total, totalPages} = getPagedData(l, 'talent');
-    let h = '';
-    pagedList.forEach(item => { 
-        const idx = talentData.indexOf(item); 
-        let sc = 'badge-blue'; 
-        if(item.status === '已錄取') sc = 'badge-green'; 
-        else if(item.status === '淘汰') sc = 'badge-red'; 
-        
-        let rb = item.resume ? `<button class="btn-sm btn-excel" onclick="window.open('${item.resume}','_blank')"><i class="fas fa-link"></i></button>` : '-'; 
-        h += `<tr><td>${item.name}</td><td>${item.tel||'-'}</td><td>${item.source||'-'}</td><td>${item.location||'-'}</td><td>${item.shift||'-'}</td><td>${item.role||'-'}</td><td><span class="badge ${sc}">${item.status}</span></td><td>${item.eval||'-'}</td><td>${rb}</td><td>${item.date||'-'}</td><td style="white-space:nowrap;"><button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button> <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button></td></tr>`; 
-    });
-    el('talentTable').innerHTML = h || '<tr><td colspan="11" style="text-align:center;">無資料</td></tr>'; 
-    renderPagination('talent', total, totalPages); 
+function qyjTalentEscapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#039;');
 }
 
+function qyjTalentSourceBadge(source) {
+    const s = String(source || '-');
+    let bg = '#e2e8f0', color = '#475569';
+    if(s.includes('官網履歷') && s.includes('Google')) { bg='#fef3c7'; color='#92400e'; }
+    else if(s.includes('官網履歷')) { bg='#ffedd5'; color='#c2410c'; }
+    else if(s.includes('Google')) { bg='#dbeafe'; color='#1d4ed8'; }
+    return `<span style="display:inline-block;padding:4px 9px;border-radius:999px;background:${bg};color:${color};font-weight:700;font-size:11px;white-space:nowrap;">${qyjTalentEscapeHtml(s)}</span>`;
+}
+
+function renderTalentTable() {
+    const roleInput = el('tp_filter_role');
+    const statusInput = el('tp_filter_status');
+    const tr = roleInput ? roleInput.value.toLowerCase() : '';
+    const ts = statusInput ? statusInput.value : 'all';
+
+    let l = talentData.filter(x =>
+        (ts === 'all' || x.status === ts) &&
+        (!tr ||
+            String(x.role||'').toLowerCase().includes(tr) ||
+            String(x.name||'').toLowerCase().includes(tr) ||
+            String(x.tel||'').toLowerCase().includes(tr) ||
+            String(x.email||'').toLowerCase().includes(tr)
+        )
+    );
+
+    const {pagedList, total, totalPages} = getPagedData(l, 'talent');
+    let h = '';
+
+    pagedList.forEach(item => {
+        const idx = talentData.indexOf(item);
+        let sc = 'badge-blue';
+        if(item.status === '已錄取') sc = 'badge-green';
+        else if(item.status === '淘汰') sc = 'badge-red';
+
+        let resumeButton = '-';
+        if(item.websiteResume && item.externalUserId) {
+            resumeButton = `<button class="btn-sm btn-excel" onclick="openWebsiteTalentResume(${idx})" title="查看官網最新完整履歷"><i class="fas fa-file-alt"></i> 查看履歷</button>`;
+        } else if(item.resume) {
+            const safeUrl = qyjTalentEscapeHtml(item.resume);
+            resumeButton = `<button class="btn-sm btn-excel" onclick="window.open('${safeUrl}','_blank')"><i class="fas fa-link"></i> 開啟</button>`;
+        }
+
+        h += `<tr>
+            <td>${qyjTalentEscapeHtml(item.name||'-')}</td>
+            <td>${qyjTalentEscapeHtml(item.tel||'-')}</td>
+            <td>${qyjTalentSourceBadge(item.source)}</td>
+            <td>${qyjTalentEscapeHtml(item.location||'-')}</td>
+            <td>${qyjTalentEscapeHtml(item.shift||'-')}</td>
+            <td>${qyjTalentEscapeHtml(item.role||'-')}</td>
+            <td><span class="badge ${sc}">${qyjTalentEscapeHtml(item.status||'待聯絡')}</span></td>
+            <td>${qyjTalentEscapeHtml(item.eval||'-')}</td>
+            <td>${resumeButton}</td>
+            <td>${qyjTalentEscapeHtml(item.date||'-')}</td>
+            <td style="white-space:nowrap;">
+                <button class="btn-sm btn-warning" onclick="editTalent(${idx})"><i class="fas fa-edit"></i></button>
+                <button class="btn-sm btn-pdf" onclick="delTalent(${idx})"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    });
+
+    el('talentTable').innerHTML = h || '<tr><td colspan="11" style="text-align:center;padding:30px;color:#94a3b8;">目前沒有符合條件的人才資料</td></tr>';
+    renderPagination('talent', total, totalPages);
+}
 function addTalent() { 
     const o = {
         name:el('tp_name').value.trim(), tel:el('tp_tel').value.trim(), 
@@ -6541,6 +6632,155 @@ function clearTalentForm() {
     el('btnUpdateTalent').style.display = 'none'; 
     const b = el('btnAddTalent'); if(b) b.style.display = 'inline-block'; 
 }
+
+
+function qyjTalentPrettyLabel(key) {
+    const map = {
+        basicInfo:'個人資料', personalInfo:'個人資料', profile:'個人資料',
+        name:'姓名', phone:'手機', mobile:'手機', email:'Email',
+        photo:'大頭照', photoUrl:'大頭照', avatar:'大頭照', avatarUrl:'大頭照', profilePhoto:'大頭照',
+        location:'所在地', city:'縣市', county:'縣市', address:'地址',
+        currentTitle:'目前／最近職稱', recentTitle:'最近職稱', jobTitle:'職稱',
+        education:'學歷', educations:'學歷', educationList:'學歷',
+        workExperience:'工作經歷', workExperiences:'工作經歷', experiences:'工作經歷', experience:'工作經歷',
+        jobPreferences:'求職條件', jobPreference:'求職條件', preferences:'求職條件',
+        desiredJobTitle:'希望職務', preferredJob:'希望職務', preferredRole:'希望職務',
+        preferredShift:'可配合時段', availability:'可配合時段', workTime:'工作時段',
+        languages:'語文能力', language:'語文能力', languageSkills:'語文能力',
+        skills:'專長', specialties:'專長', specialty:'專長',
+        certifications:'資格認證', certificates:'資格認證', licenses:'資格認證',
+        autobiography:'自傳', bio:'自傳', about:'自傳', selfIntroduction:'自傳',
+        consentTalentPool:'人才庫媒合同意', consentAt:'同意時間',
+        updatedAt:'更新時間', createdAt:'建立時間'
+    };
+    return map[key] || String(key || '').replace(/_/g,' ');
+}
+
+function qyjTalentLooksLikeImage(value) {
+    const s = String(value || '').trim();
+    return /^data:image\//i.test(s) || /^https?:\/\/.*\.(png|jpe?g|webp|gif)(\?.*)?$/i.test(s);
+}
+
+function qyjTalentRenderValue(value, depth=0) {
+    if(value === null || value === undefined || value === '') return '<span style="color:#94a3b8;">－</span>';
+
+    if(typeof value === 'boolean') return value ? '是' : '否';
+    if(typeof value === 'number') return qyjTalentEscapeHtml(value);
+
+    if(typeof value === 'string') {
+        if(qyjTalentLooksLikeImage(value)) {
+            return `<img src="${qyjTalentEscapeHtml(value)}" alt="履歷照片" style="max-width:140px;max-height:140px;border-radius:12px;object-fit:cover;border:1px solid #e2e8f0;">`;
+        }
+        if(/^https?:\/\//i.test(value)) {
+            return `<a href="${qyjTalentEscapeHtml(value)}" target="_blank" rel="noopener" style="color:#2563eb;word-break:break-all;">開啟連結</a>`;
+        }
+        return `<div style="white-space:pre-wrap;word-break:break-word;">${qyjTalentEscapeHtml(value)}</div>`;
+    }
+
+    if(Array.isArray(value)) {
+        if(value.length === 0) return '<span style="color:#94a3b8;">－</span>';
+        return `<div style="display:grid;gap:10px;">${value.map((item, i) =>
+            `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;">${typeof item === 'object' && item !== null ? qyjTalentRenderObject(item, depth+1) : qyjTalentRenderValue(item, depth+1)}</div>`
+        ).join('')}</div>`;
+    }
+
+    if(typeof value === 'object') return qyjTalentRenderObject(value, depth+1);
+    return qyjTalentEscapeHtml(value);
+}
+
+function qyjTalentRenderObject(obj, depth=0) {
+    if(!obj || typeof obj !== 'object') return qyjTalentRenderValue(obj, depth);
+    const entries = Object.entries(obj).filter(([,v]) => v !== '' && v !== null && v !== undefined && !(Array.isArray(v) && v.length===0));
+    if(entries.length === 0) return '<span style="color:#94a3b8;">－</span>';
+
+    return `<div style="display:grid;grid-template-columns:${depth > 1 ? '1fr' : 'minmax(140px,0.7fr) minmax(220px,2fr)'};gap:8px 16px;align-items:start;">${entries.map(([k,v]) =>
+        depth > 1
+        ? `<div><div style="font-size:12px;font-weight:800;color:#64748b;margin-bottom:4px;">${qyjTalentEscapeHtml(qyjTalentPrettyLabel(k))}</div>${qyjTalentRenderValue(v, depth+1)}</div>`
+        : `<div style="font-size:12px;font-weight:800;color:#64748b;padding-top:3px;">${qyjTalentEscapeHtml(qyjTalentPrettyLabel(k))}</div><div>${qyjTalentRenderValue(v, depth+1)}</div>`
+    ).join('')}</div>`;
+}
+
+function qyjEnsureTalentResumeModal() {
+    let overlay = document.getElementById('qyjTalentResumeOverlay');
+    if(overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'qyjTalentResumeOverlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:1000001;padding:24px;overflow:auto;';
+    overlay.innerHTML = `
+        <div id="qyjTalentResumeModal" style="max-width:980px;margin:20px auto;background:#fff;border-radius:16px;box-shadow:0 30px 80px rgba(15,23,42,.28);overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid #e2e8f0;background:#f8fafc;position:sticky;top:0;z-index:2;">
+                <div>
+                    <div style="font-size:18px;font-weight:900;color:#0f172a;"><i class="fas fa-file-alt" style="color:#f97316;margin-right:8px;"></i>官網完整履歷</div>
+                    <div id="qyjTalentResumeSub" style="font-size:12px;color:#64748b;margin-top:3px;"></div>
+                </div>
+                <button type="button" onclick="closeWebsiteTalentResume()" style="border:0;background:#e2e8f0;color:#334155;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;">×</button>
+            </div>
+            <div id="qyjTalentResumeBody" style="padding:22px;min-height:240px;"></div>
+        </div>`;
+
+    overlay.addEventListener('click', function(e){ if(e.target === overlay) closeWebsiteTalentResume(); });
+    document.body.appendChild(overlay);
+    return overlay;
+}
+
+function closeWebsiteTalentResume() {
+    const overlay = document.getElementById('qyjTalentResumeOverlay');
+    if(overlay) overlay.style.display = 'none';
+}
+
+async function openWebsiteTalentResume(index) {
+    const item = talentData[index];
+    if(!item || !item.externalUserId) {
+        showToast('❌ 找不到官網履歷識別碼', true);
+        return;
+    }
+
+    const overlay = qyjEnsureTalentResumeModal();
+    const body = document.getElementById('qyjTalentResumeBody');
+    const sub = document.getElementById('qyjTalentResumeSub');
+    overlay.style.display = 'block';
+    sub.textContent = item.name || '';
+    body.innerHTML = '<div style="text-align:center;padding:70px 20px;color:#64748b;"><i class="fas fa-spinner fa-spin" style="font-size:30px;color:#f97316;margin-bottom:12px;"></i><div>讀取最新履歷中...</div></div>';
+
+    try {
+        const response = await fetch(SCRIPT_URL, {
+            method:'POST',
+            body:JSON.stringify({action:'getWebsiteTalentResume', userId:item.externalUserId}),
+            headers:{'Content-Type':'text/plain;charset=utf-8'}
+        });
+        const result = await response.json();
+        if(!result || result.status !== 'success') throw new Error((result && result.message) || '讀取履歷失敗');
+
+        const member = result.member || {};
+        const resume = result.resume || {};
+        const updated = result.resumeUpdatedAt || '';
+
+        sub.textContent = `${member.name || item.name || ''}${updated ? '｜最後更新 ' + String(updated).replace('T',' ').slice(0,16) : ''}`;
+
+        body.innerHTML = `
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:16px;margin-bottom:18px;">
+                <div style="font-weight:900;color:#9a3412;margin-bottom:10px;">會員基本資料</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+                    <div><div style="font-size:11px;color:#64748b;font-weight:800;">姓名</div><div style="font-weight:700;">${qyjTalentEscapeHtml(member.name || item.name || '-')}</div></div>
+                    <div><div style="font-size:11px;color:#64748b;font-weight:800;">手機</div><div style="font-weight:700;">${qyjTalentEscapeHtml(member.phone || item.tel || '-')}</div></div>
+                    <div><div style="font-size:11px;color:#64748b;font-weight:800;">Email</div><div style="font-weight:700;word-break:break-all;">${qyjTalentEscapeHtml(member.email || item.email || '-')}</div></div>
+                    <div><div style="font-size:11px;color:#64748b;font-weight:800;">來源</div><div style="font-weight:700;">${qyjTalentEscapeHtml(item.source || '官網履歷')}</div></div>
+                </div>
+            </div>
+            <div style="border:1px solid #e2e8f0;border-radius:12px;padding:18px;">
+                <div style="font-weight:900;color:#0f172a;margin-bottom:14px;">最新履歷內容</div>
+                ${qyjTalentRenderObject(resume)}
+            </div>`;
+    } catch(e) {
+        console.error('openWebsiteTalentResume error:', e);
+        body.innerHTML = `<div style="text-align:center;padding:60px 20px;color:#dc2626;"><i class="fas fa-exclamation-triangle" style="font-size:30px;margin-bottom:12px;"></i><div style="font-weight:800;">履歷讀取失敗</div><div style="margin-top:6px;color:#64748b;">${qyjTalentEscapeHtml(e && e.message ? e.message : '未知錯誤')}</div></div>`;
+    }
+}
+
+document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeWebsiteTalentResume();
+});
 
 function renderPoint() { 
     const c = el('point_filter_company').value.trim();
