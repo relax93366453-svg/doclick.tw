@@ -6637,23 +6637,52 @@ function clearTalentForm() {
 function qyjTalentPrettyLabel(key) {
     const map = {
         basicInfo:'個人資料', personalInfo:'個人資料', profile:'個人資料',
-        name:'姓名', phone:'手機', mobile:'手機', email:'Email',
+        name:'姓名', fullName:'姓名',
+        phone:'手機', mobile:'手機', tel:'手機', email:'Email',
         photo:'大頭照', photoUrl:'大頭照', avatar:'大頭照', avatarUrl:'大頭照', profilePhoto:'大頭照',
-        location:'所在地', city:'縣市', county:'縣市', address:'地址',
-        currentTitle:'目前／最近職稱', recentTitle:'最近職稱', jobTitle:'職稱',
+        location:'所在地', city:'縣市', county:'縣市', region:'地區', address:'地址',
+        title:'職稱', currentTitle:'目前／最近職稱', recentTitle:'最近職稱', jobTitle:'職稱',
         education:'學歷', educations:'學歷', educationList:'學歷',
+        school:'學校', major:'科系／主修', degree:'學位',
+        startYear:'開始年份', endYear:'結束年份', startDate:'開始日期', endDate:'結束日期',
+        current:'目前狀態',
         workExperience:'工作經歷', workExperiences:'工作經歷', experiences:'工作經歷', experience:'工作經歷',
+        company:'公司', industry:'產業', position:'職稱',
         jobPreferences:'求職條件', jobPreference:'求職條件', preferences:'求職條件',
-        desiredJobTitle:'希望職務', preferredJob:'希望職務', preferredRole:'希望職務',
+        desiredTitle:'希望職務', desiredJobTitle:'希望職務', preferredJob:'希望職務', preferredRole:'希望職務',
+        employmentType:'工作性質', jobType:'工作性質', salaryType:'薪資類型',
+        expectedSalary:'期望薪資', salary:'期望薪資',
         preferredShift:'可配合時段', availability:'可配合時段', workTime:'工作時段',
-        languages:'語文能力', language:'語文能力', languageSkills:'語文能力',
+        languages:'語文能力', language:'語言', languageSkills:'語文能力', languageName:'語言',
+        level:'程度', proficiency:'程度',
         skills:'專長', specialties:'專長', specialty:'專長',
         certifications:'資格認證', certificates:'資格認證', licenses:'資格認證',
+        certificationName:'證照名稱', certificateName:'證照名稱', licenseName:'證照名稱',
         autobiography:'自傳', bio:'自傳', about:'自傳', selfIntroduction:'自傳',
         consentTalentPool:'人才庫媒合同意', consentAt:'同意時間',
         updatedAt:'更新時間', createdAt:'建立時間'
     };
     return map[key] || String(key || '').replace(/_/g,' ');
+}
+
+function qyjTalentHideTechnicalKey(key) {
+    const k = String(key || '').trim();
+    const normalized = k.toLowerCase();
+
+    // 這些是前端為了編輯/識別資料而產生的技術欄位，
+    // 內部人員查看履歷時沒有閱讀價值，不顯示。
+    if([
+        'id', '_id', 'uuid', 'key',
+        'userid', 'externaluserid',
+        'resumeid', 'educationid',
+        'experienceid', 'languageid',
+        'certificationid', 'certificateid'
+    ].includes(normalized)) return true;
+
+    // 任何 "_" 開頭的內部技術欄位也不顯示
+    if(k.startsWith('_')) return true;
+
+    return false;
 }
 
 function qyjTalentLooksLikeImage(value) {
@@ -6664,7 +6693,7 @@ function qyjTalentLooksLikeImage(value) {
 function qyjTalentRenderValue(value, depth=0) {
     if(value === null || value === undefined || value === '') return '<span style="color:#94a3b8;">－</span>';
 
-    if(typeof value === 'boolean') return value ? '是' : '否';
+    if(typeof value === 'boolean') return value ? '<span style="font-weight:700;color:#15803d;">是</span>' : '<span style="color:#64748b;">否</span>';
     if(typeof value === 'number') return qyjTalentEscapeHtml(value);
 
     if(typeof value === 'string') {
@@ -6680,7 +6709,7 @@ function qyjTalentRenderValue(value, depth=0) {
     if(Array.isArray(value)) {
         if(value.length === 0) return '<span style="color:#94a3b8;">－</span>';
         return `<div style="display:grid;gap:10px;">${value.map((item, i) =>
-            `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;">${typeof item === 'object' && item !== null ? qyjTalentRenderObject(item, depth+1) : qyjTalentRenderValue(item, depth+1)}</div>`
+            `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;box-shadow:0 1px 2px rgba(15,23,42,.03);">${typeof item === 'object' && item !== null ? qyjTalentRenderObject(item, depth+1) : qyjTalentRenderValue(item, depth+1)}</div>`
         ).join('')}</div>`;
     }
 
@@ -6690,13 +6719,22 @@ function qyjTalentRenderValue(value, depth=0) {
 
 function qyjTalentRenderObject(obj, depth=0) {
     if(!obj || typeof obj !== 'object') return qyjTalentRenderValue(obj, depth);
-    const entries = Object.entries(obj).filter(([,v]) => v !== '' && v !== null && v !== undefined && !(Array.isArray(v) && v.length===0));
+
+    const entries = Object.entries(obj).filter(([k,v]) =>
+        !qyjTalentHideTechnicalKey(k) &&
+        v !== '' &&
+        v !== null &&
+        v !== undefined &&
+        !(Array.isArray(v) && v.length === 0)
+    );
+
     if(entries.length === 0) return '<span style="color:#94a3b8;">－</span>';
 
-    return `<div style="display:grid;grid-template-columns:${depth > 1 ? '1fr' : 'minmax(140px,0.7fr) minmax(220px,2fr)'};gap:8px 16px;align-items:start;">${entries.map(([k,v]) =>
-        depth > 1
-        ? `<div><div style="font-size:12px;font-weight:800;color:#64748b;margin-bottom:4px;">${qyjTalentEscapeHtml(qyjTalentPrettyLabel(k))}</div>${qyjTalentRenderValue(v, depth+1)}</div>`
-        : `<div style="font-size:12px;font-weight:800;color:#64748b;padding-top:3px;">${qyjTalentEscapeHtml(qyjTalentPrettyLabel(k))}</div><div>${qyjTalentRenderValue(v, depth+1)}</div>`
+    // 履歷資料統一採「欄位名稱 / 內容」兩欄顯示，
+    // 不再把物件的原始 JSON key 一行一行倒出來。
+    return `<div style="display:grid;grid-template-columns:minmax(105px,0.55fr) minmax(180px,2fr);gap:9px 16px;align-items:start;">${entries.map(([k,v]) =>
+        `<div style="font-size:12px;font-weight:800;color:#64748b;padding-top:4px;">${qyjTalentEscapeHtml(qyjTalentPrettyLabel(k))}</div>` +
+        `<div style="min-width:0;color:#334155;">${qyjTalentRenderValue(v, depth+1)}</div>`
     ).join('')}</div>`;
 }
 
