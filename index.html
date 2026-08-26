@@ -4232,38 +4232,315 @@ function getHistoricalRate(item) {
     }
     const rule = si.salary_rule || '114年標準';
     const calcRule = si.salary_calc_rule || deriveSalaryCalcRule(si);
-    const agreed = isRaise250Approved(si);
+
+    // 250 調薪必須尊重「核准日期」，避免日後核准後把核准日前的歷史紀錄全部追溯改成 250。
+    const itemDate = typeof qyjNormalizeDate === 'function'
+        ? qyjNormalizeDate(item.date || '')
+        : String(item.date || '');
+    const approvedDate = typeof qyjNormalizeDate === 'function'
+        ? qyjNormalizeDate(si.raise250_date || '')
+        : String(si.raise250_date || '');
+    const agreed =
+        isRaise250Approved(si) &&
+        (
+            !approvedDate ||
+            !itemDate ||
+            itemDate >= approvedDate
+        );
+
     return calcWageByDate(rule, h, agreed, si.hourly, calcRule, item.date);
 }
 
 function checkHourlyUpgradeAlert() {
-    const s = el('attend_staff').value.trim(), hInp = parseFloat(el('attend_salary_hours').value) || 0, dInp = el('attend_date').value, box = el('attend_upgrade_alert');
-    if(!box) return; if(!s || hInp <= 0 || !dInp) { box.style.display = 'none'; return; }
-    let staffRecords = attendData.map((r, i) => ({ record: r, idx: i })).filter(r => r.record.staff === s);
-    if (editAttendIndex > -1) staffRecords = staffRecords.filter(r => r.idx !== editAttendIndex);
-    staffRecords.push({ record: { date: dInp }, idx: 999999, isCurrent: true });
-    staffRecords.sort((a, b) => new Date(a.record.date) - new Date(b.record.date) || a.idx - b.idx);
-    let cH = 0; for (let sr of staffRecords) { if (sr.isCurrent) break; cH += getItemSalaryHours(sr.record); cH = Math.round(cH * 10) / 10; }
-    const si = staffData.find(x => x.name === s); if(!si) return;
-    const rule = si.salary_rule || '114年標準'; const calcRule = si.salary_calc_rule || deriveSalaryCalcRule(si); const agreed = isRaise250Approved(si);
-    
-    // 用共用函數取得目前與升級後時薪，計算是否跨階
-    const oW = calcWageByDate(rule, cH, agreed, si.hourly, calcRule, dInp);
-    const nW = calcWageByDate(rule, cH + hInp, agreed, si.hourly, calcRule, dInp);
-    const { nextTier: th } = getNextTierInfo(rule, cH, agreed, si.hourly, calcRule);
-    
-    if(th && th !== 'FIXED' && cH < th && cH + hInp > th && oW !== nW) {
+    const s = el('attend_staff').value.trim(),
+        hInp = parseFloat(el('attend_salary_hours').value) || 0,
+        dInp = el('attend_date').value,
+        box = el('attend_upgrade_alert');
+
+    if(!box) return;
+    if(!s || hInp <= 0 || !dInp) {
+        box.style.display = 'none';
+        return;
+    }
+
+    let staffRecords = attendData
+        .map((r, i) => ({ record: r, idx: i }))
+        .filter(r => r.record.staff === s);
+
+    if (editAttendIndex > -1) {
+        staffRecords = staffRecords.filter(r => r.idx !== editAttendIndex);
+    }
+
+    staffRecords.push({
+        record: { date: dInp },
+        idx: 999999,
+        isCurrent: true
+    });
+
+    staffRecords.sort(
+        (a, b) =>
+            new Date(a.record.date) - new Date(b.record.date) ||
+            a.idx - b.idx
+    );
+
+    let cH = 0;
+    for (let sr of staffRecords) {
+        if (sr.isCurrent) break;
+        cH += getItemSalaryHours(sr.record);
+        cH = Math.round(cH * 10) / 10;
+    }
+
+    const si = staffData.find(x => x.name === s);
+    if(!si) {
+        box.style.display = 'none';
+        return;
+    }
+
+    const rule = si.salary_rule || '114年標準';
+    const calcRule = si.salary_calc_rule || deriveSalaryCalcRule(si);
+    const agreed = isRaise250Approved(si);
+    const raiseStatus = getRaise250StatusLabel(si);
+    const afterHours = Math.round((cH + hInp) * 10) / 10;
+
+    /*
+     * 700 小時為最後一道需要人工核准的門檻。
+     * 526–700 小時維持 240；超過 700 的部分，只有核准後才能用 250。
+     * 即使尚未核准，達到/跨過 700 時也要主動跳出「同意 / 暫緩」。
+     */
+    // 700h -> 250 的人工核准，不只適用新制級距。
+    // 早期約(245->250)、固定220特例、特殊案例(245->250) 也都要在跨 700h 時提醒。
+    // 只有接案/自訂時薪不套用這個 700h 核准流程。
+    const raise250Eligible =
+        calcRule !== '接案/自訂' &&
+        !String(rule || '').includes('接案') &&
+        !String(rule || '').includes('自訂');
+
+    const reaches700 =
+        raise250Eligible &&
+        cH < 700 &&
+        afterHours > 700;
+
+    if(reaches700 && !agreed) {
+        const h1 = Math.max(
+            0,
+            parseFloat((700 - cH).toFixed(1))
+        );
+        const h2 = Math.max(
+            0,
+            parseFloat((hInp - h1).toFixed(1))
+        );
+
+        const rateBefore = calcWageByDate(
+            rule,
+            Math.min(700, cH),
+            false,
+            si.hourly,
+            calcRule,
+            dInp
+        );
+
+        if(raiseStatus === '暫緩調薪') {
+            box.innerHTML = `
+                <i class="fas fa-pause-circle"></i>
+                <b>250 調薪目前為「暫緩」：</b>
+                ${s} 已達 700 小時門檻，目前仍維持 <b>$${rateBefore}</b>。
+                <br>
+                <button type="button"
+                    style="margin-top:10px;background:#2563eb;color:white;border:none;padding:9px 14px;border-radius:6px;cursor:pointer;font-weight:bold;"
+                    onclick="openRaise250StaffEditor()">
+                    <i class="fas fa-user-edit"></i> 前往人員資料重新評估
+                </button>`;
+            box.style.display = 'block';
+            return;
+        }
+
+        const splitNote = h2 > 0
+            ? `<br><span style="display:block;margin-top:8px;color:#7c3aed;font-weight:900;">
+                    此筆會跨過 700h：前 ${h1.toFixed(1)}h 仍為 $${rateBefore}，
+                    後 ${h2.toFixed(1)}h 核准後為 $250。
+               </span>`
+            : '';
+
+        box.innerHTML = `
+            <i class="fas fa-bell"></i>
+            <b>250 調薪核准提醒：</b>
+            ${s} 的累積工時將由 <b>${cH.toFixed(1)}h</b>
+            變成 <b>${afterHours.toFixed(1)}h</b>，已達 700 小時門檻。
+            ${splitNote}
+            <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="button"
+                    style="background:#10b981;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;"
+                    onclick="approveRaise250FromAttend(${h1}, ${rateBefore}, ${h2})">
+                    <i class="fas fa-check"></i> 同意升 250
+                </button>
+                <button type="button"
+                    style="background:#f59e0b;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;"
+                    onclick="deferRaise250FromAttend()">
+                    <i class="fas fa-pause"></i> 暫緩調薪
+                </button>
+                <button type="button"
+                    style="background:#64748b;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;"
+                    onclick="openRaise250StaffEditor()">
+                    <i class="fas fa-user-edit"></i> 開啟人員資料
+                </button>
+            </div>`;
+
+        box.style.display = 'block';
+        return;
+    }
+
+    // 已核准後，如目前這筆橫跨級距，保留原本的一鍵精準拆單功能。
+    const oW = calcWageByDate(
+        rule,
+        cH,
+        agreed,
+        si.hourly,
+        calcRule,
+        dInp
+    );
+    const nW = calcWageByDate(
+        rule,
+        afterHours,
+        agreed,
+        si.hourly,
+        calcRule,
+        dInp
+    );
+    const { nextTier: th } =
+        getNextTierInfo(
+            rule,
+            cH,
+            agreed,
+            si.hourly,
+            calcRule
+        );
+
+    if(
+        th &&
+        th !== 'FIXED' &&
+        cH < th &&
+        afterHours > th &&
+        oW !== nW
+    ) {
         const h1 = parseFloat((th - cH).toFixed(1));
         const h2 = parseFloat((hInp - h1).toFixed(1));
-        if (h1 === 0) { 
-            box.innerHTML = `<i class="fas fa-check-circle"></i> <b>升級通知：</b> 從此筆排班開始，${s} 的歷史總時數已達 <b>${th}h</b>，系統將自動套用下一階時薪 <b>$${nW}</b>！無須拆單。`; 
-            box.style.display = 'block'; return; 
-        } else if(h2 > 0) { 
-            box.innerHTML = `<i class="fas fa-exclamation-circle"></i> <b>跨階預警：</b> 結算至此日，${s} 的總時數將從 <b>${cH.toFixed(1)}h</b> 變成 <b>${(cH+hInp).toFixed(1)}h</b>，正式跨越 <b>${th}h</b> 升級門檻！<br><span style="color:#059669; margin-top:8px; display:block; font-weight:bold;">💡 系統防呆機制：請點擊下方按鈕，系統將自動為您「連同打卡時間」一起精準拆單並寫入：</span><button type="button" style="margin-top:10px; background:#f59e0b; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:14px; box-shadow:0 2px 4px rgba(0,0,0,0.1);" onclick="autoFillSplitWithTime(${h1}, ${oW}, ${h2})"><i class="fas fa-magic"></i> 一鍵全自動時間拆單寫入</button>`; 
-            box.style.display = 'block'; return; 
+
+        if(h2 > 0) {
+            box.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i>
+                <b>跨階預警：</b>
+                結算至此日，${s} 的總時數將從
+                <b>${cH.toFixed(1)}h</b> 變成
+                <b>${afterHours.toFixed(1)}h</b>，
+                正式跨越 <b>${th}h</b> 升級門檻！
+                <br>
+                <span style="color:#059669;margin-top:8px;display:block;font-weight:bold;">
+                    系統可自動依時間拆成兩筆，確保跨階前後使用正確時薪。
+                </span>
+                <button type="button"
+                    style="margin-top:10px;background:#f59e0b;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:14px;"
+                    onclick="autoFillSplitWithTime(${h1}, ${oW}, ${h2})">
+                    <i class="fas fa-magic"></i> 一鍵全自動時間拆單寫入
+                </button>`;
+            box.style.display = 'block';
+            return;
         }
-    } 
+    }
+
     box.style.display = 'none';
+}
+
+function approveRaise250FromAttend(h1, rateBefore, h2) {
+    const s = el('attend_staff').value.trim();
+    const d = el('attend_date').value;
+    const idx = staffData.findIndex(x => x && x.name === s);
+
+    if(idx < 0) {
+        return showToast('找不到人員資料', true);
+    }
+
+    if(!confirm(`確認核准 ${s} 自 ${d} 起進入 250 調薪級距？`)) {
+        return;
+    }
+
+    const staff = staffData[idx];
+    staff.raise250_status = '已核准升250';
+    staff.raise250_date = d;
+    staff.raise250_note =
+        staff.raise250_note ||
+        '滿700小時系統提醒後核准；跨階當日依700h前後拆分計薪';
+    if(!staff.raise250_by) {
+        staff.raise250_by = '系統提醒後核准';
+    }
+
+    // 先把核准結果寫回人員資料，避免只改畫面沒有保存。
+    saveLocalData();
+
+    if(Number(h2) > 0) {
+        // 同一筆工作橫跨 700h：前段鎖定原時薪，後段依已核准狀態自動套 250。
+        autoFillSplitWithTime(
+            Number(h1) || 0,
+            Number(rateBefore) || calcWageByDate(
+                staff.salary_rule || '114年標準',
+                700,
+                false,
+                staff.hourly,
+                staff.salary_calc_rule || deriveSalaryCalcRule(staff),
+                d
+            ),
+            Number(h2) || 0
+        );
+        return;
+    }
+
+    saveAll();
+    renderStaffTable();
+    checkHourlyUpgradeAlert();
+    showToast('✅ 已核准升250，並同步更新人員資料');
+}
+
+function deferRaise250FromAttend() {
+    const s = el('attend_staff').value.trim();
+    const idx = staffData.findIndex(x => x && x.name === s);
+
+    if(idx < 0) {
+        return showToast('找不到人員資料', true);
+    }
+
+    if(!confirm(`確認將 ${s} 的 250 調薪設為「暫緩調薪」？`)) {
+        return;
+    }
+
+    const staff = staffData[idx];
+    staff.raise250_status = '暫緩調薪';
+    staff.raise250_date = '';
+    staff.raise250_note =
+        staff.raise250_note ||
+        '滿700小時系統提醒後暫緩';
+
+    saveAll();
+    renderStaffTable();
+    checkHourlyUpgradeAlert();
+    showToast('已設為暫緩調薪，目前仍維持原級距');
+}
+
+function openRaise250StaffEditor() {
+    const s = el('attend_staff').value.trim();
+    const idx = staffData.findIndex(x => x && x.name === s);
+
+    if(idx < 0) {
+        return showToast('找不到人員資料', true);
+    }
+
+    if(typeof showAdminPage === 'function') {
+        showAdminPage('staff');
+    }
+    if(typeof showStaffSection === 'function') {
+        showStaffSection('edit');
+    }
+    if(typeof openStaffEditModal === 'function') {
+        openStaffEditModal(idx);
+    }
 }
 
 function autoFillSplitWithTime(h1, rate1, h2) {
@@ -4272,8 +4549,10 @@ function autoFillSplitWithTime(h1, rate1, h2) {
     if(!c || !s || !d || (!amS && !pmS)) { alert('請確認公司、人員、日期與至少一段上班時間都有填寫！'); return; }
     function addHoursToTime(timeStr, hours) { if(!timeStr) return ''; let [h, m] = timeStr.split(':').map(Number); let totalMinutes = h * 60 + m + Math.round(hours * 60); let nh = Math.floor(totalMinutes / 60) % 24; let nm = totalMinutes % 60; return String(nh).padStart(2,'0') + ":" + String(nm).padStart(2,'0'); }
     let amHrs = amS && amE ? getHours(amS, amE) : 0;
-    let r1 = { company:c, staff:s, date:d, service:srv, am_s:'', am_e:'', pm_s:'', pm_e:'', salary_hours:h1, project_fee:0, deduct_points:h1, special_hourly:rate1, remark:'跨階前(自動時間拆分)' };
-    let r2 = { company:c, staff:s, date:d, service:srv, am_s:'', am_e:'', pm_s:'', pm_e:'', salary_hours:h2, project_fee:0, deduct_points:h2, special_hourly:'', remark:'升級後(自動時間拆分)' };
+    const originalRemark = el('attend_remark').value.trim();
+    const isProjectBilling = getCustBillingMode(c) === '專案';
+    let r1 = { company:c, staff:s, date:d, service:srv, am_s:'', am_e:'', pm_s:'', pm_e:'', salary_hours:h1, project_fee:0, deduct_points:isProjectBilling?0:h1, special_hourly:rate1, remark:(originalRemark ? originalRemark + '｜' : '') + '跨階前(自動時間拆分)' };
+    let r2 = { company:c, staff:s, date:d, service:srv, am_s:'', am_e:'', pm_s:'', pm_e:'', salary_hours:h2, project_fee:0, deduct_points:isProjectBilling?0:h2, special_hourly:'', remark:(originalRemark ? originalRemark + '｜' : '') + '升級後(自動時間拆分)' };
     if (h1 <= amHrs) { r1.am_s = amS; r1.am_e = addHoursToTime(amS, h1); r2.am_s = r1.am_e; r2.am_e = amE; r2.pm_s = pmS; r2.pm_e = pmE; } else { r1.am_s = amS; r1.am_e = amE; let diff = h1 - amHrs; r1.pm_s = pmS; r1.pm_e = addHoursToTime(pmS, diff); r2.pm_s = r1.pm_e; r2.pm_e = pmE; }
     if (editAttendIndex > -1) { attendData[editAttendIndex] = {...attendData[editAttendIndex], ...r1}; attendData.push(r2); editAttendIndex = -1; } else { attendData.push(r1); attendData.push(r2); }
     saveAll(); renderAttend(); clearAttendForm(); alert(`✅ 魔法時間拆單完成！`);
