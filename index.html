@@ -4320,7 +4320,7 @@ function checkHourlyUpgradeAlert() {
         cH < 700 &&
         afterHours > 700;
 
-    if(reaches700 && !agreed) {
+    if(reaches700) {
         const h1 = Math.max(
             0,
             parseFloat((700 - cH).toFixed(1))
@@ -4338,6 +4338,28 @@ function checkHourlyUpgradeAlert() {
             calcRule,
             dInp
         );
+
+        // 已經在人員資料核准過，也仍要檢查「跨700h當天」是否尚未拆單。
+        // 否則整筆 7/29 會因核准日期同日而被顯示成 250。
+        if(agreed) {
+            box.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <b>跨700h紀錄尚未拆分：</b>
+                ${s} 這筆會由 <b>${cH.toFixed(1)}h</b>
+                增加到 <b>${afterHours.toFixed(1)}h</b>。
+                <br>
+                <span style="display:block;margin-top:8px;color:#7c3aed;font-weight:900;">
+                    正確計薪：前 ${h1.toFixed(1)}h × $${rateBefore}，
+                    後 ${h2.toFixed(1)}h × $250。
+                </span>
+                <button type="button"
+                    style="margin-top:10px;background:#7c3aed;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;"
+                    onclick="autoFillSplitWithTime(${h1}, ${rateBefore}, ${h2})">
+                    <i class="fas fa-magic"></i> 一鍵修正為兩筆
+                </button>`;
+            box.style.display = 'block';
+            return;
+        }
 
         if(raiseStatus === '暫緩調薪') {
             box.innerHTML = `
@@ -4544,18 +4566,133 @@ function openRaise250StaffEditor() {
 }
 
 function autoFillSplitWithTime(h1, rate1, h2) {
-    const c = el('attend_company').value, s = el('attend_staff').value, d = el('attend_date').value, srv = el('attend_service').value;
-    const amS = el('am_s').value, amE = el('am_e').value, pmS = el('pm_s').value, pmE = el('pm_e').value;
-    if(!c || !s || !d || (!amS && !pmS)) { alert('請確認公司、人員、日期與至少一段上班時間都有填寫！'); return; }
-    function addHoursToTime(timeStr, hours) { if(!timeStr) return ''; let [h, m] = timeStr.split(':').map(Number); let totalMinutes = h * 60 + m + Math.round(hours * 60); let nh = Math.floor(totalMinutes / 60) % 24; let nm = totalMinutes % 60; return String(nh).padStart(2,'0') + ":" + String(nm).padStart(2,'0'); }
-    let amHrs = amS && amE ? getHours(amS, amE) : 0;
-    const originalRemark = el('attend_remark').value.trim();
-    const isProjectBilling = getCustBillingMode(c) === '專案';
-    let r1 = { company:c, staff:s, date:d, service:srv, am_s:'', am_e:'', pm_s:'', pm_e:'', salary_hours:h1, project_fee:0, deduct_points:isProjectBilling?0:h1, special_hourly:rate1, remark:(originalRemark ? originalRemark + '｜' : '') + '跨階前(自動時間拆分)' };
-    let r2 = { company:c, staff:s, date:d, service:srv, am_s:'', am_e:'', pm_s:'', pm_e:'', salary_hours:h2, project_fee:0, deduct_points:isProjectBilling?0:h2, special_hourly:'', remark:(originalRemark ? originalRemark + '｜' : '') + '升級後(自動時間拆分)' };
-    if (h1 <= amHrs) { r1.am_s = amS; r1.am_e = addHoursToTime(amS, h1); r2.am_s = r1.am_e; r2.am_e = amE; r2.pm_s = pmS; r2.pm_e = pmE; } else { r1.am_s = amS; r1.am_e = amE; let diff = h1 - amHrs; r1.pm_s = pmS; r1.pm_e = addHoursToTime(pmS, diff); r2.pm_s = r1.pm_e; r2.pm_e = pmE; }
-    if (editAttendIndex > -1) { attendData[editAttendIndex] = {...attendData[editAttendIndex], ...r1}; attendData.push(r2); editAttendIndex = -1; } else { attendData.push(r1); attendData.push(r2); }
-    saveAll(); renderAttend(); clearAttendForm(); alert(`✅ 魔法時間拆單完成！`);
+    const c = el('attend_company').value,
+        s = el('attend_staff').value,
+        d = el('attend_date').value,
+        srv = el('attend_service').value;
+
+    const amS = el('am_s').value,
+        amE = el('am_e').value,
+        pmS = el('pm_s').value,
+        pmE = el('pm_e').value;
+
+    const salaryHours =
+        parseFloat(el('attend_salary_hours').value) || 0;
+
+    if(!c || !s || !d || (!amS && !pmS)) {
+        alert('請確認公司、人員、日期與至少一段上班時間都有填寫！');
+        return;
+    }
+
+    function addHoursToTime(timeStr, hours) {
+        if(!timeStr) return '';
+        let [h, m] = timeStr.split(':').map(Number);
+        let totalMinutes =
+            h * 60 +
+            m +
+            Math.round(hours * 60);
+        let nh =
+            Math.floor(totalMinutes / 60) % 24;
+        let nm =
+            totalMinutes % 60;
+        return String(nh).padStart(2,'0') +
+            ":" +
+            String(nm).padStart(2,'0');
+    }
+
+    const amHrs =
+        amS && amE ? getHours(amS, amE) : 0;
+    const pmHrs =
+        pmS && pmE ? getHours(pmS, pmE) : 0;
+
+    const originalRemark =
+        el('attend_remark').value.trim();
+    const isProjectBilling =
+        getCustBillingMode(c) === '專案';
+
+    let r1 = {
+        company:c, staff:s, date:d, service:srv,
+        am_s:'', am_e:'', pm_s:'', pm_e:'',
+        salary_hours:h1,
+        project_fee:0,
+        deduct_points:isProjectBilling ? 0 : h1,
+        special_hourly:rate1,
+        remark:
+            (originalRemark ? originalRemark + '｜' : '') +
+            '跨700h前(自動拆分)'
+    };
+
+    let r2 = {
+        company:c, staff:s, date:d, service:srv,
+        am_s:'', am_e:'', pm_s:'', pm_e:'',
+        salary_hours:h2,
+        project_fee:0,
+        deduct_points:isProjectBilling ? 0 : h2,
+        special_hourly:'',
+        remark:
+            (originalRemark ? originalRemark + '｜' : '') +
+            '跨700h後(自動拆分)'
+    };
+
+    const almostEqual = (a, b) =>
+        Math.abs(Number(a || 0) - Number(b || 0)) < 0.05;
+
+    /*
+     * 如果單一時段本身就等於發薪工時，優先使用那一段。
+     * 例如 7/29 發薪工時 4.5h、下午 13:00-17:30 正好 4.5h，
+     * 即使上午欄位殘留舊值，也不會拿上午時間來拆薪資。
+     */
+    if(pmS && pmE && almostEqual(pmHrs, salaryHours)) {
+        r1.pm_s = pmS;
+        r1.pm_e = addHoursToTime(pmS, h1);
+        r2.pm_s = r1.pm_e;
+        r2.pm_e = pmE;
+    } else if(amS && amE && almostEqual(amHrs, salaryHours)) {
+        r1.am_s = amS;
+        r1.am_e = addHoursToTime(amS, h1);
+        r2.am_s = r1.am_e;
+        r2.am_e = amE;
+    } else if(h1 <= amHrs) {
+        r1.am_s = amS;
+        r1.am_e = addHoursToTime(amS, h1);
+
+        r2.am_s = r1.am_e;
+        r2.am_e = amE;
+        r2.pm_s = pmS;
+        r2.pm_e = pmE;
+    } else {
+        r1.am_s = amS;
+        r1.am_e = amE;
+
+        let diff = h1 - amHrs;
+        r1.pm_s = pmS;
+        r1.pm_e = addHoursToTime(pmS, diff);
+
+        r2.pm_s = r1.pm_e;
+        r2.pm_e = pmE;
+    }
+
+    if(editAttendIndex > -1) {
+        attendData[editAttendIndex] = {
+            ...attendData[editAttendIndex],
+            ...r1
+        };
+        attendData.push(r2);
+        editAttendIndex = -1;
+    } else {
+        attendData.push(r1);
+        attendData.push(r2);
+    }
+
+    saveAll();
+    renderAttend();
+    clearAttendForm();
+
+    alert(
+        `✅ 跨700h拆單完成！\n` +
+        `前 ${Number(h1).toFixed(1)}h × $${rate1}\n` +
+        `後 ${Number(h2).toFixed(1)}h × $250`
+    );
 }
 
 function updateSystemClock() {
