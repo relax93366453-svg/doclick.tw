@@ -6639,32 +6639,61 @@ function addAttend() {
 
 function editAttend(i) { 
     const d = attendData[i];
-    el('attend_company').value = d.company; 
-    el('attend_staff').value = d.staff; 
-    el('attend_date').value = d.date; 
-    el('attend_service').value = d.service; 
-    el('attend_remark').value = d.remark; 
-    el('am_s').value = d.am_s; 
-    el('am_e').value = d.am_e; 
-    el('pm_s').value = d.pm_s; 
-    el('pm_e').value = d.pm_e; 
-    el('attend_salary_hours').value = d.salary_hours; 
+    if(!d) {
+        showToast('找不到這筆派遣紀錄', true);
+        return;
+    }
+
+    el('attend_company').value = d.company || ''; 
+    el('attend_staff').value = d.staff || ''; 
+    el('attend_date').value = d.date || ''; 
+    el('attend_service').value = d.service || ''; 
+    el('attend_remark').value = d.remark || ''; 
+    el('am_s').value = d.am_s || ''; 
+    el('am_e').value = d.am_e || ''; 
+    el('pm_s').value = d.pm_s || ''; 
+    el('pm_e').value = d.pm_e || ''; 
+    el('attend_salary_hours').value = d.salary_hours || ''; 
     el('attend_project_fee').value = d.project_fee || 0; 
-    el('attend_deduct_points').value = d.deduct_points; 
+    el('attend_deduct_points').value = d.deduct_points || 0; 
     el('attend_special_hourly').value = d.special_hourly || ''; 
     editAttendIndex = i; 
-    
+
     const b = el('btnAddAttend');
-    if(b) { b.innerHTML = '<i class="fas fa-edit"></i> 修改'; b.classList.replace('btn-success', 'btn-warning'); } 
+    if(b) {
+        b.innerHTML = '<i class="fas fa-edit"></i> 修改';
+        b.classList.remove('btn-success');
+        b.classList.add('btn-warning');
+    }
+
     const c = el('btnClearAttend'); 
     if(c) c.innerHTML = '<i class="fas fa-times"></i> 取消'; 
-    checkHourlyUpgradeAlert();
 
-    if(
-        typeof window.qyjActivateAttendDraft === 'function'
-    ){
-        window.qyjActivateAttendDraft();
+    try {
+        checkHourlyUpgradeAlert();
+    } catch(err) {
+        console.error('編輯派遣紀錄時檢查調薪提醒失敗：', err);
     }
+
+    if(typeof window.qyjActivateAttendDraft === 'function'){
+        try {
+            window.qyjActivateAttendDraft();
+        } catch(err) {
+            console.warn('啟用派遣草稿模式失敗：', err);
+        }
+    }
+
+    setTimeout(() => {
+        const target = el('attend_company') || el('page-attend');
+        if(target && typeof target.scrollIntoView === 'function') {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if(el('attend_company')) {
+            el('attend_company').focus();
+        }
+    }, 50);
+
+    showToast(`✏️ 已載入 ${d.staff || '此人員'} ${d.date || ''} 的紀錄，請在上方修改`);
 }
 
 function delAttend(i) { 
