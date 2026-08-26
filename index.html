@@ -4251,6 +4251,180 @@ function getHistoricalRate(item) {
     return calcWageByDate(rule, h, agreed, si.hourly, calcRule, item.date);
 }
 
+
+function qyjIsRaise250AutoSplitRecord(item){
+    const remark = String((item && item.remark) || '');
+    return (
+        remark.includes('跨700h前') ||
+        remark.includes('跨700h後') ||
+        remark.includes('跨階前(自動時間拆分)') ||
+        remark.includes('升級後(自動時間拆分)')
+    );
+}
+
+function qyjEnsureAttendIdsSafe(){
+    try{
+        if(typeof qyjEnsureAttendIds === 'function'){
+            qyjEnsureAttendIds(attendData || []);
+        }
+    }catch(error){
+        console.warn('補派遣紀錄同步ID失敗', error);
+    }
+}
+
+function qyjMarkAttendDeleted(records){
+    qyjEnsureAttendIdsSafe();
+
+    let deletedIds = [];
+    try{
+        deletedIds =
+            typeof qyjReadAttendDeletedIds === 'function'
+                ? (qyjReadAttendDeletedIds() || [])
+                : (window.attendDeletedIds || []);
+    }catch(error){
+        deletedIds = window.attendDeletedIds || [];
+    }
+
+    const idSet = new Set(deletedIds.filter(Boolean));
+
+    (records || []).forEach(function(item){
+        if(item && item._syncId){
+            idSet.add(item._syncId);
+        }
+    });
+
+    window.attendDeletedIds = Array.from(idSet);
+
+    try{
+        if(typeof qyjSaveAttendDeletedIds === 'function'){
+            qyjSaveAttendDeletedIds(window.attendDeletedIds);
+        }else{
+            localStorage.setItem(
+                'qyjAttendDeletedIds',
+                JSON.stringify(window.attendDeletedIds)
+            );
+        }
+    }catch(error){
+        console.warn('儲存派遣刪除清單失敗', error);
+    }
+}
+
+function qyjShowRaise250DecisionPrompt(h1, rateBefore, h2, beforeHours, afterHours, alreadyApproved){
+    const staff = el('attend_staff').value.trim();
+    const date = el('attend_date').value;
+
+    const promptKey = [
+        staff,
+        date,
+        Number(beforeHours).toFixed(1),
+        Number(afterHours).toFixed(1),
+        Number(h1).toFixed(1),
+        Number(h2).toFixed(1),
+        alreadyApproved ? 'approved' : 'pending'
+    ].join('|');
+
+    if(window.qyjRaise250PromptKey === promptKey){
+        return;
+    }
+
+    window.qyjRaise250PromptKey = promptKey;
+
+    const old = document.getElementById('qyjRaise250DecisionModal');
+    if(old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'qyjRaise250DecisionModal';
+    overlay.style.cssText =
+        'position:fixed;inset:0;z-index:999999;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+    const panel = document.createElement('div');
+    panel.style.cssText =
+        'width:min(560px,96vw);background:#fff;border-radius:14px;box-shadow:0 24px 70px rgba(0,0,0,.30);padding:24px;font-family:inherit;';
+
+    const splitText = Number(h2) > 0
+        ? `<div style="margin-top:12px;padding:12px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;color:#6d28d9;font-weight:900;">
+               正確拆分：前 ${Number(h1).toFixed(1)}h × $${Number(rateBefore)}
+               ＋ 後 ${Number(h2).toFixed(1)}h × $250
+           </div>`
+        : `<div style="margin-top:12px;padding:12px;background:#f8fafc;border-radius:8px;">
+               這筆剛好到 700h；若核准，下一筆工時起使用 $250。
+           </div>`;
+
+    panel.innerHTML = `
+        <div style="font-size:21px;font-weight:900;color:#111827;margin-bottom:8px;">
+            🔔 已達 700 小時，是否同意調薪至 $250？
+        </div>
+
+        <div style="color:#475569;line-height:1.7;">
+            ${staff}｜${date}<br>
+            本筆開始前：<b>${Number(beforeHours).toFixed(1)}h</b>｜
+            本筆完成後：<b>${Number(afterHours).toFixed(1)}h</b>
+            ${alreadyApproved
+                ? '<br><span style="color:#059669;font-weight:800;">目前人員資料已標示「已核准升250」，仍請確認這筆跨700h拆分。</span>'
+                : ''}
+        </div>
+
+        ${splitText}
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;">
+            <button id="qyjRaise250ApproveBtn" type="button"
+                style="background:#10b981;color:white;border:none;padding:11px 16px;border-radius:8px;font-weight:900;cursor:pointer;">
+                ✓ 同意升 $250
+            </button>
+
+            <button id="qyjRaise250DeferBtn" type="button"
+                style="background:#f59e0b;color:white;border:none;padding:11px 16px;border-radius:8px;font-weight:900;cursor:pointer;">
+                ✕ 不同意／暫緩
+            </button>
+
+            <button id="qyjRaise250LaterBtn" type="button"
+                style="background:#64748b;color:white;border:none;padding:11px 16px;border-radius:8px;font-weight:900;cursor:pointer;">
+                稍後決定
+            </button>
+        </div>
+    `;
+
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+
+    const close = function(){
+        overlay.remove();
+    };
+
+    document.getElementById('qyjRaise250ApproveBtn').onclick = function(){
+        close();
+
+        if(alreadyApproved){
+            if(Number(h2) > 0){
+                autoFillSplitWithTime(
+                    Number(h1),
+                    Number(rateBefore),
+                    Number(h2)
+                );
+            }else{
+                showToast('✅ 已確認 250 調薪核准');
+            }
+            return;
+        }
+
+        approveRaise250FromAttend(
+            Number(h1),
+            Number(rateBefore),
+            Number(h2)
+        );
+    };
+
+    document.getElementById('qyjRaise250DeferBtn').onclick = function(){
+        close();
+        deferRaise250FromAttend();
+    };
+
+    document.getElementById('qyjRaise250LaterBtn').onclick = function(){
+        close();
+        window.qyjRaise250PromptKey = '';
+    };
+}
+
 function checkHourlyUpgradeAlert() {
     const s = el('attend_staff').value.trim(),
         hInp = parseFloat(el('attend_salary_hours').value) || 0,
@@ -4297,11 +4471,26 @@ function checkHourlyUpgradeAlert() {
         return 999999;
     };
 
+    const currentEditedRecord =
+        editAttendIndex > -1
+            ? attendData[editAttendIndex]
+            : null;
+
+    const editingOriginalUnsplitRecord =
+        currentEditedRecord &&
+        !qyjIsRaise250AutoSplitRecord(currentEditedRecord);
+
     const staffRecords = attendData
         .map((record, idx) => ({ record, idx }))
         .filter(({ record }) =>
             record &&
-            record.staff === s
+            record.staff === s &&
+            !(
+                editingOriginalUnsplitRecord &&
+                record.date === dInp &&
+                record.company === currentEditedRecord.company &&
+                qyjIsRaise250AutoSplitRecord(record)
+            )
         )
         .sort((a, b) => {
             const da = new Date(a.record.date).getTime();
@@ -4408,34 +4597,33 @@ function checkHourlyUpgradeAlert() {
             dInp
         );
 
-        // 已經在人員資料核准過，也仍要檢查「跨700h當天」是否尚未拆單。
-        // 否則整筆 7/29 會因核准日期同日而被顯示成 250。
+        // 不論目前人員資料是否已核准，只要這筆是「首次跨700h」，
+        // 都要明確跳出一次「同意 / 暫緩」決策。
         if(agreed) {
-            if(h2 > 0) {
-                box.innerHTML = `
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <b>跨700h紀錄尚未拆分：</b>
-                    ${s} 這筆開始前累積為 <b>${cH.toFixed(1)}h</b>，
-                    本筆 ${hInp.toFixed(1)}h 後變成 <b>${afterHours.toFixed(1)}h</b>。
-                    <br>
-                    <span style="display:block;margin-top:8px;color:#7c3aed;font-weight:900;">
-                        正確計薪：前 ${h1.toFixed(1)}h × $${rateBefore}，
-                        後 ${h2.toFixed(1)}h × $250。
-                    </span>
-                    <button type="button"
-                        style="margin-top:10px;background:#7c3aed;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;"
-                        onclick="autoFillSplitWithTime(${h1}, ${rateBefore}, ${h2})">
-                        <i class="fas fa-magic"></i> 一鍵修正為兩筆
-                    </button>`;
-            } else {
-                box.innerHTML = `
-                    <i class="fas fa-check-circle"></i>
-                    <b>已達700h：</b>
-                    ${s} 這筆完成後累積 <b>${afterHours.toFixed(1)}h</b>，
-                    250 調薪已核准，下一筆工時起套用 $250。`;
-            }
-
+            box.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                <b>700h 調薪確認：</b>
+                ${s} 這筆開始前累積 <b>${cH.toFixed(1)}h</b>，
+                本筆後變成 <b>${afterHours.toFixed(1)}h</b>。
+                ${h2 > 0
+                    ? `<br><span style="color:#7c3aed;font-weight:900;">
+                           正確拆分：前 ${h1.toFixed(1)}h × $${rateBefore}，
+                           後 ${h2.toFixed(1)}h × $250。
+                       </span>`
+                    : ''}
+            `;
             box.style.display = 'block';
+
+            setTimeout(function(){
+                qyjShowRaise250DecisionPrompt(
+                    h1,
+                    rateBefore,
+                    h2,
+                    cH,
+                    afterHours,
+                    true
+                );
+            }, 30);
             return;
         }
 
@@ -4486,6 +4674,18 @@ function checkHourlyUpgradeAlert() {
             </div>`;
 
         box.style.display = 'block';
+
+        setTimeout(function(){
+            qyjShowRaise250DecisionPrompt(
+                h1,
+                rateBefore,
+                h2,
+                cH,
+                afterHours,
+                false
+            );
+        }, 30);
+
         return;
     }
 
@@ -4644,8 +4844,8 @@ function openRaise250StaffEditor() {
 }
 
 function autoFillSplitWithTime(h1, rate1, h2) {
-    const c = el('attend_company').value,
-        s = el('attend_staff').value,
+    const c = el('attend_company').value.trim(),
+        s = el('attend_staff').value.trim(),
         d = el('attend_date').value,
         srv = el('attend_service').value;
 
@@ -4657,24 +4857,55 @@ function autoFillSplitWithTime(h1, rate1, h2) {
     const salaryHours =
         parseFloat(el('attend_salary_hours').value) || 0;
 
+    h1 = Number(h1) || 0;
+    h2 = Number(h2) || 0;
+    rate1 = Number(rate1) || 0;
+
     if(!c || !s || !d || (!amS && !pmS)) {
         alert('請確認公司、人員、日期與至少一段上班時間都有填寫！');
         return;
     }
 
+    if(h1 <= 0 || h2 <= 0) {
+        alert('這筆沒有需要拆分的跨700h工時。');
+        return;
+    }
+
     function addHoursToTime(timeStr, hours) {
         if(!timeStr) return '';
-        let [h, m] = timeStr.split(':').map(Number);
-        let totalMinutes =
+
+        const normalized =
+            String(timeStr)
+                .replace(/：/g, ':')
+                .trim();
+
+        let h, m;
+
+        if(/^\d{4}$/.test(normalized)) {
+            h = Number(normalized.slice(0, 2));
+            m = Number(normalized.slice(2, 4));
+        }else{
+            const parts = normalized.split(':').map(Number);
+            h = parts[0];
+            m = parts[1];
+        }
+
+        if(!Number.isFinite(h) || !Number.isFinite(m)) {
+            return timeStr;
+        }
+
+        const totalMinutes =
             h * 60 +
             m +
             Math.round(hours * 60);
-        let nh =
+
+        const nh =
             Math.floor(totalMinutes / 60) % 24;
-        let nm =
+        const nm =
             totalMinutes % 60;
+
         return String(nh).padStart(2,'0') +
-            ":" +
+            ':' +
             String(nm).padStart(2,'0');
     }
 
@@ -4685,12 +4916,19 @@ function autoFillSplitWithTime(h1, rate1, h2) {
 
     const originalRemark =
         el('attend_remark').value.trim();
+
     const isProjectBilling =
         getCustBillingMode(c) === '專案';
 
     let r1 = {
-        company:c, staff:s, date:d, service:srv,
-        am_s:'', am_e:'', pm_s:'', pm_e:'',
+        company:c,
+        staff:s,
+        date:d,
+        service:srv,
+        am_s:'',
+        am_e:'',
+        pm_s:'',
+        pm_e:'',
         salary_hours:h1,
         project_fee:0,
         deduct_points:isProjectBilling ? 0 : h1,
@@ -4701,12 +4939,18 @@ function autoFillSplitWithTime(h1, rate1, h2) {
     };
 
     let r2 = {
-        company:c, staff:s, date:d, service:srv,
-        am_s:'', am_e:'', pm_s:'', pm_e:'',
+        company:c,
+        staff:s,
+        date:d,
+        service:srv,
+        am_s:'',
+        am_e:'',
+        pm_s:'',
+        pm_e:'',
         salary_hours:h2,
         project_fee:0,
         deduct_points:isProjectBilling ? 0 : h2,
-        special_hourly:'',
+        special_hourly:250,
         remark:
             (originalRemark ? originalRemark + '｜' : '') +
             '跨700h後(自動拆分)'
@@ -4715,22 +4959,19 @@ function autoFillSplitWithTime(h1, rate1, h2) {
     const almostEqual = (a, b) =>
         Math.abs(Number(a || 0) - Number(b || 0)) < 0.05;
 
-    /*
-     * 如果單一時段本身就等於發薪工時，優先使用那一段。
-     * 例如 7/29 發薪工時 4.5h、下午 13:00-17:30 正好 4.5h，
-     * 即使上午欄位殘留舊值，也不會拿上午時間來拆薪資。
-     */
     if(pmS && pmE && almostEqual(pmHrs, salaryHours)) {
         r1.pm_s = pmS;
         r1.pm_e = addHoursToTime(pmS, h1);
+
         r2.pm_s = r1.pm_e;
         r2.pm_e = pmE;
-    } else if(amS && amE && almostEqual(amHrs, salaryHours)) {
+    }else if(amS && amE && almostEqual(amHrs, salaryHours)) {
         r1.am_s = amS;
         r1.am_e = addHoursToTime(amS, h1);
+
         r2.am_s = r1.am_e;
         r2.am_e = amE;
-    } else if(h1 <= amHrs) {
+    }else if(h1 <= amHrs) {
         r1.am_s = amS;
         r1.am_e = addHoursToTime(amS, h1);
 
@@ -4738,11 +4979,12 @@ function autoFillSplitWithTime(h1, rate1, h2) {
         r2.am_e = amE;
         r2.pm_s = pmS;
         r2.pm_e = pmE;
-    } else {
+    }else{
         r1.am_s = amS;
         r1.am_e = amE;
 
-        let diff = h1 - amHrs;
+        const diff = h1 - amHrs;
+
         r1.pm_s = pmS;
         r1.pm_e = addHoursToTime(pmS, diff);
 
@@ -4750,26 +4992,171 @@ function autoFillSplitWithTime(h1, rate1, h2) {
         r2.pm_e = pmE;
     }
 
-    if(editAttendIndex > -1) {
-        attendData[editAttendIndex] = {
-            ...attendData[editAttendIndex],
-            ...r1
-        };
-        attendData.push(r2);
-        editAttendIndex = -1;
-    } else {
-        attendData.push(r1);
-        attendData.push(r2);
+    qyjEnsureAttendIdsSafe();
+
+    /*
+     * 重要：
+     * 拆單是「用兩筆取代原始一筆」，不是在原始4.5h上再多加1h。
+     * 同時清掉先前錯誤拆單殘留，避免總時數越拆越多。
+     */
+    const toRemoveIndexes = [];
+    const toDeleteRecords = [];
+
+    // 1) 先清除同一人、同公司、同一天的舊自動拆分殘留
+    attendData.forEach(function(item, idx){
+        if(
+            item &&
+            item.company === c &&
+            item.staff === s &&
+            item.date === d &&
+            qyjIsRaise250AutoSplitRecord(item)
+        ){
+            toRemoveIndexes.push(idx);
+            toDeleteRecords.push(item);
+        }
+    });
+
+    // 2) 找真正原始紀錄
+    let sourceIndex = -1;
+
+    if(
+        editAttendIndex > -1 &&
+        editAttendIndex < attendData.length
+    ){
+        const candidate = attendData[editAttendIndex];
+
+        if(
+            candidate &&
+            candidate.company === c &&
+            candidate.staff === s &&
+            candidate.date === d &&
+            !qyjIsRaise250AutoSplitRecord(candidate)
+        ){
+            sourceIndex = editAttendIndex;
+        }
     }
+
+    if(sourceIndex < 0){
+        sourceIndex = attendData.findIndex(function(item, idx){
+            if(
+                !item ||
+                item.company !== c ||
+                item.staff !== s ||
+                item.date !== d ||
+                qyjIsRaise250AutoSplitRecord(item)
+            ){
+                return false;
+            }
+
+            const itemHours =
+                Number(getItemSalaryHours(item)) || 0;
+
+            const sameHours =
+                salaryHours <= 0 ||
+                Math.abs(itemHours - salaryHours) < 0.05;
+
+            const samePm =
+                !pmS ||
+                (
+                    String(item.pm_s || '') === String(pmS || '') &&
+                    String(item.pm_e || '') === String(pmE || '')
+                );
+
+            const sameAm =
+                !amS ||
+                (
+                    String(item.am_s || '') === String(amS || '') &&
+                    String(item.am_e || '') === String(amE || '')
+                );
+
+            return sameHours && samePm && sameAm;
+        });
+    }
+
+    if(sourceIndex >= 0){
+        const sourceItem = attendData[sourceIndex];
+
+        if(!toRemoveIndexes.includes(sourceIndex)){
+            toRemoveIndexes.push(sourceIndex);
+            toDeleteRecords.push(sourceItem);
+        }
+    }
+
+    if(sourceIndex < 0){
+        alert(
+            '找不到原始未拆分紀錄，系統已停止拆單，避免時數重複。\n' +
+            '請重新按原始那筆黃色修改後再操作。'
+        );
+        return;
+    }
+
+    // 先留下插入位置，再由大到小刪除
+    const insertAt = Math.min.apply(
+        null,
+        toRemoveIndexes.length
+            ? toRemoveIndexes
+            : [sourceIndex]
+    );
+
+    qyjMarkAttendDeleted(toDeleteRecords);
+
+    toRemoveIndexes
+        .sort((a, b) => b - a)
+        .forEach(function(idx){
+            attendData.splice(idx, 1);
+        });
+
+    // 新的兩筆一定使用新同步ID，避免雲端把舊4.5h紀錄救回來
+    const now = new Date().toISOString();
+
+    function newAttendId(){
+        if(typeof qyjNewAttendId === 'function'){
+            return qyjNewAttendId();
+        }
+
+        return (
+            'att_' +
+            Date.now().toString(36) +
+            '_' +
+            Math.random().toString(36).slice(2, 10)
+        );
+    }
+
+    r1._syncId = newAttendId();
+    r1._createdAt = now;
+    r1._updatedAt = now;
+
+    r2._syncId = newAttendId();
+    r2._createdAt = now;
+    r2._updatedAt = now;
+
+    attendData.splice(
+        insertAt,
+        0,
+        r1,
+        r2
+    );
+
+    editAttendIndex = -1;
+    window.qyjRaise250PromptKey = '';
+
+    try{
+        localStorage.setItem(
+            'attendData',
+            JSON.stringify(attendData)
+        );
+    }catch(error){}
 
     saveAll();
     renderAttend();
     clearAttendForm();
 
     alert(
-        `✅ 跨700h拆單完成！\n` +
-        `前 ${Number(h1).toFixed(1)}h × $${rate1}\n` +
-        `後 ${Number(h2).toFixed(1)}h × $250`
+        `✅ 跨700h拆單完成！\n\n` +
+        `原始 ${salaryHours.toFixed(1)}h 已移除，不會重複計算。\n` +
+        `前 ${h1.toFixed(1)}h × $${rate1}\n` +
+        `後 ${h2.toFixed(1)}h × $250\n\n` +
+        `拆分後總工時仍為 ${(h1 + h2).toFixed(1)}h。`
     );
 }
 
@@ -6899,7 +7286,9 @@ function editAttend(i) {
             ? computedDeductPoints
             : 0; 
     el('attend_special_hourly').value = d.special_hourly || ''; 
-    editAttendIndex = i; 
+    editAttendIndex = i;
+    window.qyjRaise250PromptKey = '';
+
 
     const b = el('btnAddAttend');
     if(b) {
