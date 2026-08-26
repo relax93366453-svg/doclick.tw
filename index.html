@@ -4263,31 +4263,100 @@ function checkHourlyUpgradeAlert() {
         return;
     }
 
-    let staffRecords = attendData
-        .map((r, i) => ({ record: r, idx: i }))
-        .filter(r => r.record.staff === s);
+    /*
+     * 編輯舊紀錄時，必須用「這一筆在完整歷史中的真正位置」
+     * 計算它開始前的累積工時。
+     *
+     * 舊版做法把正在編輯的紀錄暫時塞成 idx=999999，
+     * 同一天若有其他紀錄 / 雲端同步後順序不同，
+     * 會把那些紀錄全部算在前面，造成 cH 已經 >=700，
+     * 因此 reaches700 變 false，7/29 就不會跳提醒。
+     */
+    const getStartMinutes = (record) => {
+        const raw =
+            (record && (record.am_s || record.pm_s)) || '';
+        if(!raw) return 999999;
 
-    if (editAttendIndex > -1) {
-        staffRecords = staffRecords.filter(r => r.idx !== editAttendIndex);
-    }
+        const normalized = String(raw)
+            .replace(/：/g, ':')
+            .trim();
 
-    staffRecords.push({
-        record: { date: dInp },
-        idx: 999999,
-        isCurrent: true
-    });
+        if(/^\d{4}$/.test(normalized)) {
+            const hh = Number(normalized.slice(0, 2));
+            const mm = Number(normalized.slice(2, 4));
+            return hh * 60 + mm;
+        }
 
-    staffRecords.sort(
-        (a, b) =>
-            new Date(a.record.date) - new Date(b.record.date) ||
-            a.idx - b.idx
-    );
+        const parts = normalized.split(':').map(Number);
+        if(parts.length >= 2 &&
+           Number.isFinite(parts[0]) &&
+           Number.isFinite(parts[1])) {
+            return parts[0] * 60 + parts[1];
+        }
+
+        return 999999;
+    };
+
+    const staffRecords = attendData
+        .map((record, idx) => ({ record, idx }))
+        .filter(({ record }) =>
+            record &&
+            record.staff === s
+        )
+        .sort((a, b) => {
+            const da = new Date(a.record.date).getTime();
+            const db = new Date(b.record.date).getTime();
+
+            if(da !== db) return da - db;
+
+            const ta = getStartMinutes(a.record);
+            const tb = getStartMinutes(b.record);
+
+            if(ta !== tb) return ta - tb;
+
+            return a.idx - b.idx;
+        });
 
     let cH = 0;
-    for (let sr of staffRecords) {
-        if (sr.isCurrent) break;
-        cH += getItemSalaryHours(sr.record);
-        cH = Math.round(cH * 10) / 10;
+
+    if(editAttendIndex > -1) {
+        // 編輯模式：精準累加到「目前這筆」之前就停止。
+        for(const sr of staffRecords) {
+            if(sr.idx === editAttendIndex) {
+                break;
+            }
+
+            cH += getItemSalaryHours(sr.record);
+            cH = Math.round(cH * 10) / 10;
+        }
+    } else {
+        // 新增模式：只累加在目前日期 / 開始時間之前的歷史資料。
+        const currentStart = getStartMinutes({
+            am_s: el('am_s').value,
+            pm_s: el('pm_s').value
+        });
+
+        for(const sr of staffRecords) {
+            const recordDate =
+                new Date(sr.record.date).getTime();
+            const currentDate =
+                new Date(dInp).getTime();
+
+            if(recordDate < currentDate) {
+                cH += getItemSalaryHours(sr.record);
+                cH = Math.round(cH * 10) / 10;
+                continue;
+            }
+
+            if(recordDate === currentDate &&
+               getStartMinutes(sr.record) < currentStart) {
+                cH += getItemSalaryHours(sr.record);
+                cH = Math.round(cH * 10) / 10;
+                continue;
+            }
+
+            break;
+        }
     }
 
     const si = staffData.find(x => x.name === s);
@@ -4318,7 +4387,7 @@ function checkHourlyUpgradeAlert() {
     const reaches700 =
         raise250Eligible &&
         cH < 700 &&
-        afterHours > 700;
+        afterHours >= 700;
 
     if(reaches700) {
         const h1 = Math.max(
@@ -4342,21 +4411,30 @@ function checkHourlyUpgradeAlert() {
         // 已經在人員資料核准過，也仍要檢查「跨700h當天」是否尚未拆單。
         // 否則整筆 7/29 會因核准日期同日而被顯示成 250。
         if(agreed) {
-            box.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i>
-                <b>跨700h紀錄尚未拆分：</b>
-                ${s} 這筆會由 <b>${cH.toFixed(1)}h</b>
-                增加到 <b>${afterHours.toFixed(1)}h</b>。
-                <br>
-                <span style="display:block;margin-top:8px;color:#7c3aed;font-weight:900;">
-                    正確計薪：前 ${h1.toFixed(1)}h × $${rateBefore}，
-                    後 ${h2.toFixed(1)}h × $250。
-                </span>
-                <button type="button"
-                    style="margin-top:10px;background:#7c3aed;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;"
-                    onclick="autoFillSplitWithTime(${h1}, ${rateBefore}, ${h2})">
-                    <i class="fas fa-magic"></i> 一鍵修正為兩筆
-                </button>`;
+            if(h2 > 0) {
+                box.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <b>跨700h紀錄尚未拆分：</b>
+                    ${s} 這筆開始前累積為 <b>${cH.toFixed(1)}h</b>，
+                    本筆 ${hInp.toFixed(1)}h 後變成 <b>${afterHours.toFixed(1)}h</b>。
+                    <br>
+                    <span style="display:block;margin-top:8px;color:#7c3aed;font-weight:900;">
+                        正確計薪：前 ${h1.toFixed(1)}h × $${rateBefore}，
+                        後 ${h2.toFixed(1)}h × $250。
+                    </span>
+                    <button type="button"
+                        style="margin-top:10px;background:#7c3aed;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;"
+                        onclick="autoFillSplitWithTime(${h1}, ${rateBefore}, ${h2})">
+                        <i class="fas fa-magic"></i> 一鍵修正為兩筆
+                    </button>`;
+            } else {
+                box.innerHTML = `
+                    <i class="fas fa-check-circle"></i>
+                    <b>已達700h：</b>
+                    ${s} 這筆完成後累積 <b>${afterHours.toFixed(1)}h</b>，
+                    250 調薪已核准，下一筆工時起套用 $250。`;
+            }
+
             box.style.display = 'block';
             return;
         }
@@ -6781,6 +6859,27 @@ function editAttend(i) {
         return;
     }
 
+    /*
+     * 舊派遣紀錄有些沒有直接存 salary_hours / deduct_points，
+     * 表格顯示的 4.5h 是由上下班時間即時計算出來的。
+     * 之前編輯時只讀 d.salary_hours，會變成空白，
+     * checkHourlyUpgradeAlert() 因 hInp=0 直接 return，
+     * 所以 7/29 跨 700h 完全不會跳提醒。
+     */
+    const computedSalaryHours =
+        (d.salary_hours !== undefined &&
+         d.salary_hours !== null &&
+         d.salary_hours !== '')
+            ? Number(d.salary_hours)
+            : getItemSalaryHours(d);
+
+    const computedDeductPoints =
+        (d.deduct_points !== undefined &&
+         d.deduct_points !== null &&
+         d.deduct_points !== '')
+            ? Number(d.deduct_points)
+            : getItemDeductPoints(d);
+
     el('attend_company').value = d.company || ''; 
     el('attend_staff').value = d.staff || ''; 
     el('attend_date').value = d.date || ''; 
@@ -6790,9 +6889,15 @@ function editAttend(i) {
     el('am_e').value = d.am_e || ''; 
     el('pm_s').value = d.pm_s || ''; 
     el('pm_e').value = d.pm_e || ''; 
-    el('attend_salary_hours').value = d.salary_hours || ''; 
+    el('attend_salary_hours').value =
+        Number.isFinite(computedSalaryHours)
+            ? computedSalaryHours
+            : ''; 
     el('attend_project_fee').value = d.project_fee || 0; 
-    el('attend_deduct_points').value = d.deduct_points || 0; 
+    el('attend_deduct_points').value =
+        Number.isFinite(computedDeductPoints)
+            ? computedDeductPoints
+            : 0; 
     el('attend_special_hourly').value = d.special_hourly || ''; 
     editAttendIndex = i; 
 
@@ -6806,12 +6911,6 @@ function editAttend(i) {
     const c = el('btnClearAttend'); 
     if(c) c.innerHTML = '<i class="fas fa-times"></i> 取消'; 
 
-    try {
-        checkHourlyUpgradeAlert();
-    } catch(err) {
-        console.error('編輯派遣紀錄時檢查調薪提醒失敗：', err);
-    }
-
     if(typeof window.qyjActivateAttendDraft === 'function'){
         try {
             window.qyjActivateAttendDraft();
@@ -6820,17 +6919,65 @@ function editAttend(i) {
         }
     }
 
+    /*
+     * 草稿/表單同步可能會在 editAttend 後才更新欄位，
+     * 因此延後再檢查一次，確保 4.5h 已經在輸入框裡。
+     */
     setTimeout(() => {
-        const target = el('attend_company') || el('page-attend');
-        if(target && typeof target.scrollIntoView === 'function') {
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        try {
+            // 若草稿同步又把發薪工時清空，再從紀錄本身補回。
+            const salaryInput = el('attend_salary_hours');
+            if(
+                salaryInput &&
+                (!salaryInput.value ||
+                 (parseFloat(salaryInput.value) || 0) <= 0)
+            ) {
+                salaryInput.value =
+                    Number.isFinite(computedSalaryHours)
+                        ? computedSalaryHours
+                        : '';
+            }
+
+            const deductInput = el('attend_deduct_points');
+            if(
+                deductInput &&
+                (!deductInput.value &&
+                 Number.isFinite(computedDeductPoints))
+            ) {
+                deductInput.value = computedDeductPoints;
+            }
+
+            checkHourlyUpgradeAlert();
+        } catch(err) {
+            console.error(
+                '編輯派遣紀錄時檢查700h調薪提醒失敗：',
+                err
+            );
         }
+
+        const target =
+            el('attend_upgrade_alert') ||
+            el('attend_company') ||
+            el('page-attend');
+
+        if(
+            target &&
+            typeof target.scrollIntoView === 'function'
+        ) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
         if(el('attend_company')) {
             el('attend_company').focus();
         }
-    }, 50);
+    }, 120);
 
-    showToast(`✏️ 已載入 ${d.staff || '此人員'} ${d.date || ''} 的紀錄，請在上方修改`);
+    showToast(
+        `✏️ 已載入 ${d.staff || '此人員'} ${d.date || ''} 的紀錄，發薪工時 ${Number.isFinite(computedSalaryHours) ? computedSalaryHours : '-'}h`
+    );
 }
 
 function delAttend(i) { 
