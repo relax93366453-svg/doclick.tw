@@ -994,6 +994,68 @@
         resize: vertical;
     }
 
+    .job-post-tag-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 4px;
+    }
+
+    .job-post-tag-option {
+        display: flex !important;
+        align-items: center;
+        gap: 9px;
+        margin: 0 !important;
+        padding: 10px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #f8fafc;
+        color: #334155 !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .job-post-tag-option:hover {
+        border-color: #93c5fd;
+        background: #eff6ff;
+    }
+
+    .job-post-tag-option input {
+        width: 16px !important;
+        height: 16px;
+        margin: 0;
+        padding: 0 !important;
+        accent-color: #2563eb;
+        box-shadow: none !important;
+    }
+
+    .job-post-tag-help {
+        margin-top: 8px;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .job-post-inline-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 5px;
+    }
+
+    .job-post-inline-tag {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #fff7ed;
+        color: #c2410c;
+        border: 1px solid #fed7aa;
+        font-size: 11px;
+        font-weight: 800;
+    }
+
     .job-post-form-error {
         display: none;
         margin-top: 16px;
@@ -2180,6 +2242,32 @@
                                     <div class="job-post-form-group job-post-form-full">
                                         <label for="jobPostDescription">工作內容 <span>*</span></label>
                                         <textarea id="jobPostDescription" maxlength="3000" required placeholder="請輸入工作內容、條件與注意事項"></textarea>
+                                    </div>
+
+                                    <div class="job-post-form-group job-post-form-full">
+                                        <label>前台快速分類（可複選）</label>
+                                        <div class="job-post-tag-grid">
+                                            <label class="job-post-tag-option">
+                                                <input type="checkbox" class="job-post-tag-checkbox" value="今日可報班">
+                                                <span>今日可報班</span>
+                                            </label>
+                                            <label class="job-post-tag-option">
+                                                <input type="checkbox" class="job-post-tag-checkbox" value="急徵職缺">
+                                                <span>急徵職缺</span>
+                                            </label>
+                                            <label class="job-post-tag-option">
+                                                <input type="checkbox" class="job-post-tag-checkbox" value="長期穩定">
+                                                <span>長期穩定</span>
+                                            </label>
+                                            <label class="job-post-tag-option">
+                                                <input type="checkbox" class="job-post-tag-checkbox" value="無經驗可">
+                                                <span>無經驗可</span>
+                                            </label>
+                                        </div>
+                                        <div class="job-post-tag-help">
+                                            官網上方「今日可報班／急徵職缺／長期穩定／無經驗可」由這裡控制。
+                                            「派遣職缺／正職機會」仍依上方「工作類型」自動分類。
+                                        </div>
                                     </div>
 
                                     <div class="job-post-form-group">
@@ -26656,6 +26744,51 @@ function generatePayslipPDF() {
         return div.innerHTML;
     }
 
+    function parseJobTags(value) {
+        if (Array.isArray(value)) {
+            return value
+                .map(function (item) { return String(item || '').trim(); })
+                .filter(Boolean);
+        }
+
+        const raw = String(value || '').trim();
+        if (!raw) return [];
+
+        // 相容曾經以 JSON array 儲存的資料
+        if (raw.charAt(0) === '[') {
+            try {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    return parsed
+                        .map(function (item) { return String(item || '').trim(); })
+                        .filter(Boolean);
+                }
+            } catch (_) {}
+        }
+
+        return raw
+            .split(/[,，、\n]+/)
+            .map(function (item) { return item.trim(); })
+            .filter(Boolean);
+    }
+
+    function readSelectedJobTags() {
+        return Array.from(
+            document.querySelectorAll('.job-post-tag-checkbox:checked')
+        )
+            .map(function (input) { return String(input.value || '').trim(); })
+            .filter(Boolean);
+    }
+
+    function setSelectedJobTags(value) {
+        const selected = new Set(parseJobTags(value));
+        document
+            .querySelectorAll('.job-post-tag-checkbox')
+            .forEach(function (input) {
+                input.checked = selected.has(String(input.value || ''));
+            });
+    }
+
     function notify(message, isError) {
         if (typeof window.showToast === 'function') {
             window.showToast(message, Boolean(isError));
@@ -27144,6 +27277,13 @@ function generatePayslipPDF() {
         tbody.innerHTML = rows.map(function (post) {
             const toggleLabel = post.status === '已上架' ? '關閉' : '上架';
             const typeSub = post.shift ? '<span class="job-post-cell-sub">' + safeText(post.shift) + '</span>' : '';
+            const tagHtml = parseJobTags(post.tags).length
+                ? '<div class="job-post-inline-tags">' +
+                    parseJobTags(post.tags).map(function (tag) {
+                        return '<span class="job-post-inline-tag">' + safeText(tag) + '</span>';
+                    }).join('') +
+                  '</div>'
+                : '';
             const location = [post.city, post.district].filter(Boolean).join(' ');
             const headcount = post.headcount ? '<span class="job-post-cell-sub">需求 ' + safeText(post.headcount) + ' 人</span>' : '';
 
@@ -27152,7 +27292,7 @@ function generatePayslipPDF() {
                 + '<td><span class="job-post-cell-title">' + safeText(post.title) + '</span>' + headcount + '</td>'
                 + '<td>' + safeText(post.company) + '</td>'
                 + '<td>' + safeText(location || '-') + '</td>'
-                + '<td>' + safeText(post.type || '-') + typeSub + '</td>'
+                + '<td>' + safeText(post.type || '-') + typeSub + tagHtml + '</td>'
                 + '<td>' + safeText(formatSalary(post)) + '</td>'
                 + '<td>' + statusBadge(post.status) + '</td>'
                 + '<td>' + safeText(formatDate(post.updatedAt)) + '</td>'
@@ -27188,6 +27328,7 @@ function generatePayslipPDF() {
         if (form) form.reset();
         if (byId('jobPostEditingId')) byId('jobPostEditingId').value = '';
         if (byId('jobPostStatus')) byId('jobPostStatus').value = '草稿';
+        setSelectedJobTags([]);
         updateDistrictOptions('');
         clearError();
     }
@@ -27235,6 +27376,7 @@ function generatePayslipPDF() {
             byId('jobPostShift').value = post.shift || '';
             byId('jobPostHeadcount').value = post.headcount || '';
             byId('jobPostDescription').value = post.description || '';
+            setSelectedJobTags(post.tags || '');
             byId('jobPostStatus').value = post.status || '草稿';
         } else if (titleText) {
             titleText.textContent = '新增職缺';
@@ -27271,6 +27413,8 @@ function generatePayslipPDF() {
             shift: (byId('jobPostShift')?.value || '').trim(),
             headcount: byId('jobPostHeadcount')?.value || '',
             description: (byId('jobPostDescription')?.value || '').trim(),
+            // 用逗號字串存入 JobPosts.tags，方便試算表閱讀，也相容前台解析。
+            tags: readSelectedJobTags().join(','),
             status: statusOverride || byId('jobPostStatus')?.value || '草稿'
         };
     }
