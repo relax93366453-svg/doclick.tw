@@ -1708,8 +1708,9 @@
                     用來分清楚排班異動責任歸屬：員工請假 / 未到會影響考核；客戶取消、主管調班、排錯班不會影響員工考核。此資料會保留在原排班資料內，不會破壞原本排班與打卡流程。
                 </div>
                 <div class="filter-bar">
-                    <label>年份</label><select id="sch_change_year" onchange="renderScheduleChangePage()"></select>
-                    <label>月份</label><select id="sch_change_month" onchange="renderScheduleChangePage()"></select>
+                    <label>年份</label><select id="sch_change_year" onchange="handleScheduleChangeYearMonthFilter()"></select>
+                    <label>月份</label><select id="sch_change_month" onchange="handleScheduleChangeYearMonthFilter()"></select>
+                    <label>日期</label><input type="date" id="sch_change_date" onchange="handleScheduleChangeDateFilter()" title="可指定單一天；留空則顯示整個月份">
                     <label>公司</label><input list="list_cust" id="sch_change_company" placeholder="搜尋公司" oninput="renderScheduleChangePage()">
                     <label>人員</label><input list="list_staff" id="sch_change_staff" placeholder="搜尋人員" oninput="renderScheduleChangePage()">
                     <label>狀態</label><select id="sch_change_status" onchange="renderScheduleChangePage()"><option value="all">全部</option><option>已排班</option><option>員工請假</option><option>客戶取消</option><option>主管調班</option><option>異常</option><option>作廢</option></select>
@@ -3684,6 +3685,30 @@ function renderScheduleChangeBadge(status){
     const cls = status === '員工請假' || status === '異常' ? 'change-staff' : status === '客戶取消' ? 'change-client' : status === '主管調班' ? 'change-company' : status === '作廢' ? 'change-void' : 'change-normal';
     return `<span class="change-badge ${cls}">${status}</span>`;
 }
+function handleScheduleChangeYearMonthFilter(){
+    const dateInput = el('sch_change_date');
+    if(dateInput) dateInput.value = '';
+    renderScheduleChangePage();
+}
+
+function handleScheduleChangeDateFilter(){
+    const dateInput = el('sch_change_date');
+    const value = dateInput ? String(dateInput.value || '') : '';
+
+    // 選了指定日期時，自動同步上方年份 / 月份，避免畫面條件互相矛盾。
+    if(value){
+        const parts = value.split('-');
+        if(parts.length >= 2){
+            const ySel = el('sch_change_year');
+            const mSel = el('sch_change_month');
+            if(ySel) ySel.value = String(Number(parts[0]));
+            if(mSel) mSel.value = String(Number(parts[1]));
+        }
+    }
+
+    renderScheduleChangePage();
+}
+
 function initScheduleChangeFilters(){
     const now = new Date();
     const ySel = el('sch_change_year'), mSel = el('sch_change_month');
@@ -3701,6 +3726,7 @@ function getScheduleChangeFilteredList(){
     const y = el('sch_change_year') ? Number(el('sch_change_year').value) : (getScheduleYear ? getScheduleYear() : new Date().getFullYear());
     const m = el('sch_change_month') ? Number(el('sch_change_month').value) : (getScheduleMonth ? getScheduleMonth() : new Date().getMonth()+1);
     const ym = `${y}-${pad2(m)}-`;
+    const exactDate = (el('sch_change_date')?.value || '').trim();
     const company = (el('sch_change_company')?.value || '').trim();
     const staff = (el('sch_change_staff')?.value || '').trim();
     const status = el('sch_change_status')?.value || 'all';
@@ -3708,7 +3734,12 @@ function getScheduleChangeFilteredList(){
     return (scheduleData || [])
         .map((d, index) => ({...d, index}))
         .filter(d => {
-            if(!String(d.date || '').startsWith(ym)) return false;
+            const itemDate = String(d.date || '');
+            if(exactDate){
+                if(itemDate !== exactDate) return false;
+            }else{
+                if(!itemDate.startsWith(ym)) return false;
+            }
             if(company && !String(d.company || '').includes(company)) return false;
             if(staff && !String(d.staffs || d.staff || '').includes(staff)) return false;
             if(status && status !== 'all' && String(d.scheduleStatus || '已排班') !== status) return false;
@@ -3729,6 +3760,11 @@ function renderScheduleChangePage(){
     const changed = list.filter(d => (d.scheduleStatus || '已排班') !== '已排班');
 
     if(el('sch_change_kpi_total')) el('sch_change_kpi_total').innerText = changed.length;
+
+    const totalLabel = el('sch_change_kpi_total')?.previousElementSibling;
+    if(totalLabel){
+        totalLabel.innerText = (el('sch_change_date')?.value || '') ? '本日異動總數' : '本月異動總數';
+    }
     if(el('sch_change_kpi_staff')) el('sch_change_kpi_staff').innerText = list.filter(d => d.responsibility === '員工').length;
     if(el('sch_change_kpi_client')) el('sch_change_kpi_client').innerText = list.filter(d => d.responsibility === '客戶').length;
     if(el('sch_change_kpi_company')) el('sch_change_kpi_company').innerText = list.filter(d => d.responsibility === '公司').length;
@@ -3761,7 +3797,13 @@ function renderScheduleChangePage(){
         </tr>`;
     }).join('');
 }
-function clearScheduleChangeFilters(){if(el('sch_change_company'))el('sch_change_company').value='';if(el('sch_change_staff'))el('sch_change_staff').value='';if(el('sch_change_status'))el('sch_change_status').value='all';renderScheduleChangePage();}
+function clearScheduleChangeFilters(){
+    if(el('sch_change_date')) el('sch_change_date').value='';
+    if(el('sch_change_company')) el('sch_change_company').value='';
+    if(el('sch_change_staff')) el('sch_change_staff').value='';
+    if(el('sch_change_status')) el('sch_change_status').value='all';
+    renderScheduleChangePage();
+}
 function openScheduleChangeModal(index){
     index = Number(index); if(!Number.isInteger(index)||!scheduleData[index])return showToast('找不到這筆排班資料',true); if(!el('scheduleChangeModal')){ alert('找不到排班異動彈窗，請重新整理後再試。'); return; }
     currentScheduleChangeIndex=index; const d=scheduleData[index];
@@ -9443,7 +9485,9 @@ document.addEventListener("DOMContentLoaded", function() {
       XLSX.utils.book_append_sheet(wb, ws, '排班異動紀錄');
       const y = document.getElementById('sch_change_year')?.value || '';
       const m = document.getElementById('sch_change_month')?.value || '';
-      XLSX.writeFile(wb, `排班異動紀錄_${y}_${m}.xlsx`);
+      const exactDate = document.getElementById('sch_change_date')?.value || '';
+      const fileSuffix = exactDate ? exactDate : `${y}_${m}`;
+      XLSX.writeFile(wb, `排班異動紀錄_${fileSuffix}.xlsx`);
     }else{
       const headers = Object.keys(rows[0]);
       const csv = '\ufeff' + [headers.join(','), ...rows.map(r => headers.map(h => `"${String(r[h]??'').replace(/"/g,'""')}"`).join(','))].join('\n');
