@@ -5369,23 +5369,62 @@ async function autoFillSplitWithTime(h1, rate1, h2, mode) {
         return;
     }
 
-    // 同日舊拆分紀錄若存在，一起 tombstone 清除。
-    const removeIndexes = [sourceIndex];
-    const removeRecords = [sourceItem];
+    /*
+     * 同日舊拆分紀錄 +「重複的原始紀錄」全部一起 tombstone。
+     *
+     * 你目前 2026/07/29 的 13:00-17:30 / 4.5h 已經在雲端重複兩筆，
+     * 所以舊版只刪其中一筆時，另一筆會在下一次自動讀取後看起來像「又跳回來」。
+     *
+     * 這裡改成：
+     * 1. 原始來源那筆一定刪；
+     * 2. 同公司、同人、同日期、同服務、同上下班時間、同工時的純原始重複紀錄全部刪；
+     * 3. 舊的跨700h拆分殘留也全部刪；
+     * 4. 最後只建立正確的前段 + 後段兩筆。
+     */
+    const removeIndexes = [];
+    const removeRecords = [];
 
-    attendData.forEach(function(item, idx){
-        if(
-            idx !== sourceIndex &&
-            item &&
+    function sameOriginalShift(item){
+        if(!item || qyjIsRaise250AutoSplitRecord(item)){
+            return false;
+        }
+
+        return (
             item.company === c &&
             item.staff === s &&
             item.date === d &&
-            qyjIsRaise250AutoSplitRecord(item)
-        ){
+            String(item.service || '') === String(srv || '') &&
+            String(item.am_s || '') === String(amS || '') &&
+            String(item.am_e || '') === String(amE || '') &&
+            String(item.pm_s || '') === String(pmS || '') &&
+            String(item.pm_e || '') === String(pmE || '') &&
+            Math.abs(recordHours(item) - sourceHours) < 0.05
+        );
+    }
+
+    attendData.forEach(function(item, idx){
+        if(!item) return;
+
+        const isOldSplit =
+            item.company === c &&
+            item.staff === s &&
+            item.date === d &&
+            qyjIsRaise250AutoSplitRecord(item);
+
+        const isDuplicateOriginal =
+            sameOriginalShift(item);
+
+        if(isOldSplit || isDuplicateOriginal){
             removeIndexes.push(idx);
             removeRecords.push(item);
         }
     });
+
+    // 防呆：至少必須包含目前正在編輯的 source。
+    if(!removeIndexes.includes(sourceIndex)){
+        removeIndexes.push(sourceIndex);
+        removeRecords.push(sourceItem);
+    }
 
     // 避免重複 index
     const uniqueRemoveIndexes =
@@ -5536,9 +5575,15 @@ async function autoFillSplitWithTime(h1, rate1, h2, mode) {
         renderAttend();
         clearAttendForm();
 
+        const duplicateOriginalCount =
+            removeRecords.filter(function(item){
+                return item && !qyjIsRaise250AutoSplitRecord(item);
+            }).length;
+
         alert(
             `✅ 拆分已完成並確認寫入雲端！\n\n` +
-            `原始 ${sourceHours.toFixed(1)}h 已永久標記刪除，不會再復活。\n` +
+            `已清除 ${duplicateOriginalCount} 筆相同的原始 ${sourceHours.toFixed(1)}h 紀錄。\n` +
+            `原始紀錄已永久標記刪除，不會再被自動同步救回。\n` +
             `前 ${h1.toFixed(1)}h × $${rate1}\n` +
             (
                 mode === 'pending'
