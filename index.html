@@ -6594,6 +6594,753 @@ ${d.contentHtml}
 })();
 </script>
 
+<!-- =========================================================
+     員工端排班「嚴格雲端」修正
+     根因：
+     舊版 qyjMobileTodayRows 在找不到本人排班時會執行
+         if(matched.length===0) matched=rows;
+     也就是「本人沒排班 → 改顯示今天所有人的排班」。
+     這會讓員工看到根本沒有排給自己的公司，甚至可誤打卡。
+
+     新版規則：
+     1. 員工端排班只相信「本次從雲端讀回」的 scheduleData
+     2. 沒有本人排班就是空白，絕不 fallback 到其他人的班
+     3. 雲端尚未確認前，不顯示任何可打卡班別
+     4. 雲端成功後覆蓋舊 localStorage scheduleData，清掉手機殘留舊班
+========================================================= -->
+<script>
+(function(){
+    'use strict';
+
+    if(
+        !new URLSearchParams(location.search).get('staffApp')
+    ) return;
+
+    const LOGIN_KEY = 'qyj_mobile_staff_login';
+
+    window.__qyjStaffScheduleVerified = false;
+    window.__qyjAuthoritativeScheduleRows = [];
+
+    function pad2(v){
+        return String(v).padStart(2,'0');
+    }
+
+    function todayYmd(){
+        const d = new Date();
+        return (
+            d.getFullYear() + '-' +
+            pad2(d.getMonth()+1) + '-' +
+            pad2(d.getDate())
+        );
+    }
+
+    function norm(v){
+        return String(v == null ? '' : v)
+            .replace(/\s+/g,'')
+            .trim();
+    }
+
+    function dateNorm(v){
+        if(!v) return '';
+
+        const s = String(v)
+            .trim()
+            .replace(/\//g,'-');
+
+        const m = s.match(
+            /^(\d{4})-(\d{1,2})-(\d{1,2})/
+        );
+
+        if(!m) return s;
+
+        return (
+            m[1] + '-' +
+            pad2(m[2]) + '-' +
+            pad2(m[3])
+        );
+    }
+
+    function splitNames(v){
+        if(Array.isArray(v)){
+            return v
+                .flatMap(splitNames)
+                .filter(Boolean);
+        }
+
+        return String(v || '')
+            .split(/[,，、\n]/)
+            .map(function(x){ return x.trim(); })
+            .filter(Boolean);
+    }
+
+    function currentStaff(){
+        try{
+            if(typeof window.msGetCurrentStaff === 'function'){
+                return window.msGetCurrentStaff() || {};
+            }
+        }catch(e){}
+
+        try{
+            return JSON.parse(
+                localStorage.getItem(LOGIN_KEY) || '{}'
+            ) || {};
+        }catch(e){
+            return {};
+        }
+    }
+
+    function staffAliases(staff){
+        const s = staff || {};
+        const values = [
+            s.name,
+            s.staff,
+            s.realName,
+            s.employeeName,
+            s.fullname,
+            s.phone,
+            s.mobile,
+            s.tel,
+            s.account,
+            s.username,
+            s.id,
+            s.code,
+            s.staffId
+        ];
+
+        try{
+            if(typeof window.msStaffName === 'function'){
+                values.push(window.msStaffName(s));
+            }
+        }catch(e){}
+
+        try{
+            if(typeof window.msStaffAccount === 'function'){
+                values.push(window.msStaffAccount(s));
+            }
+        }catch(e){}
+
+        return Array.from(
+            new Set(
+                values
+                    .map(norm)
+                    .filter(Boolean)
+            )
+        );
+    }
+
+    function rowAliases(row){
+        const r = row || {};
+        const values = [];
+
+        [
+            r.staffs,
+            r.staff,
+            r.name,
+            r.employee,
+            r.staffName,
+            r.employeeName,
+            r.worker,
+            r.person
+        ].forEach(function(v){
+            splitNames(v).forEach(function(name){
+                values.push(norm(name));
+            });
+        });
+
+        [
+            r.phone,
+            r.mobile,
+            r.tel,
+            r.staffPhone,
+            r.account,
+            r.staffId,
+            r.code
+        ].forEach(function(v){
+            if(v != null && String(v).trim()){
+                values.push(norm(v));
+            }
+        });
+
+        return Array.from(
+            new Set(values.filter(Boolean))
+        );
+    }
+
+    function rowMatchesStaff(row,staff){
+        const a = staffAliases(staff);
+        const b = rowAliases(row);
+
+        if(!a.length || !b.length) return false;
+
+        return b.some(function(value){
+            return a.includes(value);
+        });
+    }
+
+    function isVoided(row){
+        const status = String(
+            row?.scheduleStatus ||
+            row?.status ||
+            row?.state ||
+            ''
+        ).trim();
+
+        return (
+            status === '作廢' ||
+            status === '取消' ||
+            status === '已取消'
+        );
+    }
+
+    function rowDate(row){
+        return dateNorm(
+            row?.date ||
+            row?.workDate ||
+            row?.shiftDate ||
+            row?.scheduleDate ||
+            row?.day
+        );
+    }
+
+    function rowCompany(row){
+        return (
+            row?.company ||
+            row?.customer ||
+            row?.client ||
+            row?.companyName ||
+            row?.cust ||
+            ''
+        );
+    }
+
+    function rowStart(row){
+        return (
+            row?.start ||
+            row?.startTime ||
+            row?.start_time ||
+            row?.on ||
+            row?.onTime ||
+            row?.workStart ||
+            ''
+        );
+    }
+
+    function rowEnd(row){
+        return (
+            row?.end ||
+            row?.endTime ||
+            row?.end_time ||
+            row?.off ||
+            row?.offTime ||
+            row?.workEnd ||
+            ''
+        );
+    }
+
+    function rowBreak(row){
+        return Number(
+            row?.restHours ||
+            row?.breakHours ||
+            row?.rest ||
+            0
+        ) || 0;
+    }
+
+    function exactRowsForStaff(staff, onlyToday){
+        if(!window.__qyjStaffScheduleVerified){
+            return [];
+        }
+
+        const rows = Array.isArray(
+            window.__qyjAuthoritativeScheduleRows
+        )
+            ? window.__qyjAuthoritativeScheduleRows
+            : [];
+
+        const today = todayYmd();
+
+        return rows
+            .filter(function(row){
+                if(!row || isVoided(row)) return false;
+
+                if(
+                    onlyToday &&
+                    rowDate(row) !== today
+                ){
+                    return false;
+                }
+
+                // 關鍵：只允許「確定屬於登入員工」的排班。
+                return rowMatchesStaff(row,staff);
+            })
+            .map(function(row){
+                return {
+                    ...row,
+                    company:rowCompany(row),
+                    date:rowDate(row),
+                    start:rowStart(row),
+                    end:rowEnd(row),
+                    restHours:rowBreak(row)
+                };
+            });
+    }
+
+    function setContent(html,title){
+        try{
+            if(
+                title &&
+                typeof window.msSetTitle === 'function'
+            ){
+                window.msSetTitle(title);
+            }
+        }catch(e){}
+
+        const box =
+            document.getElementById('msContent');
+
+        if(box) box.innerHTML = html;
+    }
+
+    function loadingCard(){
+        return `
+            <div class="ms-card">
+                <div class="ms-empty">
+                    正在向雲端確認今日排班…
+                </div>
+            </div>
+        `;
+    }
+
+    function noScheduleCard(){
+        return `
+            <div class="ms-card">
+                <div class="ms-empty">
+                    今天目前沒有排班
+                </div>
+            </div>
+        `;
+    }
+
+    function renderPunchStrict(){
+        const staff = currentStaff();
+
+        setContent(
+            window.__qyjStaffScheduleVerified
+                ? (
+                    exactRowsForStaff(staff,true).length
+                        ? exactRowsForStaff(staff,true)
+                            .map(function(row,index){
+                                const names =
+                                    rowAliases(row)
+                                        .filter(Boolean)
+                                        .join('、');
+
+                                return `
+                                    <div class="ms-card">
+                                        <div
+                                            style="
+                                                font-size:18px;
+                                                font-weight:900;
+                                                margin-bottom:10px
+                                            "
+                                        >
+                                            ${rowCompany(row) || '今日班表'}
+                                        </div>
+
+                                        <div class="ms-row">
+                                            <span>日期</span>
+                                            <span>${rowDate(row) || '-'}</span>
+                                        </div>
+
+                                        <div class="ms-row">
+                                            <span>人員</span>
+                                            <span>${names || '-'}</span>
+                                        </div>
+
+                                        <div class="ms-row">
+                                            <span>排班時間</span>
+                                            <span>
+                                                ${rowStart(row) || '-'}
+                                                -
+                                                ${rowEnd(row) || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div class="ms-row">
+                                            <span>實際上班打卡</span>
+                                            <span>尚未打卡</span>
+                                        </div>
+
+                                        <div class="ms-row">
+                                            <span>實際下班打卡</span>
+                                            <span>尚未打卡</span>
+                                        </div>
+
+                                        <div class="ms-row">
+                                            <span>狀態</span>
+                                            <span style="color:#c2410c;">
+                                                等待上班打卡
+                                            </span>
+                                        </div>
+
+                                        <div class="ms-punch-big">
+                                            <button
+                                                class="ms-in"
+                                                onclick="msDoPunch('上班',${index})"
+                                            >
+                                                上班打卡
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            })
+                            .join('')
+                        : noScheduleCard()
+                )
+                : loadingCard(),
+            '我要打卡'
+        );
+    }
+
+    function renderScheduleStrict(){
+        const staff = currentStaff();
+
+        if(!window.__qyjStaffScheduleVerified){
+            setContent(
+                loadingCard(),
+                '我的班表'
+            );
+            return;
+        }
+
+        const rows = exactRowsForStaff(
+            staff,
+            false
+        ).sort(function(a,b){
+            return String(rowDate(a))
+                .localeCompare(
+                    String(rowDate(b))
+                );
+        });
+
+        const html = rows.length
+            ? rows.map(function(row){
+                return `
+                    <div class="ms-list-item">
+                        <div>
+                            <div class="ms-list-title">
+                                ${rowDate(row) || ''}
+                                ｜
+                                ${rowCompany(row) || ''}
+                            </div>
+
+                            <div class="ms-list-sub">
+                                ${rowStart(row) || '-'}
+                                -
+                                ${rowEnd(row) || '-'}
+                                ｜
+                                休息 ${rowBreak(row)}
+                            </div>
+                        </div>
+                        <span>›</span>
+                    </div>
+                `;
+            }).join('')
+            : `
+                <div class="ms-card">
+                    <div class="ms-empty">
+                        目前沒有班表
+                    </div>
+                </div>
+            `;
+
+        setContent(html,'我的班表');
+    }
+
+    // 立即蓋掉舊版的「沒匹配就顯示全部排班」。
+    window.qyjMobileTodayRows = function(staff){
+        return exactRowsForStaff(
+            staff || currentStaff(),
+            true
+        );
+    };
+
+    window.msFindTodaySchedules = function(staff){
+        return exactRowsForStaff(
+            staff || currentStaff(),
+            true
+        );
+    };
+
+    window.msShowPunch = renderPunchStrict;
+    window.msShowSchedule = renderScheduleStrict;
+
+    function jsonpCloud(timeoutMs){
+        return new Promise(function(resolve,reject){
+            const base =
+                (
+                    typeof SCRIPT_URL !== 'undefined' &&
+                    SCRIPT_URL
+                )
+                    ? SCRIPT_URL
+                    : (window.SCRIPT_URL || '');
+
+            if(!base){
+                reject(
+                    new Error('找不到雲端網址')
+                );
+                return;
+            }
+
+            const cb =
+                '__qyjStaffSchedule_' +
+                Date.now().toString(36) +
+                '_' +
+                Math.random()
+                    .toString(36)
+                    .slice(2,8);
+
+            let script = null;
+            let done = false;
+
+            const cleanup = function(){
+                if(script && script.parentNode){
+                    script.parentNode.removeChild(script);
+                }
+
+                try{
+                    delete window[cb];
+                }catch(e){
+                    window[cb] = undefined;
+                }
+            };
+
+            const timer = setTimeout(function(){
+                if(done) return;
+
+                done = true;
+                cleanup();
+
+                reject(
+                    new Error('雲端排班讀取逾時')
+                );
+            },timeoutMs || 30000);
+
+            window[cb] = function(payload){
+                if(done) return;
+
+                done = true;
+                clearTimeout(timer);
+                cleanup();
+                resolve(payload);
+            };
+
+            script =
+                document.createElement('script');
+
+            script.async = true;
+
+            script.onerror = function(){
+                if(done) return;
+
+                done = true;
+                clearTimeout(timer);
+                cleanup();
+
+                reject(
+                    new Error('雲端排班連線失敗')
+                );
+            };
+
+            const sep =
+                base.includes('?') ? '&' : '?';
+
+            script.src =
+                base +
+                sep +
+                'mobile=1' +
+                '&callback=' +
+                encodeURIComponent(cb) +
+                '&t=' +
+                Date.now();
+
+            document.head.appendChild(script);
+        });
+    }
+
+    async function fetchAuthoritativeSchedule(){
+        window.__qyjStaffScheduleVerified = false;
+
+        // 未確認前，打卡頁不准沿用任何舊班表。
+        if(
+            new URLSearchParams(location.search)
+                .get('route') === 'punch'
+        ){
+            renderPunchStrict();
+        }
+
+        try{
+            const result =
+                await jsonpCloud(30000);
+
+            const data =
+                result &&
+                result.data &&
+                typeof result.data === 'object'
+                    ? result.data
+                    : (result || {});
+
+            const rows = Array.isArray(data.scheduleData)
+                ? data.scheduleData
+                : [];
+
+            /*
+             * 關鍵：
+             * 直接用本次雲端結果覆蓋手機舊快取。
+             * 雲端是 []，手機也必須變成 []，
+             * 不得把昨天或測試資料 merge 回來。
+             */
+            window.__qyjAuthoritativeScheduleRows =
+                rows.slice();
+
+            try{
+                scheduleData = rows.slice();
+            }catch(e){}
+
+            try{
+                window.scheduleData = rows.slice();
+            }catch(e){}
+
+            try{
+                localStorage.setItem(
+                    'scheduleData',
+                    JSON.stringify(rows)
+                );
+
+                [
+                    'schedules',
+                    'scheduleList',
+                    'shiftData',
+                    'shiftList',
+                    'rosterData',
+                    'companyScheduleData',
+                    'dispatchScheduleData'
+                ].forEach(function(key){
+                    localStorage.removeItem(key);
+                });
+            }catch(e){}
+
+            window.__qyjStaffScheduleVerified = true;
+
+            const route =
+                new URLSearchParams(location.search)
+                    .get('route') ||
+                localStorage.getItem(
+                    'qyj_mobile_staff_route'
+                ) ||
+                'home';
+
+            if(route === 'punch'){
+                renderPunchStrict();
+            }else if(route === 'schedule'){
+                renderScheduleStrict();
+            }else{
+                try{
+                    if(
+                        typeof window.msGo === 'function'
+                    ){
+                        window.msGo(route);
+                    }
+                }catch(e){}
+            }
+
+            console.log(
+                '員工端排班已由雲端嚴格確認：',
+                rows.length,
+                '筆'
+            );
+
+        }catch(error){
+            window.__qyjStaffScheduleVerified = false;
+            window.__qyjAuthoritativeScheduleRows = [];
+
+            if(
+                new URLSearchParams(location.search)
+                    .get('route') === 'punch'
+            ){
+                setContent(
+                    `
+                    <div class="ms-card">
+                        <div class="ms-empty">
+                            ⚠️ 目前無法確認雲端排班，
+                            為避免誤打卡，暫不顯示任何班別。
+                        </div>
+                        <button
+                            class="ms-primary"
+                            onclick="window.qyjReloadStaffScheduleStrict()"
+                        >
+                            重新確認排班
+                        </button>
+                    </div>
+                    `,
+                    '我要打卡'
+                );
+            }
+
+            console.warn(
+                '員工端嚴格排班讀取失敗：',
+                error
+            );
+        }
+    }
+
+    window.qyjReloadStaffScheduleStrict =
+        fetchAuthoritativeSchedule;
+
+    // 登入完成 / 網路恢復 / 回到頁面時都重新向雲端確認。
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            function(){
+                setTimeout(
+                    fetchAuthoritativeSchedule,
+                    150
+                );
+            },
+            {once:true}
+        );
+    }else{
+        setTimeout(
+            fetchAuthoritativeSchedule,
+            150
+        );
+    }
+
+    window.addEventListener(
+        'online',
+        function(){
+            setTimeout(
+                fetchAuthoritativeSchedule,
+                300
+            );
+        }
+    );
+
+    document.addEventListener(
+        'visibilitychange',
+        function(){
+            if(!document.hidden){
+                fetchAuthoritativeSchedule();
+            }
+        }
+    );
+
+    console.log(
+        '員工端排班嚴格雲端修正版已載入'
+    );
+})();
+</script>
+
 </body>
 </html>`);
     w.document.close();
