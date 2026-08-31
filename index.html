@@ -6115,6 +6115,485 @@ ${d.contentHtml}
 
 
 
+<!-- =========================================================
+     員工手機打卡直達連線穩定修正
+     只處理 staffApp=1 的手機入口，不改管理端其他功能。
+     目標：
+     1. route=punch 立即開啟，不等雲端才顯示畫面
+     2. 雲端背景重連，失敗仍可使用本機快取
+     3. 網路恢復 / 回到分頁時自動補同步
+     4. 防止背景同步把 punch 頁跳回 home
+========================================================= -->
+<style id="qyjStaffConnectionStyle">
+#mobileStaffApp .qyj-staff-connection{
+    position:sticky;
+    top:58px;
+    z-index:9;
+    margin:0 auto;
+    max-width:560px;
+    padding:7px 14px;
+    font-size:12px;
+    font-weight:800;
+    text-align:center;
+    border-bottom:1px solid transparent;
+}
+#mobileStaffApp .qyj-staff-connection.connecting{
+    background:#eff6ff;
+    color:#1d4ed8;
+    border-color:#bfdbfe;
+}
+#mobileStaffApp .qyj-staff-connection.online{
+    background:#ecfdf5;
+    color:#047857;
+    border-color:#a7f3d0;
+}
+#mobileStaffApp .qyj-staff-connection.offline{
+    background:#fff7ed;
+    color:#c2410c;
+    border-color:#fed7aa;
+}
+#mobileStaffApp .qyj-staff-connection button{
+    border:0;
+    background:transparent;
+    color:inherit;
+    font-weight:900;
+    text-decoration:underline;
+    margin-left:6px;
+    cursor:pointer;
+}
+</style>
+
+<script>
+(function(){
+    'use strict';
+
+    function isStaffApp(){
+        try{
+            return new URLSearchParams(location.search)
+                .get('staffApp') === '1';
+        }catch(error){
+            return false;
+        }
+    }
+
+    if(!isStaffApp()) return;
+
+    const params = new URLSearchParams(location.search);
+
+    /*
+     * URL 的 route 優先級最高。
+     * 例如：
+     * ?staffApp=1&route=punch
+     * 重新整理後仍直接回到打卡頁，不被舊 localStorage route 蓋掉。
+     */
+    let wantedRoute =
+        params.get('route') ||
+        localStorage.getItem('qyj_mobile_staff_route') ||
+        'home';
+
+    let lastRefreshAt = 0;
+    let refreshPromise = null;
+    let userChangedRoute = false;
+
+    function saveWantedRoute(route){
+        wantedRoute = route || 'home';
+
+        try{
+            localStorage.setItem(
+                'qyj_mobile_staff_route',
+                wantedRoute
+            );
+        }catch(error){}
+    }
+
+    function hideDesktopScreens(){
+        [
+            'login-screen',
+            'sys-screen',
+            'staff-screen'
+        ].forEach(function(id){
+            const node = document.getElementById(id);
+            if(node){
+                node.style.display = 'none';
+                node.style.visibility = 'hidden';
+            }
+        });
+
+        const app = document.getElementById('mobileStaffApp');
+        if(app){
+            app.style.display = 'block';
+            app.style.visibility = 'visible';
+        }
+    }
+
+    function connectionBar(){
+        const app = document.getElementById('mobileStaffApp');
+        if(!app) return null;
+
+        let bar = document.getElementById(
+            'qyjStaffConnectionBar'
+        );
+
+        if(!bar){
+            bar = document.createElement('div');
+            bar.id = 'qyjStaffConnectionBar';
+            bar.className =
+                'qyj-staff-connection connecting';
+
+            const top =
+                app.querySelector('.ms-top');
+
+            if(top && top.parentNode){
+                top.insertAdjacentElement('afterend',bar);
+            }else{
+                app.insertBefore(bar,app.firstChild);
+            }
+        }
+
+        return bar;
+    }
+
+    function setStatus(type,message,retry){
+        const bar = connectionBar();
+        if(!bar) return;
+
+        bar.className =
+            'qyj-staff-connection ' + type;
+
+        bar.innerHTML =
+            String(message || '') +
+            (
+                retry
+                    ? '<button type="button" ' +
+                      'onclick="window.qyjStaffReconnectNow()">' +
+                      '重新連線</button>'
+                    : ''
+            );
+    }
+
+    function savedLoginExists(){
+        try{
+            return Boolean(
+                JSON.parse(
+                    localStorage.getItem(
+                        'qyj_mobile_staff_login'
+                    ) || 'null'
+                )
+            );
+        }catch(error){
+            return false;
+        }
+    }
+
+    function showWantedRoute(){
+        hideDesktopScreens();
+
+        try{
+            if(savedLoginExists()){
+                if(typeof window.msGo === 'function'){
+                    window.msGo(wantedRoute);
+                    return true;
+                }
+            }else{
+                if(typeof window.msShowLogin === 'function'){
+                    window.msShowLogin(wantedRoute);
+                    return true;
+                }
+            }
+        }catch(error){
+            console.warn(
+                '員工入口顯示失敗：',
+                error
+            );
+        }
+
+        return false;
+    }
+
+    function withTimeout(promise,ms){
+        return Promise.race([
+            Promise.resolve(promise),
+            new Promise(function(_,reject){
+                setTimeout(function(){
+                    reject(
+                        new Error('雲端連線逾時')
+                    );
+                },ms);
+            })
+        ]);
+    }
+
+    /*
+     * 使用現有的雲端讀取機制，不另建第二份資料來源。
+     * loadDataFromCloud 優先；readCloud 為備援。
+     */
+    function cloudLoader(){
+        if(typeof window.loadDataFromCloud === 'function'){
+            return window.loadDataFromCloud(false);
+        }
+
+        if(typeof window.readCloud === 'function'){
+            return window.readCloud(false);
+        }
+
+        throw new Error('雲端讀取功能尚未載入');
+    }
+
+    async function refreshCloud(force){
+        const now = Date.now();
+
+        if(
+            !force &&
+            now - lastRefreshAt < 15000
+        ){
+            return;
+        }
+
+        if(refreshPromise){
+            return refreshPromise;
+        }
+
+        setStatus(
+            'connecting',
+            navigator.onLine === false
+                ? '目前離線，使用手機快取資料'
+                : '正在連接雲端…',
+            false
+        );
+
+        refreshPromise = (async function(){
+            if(navigator.onLine === false){
+                throw new Error('目前沒有網路');
+            }
+
+            let lastError = null;
+
+            /*
+             * 第一次快速讀取；
+             * 失敗後再補一次，避免手機網路剛切 Wi-Fi / 4G 時第一次連線失敗。
+             */
+            for(let attempt=0; attempt<2; attempt++){
+                try{
+                    await withTimeout(
+                        cloudLoader(),
+                        attempt === 0 ? 12000 : 20000
+                    );
+
+                    lastRefreshAt = Date.now();
+
+                    setStatus(
+                        'online',
+                        '✓ 雲端已連線｜' +
+                        new Date().toLocaleTimeString(
+                            'zh-TW',
+                            {
+                                hour:'2-digit',
+                                minute:'2-digit',
+                                hour12:false
+                            }
+                        ),
+                        false
+                    );
+
+                    /*
+                     * 雲端更新完成後只重畫目前真正想看的頁面。
+                     * 不強制回首頁。
+                     */
+                    setTimeout(
+                        showWantedRoute,
+                        0
+                    );
+
+                    return true;
+                }catch(error){
+                    lastError = error;
+
+                    if(attempt === 0){
+                        await new Promise(function(resolve){
+                            setTimeout(resolve,800);
+                        });
+                    }
+                }
+            }
+
+            throw lastError || new Error('雲端連線失敗');
+        })()
+        .catch(function(error){
+            console.warn(
+                '員工手機雲端連線失敗，保留本機畫面：',
+                error
+            );
+
+            setStatus(
+                'offline',
+                '⚠ 雲端暫時無法連線，已使用手機快取',
+                true
+            );
+
+            /*
+             * 雲端壞掉不能讓整個員工入口白屏。
+             */
+            showWantedRoute();
+
+            return false;
+        })
+        .finally(function(){
+            refreshPromise = null;
+        });
+
+        return refreshPromise;
+    }
+
+    window.qyjStaffReconnectNow = function(){
+        return refreshCloud(true);
+    };
+
+    /*
+     * 最後一層 route 保護：
+     * 背景同步不能把 ?route=punch 的直達頁自己改成 home。
+     * 只有員工真的點其他功能時才更新 wantedRoute。
+     */
+    const oldMsGo = window.msGo;
+
+    if(typeof oldMsGo === 'function'){
+        window.msGo = function(route){
+            const target = route || 'home';
+
+            if(
+                !userChangedRoute &&
+                params.get('route') &&
+                target === 'home' &&
+                wantedRoute !== 'home'
+            ){
+                return oldMsGo.call(
+                    this,
+                    wantedRoute
+                );
+            }
+
+            saveWantedRoute(target);
+
+            return oldMsGo.apply(
+                this,
+                arguments
+            );
+        };
+    }
+
+    document.addEventListener(
+        'click',
+        function(event){
+            const target =
+                event.target.closest(
+                    '#mobileStaffApp button,' +
+                    '#mobileStaffApp a'
+                );
+
+            if(!target) return;
+
+            const onclick =
+                target.getAttribute('onclick') || '';
+
+            const match =
+                onclick.match(
+                    /msGo\(['"]([^'"]+)['"]\)/
+                );
+
+            if(match){
+                userChangedRoute = true;
+                saveWantedRoute(match[1]);
+            }
+        },
+        true
+    );
+
+    function boot(){
+        hideDesktopScreens();
+
+        /*
+         * 不等整頁 load，不等雲端：
+         * 先讓使用者看到登入頁 / 打卡頁。
+         */
+        let tries = 0;
+
+        const timer = setInterval(function(){
+            tries++;
+
+            if(showWantedRoute() || tries >= 30){
+                clearInterval(timer);
+
+                /*
+                 * UI 出來後再背景連雲端。
+                 */
+                setTimeout(function(){
+                    refreshCloud(true);
+                },100);
+            }
+        },100);
+    }
+
+    if(document.readyState === 'loading'){
+        document.addEventListener(
+            'DOMContentLoaded',
+            boot,
+            {once:true}
+        );
+    }else{
+        boot();
+    }
+
+    /*
+     * 手機切回網頁、Wi-Fi/4G 恢復時自動補連線。
+     */
+    window.addEventListener(
+        'online',
+        function(){
+            setTimeout(
+                function(){
+                    refreshCloud(true);
+                },
+                300
+            );
+        }
+    );
+
+    window.addEventListener(
+        'focus',
+        function(){
+            refreshCloud(false);
+        }
+    );
+
+    document.addEventListener(
+        'visibilitychange',
+        function(){
+            if(!document.hidden){
+                refreshCloud(false);
+            }
+        }
+    );
+
+    /*
+     * load 後再守一次，避免前面舊版啟動程式最後把畫面蓋掉。
+     */
+    window.addEventListener(
+        'load',
+        function(){
+            hideDesktopScreens();
+            setTimeout(
+                showWantedRoute,
+                50
+            );
+        }
+    );
+
+    console.log(
+        '員工打卡直達連線穩定修正版已載入｜route=' +
+        wantedRoute
+    );
+})();
+</script>
+
 </body>
 </html>`);
     w.document.close();
