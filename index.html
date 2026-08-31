@@ -5094,7 +5094,7 @@ function openRaise250StaffEditor() {
     }
 }
 
-function autoFillSplitWithTime(h1, rate1, h2, mode) {
+async function autoFillSplitWithTime(h1, rate1, h2, mode) {
     const c = el('attend_company').value.trim(),
         s = el('attend_staff').value.trim(),
         d = el('attend_date').value,
@@ -5205,8 +5205,6 @@ function autoFillSplitWithTime(h1, rate1, h2, mode) {
         salary_hours:h2,
         project_fee:0,
         deduct_points:isProjectBilling ? 0 : h2,
-        // pending = 只拆工時、尚未核准，所以不要先鎖成250。
-        // 老闆核准後，依人員資料的核准狀態 / 核准日期再套用250。
         special_hourly: mode === 'pending' ? '' : 250,
         remark:
             (originalRemark ? originalRemark + '｜' : '') +
@@ -5256,28 +5254,32 @@ function autoFillSplitWithTime(h1, rate1, h2, mode) {
     qyjEnsureAttendIdsSafe();
 
     /*
-     * 重要：
-     * 拆單是「用兩筆取代原始一筆」，不是在原始4.5h上再多加1h。
-     * 同時清掉先前錯誤拆單殘留，避免總時數越拆越多。
+     * 新版拆單核心：
+     * 不再「刪除原始紀錄後建立兩筆」。
+     *
+     * 原始紀錄直接改成前半段，保留原本 _syncId；
+     * 只新增後半段一筆。
+     *
+     * 這樣雲端同步時不會把舊原始 4.5h / 8h 紀錄重新救回來，
+     * 也不會發生「原始 + 拆分兩筆」造成累積工時暴增。
      */
-    const toRemoveIndexes = [];
-    const toDeleteRecords = [];
 
-    // 1) 先清除同一人、同公司、同一天的舊自動拆分殘留
-    attendData.forEach(function(item, idx){
-        if(
-            item &&
-            item.company === c &&
-            item.staff === s &&
-            item.date === d &&
-            qyjIsRaise250AutoSplitRecord(item)
-        ){
-            toRemoveIndexes.push(idx);
-            toDeleteRecords.push(item);
-        }
-    });
+    function recordHours(item){
+        const n = Number(
+            typeof getItemSalaryHours === 'function'
+                ? getItemSalaryHours(item)
+                : item && item.salary_hours
+        );
+        return Number.isFinite(n) ? n : 0;
+    }
 
-    // 2) 找真正原始紀錄
+    function staffTotal(records){
+        return (records || [])
+            .filter(item => item && item.staff === s)
+            .reduce((sum, item) => sum + recordHours(item), 0);
+    }
+
+    // 找「真正原始、尚未拆分」的紀錄。
     let sourceIndex = -1;
 
     if(
@@ -5298,7 +5300,7 @@ function autoFillSplitWithTime(h1, rate1, h2, mode) {
     }
 
     if(sourceIndex < 0){
-        sourceIndex = attendData.findIndex(function(item, idx){
+        sourceIndex = attendData.findIndex(function(item){
             if(
                 !item ||
                 item.company !== c ||
@@ -5309,12 +5311,9 @@ function autoFillSplitWithTime(h1, rate1, h2, mode) {
                 return false;
             }
 
-            const itemHours =
-                Number(getItemSalaryHours(item)) || 0;
-
             const sameHours =
                 salaryHours <= 0 ||
-                Math.abs(itemHours - salaryHours) < 0.05;
+                Math.abs(recordHours(item) - salaryHours) < 0.05;
 
             const samePm =
                 !pmS ||
@@ -5334,100 +5333,176 @@ function autoFillSplitWithTime(h1, rate1, h2, mode) {
         });
     }
 
-    if(sourceIndex >= 0){
-        const sourceItem = attendData[sourceIndex];
-
-        if(!toRemoveIndexes.includes(sourceIndex)){
-            toRemoveIndexes.push(sourceIndex);
-            toDeleteRecords.push(sourceItem);
-        }
-    }
-
     if(sourceIndex < 0){
         alert(
-            '找不到原始未拆分紀錄，系統已停止拆單，避免時數重複。\n' +
-            '請重新按原始那筆黃色修改後再操作。'
+            '找不到原始未拆分紀錄，系統已停止拆單，避免再次增加工時。\n\n' +
+            '請按原始那筆黃色「修改」，確認原始工時後再拆分。'
         );
         return;
     }
 
-    // 先留下插入位置，再由大到小刪除
-    const insertAt = Math.min.apply(
-        null,
-        toRemoveIndexes.length
-            ? toRemoveIndexes
-            : [sourceIndex]
-    );
+    const sourceItem = attendData[sourceIndex];
+    const sourceHours = recordHours(sourceItem);
 
-    qyjMarkAttendDeleted(toDeleteRecords);
-
-    toRemoveIndexes
-        .sort((a, b) => b - a)
-        .forEach(function(idx){
-            attendData.splice(idx, 1);
-        });
-
-    // 新的兩筆一定使用新同步ID，避免雲端把舊4.5h紀錄救回來
-    const now = new Date().toISOString();
-
-    function newAttendId(){
-        if(typeof qyjNewAttendId === 'function'){
-            return qyjNewAttendId();
-        }
-
-        return (
-            'att_' +
-            Date.now().toString(36) +
-            '_' +
-            Math.random().toString(36).slice(2, 10)
+    if(
+        salaryHours > 0 &&
+        Math.abs(sourceHours - salaryHours) >= 0.05
+    ){
+        alert(
+            `拆分已停止：畫面工時 ${salaryHours.toFixed(1)}h 與原始紀錄 ${sourceHours.toFixed(1)}h 不一致。\n` +
+            '請重新按原始紀錄「修改」後再操作。'
         );
+        return;
     }
 
-    r1._syncId = newAttendId();
-    r1._createdAt = now;
-    r1._updatedAt = now;
+    // 找出之前失敗拆單留下的同日「自動拆分紀錄」。
+    const staleSplitIndexes = [];
+    const staleSplitRecords = [];
 
-    r2._syncId = newAttendId();
-    r2._createdAt = now;
-    r2._updatedAt = now;
+    attendData.forEach(function(item, idx){
+        if(
+            idx !== sourceIndex &&
+            item &&
+            item.company === c &&
+            item.staff === s &&
+            item.date === d &&
+            qyjIsRaise250AutoSplitRecord(item)
+        ){
+            staleSplitIndexes.push(idx);
+            staleSplitRecords.push(item);
+        }
+    });
 
-    attendData.splice(
-        insertAt,
-        0,
-        r1,
-        r2
+    const beforeTotal = staffTotal(attendData);
+    const staleHours = staleSplitRecords.reduce(
+        (sum, item) => sum + recordHours(item),
+        0
     );
 
-    editAttendIndex = -1;
-    window.qyjRaise250PromptKey = '';
+    // 正確的拆分後總時數：
+    // 現況總時數 - 舊錯誤拆分 + (新兩段 - 原始一段)
+    const expectedTotal =
+        beforeTotal -
+        staleHours -
+        sourceHours +
+        h1 +
+        h2;
+
+    const backupAttendData =
+        attendData.map(item => item ? { ...item } : item);
+
+    const backupDeletedIds =
+        Array.from(window.attendDeletedIds || []);
 
     try{
-        localStorage.setItem(
-            'attendData',
-            JSON.stringify(attendData)
-        );
-    }catch(error){}
+        // 先把舊錯誤拆分標記刪除，避免其他電腦 / 雲端又合併回來。
+        if(staleSplitRecords.length){
+            qyjMarkAttendDeleted(staleSplitRecords);
+        }
 
-    saveAll();
-    renderAttend();
-    clearAttendForm();
+        // 由後往前移除舊錯誤拆分。
+        staleSplitIndexes
+            .sort((a, b) => b - a)
+            .forEach(function(idx){
+                attendData.splice(idx, 1);
+                if(idx < sourceIndex) sourceIndex--;
+            });
 
-    if(mode === 'pending'){
+        const preservedSource = attendData[sourceIndex];
+        const now = new Date().toISOString();
+
+        // 原始紀錄直接變成「前段」，保留原本 sync id。
+        attendData[sourceIndex] = {
+            ...preservedSource,
+            ...r1,
+            _syncId:
+                preservedSource._syncId ||
+                (
+                    typeof qyjNewAttendId === 'function'
+                        ? qyjNewAttendId()
+                        : 'att_' + Date.now().toString(36)
+                ),
+            _createdAt:
+                preservedSource._createdAt ||
+                preservedSource.createdAt ||
+                now,
+            _updatedAt:now,
+            _syncState:'pending'
+        };
+
+        // 只新增「後段」一筆。
+        r2._syncId =
+            typeof qyjNewAttendId === 'function'
+                ? qyjNewAttendId()
+                : (
+                    'att_' +
+                    Date.now().toString(36) +
+                    '_' +
+                    Math.random().toString(36).slice(2,10)
+                );
+        r2._createdAt = now;
+        r2._updatedAt = now;
+        r2._syncState = 'pending';
+
+        attendData.splice(sourceIndex + 1, 0, r2);
+
+        const afterTotal = staffTotal(attendData);
+
+        // 最後一道防呆：總時數不符合預期就整批回滾。
+        if(Math.abs(afterTotal - expectedTotal) >= 0.05){
+            throw new Error(
+                `拆分後總時數檢查失敗：預期 ${expectedTotal.toFixed(1)}h，實際 ${afterTotal.toFixed(1)}h`
+            );
+        }
+
+        saveLocalData();
+
+        // 等雲端真的存完，再清表單；避免 500ms 背景讀取把舊紀錄搶先合併回來。
+        await saveAll();
+
+        editAttendIndex = -1;
+        window.qyjRaise250PromptKey = '';
+
+        renderAttend();
+        clearAttendForm();
+
+        if(mode === 'pending'){
+            alert(
+                `✅ 跨700h工時已拆分！\n\n` +
+                `原始 ${sourceHours.toFixed(1)}h 已直接改成前段，不會額外保留一筆。\n` +
+                `前 ${h1.toFixed(1)}h × $${rate1}\n` +
+                `後 ${h2.toFixed(1)}h 暫維持原時薪，等待老闆核准。\n\n` +
+                `拆分總工時仍為 ${(h1 + h2).toFixed(1)}h。`
+            );
+        }else{
+            alert(
+                `✅ 跨700h拆單完成！\n\n` +
+                `原始 ${sourceHours.toFixed(1)}h 已直接改成前段，不會重複。\n` +
+                `前 ${h1.toFixed(1)}h × $${rate1}\n` +
+                `後 ${h2.toFixed(1)}h × $250\n\n` +
+                `拆分總工時仍為 ${(h1 + h2).toFixed(1)}h。`
+            );
+        }
+
+    }catch(error){
+        // 任何一步失敗都回復拆分前狀態，絕不留下半套資料。
+        attendData.length = 0;
+        backupAttendData.forEach(item => attendData.push(item));
+
+        window.attendDeletedIds = backupDeletedIds;
+
+        if(typeof qyjSaveAttendDeletedIds === 'function'){
+            qyjSaveAttendDeletedIds(backupDeletedIds);
+        }
+
+        saveLocalData();
+        renderAttend();
+
+        console.error('跨700h拆單失敗：', error);
+
         alert(
-            `✅ 跨700h工時已先拆分！\n\n` +
-            `原始 ${salaryHours.toFixed(1)}h 已移除，不會重複計算。\n` +
-            `前 ${h1.toFixed(1)}h × $${rate1}\n` +
-            `後 ${h2.toFixed(1)}h 暫維持原時薪，等待老闆核准。\n\n` +
-            `拆分後總工時仍為 ${(h1 + h2).toFixed(1)}h。\n` +
-            `注意：拆分不等於核准升250。`
-        );
-    }else{
-        alert(
-            `✅ 跨700h拆單完成！\n\n` +
-            `原始 ${salaryHours.toFixed(1)}h 已移除，不會重複計算。\n` +
-            `前 ${h1.toFixed(1)}h × $${rate1}\n` +
-            `後 ${h2.toFixed(1)}h × $250\n\n` +
-            `拆分後總工時仍為 ${(h1 + h2).toFixed(1)}h。`
+            '❌ 拆單沒有完成，系統已自動回復拆分前資料。\n\n' +
+            (error && error.message ? error.message : '未知錯誤')
         );
     }
 }
