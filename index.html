@@ -10369,16 +10369,14 @@ window.msRenderMySalarySummary=function(){
         : null;
 
     if(ftInfo){
-        const monthStart=`${monthKey}-01`;
-        const monthEnd=new Date(Number(y),Number(m),0).toISOString().slice(0,10);
-        const hire=String(ftInfo.hire_date||'').trim();
-        const leave=String(ftInfo.leave_date||'').trim();
+        // 正職只有在該月份真的有正職出勤／薪資基礎資料時，才顯示薪資單。
+        const ftRows=(Array.isArray(ftAttendData)?ftAttendData:[])
+            .filter(x=>
+                String(x.staff||'')===String(n) &&
+                String(x.date||'').startsWith(monthKey)
+            );
 
-        const employedInMonth=
-            (!hire||hire<=monthEnd) &&
-            (!leave||leave>=monthStart);
-
-        if(employedInMonth){
+        if(ftRows.length){
             box.innerHTML=`
                 <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:14px">
                     <div style="font-weight:900;color:#047857">正職薪資單</div>
@@ -10439,15 +10437,13 @@ window.msPreviewMyPayslip=function(){
 
     if(ftInfo){
         const monthKey=`${y}-${String(m).padStart(2,'0')}`;
-        const monthStart=`${monthKey}-01`;
-        const monthEnd=new Date(Number(y),Number(m),0).toISOString().slice(0,10);
-        const hire=String(ftInfo.hire_date||'').trim();
-        const leave=String(ftInfo.leave_date||'').trim();
-        const employedInMonth=
-            (!hire||hire<=monthEnd) &&
-            (!leave||leave>=monthStart);
+        const ftRows=(Array.isArray(ftAttendData)?ftAttendData:[])
+            .filter(x=>
+                String(x.staff||'')===String(n) &&
+                String(x.date||'').startsWith(monthKey)
+            );
 
-        if(!employedInMonth){
+        if(!ftRows.length){
             alert('本月薪資單尚未發布');
             return;
         }
@@ -10474,6 +10470,16 @@ window.msPreviewMyPayslip=function(){
         return node;
     };
 
+    // 員工手機版 z-index 比原本薪資預覽層高，
+    // 所以原本其實有開預覽，只是被手機畫面蓋在下面。
+    const bringPayslipPreviewToFront=()=>{
+        const overlay=document.getElementById('preview-overlay');
+        if(!overlay) return;
+        overlay.style.setProperty('visibility','visible','important');
+        overlay.style.setProperty('z-index','1000002','important');
+        overlay.style.display='block';
+    };
+
     try{
         const isFullTime=Array.isArray(ftStaffData)&&ftStaffData.some(
             x=>String(x.name||'')===String(n)
@@ -10488,6 +10494,7 @@ window.msPreviewMyPayslip=function(){
 
             if(typeof generateFtPayslipPDF_Single==='function'){
                 generateFtPayslipPDF_Single(n);
+                setTimeout(bringPayslipPreviewToFront,0);
             }else{
                 alert('目前找不到正職薪資單功能');
             }
@@ -10500,6 +10507,7 @@ window.msPreviewMyPayslip=function(){
 
         if(typeof generatePayslipPDF==='function'){
             generatePayslipPDF();
+            setTimeout(bringPayslipPreviewToFront,0);
         }else{
             alert('目前找不到派遣薪資單功能');
         }
