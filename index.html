@@ -10300,7 +10300,135 @@ window.msShowAttendance=function(){
 };
 window.msShowSchedule=function(){let s=msGetCurrentStaff(),n=msStaffName(s),arr=(Array.isArray(window.scheduleData)?window.scheduleData:[]).filter(x=>String(x.staff||x.name||x.employee||'')===String(n)&&(x.status||x.scheduleStatus||'')!=='作廢').sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).slice(0,60);msSetTitle('我的班表');document.getElementById('msContent').innerHTML=arr.map(x=>`<div class="ms-list"><div><div class="ms-lt">${x.date||''}｜${x.company||''}</div><div class="ms-ls">${x.start||x.startTime||'-'} - ${x.end||x.endTime||'-'}</div></div><span>›</span></div>`).join('')||'<div class="ms-card"><div class="ms-empty">目前沒有班表</div></div>'};
 window.msShowLeave=function(){msSetTitle('我要請假');document.getElementById('msContent').innerHTML='<div class="ms-card"><div style="font-weight:900;font-size:18px">請假申請</div><div class="ms-label">請假日期</div><input class="ms-input" type="date"><div class="ms-label">請假原因</div><input class="ms-input" placeholder="請輸入請假原因"><button class="ms-primary" onclick="alert(\'第一階段先建立入口，後續再串主管簽核。\')">送出申請</button></div>'};
-window.msShowSalary=function(){msSetTitle('我的薪資單');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">第一階段先保留入口，後續串既有薪資單下載。</div></div>'};
+window.msShowSalary=function(){
+    const s=msGetCurrentStaff();
+    const n=msStaffName(s)||'員工';
+    const now=new Date();
+    const currentYear=now.getFullYear();
+    const currentMonth=now.getMonth()+1;
+
+    let years='';
+    for(let y=2024;y<=currentYear;y++){
+        years+=`<option value="${y}" ${y===currentYear?'selected':''}>${y}年</option>`;
+    }
+
+    let months='';
+    for(let m=1;m<=12;m++){
+        months+=`<option value="${m}" ${m===currentMonth?'selected':''}>${m}月</option>`;
+    }
+
+    msSetTitle('我的薪資單');
+    document.getElementById('msContent').innerHTML=`
+        <div class="ms-card">
+            <div style="font-weight:900;font-size:18px;margin-bottom:6px">薪資單下載</div>
+            <div style="color:#64748b;font-size:13px;margin-bottom:16px">
+                ${n}｜直接連接公司既有薪資單
+            </div>
+
+            <div class="ms-label">年份</div>
+            <select id="ms_salary_year" class="ms-input" onchange="msRenderMySalarySummary()">
+                ${years}
+            </select>
+
+            <div class="ms-label">月份</div>
+            <select id="ms_salary_month" class="ms-input" onchange="msRenderMySalarySummary()">
+                ${months}
+            </select>
+
+            <div id="ms_salary_summary" style="margin-top:16px"></div>
+
+            <button class="ms-primary" style="margin-top:16px" onclick="msPreviewMyPayslip()">
+                預覽／下載薪資單
+            </button>
+        </div>
+    `;
+
+    msRenderMySalarySummary();
+};
+
+window.msRenderMySalarySummary=function(){
+    const box=document.getElementById('ms_salary_summary');
+    if(!box) return;
+
+    const s=msGetCurrentStaff();
+    if(!s){
+        box.innerHTML='<div class="ms-empty">找不到登入員工資料</div>';
+        return;
+    }
+
+    const n=msStaffName(s);
+    const y=document.getElementById('ms_salary_year')?.value;
+    const m=document.getElementById('ms_salary_month')?.value;
+    const isFullTime=Array.isArray(ftStaffData)&&ftStaffData.some(x=>String(x.name||'')===String(n));
+
+    if(isFullTime){
+        box.innerHTML=`
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px">
+                <div style="font-weight:900;color:#334155">正職薪資單</div>
+                <div style="font-size:13px;color:#64748b;margin-top:4px">
+                    ${y}年${m}月｜將使用公司「正職薪資結算」的同一份薪資單資料。
+                </div>
+            </div>
+        `;
+        return;
+    }
+
+    const rows=(Array.isArray(attendData)?attendData:[])
+        .filter(x=>String(x.staff||'')===String(n)&&isDispatchPayrollPeriod(x.date,y,m));
+
+    const hours=rows.reduce((sum,x)=>sum+Number(getItemSalaryHours(x)||0),0);
+
+    box.innerHTML=rows.length
+        ? `
+            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:14px">
+                <div style="font-weight:900;color:#047857">${y}年${m}月已有薪資資料</div>
+                <div style="font-size:13px;color:#334155;margin-top:6px">
+                    派遣紀錄：${rows.length} 筆<br>
+                    本期結算工時：${hours.toFixed(1)} 小時
+                </div>
+            </div>
+          `
+        : `
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;text-align:center;color:#94a3b8">
+                本期目前沒有薪資紀錄
+            </div>
+          `;
+};
+
+window.msPreviewMyPayslip=function(){
+    const s=msGetCurrentStaff();
+    if(!s) return alert('找不到登入員工資料');
+
+    const n=msStaffName(s);
+    const y=document.getElementById('ms_salary_year')?.value;
+    const m=document.getElementById('ms_salary_month')?.value;
+
+    if(!y||!m) return alert('請選擇年份與月份');
+
+    const isFullTime=Array.isArray(ftStaffData)&&ftStaffData.some(x=>String(x.name||'')===String(n));
+
+    if(isFullTime){
+        if(el('fts_filter_staff')) el('fts_filter_staff').value=n;
+        if(el('fts_filter_month')) el('fts_filter_month').value=`${y}-${String(m).padStart(2,'0')}`;
+
+        if(typeof generateFtPayslipPDF_Single==='function'){
+            generateFtPayslipPDF_Single(n);
+        }else{
+            alert('目前找不到正職薪資單功能');
+        }
+        return;
+    }
+
+    if(el('sal_filter_staff')) el('sal_filter_staff').value=n;
+    if(el('sal_filter_year')) el('sal_filter_year').value=String(y);
+    if(el('sal_filter_month')) el('sal_filter_month').value=String(m);
+
+    if(typeof generatePayslipPDF==='function'){
+        generatePayslipPDF();
+    }else{
+        alert('目前找不到派遣薪資單功能');
+    }
+};
 window.msShowProfile=function(){let s=msGetCurrentStaff(),n=msStaffName(s),code=s.code||s.id||s.staffId||msStaffAccount(s)||'-',phone=s.phone||s.mobile||s.tel||'-',dept=s.dept||s.department||s.type||s.role||s.status||'-';msSetTitle('員工資訊');document.getElementById('msContent').innerHTML=`<div class="ms-card" style="text-align:center"><div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${n.slice(0,1)}</div><div class="ms-row"><span>員工姓名</span><span>${n}</span></div><div class="ms-row"><span>員工編號</span><span>${code}</span></div><div class="ms-row"><span>部門/狀態</span><span>${dept}</span></div><div class="ms-row"><span>手機</span><span>${phone}</span></div></div><div class="ms-card"><div style="font-weight:900;font-size:18px">登入方式</div><div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div><div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>`};
 window.msShowSop=function(){msSetTitle('入職包 SOP');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list"><div><div class="ms-lt">報班前注意事項</div><div class="ms-ls">請詳閱派遣規範</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">工作態度規範</div><div class="ms-ls">服裝、準時、回報、資料保密</div></div><span>›</span></div></div>'};
 window.msShowNotice=function(){msSetTitle('公告欄');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有公告</div></div>'};
