@@ -10337,7 +10337,7 @@ window.msShowSalary=function(){
 
             <div id="ms_salary_summary" style="margin-top:16px"></div>
 
-            <button class="ms-primary" style="margin-top:16px" onclick="msPreviewMyPayslip()">
+            <button id="ms_salary_preview_btn" class="ms-primary" style="margin-top:16px;display:none" onclick="msPreviewMyPayslip()">
                 預覽／下載薪資單
             </button>
         </div>
@@ -10348,7 +10348,10 @@ window.msShowSalary=function(){
 
 window.msRenderMySalarySummary=function(){
     const box=document.getElementById('ms_salary_summary');
+    const btn=document.getElementById('ms_salary_preview_btn');
     if(!box) return;
+
+    if(btn) btn.style.display='none';
 
     const s=msGetCurrentStaff();
     if(!s){
@@ -10359,17 +10362,39 @@ window.msRenderMySalarySummary=function(){
     const n=msStaffName(s);
     const y=document.getElementById('ms_salary_year')?.value;
     const m=document.getElementById('ms_salary_month')?.value;
-    const isFullTime=Array.isArray(ftStaffData)&&ftStaffData.some(x=>String(x.name||'')===String(n));
+    const monthKey=`${y}-${String(m).padStart(2,'0')}`;
 
-    if(isFullTime){
-        box.innerHTML=`
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px">
-                <div style="font-weight:900;color:#334155">正職薪資單</div>
-                <div style="font-size:13px;color:#64748b;margin-top:4px">
-                    ${y}年${m}月｜將使用公司「正職薪資結算」的同一份薪資單資料。
+    const ftInfo=Array.isArray(ftStaffData)
+        ? ftStaffData.find(x=>String(x.name||'')===String(n))
+        : null;
+
+    if(ftInfo){
+        const monthStart=`${monthKey}-01`;
+        const monthEnd=new Date(Number(y),Number(m),0).toISOString().slice(0,10);
+        const hire=String(ftInfo.hire_date||'').trim();
+        const leave=String(ftInfo.leave_date||'').trim();
+
+        const employedInMonth=
+            (!hire||hire<=monthEnd) &&
+            (!leave||leave>=monthStart);
+
+        if(employedInMonth){
+            box.innerHTML=`
+                <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:14px">
+                    <div style="font-weight:900;color:#047857">正職薪資單</div>
+                    <div style="font-size:13px;color:#334155;margin-top:4px">
+                        ${y}年${m}月｜可預覽／下載公司「正職薪資結算」的薪資單。
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+            if(btn) btn.style.display='block';
+        }else{
+            box.innerHTML=`
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;text-align:center;color:#94a3b8">
+                    本月薪資單尚未發布
+                </div>
+            `;
+        }
         return;
     }
 
@@ -10378,8 +10403,8 @@ window.msRenderMySalarySummary=function(){
 
     const hours=rows.reduce((sum,x)=>sum+Number(getItemSalaryHours(x)||0),0);
 
-    box.innerHTML=rows.length
-        ? `
+    if(rows.length){
+        box.innerHTML=`
             <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:14px">
                 <div style="font-weight:900;color:#047857">${y}年${m}月已有薪資資料</div>
                 <div style="font-size:13px;color:#334155;margin-top:6px">
@@ -10387,12 +10412,15 @@ window.msRenderMySalarySummary=function(){
                     本期結算工時：${hours.toFixed(1)} 小時
                 </div>
             </div>
-          `
-        : `
+        `;
+        if(btn) btn.style.display='block';
+    }else{
+        box.innerHTML=`
             <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;text-align:center;color:#94a3b8">
-                本期目前沒有薪資紀錄
+                本月薪資單尚未發布
             </div>
-          `;
+        `;
+    }
 };
 
 window.msPreviewMyPayslip=function(){
@@ -10405,28 +10433,79 @@ window.msPreviewMyPayslip=function(){
 
     if(!y||!m) return alert('請選擇年份與月份');
 
-    const isFullTime=Array.isArray(ftStaffData)&&ftStaffData.some(x=>String(x.name||'')===String(n));
+    const ftInfo=Array.isArray(ftStaffData)
+        ? ftStaffData.find(x=>String(x.name||'')===String(n))
+        : null;
 
-    if(isFullTime){
-        if(el('fts_filter_staff')) el('fts_filter_staff').value=n;
-        if(el('fts_filter_month')) el('fts_filter_month').value=`${y}-${String(m).padStart(2,'0')}`;
+    if(ftInfo){
+        const monthKey=`${y}-${String(m).padStart(2,'0')}`;
+        const monthStart=`${monthKey}-01`;
+        const monthEnd=new Date(Number(y),Number(m),0).toISOString().slice(0,10);
+        const hire=String(ftInfo.hire_date||'').trim();
+        const leave=String(ftInfo.leave_date||'').trim();
+        const employedInMonth=
+            (!hire||hire<=monthEnd) &&
+            (!leave||leave>=monthStart);
 
-        if(typeof generateFtPayslipPDF_Single==='function'){
-            generateFtPayslipPDF_Single(n);
-        }else{
-            alert('目前找不到正職薪資單功能');
+        if(!employedInMonth){
+            alert('本月薪資單尚未發布');
+            return;
         }
-        return;
+    }else{
+        const rows=(Array.isArray(attendData)?attendData:[])
+            .filter(x=>String(x.staff||'')===String(n)&&isDispatchPayrollPeriod(x.date,y,m));
+
+        if(!rows.length){
+            alert('本月薪資單尚未發布');
+            return;
+        }
     }
 
-    if(el('sal_filter_staff')) el('sal_filter_staff').value=n;
-    if(el('sal_filter_year')) el('sal_filter_year').value=String(y);
-    if(el('sal_filter_month')) el('sal_filter_month').value=String(m);
+    // 員工手機版沒有管理端薪資篩選欄位時，建立隱藏欄位給既有薪資單函式使用。
+    const ensureHiddenField=(id,value)=>{
+        let node=document.getElementById(id);
+        if(!node){
+            node=document.createElement('input');
+            node.type='hidden';
+            node.id=id;
+            document.body.appendChild(node);
+        }
+        node.value=String(value??'');
+        return node;
+    };
 
-    if(typeof generatePayslipPDF==='function'){
-        generatePayslipPDF();
-    }else{
-        alert('目前找不到派遣薪資單功能');
+    try{
+        const isFullTime=Array.isArray(ftStaffData)&&ftStaffData.some(
+            x=>String(x.name||'')===String(n)
+        );
+
+        if(isFullTime){
+            ensureHiddenField('fts_filter_staff',n);
+            ensureHiddenField(
+                'fts_filter_month',
+                `${y}-${String(m).padStart(2,'0')}`
+            );
+
+            if(typeof generateFtPayslipPDF_Single==='function'){
+                generateFtPayslipPDF_Single(n);
+            }else{
+                alert('目前找不到正職薪資單功能');
+            }
+            return;
+        }
+
+        ensureHiddenField('sal_filter_staff',n);
+        ensureHiddenField('sal_filter_year',String(y));
+        ensureHiddenField('sal_filter_month',String(m));
+
+        if(typeof generatePayslipPDF==='function'){
+            generatePayslipPDF();
+        }else{
+            alert('目前找不到派遣薪資單功能');
+        }
+    }catch(error){
+        console.error('員工薪資單預覽失敗：',error);
+        alert('薪資單預覽發生錯誤，請重新整理後再試。');
     }
 };
 window.msShowProfile=function(){let s=msGetCurrentStaff(),n=msStaffName(s),code=s.code||s.id||s.staffId||msStaffAccount(s)||'-',phone=s.phone||s.mobile||s.tel||'-',dept=s.dept||s.department||s.type||s.role||s.status||'-';msSetTitle('員工資訊');document.getElementById('msContent').innerHTML=`<div class="ms-card" style="text-align:center"><div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${n.slice(0,1)}</div><div class="ms-row"><span>員工姓名</span><span>${n}</span></div><div class="ms-row"><span>員工編號</span><span>${code}</span></div><div class="ms-row"><span>部門/狀態</span><span>${dept}</span></div><div class="ms-row"><span>手機</span><span>${phone}</span></div></div><div class="ms-card"><div style="font-weight:900;font-size:18px">登入方式</div><div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div><div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>`};
