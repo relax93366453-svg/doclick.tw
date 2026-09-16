@@ -25604,6 +25604,26 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         const deleted=new Set((deletedIds||[]).filter(Boolean));
         const map=new Map();
 
+        /*
+         * 雲端回讀確認表：
+         * 只有「雲端確實已有相同 _syncId，而且雲端時間不舊於目前資料」，
+         * 才把 _syncState 從 pending 改成 synced。
+         *
+         * 這樣可修正：
+         * 1. 新增/700h拆分已成功寫入雲端，但畫面仍一直顯示「等待雲端同步」。
+         * 2. 若只是本機有較新的修改、雲端仍是舊版本，仍保留 pending，
+         *    不會誤判成已同步。
+         */
+        const cloudTimeById=new Map();
+
+        ensureIds(cloudRecords||[]).forEach(function(item){
+            if(!item||deleted.has(item._syncId)) return;
+            cloudTimeById.set(
+                item._syncId,
+                timeValue(item)
+            );
+        });
+
         function absorb(records,preferOnTie){
             ensureIds(records).forEach(function(item){
                 if(!item||deleted.has(item._syncId)) return;
@@ -25617,7 +25637,23 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
         absorb(cloudRecords||[],false);
         absorb(localRecords||[],true);
-        return Array.from(map.values());
+
+        return Array.from(map.values()).map(function(item){
+            const cloudTime=cloudTimeById.get(item._syncId);
+
+            if(
+                cloudTime!==undefined &&
+                cloudTime>=timeValue(item)
+            ){
+                return Object.assign(
+                    {},
+                    item,
+                    {_syncState:'synced'}
+                );
+            }
+
+            return item;
+        });
     }
 
     window.qyjNewAttendId=newAttendId;
