@@ -4585,7 +4585,9 @@ function qyjShowRaise250DecisionPrompt(h1, rateBefore, h2, beforeHours, afterHou
                 autoFillSplitWithTime(
                     Number(h1),
                     Number(rateBefore),
-                    Number(h2)
+                    Number(h2),
+                    'approved',
+                    250
                 );
             }else{
                 showToast('✅ 老闆已核准；下一筆工時起可套用 $250');
@@ -5001,7 +5003,7 @@ function checkHourlyUpgradeAlert() {
                 </span>
                 <button type="button"
                     style="margin-top:10px;background:#f59e0b;color:white;border:none;padding:10px 15px;border-radius:6px;cursor:pointer;font-weight:bold;font-size:14px;"
-                    onclick="autoFillSplitWithTime(${h1}, ${oW}, ${h2})">
+                    onclick="autoFillSplitWithTime(${h1}, ${oW}, ${h2}, 'tier', ${nW})">
                     <i class="fas fa-magic"></i> 一鍵全自動時間拆單寫入
                 </button>`;
             box.style.display = 'block';
@@ -5114,7 +5116,7 @@ function openRaise250StaffEditor() {
     }
 }
 
-async function autoFillSplitWithTime(h1, rate1, h2, mode) {
+async function autoFillSplitWithTime(h1, rate1, h2, mode, rate2) {
     const c = el('attend_company').value.trim(),
         s = el('attend_staff').value.trim(),
         d = el('attend_date').value,
@@ -5131,6 +5133,15 @@ async function autoFillSplitWithTime(h1, rate1, h2, mode) {
     h1 = Number(h1) || 0;
     h2 = Number(h2) || 0;
     rate1 = Number(rate1) || 0;
+    rate2 = Number(rate2) || 0;
+
+    const isRaise250Split =
+        mode === 'pending' ||
+        mode === 'approved';
+
+    const isTierSplit =
+        mode === 'tier' ||
+        !isRaise250Split;
 
     if(!c || !s || !d || (!amS && !pmS)) {
         alert('請確認公司、人員、日期與至少一段上班時間都有填寫！');
@@ -5138,7 +5149,11 @@ async function autoFillSplitWithTime(h1, rate1, h2, mode) {
     }
 
     if(h1 <= 0 || h2 <= 0) {
-        alert('這筆沒有需要拆分的跨700h工時。');
+        alert(
+            isRaise250Split
+                ? '這筆沒有需要拆分的跨700h工時。'
+                : '這筆沒有需要拆分的跨級距工時。'
+        );
         return;
     }
 
@@ -5210,9 +5225,13 @@ async function autoFillSplitWithTime(h1, rate1, h2, mode) {
         remark:
             (originalRemark ? originalRemark + '｜' : '') +
             (
-                mode === 'pending'
-                    ? '跨700h前(待老闆核准拆分)'
-                    : '跨700h前(已核准自動拆分)'
+                isRaise250Split
+                    ? (
+                        mode === 'pending'
+                            ? '跨700h前(待老闆核准拆分)'
+                            : '跨700h前(已核准自動拆分)'
+                    )
+                    : '跨階前(自動時間拆分)'
             )
     };
 
@@ -5228,13 +5247,20 @@ async function autoFillSplitWithTime(h1, rate1, h2, mode) {
         salary_hours:h2,
         project_fee:0,
         deduct_points:isProjectBilling ? 0 : h2,
-        special_hourly: mode === 'pending' ? '' : 250,
+        special_hourly:
+            isRaise250Split
+                ? (mode === 'pending' ? '' : 250)
+                : rate2,
         remark:
             (originalRemark ? originalRemark + '｜' : '') +
             (
-                mode === 'pending'
-                    ? '跨700h後(待老闆核准)'
-                    : '跨700h後(已核准自動拆分)'
+                isRaise250Split
+                    ? (
+                        mode === 'pending'
+                            ? '跨700h後(待老闆核准)'
+                            : '跨700h後(已核准自動拆分)'
+                    )
+                    : '升級後(自動時間拆分)'
             )
     };
 
@@ -7421,7 +7447,272 @@ function calculateMilestones(staffName, boxId, contentId) {
     if(box) box.style.display = 'block';
 }
 
+
+function qyjRepairImpossible700Splits(){
+    try{
+        if(!Array.isArray(attendData) || attendData.length===0) return false;
+
+        const getStartMinutes = function(record){
+            const raw = (record && (record.am_s || record.pm_s)) || '';
+            if(!raw) return 999999;
+            const normalized = String(raw).replace(/：/g, ':').trim();
+
+            if(/^\d{4}$/.test(normalized)){
+                return Number(normalized.slice(0,2))*60 +
+                    Number(normalized.slice(2,4));
+            }
+
+            const parts = normalized.split(':').map(Number);
+            if(parts.length>=2 &&
+               Number.isFinite(parts[0]) &&
+               Number.isFinite(parts[1])){
+                return parts[0]*60 + parts[1];
+            }
+
+            return 999999;
+        };
+
+        const groups = new Map();
+
+        attendData.forEach(function(item, idx){
+            if(!item) return;
+
+            const remark = String(item.remark || '');
+            if(
+                !remark.includes('跨700h前') &&
+                !remark.includes('跨700h後')
+            ){
+                return;
+            }
+
+            const key = String(
+                item._splitFromId ||
+                [
+                    item.staff || '',
+                    item.company || '',
+                    item.date || '',
+                    item.service || ''
+                ].join('|')
+            );
+
+            if(!groups.has(key)) groups.set(key, []);
+            groups.get(key).push({item:item, idx:idx});
+        });
+
+        let changed = false;
+        const now = new Date().toISOString();
+
+        groups.forEach(function(rows){
+            if(rows.length < 2) return;
+
+            rows.sort(function(a,b){
+                return getStartMinutes(a.item) - getStartMinutes(b.item);
+            });
+
+            const first = rows[0].item;
+            const staffName = String(first.staff || '');
+            const date = String(first.date || '');
+            const groupIndexes = new Set(rows.map(function(r){ return r.idx; }));
+            const groupStart = getStartMinutes(first);
+
+            let beforeHours = 0;
+
+            attendData
+                .map(function(record, idx){ return {record:record, idx:idx}; })
+                .filter(function(x){
+                    return x.record &&
+                        x.record.staff === staffName &&
+                        !groupIndexes.has(x.idx);
+                })
+                .sort(function(a,b){
+                    const da = new Date(a.record.date).getTime();
+                    const db = new Date(b.record.date).getTime();
+                    if(da !== db) return da-db;
+
+                    const ta = getStartMinutes(a.record);
+                    const tb = getStartMinutes(b.record);
+                    if(ta !== tb) return ta-tb;
+
+                    return a.idx-b.idx;
+                })
+                .some(function(x){
+                    const rd = new Date(x.record.date).getTime();
+                    const gd = new Date(date).getTime();
+                    const rt = getStartMinutes(x.record);
+
+                    if(
+                        rd < gd ||
+                        (rd === gd && rt < groupStart)
+                    ){
+                        beforeHours += getItemSalaryHours(x.record);
+                        beforeHours = Math.round(beforeHours*10)/10;
+                        return false;
+                    }
+
+                    return true;
+                });
+
+            const totalHours = rows.reduce(function(sum, row){
+                return sum + getItemSalaryHours(row.item);
+            },0);
+
+            const afterHours =
+                Math.round((beforeHours + totalHours)*10)/10;
+
+            // 真正跨700的資料完全不碰。
+            if(beforeHours < 700 && afterHours >= 700){
+                return;
+            }
+
+            // 只有「其實還沒到700」的錯誤標記才修。
+            if(afterHours >= 700){
+                return;
+            }
+
+            const si = staffData.find(function(x){
+                return x && x.name === staffName;
+            });
+
+            if(!si) return;
+
+            const rule = si.salary_rule || '114年標準';
+            const calcRule =
+                si.salary_calc_rule ||
+                deriveSalaryCalcRule(si);
+
+            const agreed = isRaise250Approved(si);
+
+            const tierInfo = getNextTierInfo(
+                rule,
+                beforeHours,
+                agreed,
+                si.hourly,
+                calcRule
+            ) || {};
+
+            const th = Number(tierInfo.nextTier);
+
+            // 必須真的有跨「其他級距」，才安全轉回一般跨階。
+            if(
+                !Number.isFinite(th) ||
+                th <= beforeHours ||
+                th >= afterHours
+            ){
+                return;
+            }
+
+            const expectedH1 =
+                Math.round((th-beforeHours)*10)/10;
+            const expectedH2 =
+                Math.round((totalHours-expectedH1)*10)/10;
+
+            const firstHours = getItemSalaryHours(rows[0].item);
+            const secondHours = getItemSalaryHours(rows[1].item);
+
+            // 只修拆分時數本來就正確、只是被誤標成700/250的情況。
+            if(
+                Math.abs(firstHours-expectedH1) >= 0.05 ||
+                Math.abs(secondHours-expectedH2) >= 0.05
+            ){
+                return;
+            }
+
+            const rateBefore = calcWageByDate(
+                rule,
+                beforeHours,
+                agreed,
+                si.hourly,
+                calcRule,
+                date
+            );
+
+            const rateAfter = calcWageByDate(
+                rule,
+                afterHours,
+                agreed,
+                si.hourly,
+                calcRule,
+                date
+            );
+
+            const cleanRemark = function(remark){
+                return String(remark || '')
+                    .replace(/跨700h前\(待老闆核准拆分\)/g,'')
+                    .replace(/跨700h前\(已核准自動拆分\)/g,'')
+                    .replace(/跨700h後\(待老闆核准\)/g,'')
+                    .replace(/跨700h後\(已核准自動拆分\)/g,'')
+                    .replace(/[｜|]+$/g,'')
+                    .trim();
+            };
+
+            const baseRemark = cleanRemark(first.remark);
+
+            rows[0].item.special_hourly = rateBefore;
+            rows[0].item.remark =
+                (baseRemark ? baseRemark + '｜' : '') +
+                '跨階前(自動時間拆分)';
+            rows[0].item._updatedAt = now;
+            rows[0].item._syncState = 'pending';
+
+            rows[1].item.special_hourly = rateAfter;
+            rows[1].item.remark =
+                (baseRemark ? baseRemark + '｜' : '') +
+                '升級後(自動時間拆分)';
+            rows[1].item._updatedAt = now;
+            rows[1].item._syncState = 'pending';
+
+            /*
+             * 若這次錯誤拆分同時把「700h核准」寫進人員資料，
+             * 而此人總工時其實仍未達700，將錯誤核准狀態復原。
+             */
+            const allHours = attendData
+                .filter(function(x){ return x && x.staff === staffName; })
+                .reduce(function(sum,x){
+                    return sum + getItemSalaryHours(x);
+                },0);
+
+            if(
+                allHours < 700 &&
+                String(si.raise250_status || '') === '已核准升250'
+            ){
+                si.raise250_status = '未核准';
+                si.raise250_date = '';
+                si.raise250_by = '';
+
+                if(
+                    String(si.raise250_note || '').includes('700')
+                ){
+                    si.raise250_note = '';
+                }
+            }
+
+            changed = true;
+        });
+
+        if(changed){
+            saveLocalData();
+
+            if(typeof saveAllSilently === 'function'){
+                setTimeout(function(){
+                    try{ saveAllSilently(); }catch(error){}
+                },50);
+            }
+
+            console.warn(
+                '已修正未達700h卻被誤標成700h拆分的派遣紀錄。'
+            );
+        }
+
+        return changed;
+    }catch(error){
+        console.warn('修正錯誤700h拆分失敗', error);
+        return false;
+    }
+}
+
 function renderAttend(){ 
+    qyjRepairImpossible700Splits();
+
     const y = el('filter_year').value, m = el('filter_month').value, c = el('filter_company').value.trim(), s = el('filter_staff').value.trim();
     calculateMilestones(s, 'attend_milestoneRedBox', 'attend_milestoneContent');
     
