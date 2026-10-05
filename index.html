@@ -762,6 +762,19 @@
 .statement-detail th:nth-child(3), .statement-detail td:nth-child(3){width:24%;}
 .statement-detail th:nth-child(4), .statement-detail td:nth-child(4){width:17%;}
 .statement-detail th:nth-child(5), .statement-detail td:nth-child(5){width:17%;}
+.statement-period-note{
+    margin-top:12px;
+    padding:10px 12px;
+    border:1px solid #fde68a;
+    border-left:4px solid #f59e0b;
+    border-radius:8px;
+    background:#fffbeb;
+    color:#713f12;
+    line-height:1.7;
+    page-break-inside:avoid;
+}
+.statement-period-note-title{font-weight:900;color:#92400e;margin-bottom:4px;}
+.statement-period-note-text{white-space:normal;word-break:break-word;}
 @media print{
     .statement-a4{max-width:720px!important;}
 }
@@ -1990,6 +2003,15 @@
                     <label class="bill-ym-label">月</label>
                     <select id="bill_filter_month" class="bill-ym-label" onchange="renderBill()"></select>
                     <button class="btn btn-clear-filter" onclick="clearFilters('bill')"><i class="fas fa-broom"></i> 清除搜尋</button>
+                </div>
+                <div style="margin:0 0 15px 0;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:14px 16px;">
+                    <label for="bill_period_note" style="display:block;font-size:13px;font-weight:800;color:#92400e;margin-bottom:7px;">
+                        <i class="fas fa-note-sticky"></i> 本期備註（選填）
+                    </label>
+                    <textarea id="bill_period_note" rows="3"
+                        placeholder="例如：本月 9/24 因客戶臨時取消派遣，當日 4.5 小時不列入扣點。"
+                        style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #fcd34d;border-radius:8px;background:#fff;color:#334155;font-size:13px;line-height:1.7;resize:vertical;"></textarea>
+                    <div style="font-size:11px;color:#a16207;margin-top:5px;">留空時，預覽、列印與 PDF 都不會顯示備註區。</div>
                 </div>
                 <button class="btn btn-success" onclick="generateStatementPDF()"><i class="fas fa-eye"></i> 預覽/下載 對帳單</button>
                 <button class="btn btn-excel" onclick="exportExcel('billTableBox','對帳單')"><i class="fas fa-file-excel"></i> 匯出 Excel</button>
@@ -8852,6 +8874,25 @@ function generateStatementPDF() {
     const endingPoints = Number((totalPurchased - totalDeducted).toFixed(1));
     const logo = pdfLogoBase64 ? `<img src="${pdfLogoBase64}" class="statement-logo">` : '';
 
+    const periodNoteRaw = el('bill_period_note') ? String(el('bill_period_note').value || '').trim() : '';
+    const periodNoteHtml = periodNoteRaw
+        ? periodNoteRaw
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/\r?\n/g, '<br>')
+        : '';
+
+    const periodNoteBlock = periodNoteHtml
+        ? `
+        <div class="statement-period-note">
+            <div class="statement-period-note-title"><i class="fas fa-note-sticky"></i> 本期備註</div>
+            <div class="statement-period-note-text">${periodNoteHtml}</div>
+        </div>`
+        : '';
+
     const c = `
 <div class="statement-a4">
     <div class="statement-title">
@@ -8890,6 +8931,9 @@ function generateStatementPDF() {
         <thead><tr><th>日期</th><th>人員</th><th>服務項目</th><th>現場工時</th><th>扣除點數</th></tr></thead>
         <tbody>${detailRows}</tbody>
     </table>
+
+    ${periodNoteBlock}
+
     <div class="footer">列印日期：${new Date().toLocaleDateString('zh-TW')}</div>
 </div>`;
 
@@ -11083,6 +11127,19 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             .statement-detail th:nth-child(3), .statement-detail td:nth-child(3){width:24%;}
             .statement-detail th:nth-child(4), .statement-detail td:nth-child(4){width:17%;}
             .statement-detail th:nth-child(5), .statement-detail td:nth-child(5){width:17%;}
+            .statement-period-note{
+                margin-top:12px;
+                padding:10px 12px;
+                border:1px solid #fde68a;
+                border-left:4px solid #f59e0b;
+                border-radius:8px;
+                background:#fffbeb;
+                color:#713f12;
+                line-height:1.7;
+                page-break-inside:avoid;
+            }
+            .statement-period-note-title{font-weight:900;color:#92400e;margin-bottom:4px;}
+            .statement-period-note-text{white-space:normal;word-break:break-word;}
             .footer{
                 text-align:left;
                 color:#475569;
