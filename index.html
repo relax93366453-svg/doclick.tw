@@ -2028,11 +2028,23 @@
                     <label>搜尋人員：</label>
                     <input list="list_staff" id="sal_filter_staff" placeholder="手打人員搜尋" oninput="resetPage('salary'); renderSalary()">
                     <label>年</label>
-                    <select id="sal_filter_year" onchange="renderSalary()"></select>
+                    <select id="sal_filter_year" onchange="qyjSalaryPeriodSelectionChanged()"></select>
                     <label>月</label>
-                    <select id="sal_filter_month" onchange="renderSalary()"></select>
+                    <select id="sal_filter_month" onchange="qyjSalaryPeriodSelectionChanged()"></select>
+                    <label>結算方式</label>
+                    <select id="sal_period_mode" onchange="qyjSalaryPeriodModeChanged()" style="min-width:170px;">
+                        <option value="standard">標準 26日～25日</option>
+                        <option value="special23">特殊：結算到23日</option>
+                        <option value="custom">自訂區間</option>
+                    </select>
+                    <span id="sal_period_dates" style="display:none;align-items:center;gap:6px;">
+                        <input type="date" id="sal_period_start" onchange="qyjSalaryPeriodDateChanged()" style="width:145px;">
+                        <span>～</span>
+                        <input type="date" id="sal_period_end" onchange="qyjSalaryPeriodDateChanged()" style="width:145px;">
+                    </span>
                     <button class="btn btn-clear-filter" onclick="clearFilters('salary')"><i class="fas fa-broom"></i> 清除搜尋</button>
                 </div>
+                <div id="sal_period_notice" style="display:none;margin:0 0 12px 0;background:#fff7ed;border:1px solid #fdba74;border-left:5px solid #f97316;border-radius:10px;padding:10px 14px;color:#9a3412;font-size:13px;font-weight:800;line-height:1.7;"></div>
                 <div id="sal_milestoneRedBox" style="display:none; background:#fef2f2; border-left:5px solid #ef4444; border-radius:8px; padding:15px; margin-bottom:15px; border-right:1px solid #fecaca; border-top:1px solid #fecaca; border-bottom:1px solid #fecaca;">
                     <h4 style="color:#b91c1c; margin-bottom:10px; font-size:15px;"><i class="fas fa-trophy"></i> 累積工時里程碑達成日</h4>
                     <div id="sal_milestoneContent" style="display:flex; gap:15px; flex-wrap:wrap;"></div>
@@ -2866,6 +2878,246 @@ function isDispatchPayrollPeriod(d, y, m, cycle = '26') {
         if(rY === tY && rM === tM && rD <= 25) return true;
         return false;
     }
+}
+
+
+/* ===== 派遣薪資：標準26~25 + 特殊截止23日 / 自訂區間 ===== */
+function qyjSalaryPeriodStore(){
+    try{
+        const raw = localStorage.getItem('qyjSalaryPeriodOverrides');
+        const data = raw ? JSON.parse(raw) : {};
+        return data && typeof data === 'object' ? data : {};
+    }catch(e){
+        return {};
+    }
+}
+
+function qyjSaveSalaryPeriodStore(data){
+    try{
+        localStorage.setItem('qyjSalaryPeriodOverrides', JSON.stringify(data || {}));
+    }catch(e){
+        console.warn('薪資結算區間儲存失敗', e);
+    }
+}
+
+function qyjSalaryPeriodKey(y,m){
+    if(!y || !m || y === 'all' || m === 'all') return '';
+    return `${String(y)}-${String(m).padStart(2,'0')}`;
+}
+
+function qyjPrevPayrollYm(y,m){
+    let yy = Number(y), mm = Number(m) - 1;
+    if(mm === 0){ mm = 12; yy -= 1; }
+    return {y:yy, m:mm};
+}
+
+function qyjIsoNextDay(iso){
+    if(!iso) return '';
+    const d = new Date(`${iso}T00:00:00`);
+    if(Number.isNaN(d.getTime())) return '';
+    d.setDate(d.getDate() + 1);
+    return [
+        d.getFullYear(),
+        String(d.getMonth()+1).padStart(2,'0'),
+        String(d.getDate()).padStart(2,'0')
+    ].join('-');
+}
+
+function qyjGetSavedSalaryPeriod(y,m){
+    const key = qyjSalaryPeriodKey(y,m);
+    if(!key) return null;
+    return qyjSalaryPeriodStore()[key] || null;
+}
+
+function qyjGetSalaryPeriod(y,m){
+    if(!y || !m || y === 'all' || m === 'all'){
+        return {start:'', end:'', mode:'standard', label:'全部期間', isSpecial:false};
+    }
+
+    const yy = Number(y), mm = Number(m);
+    const key = qyjSalaryPeriodKey(y,m);
+    const saved = qyjGetSavedSalaryPeriod(y,m);
+
+    let prev = qyjPrevPayrollYm(yy,mm);
+    let defaultStart = `${prev.y}-${String(prev.m).padStart(2,'0')}-26`;
+    const defaultEnd = `${yy}-${String(mm).padStart(2,'0')}-25`;
+
+    // 若上一個結算月是特殊區間，恢復標準的第一期自動從上一期隔日接續，避免漏掉24、25日。
+    const prevSaved = qyjGetSavedSalaryPeriod(prev.y, prev.m);
+    if(prevSaved && prevSaved.end){
+        const carryStart = qyjIsoNextDay(prevSaved.end);
+        if(carryStart && carryStart < defaultStart){
+            defaultStart = carryStart;
+        }
+    }
+
+    let mode = saved && saved.mode ? saved.mode : 'standard';
+    let start = defaultStart;
+    let end = defaultEnd;
+
+    if(mode === 'special23'){
+        start = (saved && saved.start) || defaultStart;
+        end = (saved && saved.end) || `${yy}-${String(mm).padStart(2,'0')}-23`;
+    }else if(mode === 'custom'){
+        start = (saved && saved.start) || defaultStart;
+        end = (saved && saved.end) || defaultEnd;
+    }
+
+    // 正在畫面手動編輯本期時，優先採用畫面值。
+    const modeEl = document.getElementById('sal_period_mode');
+    const startEl = document.getElementById('sal_period_start');
+    const endEl = document.getElementById('sal_period_end');
+    if(modeEl && modeEl.dataset.periodKey === key){
+        mode = modeEl.value || mode;
+        if(mode !== 'standard'){
+            start = (startEl && startEl.value) || start;
+            end = (endEl && endEl.value) || end;
+        }else{
+            start = defaultStart;
+            end = defaultEnd;
+        }
+    }
+
+    return {
+        start,
+        end,
+        mode,
+        isSpecial: mode !== 'standard' || start !== `${prev.y}-${String(prev.m).padStart(2,'0')}-26`,
+        label: `${start.replace(/-/g,'/')} ~ ${end.replace(/-/g,'/')}`
+    };
+}
+
+function qyjSalaryDateInPeriod(date,y,m){
+    if(y === 'all' || m === 'all' || !y || !m) return true;
+    const p = qyjGetSalaryPeriod(y,m);
+    const d = String(date || '');
+    return !!d && d >= p.start && d <= p.end;
+}
+
+function qyjLoadSalaryPeriodUI(){
+    const y = el('sal_filter_year') ? el('sal_filter_year').value : '';
+    const m = el('sal_filter_month') ? el('sal_filter_month').value : '';
+    const modeEl = el('sal_period_mode');
+    const startEl = el('sal_period_start');
+    const endEl = el('sal_period_end');
+    const wrap = el('sal_period_dates');
+    if(!modeEl || !startEl || !endEl || !wrap) return;
+
+    const key = qyjSalaryPeriodKey(y,m);
+    modeEl.dataset.periodKey = key;
+
+    if(!key){
+        modeEl.value = 'standard';
+        wrap.style.display = 'none';
+        return;
+    }
+
+    const saved = qyjGetSavedSalaryPeriod(y,m);
+    const p = qyjGetSalaryPeriod(y,m);
+
+    modeEl.value = saved && saved.mode ? saved.mode : 'standard';
+    startEl.value = p.start;
+    endEl.value = p.end;
+    wrap.style.display = modeEl.value === 'standard' ? 'none' : 'inline-flex';
+}
+
+function qyjSaveSalaryPeriodFromUI(){
+    const y = el('sal_filter_year') ? el('sal_filter_year').value : '';
+    const m = el('sal_filter_month') ? el('sal_filter_month').value : '';
+    const key = qyjSalaryPeriodKey(y,m);
+    const modeEl = el('sal_period_mode');
+    const startEl = el('sal_period_start');
+    const endEl = el('sal_period_end');
+    if(!key || !modeEl) return true;
+
+    const store = qyjSalaryPeriodStore();
+    const mode = modeEl.value || 'standard';
+
+    if(mode === 'standard'){
+        delete store[key];
+        qyjSaveSalaryPeriodStore(store);
+        return true;
+    }
+
+    const start = startEl ? startEl.value : '';
+    const end = endEl ? endEl.value : '';
+
+    if(!start || !end){
+        showToast('請填寫薪資結算開始日與截止日', true);
+        return false;
+    }
+    if(start > end){
+        showToast('薪資結算開始日不能晚於截止日', true);
+        return false;
+    }
+
+    store[key] = {mode, start, end, updatedAt:new Date().toISOString()};
+    qyjSaveSalaryPeriodStore(store);
+    return true;
+}
+
+function qyjSalaryPeriodModeChanged(){
+    const y = el('sal_filter_year') ? el('sal_filter_year').value : '';
+    const m = el('sal_filter_month') ? el('sal_filter_month').value : '';
+    const modeEl = el('sal_period_mode');
+    const startEl = el('sal_period_start');
+    const endEl = el('sal_period_end');
+    const wrap = el('sal_period_dates');
+    if(!modeEl || !startEl || !endEl || !wrap) return;
+
+    const prev = qyjPrevPayrollYm(y,m);
+    let start = `${prev.y}-${String(prev.m).padStart(2,'0')}-26`;
+
+    const prevSaved = qyjGetSavedSalaryPeriod(prev.y, prev.m);
+    if(prevSaved && prevSaved.end){
+        const next = qyjIsoNextDay(prevSaved.end);
+        if(next) start = next;
+    }
+
+    if(modeEl.value === 'special23'){
+        startEl.value = start;
+        endEl.value = `${y}-${String(m).padStart(2,'0')}-23`;
+        wrap.style.display = 'inline-flex';
+    }else if(modeEl.value === 'custom'){
+        if(!startEl.value) startEl.value = start;
+        if(!endEl.value) endEl.value = `${y}-${String(m).padStart(2,'0')}-25`;
+        wrap.style.display = 'inline-flex';
+    }else{
+        wrap.style.display = 'none';
+    }
+
+    qyjSaveSalaryPeriodFromUI();
+    renderSalary();
+}
+
+function qyjSalaryPeriodDateChanged(){
+    if(qyjSaveSalaryPeriodFromUI()) renderSalary();
+}
+
+function qyjSalaryPeriodSelectionChanged(){
+    qyjLoadSalaryPeriodUI();
+    renderSalary();
+}
+
+function qyjEnsureSalaryPeriodUI(y,m){
+    const modeEl = el('sal_period_mode');
+    if(!modeEl) return;
+    const key = qyjSalaryPeriodKey(y,m);
+    if(modeEl.dataset.periodKey !== key){
+        qyjLoadSalaryPeriodUI();
+    }
+}
+
+function qyjRenderSalaryPeriodNotice(period){
+    const box = el('sal_period_notice');
+    if(!box) return;
+    if(!period || !period.start || !period.end || !period.isSpecial){
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+    }
+    box.style.display = 'block';
+    box.innerHTML = `<i class="fas fa-triangle-exclamation"></i> 本期為特殊／銜接結算區間：<b>${period.label}</b>。系統會以此區間計算薪資、累積工時與薪資單。`;
 }
 
 function toggleBillManualDate() {
@@ -26779,8 +27031,11 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
 function renderSalary() { 
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value; 
+    qyjEnsureSalaryPeriodUI(y,m);
+    const salaryPeriod = qyjGetSalaryPeriod(y,m);
+    qyjRenderSalaryPeriodNotice(salaryPeriod);
     calculateMilestones(s, 'sal_milestoneRedBox', 'sal_milestoneContent');
-    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && isDispatchPayrollPeriod(x.date, y, m)); 
+    let l = attendData.filter(x => (!s || s === '全部人員' || x.staff === s) && qyjSalaryDateInPeriod(x.date, y, m)); 
     l.sort((a,b) => new Date(a.date) - new Date(b.date)); 
     const {pagedList, total, totalPages} = getPagedData(l, 'salary'); 
     let h = ''; 
@@ -26821,12 +27076,10 @@ function renderSalary() {
         el('salNet').textContent = baseNet; 
         el('salDetailResult').style.display = 'block';
         if(el('salDeductOverrideBox')) el('salDeductOverrideBox').style.display = 'flex';
-        let pm = parseInt(m) - 1, py = parseInt(y); 
-        if(pm === 0) { pm = 12; py -= 1; } 
-        const periodEndDate = `${y}-${String(m).padStart(2,'0')}-25`;
+        const periodEndDate = salaryPeriod.end;
         const cumulativeHours = getStaffTotalHoursUntil(s, periodEndDate);
         const welfareBox = qyjBuildSalaryBenefitBox(s, y, m, cumulativeHours, baseNet);
-        el('salResult').innerHTML = `[${s}] ${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25 結算：<br><span style="color:#059669;">本月結算工時：${sumH.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#2563eb;">截至本期累積工時：${cumulativeHours.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#d97706;">應發金額：${sumAmt.toFixed(1)} 元</span>${welfareBox}`; 
+        el('salResult').innerHTML = `[${s}] ${salaryPeriod.label} 結算：<br><span style="color:#059669;">本期結算工時：${sumH.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#2563eb;">截至本期累積工時：${cumulativeHours.toFixed(1)} h</span> &nbsp; | &nbsp; <span style="color:#d97706;">應發金額：${sumAmt.toFixed(1)} 元</span>${welfareBox}`; 
         qyjUpdateSalaryBenefitNet();
     } else { 
         window.qyjSalaryBenefitContext = null;
@@ -26841,12 +27094,13 @@ function renderSalary() {
 function generatePayslipPDF() { 
     const s = el('sal_filter_staff').value.trim(), y = el('sal_filter_year').value, m = el('sal_filter_month').value;
     if(!s || s === '全部人員' || y === 'all' || m === 'all') return showToast('請選人員與年月', true); 
-    let pm = parseInt(m) - 1, py = parseInt(y); 
-    if(pm === 0) { pm = 12; py -= 1; } 
-    let ptxt = `${py}/${String(pm).padStart(2,'0')}/26 ~ ${y}/${String(m).padStart(2,'0')}/25`; 
-    const periodEndDate = `${y}-${String(m).padStart(2,'0')}-25`;
+    qyjEnsureSalaryPeriodUI(y,m);
+    if(!qyjSaveSalaryPeriodFromUI()) return;
+    const salaryPeriod = qyjGetSalaryPeriod(y,m);
+    let ptxt = salaryPeriod.label; 
+    const periodEndDate = salaryPeriod.end;
     const cumulativeHours = getStaffTotalHoursUntil(s, periodEndDate);
-    let ats = attendData.filter(x => x.staff === s && isDispatchPayrollPeriod(x.date, y, m)).sort((a,b) => new Date(a.date) - new Date(b.date)); 
+    let ats = attendData.filter(x => x.staff === s && qyjSalaryDateInPeriod(x.date, y, m)).sort((a,b) => new Date(a.date) - new Date(b.date)); 
     if(ats.length === 0) return showToast('無紀錄', true);
     const si = staffData.find(x => x.name === s) || {}; 
     let tAmt = 0, tHours = 0, ah = ''; 
