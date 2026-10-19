@@ -30151,5 +30151,127 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+
+<style id="qyjFulltimeCleanLayout20261019">
+/* 正職排班：只保留新版整月表，舊排班畫面全部隱藏 */
+body.qyj-fulltime-clean #page-schedule .schedule-page-shell > *:not(#qyjScheduleFulltimePanel){
+    display:none !important;
+}
+body.qyj-fulltime-clean #page-schedule #qyjScheduleFulltimePanel{
+    display:block !important;
+    padding:0 !important;
+}
+
+/* 新版正職頁面改成單一乾淨卡片 */
+body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-head{
+    background:#fff;
+    border:1px solid #dbe7f5;
+    border-radius:16px;
+    padding:16px 18px;
+    margin-bottom:12px;
+    box-shadow:0 4px 14px rgba(15,23,42,.04);
+}
+body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-head h2{
+    font-size:21px;
+    margin:2px 0 4px;
+}
+body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-head p{
+    font-size:12px;
+}
+body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-actions{
+    gap:7px;
+}
+body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-actions input{
+    height:38px;
+}
+body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-legend{
+    margin:0 0 10px;
+}
+body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-stats{
+    margin:0 0 10px;
+}
+body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-board{
+    max-height:72vh;
+    border-radius:14px;
+}
+
+/* 左側二層選單更像真正的子選單 */
+.hr-subgroup > .hr-sub-title{
+    width:100%;
+    border:0;
+    background:transparent;
+    padding:10px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    color:#475569;
+    font-weight:800;
+    cursor:pointer;
+}
+.hr-subgroup > .hr-sub-title .left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+.hr-submenu-2{
+    list-style:none;
+    padding:0 0 4px 18px;
+    margin:0;
+}
+.hr-submenu-2 li a{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    padding:9px 12px;
+    margin:2px 6px 2px 0;
+    border-radius:9px;
+    color:#64748b;
+    cursor:pointer;
+    font-size:13px;
+}
+.hr-submenu-2 li a:hover{
+    background:#eff6ff;
+    color:#2563eb;
+}
+</style>
+
+<script id="qyjFulltimeCleanLayoutScript20261019">
+(function(){
+    function applyClean(mode){
+        if(mode==='fulltime'){
+            document.body.classList.add('qyj-fulltime-clean');
+        }else{
+            document.body.classList.remove('qyj-fulltime-clean');
+        }
+    }
+
+    var original = window.qyjOpenCompanyScheduleView;
+    if(typeof original === 'function'){
+        window.qyjOpenCompanyScheduleView = function(mode){
+            applyClean(mode);
+            return original.apply(this, arguments);
+        };
+    }
+
+    var oldShow = window.showAdminPage;
+    if(typeof oldShow === 'function'){
+        window.showAdminPage = function(page){
+            var r = oldShow.apply(this, arguments);
+            if(page === 'schedule'){
+                var saved = localStorage.getItem('qyj_company_schedule_view') || 'dispatch';
+                applyClean(saved);
+            }
+            return r;
+        };
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        var saved = localStorage.getItem('qyj_company_schedule_view') || 'dispatch';
+        applyClean(saved);
+    });
+})();
+</script>
+
 </body>
 </html>
