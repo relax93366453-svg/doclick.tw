@@ -30086,7 +30086,21 @@ function splitNames(v){return String(v||'').split(/[、,，\n]+/).map(function(x
 function ftNames(){return Array.from(new Set((ftStaffData||[]).filter(function(x){return !x.status||x.status==='在職';}).map(function(x){return x.name||x.staff||'';}).filter(Boolean))).sort();}
 function ym(){var v=E('qyjFtMonthPicker')&&E('qyjFtMonthPicker').value;if(v&&/^\d{4}-\d{2}$/.test(v)){var p=v.split('-');return {y:Number(p[0]),m:Number(p[1])};}var d=new Date();return {y:d.getFullYear(),m:d.getMonth()+1};}
 function relevantSchedule(staff,date){return (scheduleData||[]).find(function(x){if(!x||String(x.date||'')!==date)return false;var type=x.staffType||'';if(type&&type!=='正職')return false;return splitNames(x.staffs).indexOf(staff)>=0;})||null;}
-function leaveRows(staff,date){return (ftAttendData||[]).filter(function(x){if(!x||String(x.staff||'').trim()!==staff||String(x.date||'')!==date)return false;return String(x.record_type||'').indexOf('請假')>=0||String(x.leave_type||'').trim()!=='';});}
+function leaveRows(staff,date){
+    if(typeof window.qyjFtGetLeaveRowsForDate==='function'){
+        return window.qyjFtGetLeaveRowsForDate(staff,date);
+    }
+    return (ftAttendData||[]).filter(function(x){
+        if(!x||String(x.staff||'').trim()!==String(staff||'').trim())return false;
+        var raw=String(x.date||'').replace(/\//g,'-');
+        var parts=raw.split('-');
+        if(parts.length===3){
+            raw=parts[0]+'-'+String(parts[1]).padStart(2,'0')+'-'+String(parts[2]).padStart(2,'0');
+        }
+        if(raw!==date)return false;
+        return String(x.record_type||'').indexOf('請假')>=0||String(x.leave_type||'').trim()!=='';
+    });
+}
 function swapRows(staff,date){return (ftAttendData||[]).filter(function(x){return x&&String(x.staff||'').trim()===staff&&String(x.date||'')===date&&String(x.record_type||'').indexOf('換班')>=0;});}
 
 function morningMode(s){
@@ -30534,6 +30548,123 @@ body.qyj-fulltime-clean #qyjScheduleFulltimePanel .qyj-ft-board{
         var saved = localStorage.getItem('qyj_company_schedule_view') || 'dispatch';
         applyClean(saved);
     });
+})();
+</script>
+
+
+
+<script id="qyjFtLeaveAutoSync20261019">
+(function(){
+'use strict';
+
+function normDate(v){
+    var s=String(v||'').trim();
+    var m=s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if(!m)return s;
+    return m[1]+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[3]).padStart(2,'0');
+}
+
+function isLeaveRecord(item){
+    if(!item)return false;
+    var rt=String(item.record_type||item.type||'');
+    var lt=String(item.leave_type||'');
+    return rt.indexOf('請假')>=0 || rt.indexOf('休假')>=0 || lt.trim()!=='';
+}
+
+function recordDates(item){
+    var out=[];
+    if(!item)return out;
+
+    if(item.date){
+        out.push(normDate(item.date));
+    }
+
+    var start=normDate(item.startDate||item.leave_start_date||item.leaveStartDate||'');
+    var end=normDate(item.endDate||item.leave_end_date||item.leaveEndDate||'');
+
+    if(start && end && /^\d{4}-\d{2}-\d{2}$/.test(start) && /^\d{4}-\d{2}-\d{2}$/.test(end)){
+        var cur=new Date(start+'T00:00:00');
+        var last=new Date(end+'T00:00:00');
+        while(cur<=last){
+            out.push(
+                cur.getFullYear()+'-'+
+                String(cur.getMonth()+1).padStart(2,'0')+'-'+
+                String(cur.getDate()).padStart(2,'0')
+            );
+            cur.setDate(cur.getDate()+1);
+        }
+    }
+
+    return Array.from(new Set(out.filter(Boolean)));
+}
+
+window.qyjFtGetLeaveRowsForDate=function(staff,date){
+    var target=normDate(date);
+    return (window.ftAttendData||ftAttendData||[]).filter(function(item){
+        if(!item)return false;
+        if(String(item.staff||'').trim()!==String(staff||'').trim())return false;
+        if(!isLeaveRecord(item))return false;
+        return recordDates(item).indexOf(target)>=0;
+    });
+};
+
+window.qyjFtRefreshFromAttendance=function(){
+    try{
+        if(typeof window.qyjFtRender==='function'){
+            window.qyjFtRender();
+        }
+    }catch(e){}
+};
+
+function patchLeaveRows(){
+    if(typeof window.qyjFtRender!=='function')return;
+
+    try{
+        var script=document.getElementById('qyjCompanyScheduleIntegratedScript');
+        if(!script)return;
+    }catch(e){}
+}
+
+var oldAdd=window.addFtAttend;
+if(typeof oldAdd==='function'){
+    window.addFtAttend=function(){
+        var r=oldAdd.apply(this,arguments);
+        setTimeout(window.qyjFtRefreshFromAttendance,50);
+        return r;
+    };
+}
+
+var oldDel=window.delFtAttend;
+if(typeof oldDel==='function'){
+    window.delFtAttend=function(){
+        var r=oldDel.apply(this,arguments);
+        setTimeout(window.qyjFtRefreshFromAttendance,50);
+        return r;
+    };
+}
+
+var oldRender=window.renderFtAttendTable;
+if(typeof oldRender==='function'){
+    window.renderFtAttendTable=function(){
+        var r=oldRender.apply(this,arguments);
+        setTimeout(window.qyjFtRefreshFromAttendance,0);
+        return r;
+    };
+}
+
+var oldLoad=window.loadDataFromCloud;
+if(typeof oldLoad==='function'){
+    window.loadDataFromCloud=async function(){
+        var r=await oldLoad.apply(this,arguments);
+        setTimeout(window.qyjFtRefreshFromAttendance,100);
+        return r;
+    };
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+    setTimeout(window.qyjFtRefreshFromAttendance,500);
+});
+
 })();
 </script>
 
