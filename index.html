@@ -30787,20 +30787,27 @@ function ensureAdminFields(){
     target.insertAdjacentElement('afterend',wrap);
 }
 window.qyjToggleAdminMakeupHours=function(){var need=document.getElementById('qyjFtaNeedMakeup'),box=document.getElementById('qyjFtaMakeupHoursBox');if(box)box.style.display=need&&need.checked?'inline-flex':'none'};
-function updateAdminFieldsVisibility(){ensureAdminFields();var wrap=document.getElementById('qyjFtaMakeupWrap'),type=document.getElementById('fta_record_type');if(wrap)wrap.style.display=type&&type.value==='請假'?'block':'none'}
+function updateAdminFieldsVisibility(){
+    ensureAdminFields();
+    var wrap=document.getElementById('qyjFtaMakeupWrap'),type=document.getElementById('fta_record_type');
+    if(wrap)wrap.style.display=type&&(type.value==='請假'||type.value==='換班')?'block':'none';
+}
 function findSavedRecord(staff,date,recordType){var matches=(ftAttendData||[]).filter(function(x){return String(x.staff||'').trim()===String(staff||'').trim()&&String(x.date||'')===String(date||'')&&String(x.record_type||'')===String(recordType||'')});return matches.length?matches[matches.length-1]:null}
 
 function makeupRows(){
     var groups=readGroups(),rows=[];
     (ftAttendData||[]).forEach(function(rec){
-        if(!rec||String(rec.record_type||'')!=='請假')return;
+        if(!rec)return;
+        var recType=String(rec.record_type||'');
         var g=findGroupForRecord(rec,groups);
+        var eligible=(recType==='請假'||recType==='換班'||rec.needMakeup===true||rec.needMakeup==='true'||Number(rec.makeupRequiredHours||0)>0||!!g);
+        if(!eligible)return;
         var marked=rec.needMakeup===true||rec.needMakeup==='true'||Number(rec.makeupRequiredHours||0)>0||!!g;if(!marked)return;
         var required=Number(rec.makeupRequiredHours||0);if(g&&Number(g.requiredHours||0)>0)required=Number(g.requiredHours||0);
         var stats=g?groupStats(g):{required:required,arranged:0,completed:0,remaining:required};
         var schedules=g&&Array.isArray(g.schedules)?g.schedules.slice():[];schedules.sort(function(a,b){return String(a.date||'').localeCompare(String(b.date||''))});
         var next=schedules.find(function(s){return s.status!=='已完成'})||schedules[schedules.length-1]||null;
-        rows.push({record:rec,group:g,staff:rec.staff||'',leaveDate:rec.date||'',leaveType:rec.leave_type||'請假',reason:rec.reason||'',required:stats.required||required,completed:stats.completed||0,remaining:Math.max(0,(stats.required||required)-(stats.completed||0)),next:next});
+        rows.push({record:rec,group:g,staff:rec.staff||'',leaveDate:rec.date||'',leaveType:rec.leave_type||(recType==='換班'?'換班':'請假'),reason:rec.reason||'',required:stats.required||required,completed:stats.completed||0,remaining:Math.max(0,(stats.required||required)-(stats.completed||0)),next:next});
     });
     rows.sort(function(a,b){if(b.remaining!==a.remaining)return b.remaining-a.remaining;return String(b.leaveDate).localeCompare(String(a.leaveDate))});return rows;
 }
@@ -30818,11 +30825,28 @@ function renderAccountPanel(){
     var body=rows.length?rows.map(function(r,idx){
         var nextText=r.next?esc(r.next.date||'-')+(r.next.start||r.next.end?'<br><span style="font-size:11px;color:#64748b;">'+esc(r.next.start||'-')+'～'+esc(r.next.end||'-')+'｜'+Number(r.next.plannedHours||timeHours(r.next.start,r.next.end)||0).toFixed(1)+'h</span>':''):'<span class="qyj-makeup-debt">尚未安排</span>';
         var status=r.remaining<=0?'<span class="qyj-makeup-ok">已補完</span>':(r.next?'<span class="qyj-makeup-next">已安排</span>':'<span class="qyj-makeup-debt">欠班中</span>');
-        return '<tr><td><b>'+esc(r.staff)+'</b></td><td>'+esc(r.leaveDate)+'</td><td>'+esc(r.leaveType)+(r.reason?'｜'+esc(r.reason):'')+'</td><td><b>'+Number(r.required||0).toFixed(1)+'h</b></td><td>'+Number(r.completed||0).toFixed(1)+'h</td><td class="'+(r.remaining>0?'qyj-makeup-debt':'qyj-makeup-ok')+'">'+Number(r.remaining||0).toFixed(1)+'h</td><td>'+nextText+'</td><td>'+status+'</td><td><button class="qyj-makeup-btn add qyj-account-action" data-row="'+idx+'">'+(r.group?'安排補班':'建立追蹤')+'</button></td></tr>';
+        var rowStatus=r.remaining<=0?'done':(!r.next?'unplanned':(r.completed>0?'progress':'planned'));
+        return '<tr data-makeup-status="'+rowStatus+'"><td><b>'+esc(r.staff)+'</b></td><td>'+esc(r.leaveDate)+'</td><td>'+esc(r.leaveType)+(r.reason?'｜'+esc(r.reason):'')+'</td><td><b>'+Number(r.required||0).toFixed(1)+'h</b></td><td>'+Number(r.completed||0).toFixed(1)+'h</td><td class="'+(r.remaining>0?'qyj-makeup-debt':'qyj-makeup-ok')+'">'+Number(r.remaining||0).toFixed(1)+'h</td><td>'+nextText+'</td><td>'+status+'</td><td><button class="qyj-makeup-btn add qyj-account-action" data-row="'+idx+'">'+(r.group?'安排補班':'建立追蹤')+'</button></td></tr>';
     }).join(''):'<tr><td colspan="9" style="text-align:center;color:#64748b;padding:22px;">目前沒有設定「需要補班」的請假紀錄</td></tr>';
 
     panel._qyjRows=rows;
-    panel.innerHTML='<div class="qyj-makeup-account-head"><div><h3><i class="fas fa-wallet"></i> 補班帳戶總覽</h3><p>直接看每個人「哪天欠、欠多少、哪天補、還剩多少」</p></div></div><div class="qyj-makeup-account-summary"><div class="qyj-makeup-account-kpi"><span>應補總時數</span><b>'+totalRequired.toFixed(1)+'h</b></div><div class="qyj-makeup-account-kpi"><span>已完成</span><b>'+totalCompleted.toFixed(1)+'h</b></div><div class="qyj-makeup-account-kpi"><span>剩餘未補</span><b style="color:#dc2626;">'+totalRemaining.toFixed(1)+'h</b></div><div class="qyj-makeup-account-kpi"><span>尚未安排案件</span><b>'+unplanned+'</b></div></div><div class="table-responsive"><table class="qyj-makeup-account-table"><thead><tr><th>人員</th><th>欠班日期</th><th>原因 / 假別</th><th>應補</th><th>已完成</th><th>剩餘</th><th>最近 / 預計補班</th><th>狀態</th><th>操作</th></tr></thead><tbody>'+body+'</tbody></table></div><div class="qyj-makeup-account-note">使用方式：在上方「正職出勤與請假」新增或編輯請假時，勾選「這筆請假需要補班」並填應補時數。之後從這裡安排補班日期，排班會自動出現在「正職整月排班」。</div>';
+    panel.innerHTML='<div class="qyj-makeup-account-head"><div><h3><i class="fas fa-rotate-left"></i> 補班追蹤</h3><p>直接看每個人「哪天欠、欠多少、安排哪天補、已補多少、還剩多少」</p></div></div>'+
+        '<div class="qyj-makeup-account-summary">'+
+            '<div class="qyj-makeup-account-kpi"><span>補班案件</span><b>'+rows.length+'</b></div>'+
+            '<div class="qyj-makeup-account-kpi"><span>應補時數</span><b>'+totalRequired.toFixed(1)+'h</b></div>'+
+            '<div class="qyj-makeup-account-kpi"><span>已安排</span><b>'+rows.filter(function(r){return !!r.next;}).length+'</b></div>'+
+            '<div class="qyj-makeup-account-kpi"><span>已完成</span><b>'+totalCompleted.toFixed(1)+'h</b></div>'+
+            '<div class="qyj-makeup-account-kpi"><span>剩餘未補</span><b style="color:#dc2626;">'+totalRemaining.toFixed(1)+'h</b></div>'+
+        '</div>'+
+        '<div class="qyj-makeup-filterbar" style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:0 0 10px;">'+
+            '<button class="qyj-makeup-filter active" data-filter="all">全部</button>'+
+            '<button class="qyj-makeup-filter" data-filter="unplanned">尚未安排</button>'+
+            '<button class="qyj-makeup-filter" data-filter="planned">已安排待完成</button>'+
+            '<button class="qyj-makeup-filter" data-filter="progress">補班中</button>'+
+            '<button class="qyj-makeup-filter" data-filter="done">補班完成</button>'+
+        '</div>'+
+        '<div class="table-responsive"><table class="qyj-makeup-account-table"><thead><tr><th>人員</th><th>欠班日期</th><th>原因 / 假別</th><th>應補</th><th>已完成</th><th>剩餘</th><th>最近 / 預計補班</th><th>狀態</th><th>操作</th></tr></thead><tbody>'+body+'</tbody></table></div>'+
+        '<div class="qyj-makeup-account-note">使用方式：在上方「正職出勤與請假」新增或編輯請假／換班時，勾選「這筆紀錄需要補班」並填應補時數。之後從這裡安排補班日期，排班會自動出現在「正職整月排班」。</div>';
 }
 document.addEventListener('click',function(ev){
     var btn=ev.target&&ev.target.closest?ev.target.closest('.qyj-account-action'):null;if(!btn)return;
@@ -30835,16 +30859,125 @@ document.addEventListener('click',function(ev){
 
 var oldToggle=window.toggleFtaFields;if(typeof oldToggle==='function'){window.toggleFtaFields=function(){var r=oldToggle.apply(this,arguments);setTimeout(updateAdminFieldsVisibility,0);return r}}
 var oldEdit=window.editFtAttend;if(typeof oldEdit==='function'){window.editFtAttend=function(i){var r=oldEdit.apply(this,arguments);setTimeout(function(){ensureAdminFields();var rec=ftAttendData&&ftAttendData[i],need=document.getElementById('qyjFtaNeedMakeup'),hrs=document.getElementById('qyjFtaMakeupHours');if(rec&&need){var g=findGroupForRecord(rec,readGroups());need.checked=rec.needMakeup===true||rec.needMakeup==='true'||Number(rec.makeupRequiredHours||0)>0||!!g;if(hrs)hrs.value=Number(rec.makeupRequiredHours||(g&&g.requiredHours)||0)||'';window.qyjToggleAdminMakeupHours()}updateAdminFieldsVisibility()},0);return r}}
-var oldAdd=window.addFtAttend;if(typeof oldAdd==='function'){window.addFtAttend=function(){ensureAdminFields();var staff=document.getElementById('fta_staff')?.value.trim()||'',date=document.getElementById('fta_date')?.value||'',type=document.getElementById('fta_record_type')?.value||'',need=!!document.getElementById('qyjFtaNeedMakeup')?.checked,required=Number(document.getElementById('qyjFtaMakeupHours')?.value||0);if(type==='請假'&&need&&required<=0){alert('已勾選需要補班，請輸入應補時數。');return}var r=oldAdd.apply(this,arguments);setTimeout(function(){var rec=findSavedRecord(staff,date,type);if(rec&&type==='請假'){rec.needMakeup=need;rec.makeupRequiredHours=need?required:0;if(need)ensureGroupForRecord(rec,required);else{removeGroupForRecord(rec);rec.makeupGroupId=''}try{if(typeof saveAll==='function')saveAll()}catch(e){}}syncMakeupSchedulesToScheduleData();ensureAccountPanel();if(document.getElementById('qyjFtaNeedMakeup'))document.getElementById('qyjFtaNeedMakeup').checked=false;if(document.getElementById('qyjFtaMakeupHours'))document.getElementById('qyjFtaMakeupHours').value='';window.qyjToggleAdminMakeupHours()},20);return r}}
+var oldAdd=window.addFtAttend;if(typeof oldAdd==='function'){window.addFtAttend=function(){ensureAdminFields();var staff=document.getElementById('fta_staff')?.value.trim()||'',date=document.getElementById('fta_date')?.value||'',type=document.getElementById('fta_record_type')?.value||'',need=!!document.getElementById('qyjFtaNeedMakeup')?.checked,required=Number(document.getElementById('qyjFtaMakeupHours')?.value||0);if((type==='請假'||type==='換班')&&need&&required<=0){alert('已勾選需要補班，請輸入應補時數。');return}var r=oldAdd.apply(this,arguments);setTimeout(function(){var rec=findSavedRecord(staff,date,type);if(rec&&(type==='請假'||type==='換班')){
+    rec.needMakeup=need;
+    rec.makeupRequiredHours=need?required:0;
+    if(need)ensureGroupForRecord(rec,required);
+    else{removeGroupForRecord(rec);rec.makeupGroupId='';}
+    try{if(typeof saveAll==='function')saveAll()}catch(e){}
+}syncMakeupSchedulesToScheduleData();ensureAccountPanel();if(document.getElementById('qyjFtaNeedMakeup'))document.getElementById('qyjFtaNeedMakeup').checked=false;if(document.getElementById('qyjFtaMakeupHours'))document.getElementById('qyjFtaMakeupHours').value='';window.qyjToggleAdminMakeupHours()},20);return r}}
 var oldDel=window.delFtAttend;if(typeof oldDel==='function'){window.delFtAttend=function(i){var rec=ftAttendData&&ftAttendData[i]?Object.assign({},ftAttendData[i]):null,r=oldDel.apply(this,arguments);setTimeout(function(){if(rec)removeGroupForRecord(rec);syncMakeupSchedulesToScheduleData();ensureAccountPanel()},20);return r}}
 
 var oldSaveMakeup=window.saveQyjMakeupSchedule;if(typeof oldSaveMakeup==='function'){window.saveQyjMakeupSchedule=function(){var r=oldSaveMakeup.apply(this,arguments);setTimeout(function(){syncMakeupSchedulesToScheduleData();ensureAccountPanel();try{if(typeof window.qyjFtRender==='function')window.qyjFtRender()}catch(e){}try{if(typeof pushCloudData==='function')pushCloudData(true).catch(function(){})}catch(e){}},30);return r}}
 var oldDeleteMakeup=window.deleteQyjMakeupSchedule;if(typeof oldDeleteMakeup==='function'){window.deleteQyjMakeupSchedule=function(){var r=oldDeleteMakeup.apply(this,arguments);setTimeout(function(){syncMakeupSchedulesToScheduleData();ensureAccountPanel();try{if(typeof window.qyjFtRender==='function')window.qyjFtRender()}catch(e){}},30);return r}}
 var oldDeleteGroup=window.deleteQyjMakeupGroup;if(typeof oldDeleteGroup==='function'){window.deleteQyjMakeupGroup=function(){var r=oldDeleteGroup.apply(this,arguments);setTimeout(function(){syncMakeupSchedulesToScheduleData();ensureAccountPanel();try{if(typeof window.qyjFtRender==='function')window.qyjFtRender()}catch(e){}},30);return r}}
 
-function init(){ensureAdminFields();updateAdminFieldsVisibility();setTimeout(function(){syncMakeupSchedulesToScheduleData();ensureAccountPanel()},500)}
+
+function qyjInferLegacyMakeupHours(rec){
+    var h=Number(rec&&rec.hours||0);
+    if(h>0)return h;
+
+    var start=String((rec&&rec.time_in)||'').trim();
+    var end=String((rec&&rec.time_out)||'').trim();
+    if(start&&end){
+        var calc=timeHours(start,end);
+        if(calc>0)return calc;
+    }
+
+    // 目前正職標準班 09:00-18:00，扣休息 1 小時 = 8 小時
+    return 8;
+}
+
+function qyjMigrateLegacyShiftMakeup(){
+    var flag='qyj_legacy_shift_makeup_migrated_20261019';
+    if(localStorage.getItem(flag)==='1')return;
+
+    var changed=false;
+    (ftAttendData||[]).forEach(function(rec){
+        if(!rec)return;
+        var rt=String(rec.record_type||'').trim();
+        var reason=String(rec.reason||'').trim();
+
+        // 舊資料中「換班＋出國」視為需要補班
+        if(rt==='換班' && reason.indexOf('出國')>=0){
+            var required=qyjInferLegacyMakeupHours(rec);
+            rec.needMakeup=true;
+            rec.makeupRequiredHours=required;
+            ensureGroupForRecord(rec,required);
+            changed=true;
+        }
+    });
+
+    if(changed){
+        try{if(typeof saveAll==='function')saveAll()}catch(e){}
+        try{if(typeof saveLocalData==='function')saveLocalData()}catch(e){}
+    }
+    localStorage.setItem(flag,'1');
+}
+
+function init(){
+    ensureAdminFields();
+    updateAdminFieldsVisibility();
+    setTimeout(function(){
+        qyjMigrateLegacyShiftMakeup();
+        syncMakeupSchedulesToScheduleData();
+        ensureAccountPanel();
+    },500);
+}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 
+})();
+</script>
+
+<!-- qyjLegacyShiftMakeupMigration20261019 -->
+
+
+<style id="qyjMakeupTrackingMerged20261019">
+#qyjMakeupTrackingPanel{display:none!important;}
+.qyj-makeup-account-summary{grid-template-columns:repeat(5,minmax(130px,1fr))!important;}
+.qyj-makeup-filter{
+    border:1px solid #cbd5e1;
+    background:#fff;
+    color:#475569;
+    border-radius:999px;
+    padding:7px 12px;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+}
+.qyj-makeup-filter.active{
+    background:#2563eb;
+    border-color:#2563eb;
+    color:#fff;
+}
+@media(max-width:1100px){
+    .qyj-makeup-account-summary{grid-template-columns:repeat(2,minmax(140px,1fr))!important;}
+}
+</style>
+
+
+<script id="qyjMakeupTrackingMergedScript20261019">
+(function(){
+document.addEventListener('click',function(ev){
+    var btn=ev.target&&ev.target.closest?ev.target.closest('.qyj-makeup-filter'):null;
+    if(!btn)return;
+
+    var filter=btn.getAttribute('data-filter')||'all';
+    var bar=btn.parentElement;
+    if(bar){
+        bar.querySelectorAll('.qyj-makeup-filter').forEach(function(b){
+            b.classList.toggle('active',b===btn);
+        });
+    }
+
+    var panel=document.getElementById('qyjMakeupAccountPanel');
+    if(!panel)return;
+
+    panel.querySelectorAll('tbody tr[data-makeup-status]').forEach(function(tr){
+        var status=tr.getAttribute('data-makeup-status')||'';
+        tr.style.display=(filter==='all'||status===filter)?'':'none';
+    });
+});
 })();
 </script>
 
