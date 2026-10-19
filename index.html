@@ -29944,12 +29944,14 @@ th.qyj-ft-name{background:#f8fafc!important;z-index:9!important;}
       <div><label>正職人員</label><select id="qyjFtEditStaff"></select></div>
       <div><label>日期</label><input id="qyjFtEditDate" type="date"></div>
       <div><label>班別狀態</label><select id="qyjFtEditShift"><option value="正常上班">正常上班</option><option value="換班">換班</option><option value="補班">補班</option><option value="休">休</option></select></div>
-      <div><label>工作地點</label><select id="qyjFtEditMode"><option value="公司">🏢 公司</option><option value="遠端">💻 遠端</option><option value="外出">🚗 外出</option><option value="其他">📍 其他</option></select></div>
+      <div><label>上午工作地點</label><select id="qyjFtEditMorningMode"><option value="公司">🏢 公司</option><option value="遠端">💻 遠端</option><option value="外出">🚗 外出</option><option value="其他">📍 其他</option></select></div>
+      <div><label>下午工作地點</label><select id="qyjFtEditAfternoonMode"><option value="公司">🏢 公司</option><option value="遠端">💻 遠端</option><option value="外出">🚗 外出</option><option value="其他">📍 其他</option></select></div>
       <div><label>上班時間</label><input id="qyjFtEditStart" type="time" value="09:00"></div>
       <div><label>下班時間</label><input id="qyjFtEditEnd" type="time" value="17:30"></div>
       <div><label>休息開始</label><input id="qyjFtEditBreakStart" type="time" value="12:00"></div>
       <div><label>休息結束</label><input id="qyjFtEditBreakEnd" type="time" value="13:30"></div>
-      <div class="full"><label>工作地點補充</label><input id="qyjFtEditLocation" placeholder="例如：客戶端、台北辦公室"></div>
+      <div><label>上午地點補充</label><input id="qyjFtEditMorningLocation" placeholder="例如：公司、客戶端"></div>
+      <div><label>下午地點補充</label><input id="qyjFtEditAfternoonLocation" placeholder="例如：遠端、台北辦公室"></div>
       <div><label>請假假別</label><select id="qyjFtEditLeaveType"><option value="">無請假</option><option value="特休假">特休假</option><option value="事假">事假</option><option value="病假">病假</option><option value="家庭照顧假">家庭照顧假</option><option value="喪假">喪假</option><option value="其他假">其他假</option></select></div>
       <div><label>請假時段</label><select id="qyjFtEditLeavePeriod" onchange="qyjFtToggleCustomLeave()"><option value="全天">全天</option><option value="上午">上午</option><option value="下午">下午</option><option value="自訂時段">自訂時段</option></select></div>
       <div id="qyjFtLeaveStartWrap" style="display:none"><label>自訂請假開始</label><input id="qyjFtEditLeaveStart" type="time"></div>
@@ -29997,8 +29999,16 @@ th.qyj-ft-name{background:#f8fafc!important;z-index:9!important;}
         </select>
       </div>
 
-      <div><label>工作地點</label>
-        <select id="qyjFtBatchMode">
+      <div><label>上午工作地點</label>
+        <select id="qyjFtBatchMorningMode">
+          <option value="公司">🏢 公司</option>
+          <option value="遠端">💻 遠端</option>
+          <option value="外出">🚗 外出</option>
+          <option value="其他">📍 其他</option>
+        </select>
+      </div>
+      <div><label>下午工作地點</label>
+        <select id="qyjFtBatchAfternoonMode">
           <option value="公司">🏢 公司</option>
           <option value="遠端">💻 遠端</option>
           <option value="外出">🚗 外出</option>
@@ -30078,6 +30088,20 @@ function ym(){var v=E('qyjFtMonthPicker')&&E('qyjFtMonthPicker').value;if(v&&/^\
 function relevantSchedule(staff,date){return (scheduleData||[]).find(function(x){if(!x||String(x.date||'')!==date)return false;var type=x.staffType||'';if(type&&type!=='正職')return false;return splitNames(x.staffs).indexOf(staff)>=0;})||null;}
 function leaveRows(staff,date){return (ftAttendData||[]).filter(function(x){if(!x||String(x.staff||'').trim()!==staff||String(x.date||'')!==date)return false;return String(x.record_type||'').indexOf('請假')>=0||String(x.leave_type||'').trim()!=='';});}
 function swapRows(staff,date){return (ftAttendData||[]).filter(function(x){return x&&String(x.staff||'').trim()===staff&&String(x.date||'')===date&&String(x.record_type||'').indexOf('換班')>=0;});}
+
+function morningMode(s){
+    return (s&&s.morningWorkMode)||workMode(s);
+}
+function afternoonMode(s){
+    return (s&&s.afternoonWorkMode)||workMode(s);
+}
+function morningLocation(s){
+    return (s&&s.morningWorkLocationDetail)||((s&&s.workLocationDetail)||'');
+}
+function afternoonLocation(s){
+    return (s&&s.afternoonWorkLocationDetail)||((s&&s.workLocationDetail)||'');
+}
+
 function workMode(s){if(s&&s.workMode)return s.workMode;var t=String((s&&s.location)||'')+' '+String((s&&s.remark)||'');if(t.indexOf('遠端')>=0)return '遠端';if(t.indexOf('外出')>=0||t.indexOf('客戶端')>=0)return '外出';return '公司';}
 function modeIcon(m){return m==='遠端'?'💻':(m==='外出'?'🚗':(m==='其他'?'📍':'🏢'));}
 function modeClass(m){return m==='遠端'?'remote':((m==='外出'||m==='其他')?'out':'office');}
@@ -30090,11 +30114,20 @@ function cellLines(staff,date){
     }else{
         if(l)lines.push({c:pending?'pending':'leave',t:(pending?'⏳ ':'🌴 ')+(l.leave_type||'請假')+'｜'+lp});
         if(s){
-            var bs=s.breakStart||'12:00',be=s.breakEnd||'13:30',t=modeIcon(workMode(s))+' '+workMode(s);
-            if(l&&lp==='上午')t+='｜'+be+'-'+(s.end||'');
-            else if(l&&lp==='下午')t+='｜'+(s.start||'')+'-'+bs;
-            else t+='｜'+(s.start||'')+'-'+(s.end||'');
-            lines.push({c:modeClass(workMode(s)),t:t});
+            var bs=s.breakStart||'12:00',be=s.breakEnd||'13:30';
+            var mm=morningMode(s),am=afternoonMode(s);
+            if(l&&lp==='上午'){
+                lines.push({c:modeClass(am),t:modeIcon(am)+' '+am+'｜'+be+'-'+(s.end||'')});
+            }else if(l&&lp==='下午'){
+                lines.push({c:modeClass(mm),t:modeIcon(mm)+' '+mm+'｜'+(s.start||'')+'-'+bs});
+            }else{
+                if((s.start||'')&&bs){
+                    lines.push({c:modeClass(mm),t:modeIcon(mm)+' '+mm+'｜'+(s.start||'')+'-'+bs});
+                }
+                if(be&&(s.end||'')){
+                    lines.push({c:modeClass(am),t:modeIcon(am)+' '+am+'｜'+be+'-'+(s.end||'')});
+                }
+            }
         }else if(!l){lines.push({c:'off',t:'休'});}
     }
     if((s&&((String(s.shift||'').indexOf('換班')>=0)||s.isShiftChanged))||sw.length)lines.unshift({c:'swap',t:'🔁 換班'+(s&&s.start&&s.end?'｜'+s.start+'-'+s.end:'')});
@@ -30128,7 +30161,15 @@ function renderStats(y,m,filter){
     ftNames().filter(function(n){return !filter||n.indexOf(filter)>=0;}).forEach(function(n){
         for(var d=1;d<=last;d++){
             var date=dkey(y,m,d),s=relevantSchedule(n,date),l=leaveRows(n,date);
-            if(s){var md=workMode(s);if(md==='遠端')c.remote++;else if(md==='外出'||md==='其他')c.out++;else c.office++;if(String(s.shift||'').indexOf('換班')>=0||s.isShiftChanged)c.swap++;}
+            if(s){
+                var mm=morningMode(s),am=afternoonMode(s);
+                [mm,am].forEach(function(md){
+                    if(md==='遠端')c.remote+=0.5;
+                    else if(md==='外出'||md==='其他')c.out+=0.5;
+                    else c.office+=0.5;
+                });
+                if(String(s.shift||'').indexOf('換班')>=0||s.isShiftChanged)c.swap++;
+            }
             if(l.length)c.leave++;
             if(swapRows(n,date).length)c.swap++;
         }
@@ -30166,9 +30207,12 @@ window.qyjFtOpenEditor=function(staff,date){
     E('qyjFtEditStaff').value=staff;E('qyjFtEditDate').value=date;
     var s=findEditableSchedule(staff,date),lr=leaveRows(staff,date),l=lr.length?lr[0]:null;
     E('qyjFtEditShift').value=s&&((String(s.shift||'').indexOf('補班')>=0)||s.isMakeupWorkDay)?'補班':(s&&((String(s.shift||'').indexOf('換班')>=0)||s.isShiftChanged)?'換班':(s?'正常上班':'休'));
-    E('qyjFtEditMode').value=s?workMode(s):'公司';
+    E('qyjFtEditMorningMode').value=s?morningMode(s):'公司';
+    E('qyjFtEditAfternoonMode').value=s?afternoonMode(s):'公司';
     E('qyjFtEditStart').value=(s&&s.start)||'09:00';E('qyjFtEditEnd').value=(s&&s.end)||'17:30';E('qyjFtEditBreakStart').value=(s&&s.breakStart)||'12:00';E('qyjFtEditBreakEnd').value=(s&&s.breakEnd)||'13:30';
-    E('qyjFtEditLocation').value=(s&&s.workLocationDetail)||'';E('qyjFtEditLeaveType').value=(l&&l.leave_type)||'';
+    E('qyjFtEditMorningLocation').value=s?morningLocation(s):'';
+    E('qyjFtEditAfternoonLocation').value=s?afternoonLocation(s):'';
+    E('qyjFtEditLeaveType').value=(l&&l.leave_type)||'';
     var lp=l?leavePeriod(l):'全天';E('qyjFtEditLeavePeriod').value=['全天','上午','下午','自訂時段'].indexOf(lp)>=0?lp:'自訂時段';
     E('qyjFtEditLeaveStart').value=(l&&(l.leave_start||l.time_in))||'';E('qyjFtEditLeaveEnd').value=(l&&(l.leave_end||l.time_out))||'';E('qyjFtEditRemark').value=(s&&s.remark)||(l&&l.reason)||'';
     E('qyjFtEditSub').textContent=staff+'｜'+date;window.qyjFtToggleCustomLeave();E('qyjFtEditModal').classList.add('show');
@@ -30191,7 +30235,9 @@ window.qyjFtSaveDay=function(){
     removeStaffFromExisting(staff,date);
     if(shift!=='休'){
         var start=E('qyjFtEditStart').value,end=E('qyjFtEditEnd').value,bs=E('qyjFtEditBreakStart').value,be=E('qyjFtEditBreakEnd').value,total=Math.max(0,hours(start,end)-hours(bs,be));
-        scheduleData.push({source:SOURCE,company:'點籽響有限公司',date:date,shift:shift==='換班'?'正職換班':(shift==='補班'?'正職補班':'正職固定班'),start:start,end:end,breakStart:bs,breakEnd:be,hours:total,need:1,staffs:staff,staffType:'正職',service:'行政',status:'已排滿',scheduleStatus:'已排班',location:E('qyjFtEditMode').value,workMode:E('qyjFtEditMode').value,workLocationDetail:E('qyjFtEditLocation').value.trim(),isShiftChanged:shift==='換班',isMakeupWorkDay:shift==='補班',remark:E('qyjFtEditRemark').value.trim(),updatedAt:new Date().toISOString()});
+        var morningModeValue=E('qyjFtEditMorningMode').value;
+        var afternoonModeValue=E('qyjFtEditAfternoonMode').value;
+        scheduleData.push({source:SOURCE,company:'點籽響有限公司',date:date,shift:shift==='換班'?'正職換班':(shift==='補班'?'正職補班':'正職固定班'),start:start,end:end,breakStart:bs,breakEnd:be,hours:total,need:1,staffs:staff,staffType:'正職',service:'行政',status:'已排滿',scheduleStatus:'已排班',location:(morningModeValue===afternoonModeValue?morningModeValue:'混合'),workMode:(morningModeValue===afternoonModeValue?morningModeValue:'混合'),workLocationDetail:'',morningWorkMode:morningModeValue,afternoonWorkMode:afternoonModeValue,morningWorkLocationDetail:E('qyjFtEditMorningLocation').value.trim(),afternoonWorkLocationDetail:E('qyjFtEditAfternoonLocation').value.trim(),isShiftChanged:shift==='換班',isMakeupWorkDay:shift==='補班',remark:E('qyjFtEditRemark').value.trim(),updatedAt:new Date().toISOString()});
     }
     for(var i=ftAttendData.length-1;i>=0;i--){var a=ftAttendData[i];if(a&&a.source===SOURCE&&String(a.staff||'').trim()===staff&&String(a.date||'')===date)ftAttendData.splice(i,1);}
     var leaveType=E('qyjFtEditLeaveType').value;
@@ -30238,7 +30284,7 @@ window.qyjFtOpenBatch=function(){
     E('qyjFtBatchStartDate').value=dkey(v.y,v.m,1);
     E('qyjFtBatchEndDate').value=dkey(v.y,v.m,last);
     E('qyjFtBatchShift').value='正常上班';
-    E('qyjFtBatchMode').value='公司';
+    E('qyjFtBatchMorningMode').value='公司';E('qyjFtBatchAfternoonMode').value='公司';
     E('qyjFtBatchStart').value='09:00';
     E('qyjFtBatchEnd').value='17:30';
     E('qyjFtBatchBreakStart').value='12:00';
@@ -30286,7 +30332,7 @@ window.qyjFtApplyBatch=function(){
     if(startDate>endDate)return alert('結束日期不能早於開始日期');
 
     var shift=E('qyjFtBatchShift').value;
-    var mode=E('qyjFtBatchMode').value;
+    var morningModeValue=E('qyjFtBatchMorningMode').value;var afternoonModeValue=E('qyjFtBatchAfternoonMode').value;
     var start=E('qyjFtBatchStart').value;
     var end=E('qyjFtBatchEnd').value;
     var bs=E('qyjFtBatchBreakStart').value;
@@ -30328,7 +30374,7 @@ window.qyjFtApplyBatch=function(){
                     start:start,end:end,breakStart:bs,breakEnd:be,
                     hours:total,need:1,staffs:staff,staffType:'正職',
                     service:'行政',status:'已排滿',scheduleStatus:'已排班',
-                    location:mode,workMode:mode,workLocationDetail:locationDetail,
+                    location:(morningModeValue===afternoonModeValue?morningModeValue:'混合'),workMode:(morningModeValue===afternoonModeValue?morningModeValue:'混合'),workLocationDetail:locationDetail,morningWorkMode:morningModeValue,afternoonWorkMode:afternoonModeValue,
                     isShiftChanged:shift==='換班',
                     isMakeupWorkDay:shift==='補班',
                     remark:remark,
