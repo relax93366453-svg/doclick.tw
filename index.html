@@ -11601,17 +11601,7 @@ function E(id){return document.getElementById(id)}
 function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
 function pad(v){return String(v).padStart(2,'0')}
 function staffNames(v){if(typeof getScheduleStaffList==='function')return getScheduleStaffList(v||'');return String(v||'').split(/[、,，\n]+/).map(function(x){return x.trim()}).filter(Boolean)}
-function isFulltime(){
-var activeBtn=document.querySelector('#qyjScheduleTypeTabs [data-type="正職"].active');
-if(activeBtn)return true;
-var saved=localStorage.getItem('qyj_schedule_staff_type');
-if(saved==='正職')return true;
-try{
-return typeof window.qyjGetCurrentScheduleStaffType==='function'&&window.qyjGetCurrentScheduleStaffType()==='正職';
-}catch(e){
-return false;
-}
-}
+function isFulltime(){try{return typeof qyjGetCurrentScheduleStaffType==='function'&&qyjGetCurrentScheduleStaffType()==='正職'}catch(e){return localStorage.getItem('qyj_schedule_staff_type')==='正職'}}
 function activeFulltime(){return Array.from(new Set((ftStaffData||[]).filter(function(x){return !x.status||x.status==='在職'}).map(function(x){return x.name||x.staff||''}).filter(Boolean))).sort()}
 function ym(){var y=Number(E('sch_year')&&E('sch_year').value)||new Date().getFullYear();var m=Number(E('sch_month')&&E('sch_month').value)||(new Date().getMonth()+1);return {y:y,m:m}}
 function dkey(y,m,d){return y+'-'+pad(m)+'-'+pad(d)}
