@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>愜易居｜正職整月排班</title>
+<style>
+*{box-sizing:border-box;font-family:"Microsoft JhengHei",Arial,sans-serif}
+body{margin:0;background:#eff6ff;color:#334155}
+.page{max-width:1800px;margin:0 auto;padding:22px}
+.top{background:white;border:1px solid #dbeafe;border-radius:18px;padding:18px 20px;box-shadow:0 8px 24px rgba(15,23,42,.05);margin-bottom:14px}
+.topline{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+h1{font-size:24px;margin:0 0 5px;color:#0f172a}
+.sub{color:#64748b;font-size:13px;font-weight:700}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,.input{border:1px solid #cbd5e1;border-radius:10px;background:white;padding:10px 13px;font-size:13px;font-weight:800}
+button{cursor:pointer}
+.primary{background:#2563eb;color:white;border-color:#2563eb}
+.green{background:#059669;color:white;border-color:#059669}
+.purple{background:#7c3aed;color:white;border-color:#7c3aed}
+.gray{background:#64748b;color:white;border-color:#64748b}
+.orange{background:#ea580c;color:white;border-color:#ea580c}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.tag{padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900;border:1px solid}
+.office{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.remote{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe}
+.out{background:#ffedd5;color:#c2410c;border-color:#fed7aa}
+.leave{background:#fce7f3;color:#9d174d;border-color:#fbcfe8}
+.swap{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe}
+.off{background:#f1f5f9;color:#64748b;border-color:#e2e8f0}
+.warn{background:#fef3c7;color:#92400e;border-color:#fde68a}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.stat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800}
+.panel{background:white;border:1px solid #dbeafe;border-radius:18px;padding:14px;box-shadow:0 8px 24px rgba(15,23,42,.04)}
+.board{overflow:auto;max-height:72vh;border:1px solid #e2e8f0;border-radius:14px}
+table{border-collapse:separate;border-spacing:0;min-width:1550px;width:100%;font-size:11px;background:white}
+th,td{border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;vertical-align:top}
+th{position:sticky;top:0;z-index:5;background:#f8fafc;padding:7px 4px;text-align:center;font-weight:900;color:#475569}
+.name{position:sticky;left:0;z-index:7;min-width:110px;width:110px;background:white!important;padding:10px!important;text-align:left!important;font-weight:900;color:#0f172a}
+th.name{background:#f8fafc!important;z-index:9}
+.day{min-width:94px;width:94px}
+.weekend{background:#fffbeb!important}
+.today{box-shadow:inset 0 0 0 2px #2563eb}
+.cell{min-height:78px;padding:5px;cursor:pointer}
+.cell:hover{background:#f8fbff;box-shadow:inset 0 0 0 2px #93c5fd}
+.line{display:block;border-radius:7px;padding:3px 5px;margin:2px 0;font-size:10px;line-height:1.4;font-weight:900;white-space:normal}
+.empty{padding-top:22px;color:#cbd5e1;text-align:center;font-weight:800}
+.modalbg{display:none;position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:9999;align-items:center;justify-content:center;padding:18px}
+.modalbg.show{display:flex}
+.modal{width:min(760px,96vw);max-height:92vh;overflow:auto;background:white;border-radius:20px;padding:22px;box-shadow:0 30px 90px rgba(15,23,42,.35)}
+.modal.preview{width:min(97vw,1750px);height:min(94vh,980px);display:flex;flex-direction:column}
+.mhead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+.mhead h2{margin:0;font-size:20px;color:#0f172a}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid .full{grid-column:1/-1}
+label{display:block;margin-bottom:5px;font-size:12px;font-weight:900;color:#475569}
+input,select,textarea{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:9px;background:white}
+textarea{min-height:76px;resize:vertical}
+.mact{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px}
+.note{margin-top:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:12px;padding:10px 12px;font-size:12px;font-weight:800;line-height:1.7}
+#previewContent{overflow:auto;min-height:0;flex:1}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.grid .full{grid-column:auto}.page{padding:10px}}
+@media print{
+body>*{display:none!important}
+#previewModal{display:block!important;position:static!important;background:white!important;padding:0!important}
+#previewModal .modal{width:100%!important;height:auto!important;max-height:none!important;box-shadow:none!important;padding:0!important}
+#previewModal .actions,#previewModal .closebtn{display:none!important}
+#previewContent{overflow:visible!important}
+.board{overflow:visible!important;max-height:none!important;border:0!important}
+table{min-width:0!important;font-size:8px!important}
+.name{position:static!important;min-width:70px!important;width:70px!important}
+.day{min-width:0!important;width:auto!important}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <div class="topline">
+      <div>
+        <h1>正職整月排班</h1>
+        <div class="sub">人員 × 日期｜公司 / 遠端 / 外出｜換班 / 補班｜請假與半日出勤一眼看懂</div>
+      </div>
+      <div class="actions">
+        <input class="input" type="month" id="monthPicker">
+        <input class="input" id="staffFilter" placeholder="搜尋正職姓名" style="width:150px">
+        <button class="green" onclick="openEditor()">＋ 新增排班</button>
+        <button class="purple" onclick="openPreview()">整月預覽</button>
+        <button onclick="location.href='index.html'">回主系統</button>
+      </div>
+    </div>
+    <div class="legend">
+      <span class="tag office">🏢 公司</span>
+      <span class="tag remote">💻 遠端</span>
+      <span class="tag out">🚗 外出 / 其他</span>
+      <span class="tag swap">🔁 換班 / 補班</span>
+      <span class="tag leave">🌴 特休 / 事假 / 病假…</span>
+    </div>
+    <div class="note">這是獨立頁面，不修改原本派遣時段排班畫面。資料使用與主系統相同的瀏覽器 localStorage，所以在同一個網址網域下可共用。</div>
+  </div>
+  <div class="panel">
+    <div id="stats" class="stats"></div>
+    <div id="monthBoard"></div>
+  </div>
+</div>
+
+<div class="modalbg" id="editModal">
+  <div class="modal">
+    <div class="mhead">
+      <div><h2>正職排班／當日狀態</h2><div class="sub" id="editSub"></div></div>
+      <button class="gray" onclick="closeEditor()">關閉</button>
+    </div>
+    <div class="grid">
+      <div><label>正職人員</label><select id="eStaff"></select></div>
+      <div><label>日期</label><input id="eDate" type="date"></div>
+      <div><label>班別狀態</label><select id="eShift"><option>正常上班</option><option>換班</option><option>補班</option><option>休</option></select></div>
+      <div><label>工作地點</label><select id="eMode"><option value="公司">🏢 公司</option><option value="遠端">💻 遠端</option><option value="外出">🚗 外出</option><option value="其他">📍 其他</option></select></div>
+      <div><label>上班時間</label><input id="eStart" type="time" value="09:00"></div>
+      <div><label>下班時間</label><input id="eEnd" type="time" value="17:30"></div>
+      <div><label>休息開始</label><input id="eBreakStart" type="time" value="12:00"></div>
+      <div><label>休息結束</label><input id="eBreakEnd" type="time" value="13:30"></div>
+      <div class="full"><label>工作地點補充</label><input id="eLocation" placeholder="例如：客戶端、台北辦公室"></div>
+      <div><label>請假假別</label><select id="eLeaveType"><option value="">無請假</option><option>特休假</option><option>事假</option><option>病假</option><option>家庭照顧假</option><option>喪假</option><option>其他假</option></select></div>
+      <div><label>請假時段</label><select id="eLeavePeriod" onchange="toggleCustomLeave()"><option>全天</option><option>上午</option><option>下午</option><option>自訂時段</option></select></div>
+      <div id="leaveStartWrap" style="display:none"><label>自訂請假開始</label><input id="eLeaveStart" type="time"></div>
+      <div id="leaveEndWrap" style="display:none"><label>自訂請假結束</label><input id="eLeaveEnd" type="time"></div>
+      <div class="full"><label>備註／換班原因</label><textarea id="eRemark"></textarea></div>
+    </div>
+    <div class="mact">
+      <button class="orange" onclick="deleteDay()">刪除當日排班</button>
+      <button class="primary" onclick="saveDay()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<div class="modalbg" id="previewModal">
+  <div class="modal preview">
+    <div class="mhead">
+      <div><h2 id="previewTitle">正職整月預覽</h2><div class="sub">老闆快速查看：工作地點、換班、請假與半日出勤</div></div>
+      <div class="actions">
+        <button onclick="movePreview(-1)">上一月</button>
+        <button onclick="previewToday()">本月</button>
+        <button onclick="movePreview(1)">下一月</button>
+        <button class="primary" onclick="window.print()">列印 / PDF</button>
+        <button class="gray closebtn" onclick="closePreview()">關閉</button>
+      </div>
+    </div>
+    <div id="previewContent"></div>
+  </div>
+</div>
+
+<script>
+const SOURCE='正職整月排班';
+let pYear=null,pMonth=null;
+
+function read(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(e){return []}}
+function write(key,val){localStorage.setItem(key,JSON.stringify(val))}
+function pad(v){return String(v).padStart(2,'0')}
+function dkey(y,m,d){return y+'-'+pad(m)+'-'+pad(d)}
+function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
+function splitNames(v){return String(v||'').split(/[、,，\n]+/).map(s=>s.trim()).filter(Boolean)}
+function ftNames(){
+  return [...new Set(read('ftStaffData').filter(x=>!x.status||x.status==='在職').map(x=>x.name||x.staff||'').filter(Boolean))].sort()
+}
+function ym(){
+  const v=document.getElementById('monthPicker').value;
+  const p=v.split('-');
+  return p.length===2?{y:+p[0],m:+p[1]}:{y:new Date().getFullYear(),m:new Date().getMonth()+1}
+}
+function schedules(){return read('scheduleData')}
+function attends(){return read('ftAttendData')}
+function ownSchedule(staff,date){
+  return schedules().find(x=>x&&x.source===SOURCE&&x.staffType==='正職'&&x.date===date&&splitNames(x.staffs).includes(staff))
+}
+function anySchedule(staff,date){
+  const own=ownSchedule(staff,date); if(own)return own;
+  return schedules().find(x=>x&&x.date===date&&(x.staffType==='正職'||!x.staffType)&&splitNames(x.staffs).includes(staff))
+}
+function leaveRow(staff,date){
+  return attends().find(x=>x&&x.staff===staff&&x.date===date&&((x.record_type||'').includes('請假')||x.leave_type))
+}
+function swapRow(staff,date){
+  return attends().find(x=>x&&x.staff===staff&&x.date===date&&(x.record_type||'').includes('換班'))
+}
+function mode(s){
+  if(s?.workMode)return s.workMode;
+  const t=(s?.location||'')+' '+(s?.remark||'');
+  if(t.includes('遠端'))return '遠端';
+  if(t.includes('外出')||t.includes('客戶端'))return '外出';
+  return '公司'
+}
+function mclass(m){return m==='遠端'?'remote':(m==='外出'||m==='其他'?'out':'office')}
+function micon(m){return m==='遠端'?'💻':(m==='外出'?'🚗':(m==='其他'?'📍':'🏢'))}
+function leavePeriod(l){
+  if(l?.leave_period)return l.leave_period;
+  const r=String(l?.reason||'');
+  if(r.includes('上午'))return '上午';
+  if(r.includes('下午'))return '下午';
+  if(l?.time_in&&l?.time_out)return l.time_in+'-'+l.time_out;
+  return Number(l?.hours)>0&&Number(l.hours)<=4.5?'半天':'全天'
+}
+function cellLines(staff,date){
+  const s=anySchedule(staff,date), l=leaveRow(staff,date), sw=swapRow(staff,date);
+  let lines=[];
+  const lp=l?leavePeriod(l):'';
+  if(l&&lp==='全天'){
+    lines.push({c:'leave',t:'🌴 '+(l.leave_type||'請假')+'｜全天'});
+  }else{
+    if(l)lines.push({c:'leave',t:'🌴 '+(l.leave_type||'請假')+'｜'+lp});
+    if(s){
+      let t=micon(mode(s))+' '+mode(s);
+      const bs=s.breakStart||'12:00',be=s.breakEnd||'13:30';
+      if(l&&lp==='上午')t+='｜'+be+'-'+(s.end||'');
+      else if(l&&lp==='下午')t+='｜'+(s.start||'')+'-'+bs;
+      else t+='｜'+(s.start||'')+'-'+(s.end||'');
+      lines.push({c:mclass(mode(s)),t});
+    }else if(!l) lines.push({c:'off',t:'休'})
+  }
+  if(s&&((s.shift||'').includes('換班')||s.isShiftChanged)||sw){
+    const st=s&&s.start&&s.end?'｜'+s.start+'-'+s.end:'';
+    lines.unshift({c:'swap',t:'🔁 換班'+st})
+  }
+  if(s&&((s.shift||'').includes('補班')||s.isMakeupWorkDay)){
+    lines.unshift({c:'swap',t:'🗓 補班'+(s.start&&s.end?'｜'+s.start+'-'+s.end:'')})
+  }
+  return lines
+}
+function renderInto(id,y,m,filter='',readonly=false){
+  const people=ftNames().filter(n=>!filter||n.includes(filter));
+  const last=new Date(y,m,0).getDate(), week=['日','一','二','三','四','五','六'];
+  const today=new Date(), tk=dkey(today.getFullYear(),today.getMonth()+1,today.getDate());
+  let h='<div class="board"><table><thead><tr><th class="name">正職人員</th>';
+  for(let d=1;d<=last;d++){
+    const dt=new Date(y,m-1,d),w=dt.getDay(),dk=dkey(y,m,d);
+    h+='<th class="day '+((w===0||w===6)?'weekend ':'')+(dk===tk?'today':'')+'"><div>'+d+'</div><div>週'+week[w]+'</div></th>'
+  }
+  h+='</tr></thead><tbody>';
+  for(const staff of people){
+    h+='<tr><td class="name">'+esc(staff)+'</td>';
+    for(let d=1;d<=last;d++){
+      const date=dkey(y,m,d),w=new Date(y,m-1,d).getDay(),lines=cellLines(staff,date);
+      h+='<td class="day '+((w===0||w===6)?'weekend':'')+'"><div class="cell" '+(readonly?'':'onclick="openEditor(\''+esc(staff)+'\',\''+date+'\')"')+'>';
+      h+=lines.length?lines.map(x=>'<span class="line '+x.c+'">'+esc(x.t)+'</span>').join(''):'<div class="empty">＋</div>';
+      h+='</div></td>'
+    }
+    h+='</tr>'
+  }
+  if(!people.length)h+='<tr><td colspan="'+(last+1)+'" style="padding:30px;text-align:center;color:#64748b">目前沒有符合條件的正職人員</td></tr>';
+  h+='</tbody></table></div>';
+  document.getElementById(id).innerHTML=h
+}
+function render(){
+  const v=ym(),filter=document.getElementById('staffFilter').value.trim();
+  renderInto('monthBoard',v.y,v.m,filter,false);
+  let c={office:0,remote:0,out:0,leave:0,swap:0};
+  const last=new Date(v.y,v.m,0).getDate();
+  for(const n of ftNames().filter(x=>!filter||x.includes(filter))){
+    for(let d=1;d<=last;d++){
+      const date=dkey(v.y,v.m,d),s=anySchedule(n,date),l=leaveRow(n,date);
+      if(s){const md=mode(s);if(md==='遠端')c.remote++;else if(md==='外出'||md==='其他')c.out++;else c.office++;if((s.shift||'').includes('換班')||s.isShiftChanged)c.swap++}
+      if(l)c.leave++;
+      if(swapRow(n,date))c.swap++
+    }
+  }
+  document.getElementById('stats').innerHTML='<span class="stat">🏢 公司 '+c.office+' 人次</span><span class="stat">💻 遠端 '+c.remote+' 人次</span><span class="stat">🚗 外出 '+c.out+' 人次</span><span class="stat">🌴 請假 '+c.leave+' 人次</span><span class="stat">🔁 換班 '+c.swap+' 人次</span>'
+}
+function openEditor(staff,date){
+  const people=ftNames(),v=ym();
+  staff=staff||people[0]||''; date=date||dkey(v.y,v.m,Math.min(new Date().getDate(),new Date(v.y,v.m,0).getDate()));
+  eStaff.innerHTML=people.map(n=>'<option value="'+esc(n)+'">'+esc(n)+'</option>').join('');eStaff.value=staff;eDate.value=date;
+  const s=ownSchedule(staff,date)||anySchedule(staff,date),l=leaveRow(staff,date);
+  eShift.value=s&&((s.shift||'').includes('補班')||s.isMakeupWorkDay)?'補班':s&&((s.shift||'').includes('換班')||s.isShiftChanged)?'換班':s?'正常上班':'休';
+  eMode.value=s?mode(s):'公司';eStart.value=s?.start||'09:00';eEnd.value=s?.end||'17:30';eBreakStart.value=s?.breakStart||'12:00';eBreakEnd.value=s?.breakEnd||'13:30';eLocation.value=s?.workLocationDetail||'';eLeaveType.value=l?.leave_type||'';eLeavePeriod.value=l?.leave_period||'全天';eLeaveStart.value=l?.leave_start||'';eLeaveEnd.value=l?.leave_end||'';eRemark.value=s?.remark||l?.reason||'';editSub.textContent=staff+'｜'+date;toggleCustomLeave();editModal.classList.add('show')
+}
+function closeEditor(){editModal.classList.remove('show')}
+function toggleCustomLeave(){const show=eLeavePeriod.value==='自訂時段';leaveStartWrap.style.display=show?'block':'none';leaveEndWrap.style.display=show?'block':'none'}
+function calcHours(a,b){if(!a||!b)return 0;const f=t=>{const p=t.split(':');return +p[0]*60 + +p[1]};let n=f(b)-f(a);if(n<0)n+=1440;return n/60}
+function saveDay(){
+  const staff=eStaff.value,date=eDate.value,shift=eShift.value;
+  if(!staff||!date)return alert('請選擇人員與日期');
+  let sd=schedules();sd=sd.filter(x=>!(x&&x.source===SOURCE&&x.date===date&&splitNames(x.staffs).includes(staff)));
+  if(shift!=='休'){
+    const hours=Math.max(0,calcHours(eStart.value,eEnd.value)-calcHours(eBreakStart.value,eBreakEnd.value));
+    sd.push({source:SOURCE,company:'點籽響有限公司',date,shift:shift==='換班'?'正職換班':shift==='補班'?'正職補班':'正職固定班',start:eStart.value,end:eEnd.value,breakStart:eBreakStart.value,breakEnd:eBreakEnd.value,hours,need:1,staffs:staff,staffType:'正職',service:'行政',status:'已排滿',scheduleStatus:'已排班',location:eMode.value,workMode:eMode.value,workLocationDetail:eLocation.value.trim(),isShiftChanged:shift==='換班',isMakeupWorkDay:shift==='補班',remark:eRemark.value.trim(),updatedAt:new Date().toISOString()})
+  }
+  write('scheduleData',sd);
+  let fa=attends();fa=fa.filter(x=>!(x&&x.source===SOURCE&&x.staff===staff&&x.date===date));
+  if(eLeaveType.value){
+    let tin='',tout='',hours=0;
+    if(eLeavePeriod.value==='上午'){tin=eStart.value;tout=eBreakStart.value;hours=calcHours(tin,tout)}
+    else if(eLeavePeriod.value==='下午'){tin=eBreakEnd.value;tout=eEnd.value;hours=calcHours(tin,tout)}
+    else if(eLeavePeriod.value==='自訂時段'){tin=eLeaveStart.value;tout=eLeaveEnd.value;hours=calcHours(tin,tout)}
+    else hours=Math.max(0,calcHours(eStart.value,eEnd.value)-calcHours(eBreakStart.value,eBreakEnd.value));
+    fa.push({source:SOURCE,staff,date,record_type:'請假',reason:eRemark.value.trim(),time_in:tin,time_out:tout,hours,leave_type:eLeaveType.value,leave_period:eLeavePeriod.value,leave_start:eLeaveStart.value,leave_end:eLeaveEnd.value,approval:'已核准',updatedAt:new Date().toISOString()})
+  }
+  write('ftAttendData',fa);closeEditor();render();alert('已儲存到此瀏覽器。回主系統後可再按「同步雲端」。')
+}
+function deleteDay(){
+  const staff=eStaff.value,date=eDate.value;if(!confirm('確定刪除 '+staff+' '+date+' 的正職整月排班資料？'))return;
+  write('scheduleData',schedules().filter(x=>!(x&&x.source===SOURCE&&x.date===date&&splitNames(x.staffs).includes(staff))));
+  write('ftAttendData',attends().filter(x=>!(x&&x.source===SOURCE&&x.staff===staff&&x.date===date)));
+  closeEditor();render()
+}
+function openPreview(){const v=ym();pYear=v.y;pMonth=v.m;renderPreview();previewModal.classList.add('show')}
+function closePreview(){previewModal.classList.remove('show')}
+function renderPreview(){previewTitle.textContent=pYear+' 年 '+pMonth+' 月｜正職整月預覽';renderInto('previewContent',pYear,pMonth,'',true)}
+function movePreview(n){pMonth+=n;if(pMonth<1){pMonth=12;pYear--}if(pMonth>12){pMonth=1;pYear++}renderPreview()}
+function previewToday(){const d=new Date();pYear=d.getFullYear();pMonth=d.getMonth()+1;renderPreview()}
+
+(function(){
+  const d=new Date();monthPicker.value=d.getFullYear()+'-'+pad(d.getMonth()+1);
+  monthPicker.addEventListener('change',render);staffFilter.addEventListener('input',render);
+  render()
+})();
+</script>
+</body>
+</html>
