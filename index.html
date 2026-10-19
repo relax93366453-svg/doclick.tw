@@ -1700,7 +1700,8 @@
                             <div class="qyj-ft-actions">
                                 <input type="month" id="qyjFtMonthPicker">
                                 <input type="text" id="qyjFtStaffFilter" placeholder="搜尋正職姓名">
-                                <button class="btn btn-success" type="button" onclick="qyjFtOpenEditor()"><i class="fas fa-plus"></i> 新增排班</button>
+                                <button class="btn btn-success" type="button" onclick="qyjFtOpenEditor()"><i class="fas fa-plus"></i> 單日排班</button>
+                                <button class="btn" type="button" style="background:#0f766e;" onclick="qyjFtOpenBatch()"><i class="fas fa-bolt"></i> 批次排班</button>
                                 <button class="btn" type="button" style="background:#7c3aed;" onclick="qyjFtOpenPreview()"><i class="fas fa-expand"></i> 整月預覽</button>
                                 <button class="switch-role-btn" type="button" onclick="manualCloudSync()"><i class="fas fa-cloud-upload-alt"></i> 同步雲端</button>
                             </div>
@@ -29926,7 +29927,11 @@ th.qyj-ft-name{background:#f8fafc!important;z-index:9!important;}
 .qyj-ft-form textarea{min-height:78px;resize:vertical;}
 .qyj-ft-modal-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px;}
 #qyjFtPreviewContent{overflow:auto;min-height:0;flex:1;}
-@media(max-width:800px){.qyj-ft-form{grid-template-columns:1fr}.qyj-ft-form .full{grid-column:auto}}
+@media(max-width:800px){
+.qyj-ft-form{grid-template-columns:1fr}
+.qyj-ft-form .full{grid-column:auto}
+#qyjFtBatchStaffList{grid-template-columns:1fr!important}
+}
 </style>
 
 <div class="qyj-ft-modal-bg" id="qyjFtEditModal">
@@ -29954,6 +29959,88 @@ th.qyj-ft-name{background:#f8fafc!important;z-index:9!important;}
     <div class="qyj-ft-modal-actions">
       <button class="btn btn-pdf" type="button" onclick="qyjFtDeleteDay()"><i class="fas fa-trash"></i> 刪除當日排班</button>
       <button class="btn btn-success" type="button" onclick="qyjFtSaveDay()"><i class="fas fa-save"></i> 儲存</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="qyj-ft-modal-bg" id="qyjFtBatchModal">
+  <div class="qyj-ft-modal">
+    <div class="qyj-ft-modal-head">
+      <div>
+        <h3>⚡ 正職批次排班</h3>
+        <div style="font-size:12px;color:#64748b;font-weight:800;">一次選多人、日期範圍與班別，不用再一格一格輸入</div>
+      </div>
+      <button class="switch-role-btn" type="button" onclick="qyjFtCloseBatch()">關閉</button>
+    </div>
+
+    <div class="qyj-ft-form">
+      <div class="full">
+        <label style="display:flex;justify-content:space-between;align-items:center;">
+          <span>選擇正職人員</span>
+          <span>
+            <button type="button" class="switch-role-btn" style="padding:5px 9px;" onclick="qyjFtBatchSelectAll(true)">全選</button>
+            <button type="button" class="switch-role-btn" style="padding:5px 9px;" onclick="qyjFtBatchSelectAll(false)">取消全選</button>
+          </span>
+        </label>
+        <div id="qyjFtBatchStaffList" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;border:1px solid #dbe7f5;background:#f8fafc;border-radius:10px;padding:10px;"></div>
+      </div>
+
+      <div><label>開始日期</label><input id="qyjFtBatchStartDate" type="date"></div>
+      <div><label>結束日期</label><input id="qyjFtBatchEndDate" type="date"></div>
+
+      <div><label>班別狀態</label>
+        <select id="qyjFtBatchShift">
+          <option value="正常上班">正常上班</option>
+          <option value="補班">補班</option>
+          <option value="換班">換班</option>
+        </select>
+      </div>
+
+      <div><label>工作地點</label>
+        <select id="qyjFtBatchMode">
+          <option value="公司">🏢 公司</option>
+          <option value="遠端">💻 遠端</option>
+          <option value="外出">🚗 外出</option>
+          <option value="其他">📍 其他</option>
+        </select>
+      </div>
+
+      <div><label>上班時間</label><input id="qyjFtBatchStart" type="time" value="09:00"></div>
+      <div><label>下班時間</label><input id="qyjFtBatchEnd" type="time" value="17:30"></div>
+
+      <div><label>休息開始</label><input id="qyjFtBatchBreakStart" type="time" value="12:00"></div>
+      <div><label>休息結束</label><input id="qyjFtBatchBreakEnd" type="time" value="13:30"></div>
+
+      <div class="full"><label>工作地點補充</label><input id="qyjFtBatchLocation" placeholder="例如：客戶端、台北辦公室"></div>
+
+      <div class="full" style="display:flex;gap:14px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:6px;margin:0;">
+          <input id="qyjFtBatchSkipWeekend" type="checkbox" checked style="width:auto;"> 六、日不排班
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;">
+          <input id="qyjFtBatchOverwrite" type="checkbox" style="width:auto;"> 覆蓋已存在班表
+        </label>
+      </div>
+
+      <div class="full">
+        <label>排除日期（選填）</label>
+        <textarea id="qyjFtBatchExcludeDates" placeholder="例如：2026-10-10、2026-10-25，每個日期可用逗號或換行分隔"></textarea>
+      </div>
+
+      <div class="full">
+        <label>備註</label>
+        <textarea id="qyjFtBatchRemark" placeholder="例如：10月固定班表"></textarea>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:#ecfdf5;color:#047857;font-size:12px;font-weight:800;line-height:1.7;">
+      建議流程：先用批次排班產生整月，再針對個別「特休、病假、遠端、換班」點日期格單獨修改
+    </div>
+
+    <div class="qyj-ft-modal-actions">
+      <button class="switch-role-btn" type="button" onclick="qyjFtCloseBatch()">取消</button>
+      <button class="btn btn-success" type="button" onclick="qyjFtApplyBatch()"><i class="fas fa-bolt"></i> 一鍵產生批次班表</button>
     </div>
   </div>
 </div>
@@ -30136,6 +30223,137 @@ window.qyjFtClosePreview=function(){E('qyjFtPreviewModal').classList.remove('sho
 window.qyjFtRenderPreview=function(){E('qyjFtPreviewTitle').textContent=pYear+' 年 '+pMonth+' 月｜正職整月預覽';renderInto(E('qyjFtPreviewContent'),pYear,pMonth,'',true);};
 window.qyjFtPreviewMove=function(n){pMonth+=n;if(pMonth<1){pMonth=12;pYear--;}if(pMonth>12){pMonth=1;pYear++;}window.qyjFtRenderPreview();};
 window.qyjFtPreviewToday=function(){var d=new Date();pYear=d.getFullYear();pMonth=d.getMonth()+1;window.qyjFtRenderPreview();};
+
+
+window.qyjFtOpenBatch=function(){
+    var people=ftNames();
+    var box=E('qyjFtBatchStaffList');
+    box.innerHTML=people.map(function(n){
+        return '<label style="display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #dbe7f5;border-radius:8px;padding:8px 10px;margin:0;">'+
+               '<input type="checkbox" class="qyj-ft-batch-staff" value="'+esc(n)+'" style="width:auto;">'+
+               '<span style="font-weight:800;color:#334155;">'+esc(n)+'</span></label>';
+    }).join('');
+
+    var v=ym(),last=new Date(v.y,v.m,0).getDate();
+    E('qyjFtBatchStartDate').value=dkey(v.y,v.m,1);
+    E('qyjFtBatchEndDate').value=dkey(v.y,v.m,last);
+    E('qyjFtBatchShift').value='正常上班';
+    E('qyjFtBatchMode').value='公司';
+    E('qyjFtBatchStart').value='09:00';
+    E('qyjFtBatchEnd').value='17:30';
+    E('qyjFtBatchBreakStart').value='12:00';
+    E('qyjFtBatchBreakEnd').value='13:30';
+    E('qyjFtBatchLocation').value='';
+    E('qyjFtBatchRemark').value='';
+    E('qyjFtBatchExcludeDates').value='';
+    E('qyjFtBatchSkipWeekend').checked=true;
+    E('qyjFtBatchOverwrite').checked=false;
+
+    E('qyjFtBatchModal').classList.add('show');
+};
+
+window.qyjFtCloseBatch=function(){
+    E('qyjFtBatchModal').classList.remove('show');
+};
+
+window.qyjFtBatchSelectAll=function(flag){
+    document.querySelectorAll('.qyj-ft-batch-staff').forEach(function(cb){cb.checked=!!flag;});
+};
+
+function qyjFtBatchSelectedStaff(){
+    return Array.from(document.querySelectorAll('.qyj-ft-batch-staff:checked')).map(function(cb){return cb.value;});
+}
+
+function qyjFtParseExcludeDates(raw){
+    return new Set(String(raw||'').split(/[\s,，、;；]+/).map(function(x){return x.trim();}).filter(Boolean));
+}
+
+function qyjFtHasSchedule(staff,date){
+    return (scheduleData||[]).some(function(x){
+        if(!x||String(x.date||'')!==date)return false;
+        if(x.staffType&&x.staffType!=='正職')return false;
+        return splitNames(x.staffs).indexOf(staff)>=0;
+    });
+}
+
+window.qyjFtApplyBatch=function(){
+    var staffList=qyjFtBatchSelectedStaff();
+    if(!staffList.length)return alert('請至少選擇一位正職人員');
+
+    var startDate=E('qyjFtBatchStartDate').value;
+    var endDate=E('qyjFtBatchEndDate').value;
+    if(!startDate||!endDate)return alert('請選擇開始與結束日期');
+    if(startDate>endDate)return alert('結束日期不能早於開始日期');
+
+    var shift=E('qyjFtBatchShift').value;
+    var mode=E('qyjFtBatchMode').value;
+    var start=E('qyjFtBatchStart').value;
+    var end=E('qyjFtBatchEnd').value;
+    var bs=E('qyjFtBatchBreakStart').value;
+    var be=E('qyjFtBatchBreakEnd').value;
+    var skipWeekend=E('qyjFtBatchSkipWeekend').checked;
+    var overwrite=E('qyjFtBatchOverwrite').checked;
+    var excludes=qyjFtParseExcludeDates(E('qyjFtBatchExcludeDates').value);
+    var locationDetail=E('qyjFtBatchLocation').value.trim();
+    var remark=E('qyjFtBatchRemark').value.trim();
+    var total=Math.max(0,hours(start,end)-hours(bs,be));
+
+    var cur=new Date(startDate+'T00:00:00');
+    var last=new Date(endDate+'T00:00:00');
+    var created=0,skipped=0;
+
+    while(cur<=last){
+        var y=cur.getFullYear(),m=cur.getMonth()+1,d=cur.getDate();
+        var date=dkey(y,m,d);
+        var day=cur.getDay();
+
+        if(excludes.has(date) || (skipWeekend&&(day===0||day===6))){
+            skipped+=staffList.length;
+        }else{
+            staffList.forEach(function(staff){
+                var exists=qyjFtHasSchedule(staff,date);
+                if(exists&&!overwrite){
+                    skipped++;
+                    return;
+                }
+                if(exists&&overwrite){
+                    removeStaffFromExisting(staff,date);
+                }
+
+                scheduleData.push({
+                    source:SOURCE,
+                    company:'點籽響有限公司',
+                    date:date,
+                    shift:shift==='換班'?'正職換班':(shift==='補班'?'正職補班':'正職固定班'),
+                    start:start,end:end,breakStart:bs,breakEnd:be,
+                    hours:total,need:1,staffs:staff,staffType:'正職',
+                    service:'行政',status:'已排滿',scheduleStatus:'已排班',
+                    location:mode,workMode:mode,workLocationDetail:locationDetail,
+                    isShiftChanged:shift==='換班',
+                    isMakeupWorkDay:shift==='補班',
+                    remark:remark,
+                    updatedAt:new Date().toISOString()
+                });
+                created++;
+            });
+        }
+        cur.setDate(cur.getDate()+1);
+    }
+
+    try{if(typeof saveLocalData==='function')saveLocalData();}catch(e){}
+    try{if(typeof pushCloudData==='function')pushCloudData(true).catch(function(){});}catch(e){}
+
+    window.qyjFtCloseBatch();
+    window.qyjFtRender();
+
+    var msg='✅ 批次排班完成：新增 '+created+' 筆';
+    if(skipped)msg+='，略過 '+skipped+' 筆';
+    try{
+        if(typeof showToast==='function')showToast(msg);
+        else alert(msg);
+    }catch(e){alert(msg);}
+};
+
 
 function init(){
     var d=new Date(),picker=E('qyjFtMonthPicker');if(picker&&!picker.value)picker.value=d.getFullYear()+'-'+pad(d.getMonth()+1);
