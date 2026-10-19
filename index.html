@@ -1313,8 +1313,24 @@
                                 <li><a onclick="qyjOpenCompanyScheduleView('fulltime')"><i class="fas fa-user-tie"></i> 正職排班</a></li>
                             </ul>
                         </li>
-                        <li><a onclick="openScheduleChangesPage()"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</a></li>
-                        <li><a onclick="showAdminPage('clock_overview')"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</a></li>
+                        <li class="hr-subgroup" data-hr-subgroup="schedule_changes">
+                            <button type="button" class="hr-sub-title" onclick="toggleHrSubGroup('schedule_changes')">
+                                <span class="left"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</span><i class="fas fa-chevron-right chev"></i>
+                            </button>
+                            <ul class="hr-submenu-2">
+                                <li><a onclick="openScheduleChangesPage('parttime')"><i class="fas fa-user-clock"></i> 兼職排班異動</a></li>
+                                <li><a onclick="openScheduleChangesPage('fulltime')"><i class="fas fa-user-tie"></i> 正職排班異動</a></li>
+                            </ul>
+                        </li>
+                        <li class="hr-subgroup" data-hr-subgroup="clock_overview">
+                            <button type="button" class="hr-sub-title" onclick="toggleHrSubGroup('clock_overview')">
+                                <span class="left"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</span><i class="fas fa-chevron-right chev"></i>
+                            </button>
+                            <ul class="hr-submenu-2">
+                                <li><a onclick="qyjOpenClockOverview('parttime')"><i class="fas fa-user-clock"></i> 兼職打卡總覽</a></li>
+                                <li><a onclick="qyjOpenClockOverview('fulltime')"><i class="fas fa-user-tie"></i> 正職打卡總覽</a></li>
+                            </ul>
+                        </li>
                     </ul>
                 </li>
 
@@ -1760,7 +1776,7 @@
             </div>
 
             <div class="page" id="page-schedule_changes">
-                <div class="page-title"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</div>
+                <div class="page-title" id="schedule_change_page_title"><i class="fas fa-clipboard-list"></i> 兼職排班異動紀錄</div>
                 <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 16px;color:#1e40af;font-weight:800;line-height:1.8;margin-bottom:14px;">
                     用來分清楚排班異動責任歸屬：員工請假 / 未到會影響考核；客戶取消、主管調班、排錯班不會影響員工考核。此資料會保留在原排班資料內，不會破壞原本排班與打卡流程。
                 </div>
@@ -2452,7 +2468,7 @@
 嚴禁直接與業主方聯繫，所有事項均須透過窗口統一處理。</textarea></div><div><label>規範二內文</label><textarea id="conf_r2_content" style="height:80px;width:100%;padding:5px;"><li>嚴禁與業主或環境人員發生言語或肢體衝突。</li></textarea></div><div><label>按鈕一(標/副/網址)</label><input id="conf_l1_title" value="官方平台"><input id="conf_l1_desc" value="點擊前往"><input id="conf_l1_url" value="https://google.com"></div><div><label>按鈕二(標/副/網址)</label><input id="conf_l2_title" value="官方 IG"><input id="conf_l2_desc" value="追蹤資訊"><input id="conf_l2_url" value="https://instagram.com"></div></div><button class="btn btn-success" onclick="savePortalConfig()" style="margin-top:10px;"><i class="fas fa-cloud-upload-alt"></i> 同步前台設定</button></div><label style="font-weight:bold; display:block; margin-top:20px;">💰 價目表 JSON</label><textarea id="config_price_table" style="width:100%; height:80px; padding:15px; border:1px solid #cbd5e1; border-radius:8px;"></textarea><br><button class="btn btn-success" onclick="savePriceConfig()"><i class="fas fa-cloud-upload-alt"></i> 同步價目</button></div></div>
 
 <div class="page" id="page-clock_overview">
-                <div class="page-title"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</div>
+                <div class="page-title" id="clock_overview_title"><i class="fas fa-users-viewfinder"></i> 兼職打卡總覽</div>
                 <div class="filter-bar">
                     <label>日期：</label><input type="date" id="clock_overview_date" onchange="renderClockOverview()">
                     <label>公司：</label><input list="list_cust" id="clock_overview_company" placeholder="全部公司 / 手打搜尋" oninput="renderClockOverview()">
@@ -4039,6 +4055,37 @@ function initScheduleChangeFilters(){
         mSel.value = getScheduleMonth ? getScheduleMonth() : now.getMonth()+1;
     }
 }
+
+window.qyjScheduleChangeMode = window.qyjScheduleChangeMode ||
+    (localStorage.getItem('qyj_schedule_change_mode') === 'fulltime' ? 'fulltime' : 'parttime');
+
+function qyjScheduleChangeStaffType(d){
+    if(!d) return 'parttime';
+
+    const explicit=String(d.staffType||'').trim();
+    if(explicit==='正職') return 'fulltime';
+    if(explicit==='派遣'||explicit==='兼職') return 'parttime';
+
+    const source=String(d.source||'');
+    if(source.includes('正職') || source.includes('補班追蹤')) return 'fulltime';
+
+    const names=String(d.staffs||d.staff||'')
+        .split(/[、,，\n]+/)
+        .map(x=>String(x||'').replace(/\s+/g,'').trim())
+        .filter(Boolean);
+
+    if(names.length){
+        const ftNamesSet=new Set((ftStaffData||[])
+            .filter(x=>!x.status||x.status==='在職')
+            .map(x=>String(x.name||x.staff||'').replace(/\s+/g,'').trim())
+            .filter(Boolean));
+
+        if(names.some(n=>ftNamesSet.has(n))) return 'fulltime';
+    }
+
+    return 'parttime';
+}
+
 function getScheduleChangeFilteredList(){
     initScheduleChangeFilters();
     const y = el('sch_change_year') ? Number(el('sch_change_year').value) : (getScheduleYear ? getScheduleYear() : new Date().getFullYear());
@@ -4061,6 +4108,10 @@ function getScheduleChangeFilteredList(){
             if(company && !String(d.company || '').includes(company)) return false;
             if(staff && !String(d.staffs || d.staff || '').includes(staff)) return false;
             if(status && status !== 'all' && String(d.scheduleStatus || '已排班') !== status) return false;
+
+            const mode=window.qyjScheduleChangeMode||'parttime';
+            if(qyjScheduleChangeStaffType(d)!==mode) return false;
+
             return true; // 作廢也要保留在異動紀錄，方便補原因與責任歸屬
         })
         .sort((a,b)=>
@@ -4072,6 +4123,13 @@ function getScheduleChangeFilteredList(){
 }
 function renderScheduleChangePage(){
     initScheduleChangeFilters();
+
+    const title=el('schedule_change_page_title');
+    if(title){
+        title.innerHTML = (window.qyjScheduleChangeMode||'parttime') === 'fulltime'
+            ? '<i class="fas fa-user-tie"></i> 正職排班異動紀錄'
+            : '<i class="fas fa-user-clock"></i> 兼職排班異動紀錄';
+    }
     const tbody = el('scheduleChangeTable');
     if(!tbody) return;
     const list = getScheduleChangeFilteredList();
@@ -7045,20 +7103,62 @@ function clearClockOverviewFilters(){
     if(el('clock_overview_staff')) el('clock_overview_staff').value='';
     renderClockOverview();
 }
+function qyjClockOverviewTypeForStaff(name,schedule){
+    if(schedule && schedule.staffType){
+        const t=String(schedule.staffType);
+        if(t==='正職') return 'fulltime';
+        if(t==='派遣'||t==='兼職') return 'parttime';
+    }
+
+    const target=String(name||'').replace(/\s+/g,'').trim();
+
+    const isFull=(ftStaffData||[]).some(function(item){
+        return String(item.name||item.staff||'').replace(/\s+/g,'').trim()===target;
+    });
+    if(isFull) return 'fulltime';
+
+    return 'parttime';
+}
+
 function getScheduleRowsForClockOverview(){
-    const date=getClockDate(), companyFilter=(el('clock_overview_company')?.value||'').trim(), staffFilter=(el('clock_overview_staff')?.value||'').trim();
+    const date=getClockDate(),
+          companyFilter=(el('clock_overview_company')?.value||'').trim(),
+          staffFilter=(el('clock_overview_staff')?.value||'').trim(),
+          mode=window.qyjClockOverviewMode||'parttime';
+
     const rows=[];
+
     (scheduleData||[]).forEach(s=>{
         if(isVoidedSchedule(s)) return;
         if(String(s.date||'')!==date) return;
         if(companyFilter && companyFilter!=='全部' && !String(s.company||'').includes(companyFilter)) return;
+
         const names=getScheduleStaffList(s.staffs||'');
         names.forEach(name=>{
+            const staffType=qyjClockOverviewTypeForStaff(name,s);
+            if(staffType!==mode) return;
             if(staffFilter && staffFilter!=='全部人員' && !String(name||'').includes(staffFilter)) return;
-            rows.push({company:s.company||'', staff:name, date:s.date, start:s.start||'', end:s.end||'', restHours:Number(s.restHours||s.breakHours||0)||0, hours:Number(s.hours||0)||0, remark:s.remark||'', location:s.location||''});
+
+            rows.push({
+                company:s.company||'',
+                staff:name,
+                staffType:staffType,
+                date:s.date,
+                start:s.start||'',
+                end:s.end||'',
+                restHours:Number(s.restHours||s.breakHours||0)||0,
+                hours:Number(s.hours||0)||0,
+                remark:s.remark||'',
+                location:s.location||''
+            });
         });
     });
-    rows.sort((a,b)=>(a.start||'').localeCompare(b.start||'') || (a.company||'').localeCompare(b.company||'') || (a.staff||'').localeCompare(b.staff||''));
+
+    rows.sort((a,b)=>
+        (a.start||'').localeCompare(b.start||'') ||
+        (a.company||'').localeCompare(b.company||'') ||
+        (a.staff||'').localeCompare(b.staff||'')
+    );
     return rows;
 }
 function findClockRecord(row){
@@ -7114,7 +7214,9 @@ function renderClockOverview(){
         const calcH=(inT&&outT)?Math.max(0,clockHoursBetween(inT,outT)-(Number(row.restHours)||0)):'';
         const realH=(rec && rec.overrideHours!==undefined && rec.overrideHours!=='' && rec.overrideHours!==null)?Number(rec.overrideHours):calcH;
         const note=[rec?.gpsWarning, rec?.reportType, rec?.returnReason, rec?.remark, row.remark].filter(Boolean).join(' / ');
-        html+=`<tr><td>${clockBadge(status)}</td><td>${row.date}</td><td>${row.company}</td><td><b>${row.staff}</b></td><td>${row.start||'-'}～${row.end||'-'}</td><td>${row.restHours?row.restHours+'h':'-'}</td><td>${inT||'-'}</td><td>${gpsCell(rec?.inGps)}</td><td>${outT||'-'}</td><td>${gpsCell(rec?.outGps)}</td><td><div class="device-text">${getDeviceText(rec)}</div></td><td>${realH!==''?Number(realH).toFixed(1)+'h':'-'}</td><td>${note||'-'}</td><td style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn-sm btn-excel" onclick="quickClockAdmin(${idx},'in')">補上班</button><button class="btn-sm btn-warning" onclick="quickClockAdmin(${idx},'out')">補下班</button><button class="btn-sm" style="background:#8b5cf6;color:white;border:0;border-radius:6px;" onclick="editClockHours(${idx})">修改工時</button><button class="btn-sm" style="background:#f59e0b;color:white;border:0;border-radius:6px;" onclick="returnClockForInfo(${idx})">退回補充</button><button class="btn-sm btn-pdf" onclick="markClockAbnormal(${idx})">標記異常</button><button class="btn-sm btn-success" onclick="confirmClockToAttend(${idx})">確認轉派遣</button><button class="btn-sm" style="background:#64748b;color:white;border:0;border-radius:6px;" onclick="deleteClockRecord(${idx})">刪除</button></td></tr>`;
+        html+=`<tr><td>${clockBadge(status)}</td><td>${row.date}</td><td>${row.company}</td><td><b>${row.staff}</b></td><td>${row.start||'-'}～${row.end||'-'}</td><td>${row.restHours?row.restHours+'h':'-'}</td><td>${inT||'-'}</td><td>${gpsCell(rec?.inGps)}</td><td>${outT||'-'}</td><td>${gpsCell(rec?.outGps)}</td><td><div class="device-text">${getDeviceText(rec)}</div></td><td>${realH!==''?Number(realH).toFixed(1)+'h':'-'}</td><td>${note||'-'}</td><td style="white-space:nowrap;display:flex;gap:6px;flex-wrap:wrap;"><button class="btn-sm btn-excel" onclick="quickClockAdmin(${idx},'in')">補上班</button><button class="btn-sm btn-warning" onclick="quickClockAdmin(${idx},'out')">補下班</button><button class="btn-sm" style="background:#8b5cf6;color:white;border:0;border-radius:6px;" onclick="editClockHours(${idx})">修改工時</button><button class="btn-sm" style="background:#f59e0b;color:white;border:0;border-radius:6px;" onclick="returnClockForInfo(${idx})">退回補充</button><button class="btn-sm btn-pdf" onclick="markClockAbnormal(${idx})">標記異常</button>${row.staffType==='fulltime'
+            ? `<button class="btn-sm btn-success" onclick="confirmClockToFtAttend(${idx})">確認出勤</button>`
+            : `<button class="btn-sm btn-success" onclick="confirmClockToAttend(${idx})">確認轉派遣</button>`}<button class="btn-sm" style="background:#64748b;color:white;border:0;border-radius:6px;" onclick="deleteClockRecord(${idx})">刪除</button></td></tr>`;
     });
     el('clockOverviewTable').innerHTML=html||'<tr><td colspan="14" style="text-align:center;padding:25px;color:#64748b;font-weight:800;">這天沒有排班資料</td></tr>';
     if(el('clock_kpi_total')) el('clock_kpi_total').textContent=k.total;
@@ -7134,6 +7236,85 @@ function quickClockAdmin(rowIndex,type){
     rec.status='待審核'; rec.updatedAt=new Date().toISOString();
     saveAll(); renderClockOverview(); showToast('✅ 已更新打卡時間');
 }
+
+window.qyjClockOverviewMode = window.qyjClockOverviewMode || 'parttime';
+
+window.qyjOpenClockOverview=function(mode){
+    window.qyjClockOverviewMode = mode==='fulltime' ? 'fulltime' : 'parttime';
+    localStorage.setItem('qyj_clock_overview_mode',window.qyjClockOverviewMode);
+
+    if(typeof showAdminPage==='function'){
+        showAdminPage('clock_overview');
+    }
+
+    const title=el('clock_overview_title');
+    if(title){
+        title.innerHTML = window.qyjClockOverviewMode==='fulltime'
+            ? '<i class="fas fa-user-tie"></i> 正職打卡總覽'
+            : '<i class="fas fa-user-clock"></i> 兼職打卡總覽';
+    }
+
+    const company=el('clock_overview_company');
+    const staff=el('clock_overview_staff');
+    if(company) company.value='';
+    if(staff) staff.value='';
+
+    renderClockOverview();
+};
+
+function confirmClockToFtAttend(rowIndex){
+    const row=getScheduleRowsForClockOverview()[rowIndex];
+    if(!row) return;
+
+    const rec=findClockRecord(row);
+    if(!rec || !rec.clockIn || !rec.clockOut){
+        return showToast('需有上班與下班打卡，才能確認正職出勤', true);
+    }
+
+    const calcHours=Math.max(
+        0,
+        clockHoursBetween(rec.clockIn,rec.clockOut)-(Number(row.restHours)||0)
+    );
+
+    const hours=(rec.overrideHours!==undefined &&
+                 rec.overrideHours!=='' &&
+                 rec.overrideHours!==null)
+        ? Number(rec.overrideHours)
+        : calcHours;
+
+    const exist=(ftAttendData||[]).some(function(a){
+        return String(a.staff||'')===String(row.staff||'') &&
+               String(a.date||'')===String(row.date||'') &&
+               String(a.record_type||'')==='正常出勤' &&
+               String(a.reason||'').includes('由員工打卡確認');
+    });
+
+    if(exist && !confirm('這筆正職出勤已確認過，還要再新增一次嗎？')) return;
+
+    ftAttendData.push({
+        staff:row.staff,
+        date:row.date,
+        record_type:'正常出勤',
+        reason:'由員工打卡確認｜公司：'+(row.company||'')+
+               (row.location?'｜地點：'+row.location:'')+
+               (rec.gpsWarning?'｜'+rec.gpsWarning:''),
+        time_in:rec.clockIn,
+        time_out:rec.clockOut,
+        hours:Number(hours.toFixed(1)),
+        leave_type:'',
+        approval:'已核准',
+        company:row.company||''
+    });
+
+    rec.status='已確認';
+    rec.updatedAt=new Date().toISOString();
+
+    saveAll();
+    try{ if(typeof renderFtAttendTable==='function') renderFtAttendTable(); }catch(e){}
+    renderClockOverview();
+    showToast('✅ 已確認正職出勤');
+}
+
 function confirmClockToAttend(rowIndex){
     const row=getScheduleRowsForClockOverview()[rowIndex]; if(!row) return;
     const rec=findClockRecord(row);
@@ -7241,23 +7422,44 @@ function exportClockOverviewExcel(){
 
 
 
-function openScheduleChangesPage(){
+function openScheduleChangesPage(mode){
     try{
+        window.qyjScheduleChangeMode = mode === 'fulltime' ? 'fulltime' : 'parttime';
+        localStorage.setItem('qyj_schedule_change_mode', window.qyjScheduleChangeMode);
+
         let p='schedule_changes';
         let tp=el('page-schedule_changes');
         const main=document.querySelector('#sys-screen .main-content');
         if(tp && main && !main.contains(tp)) main.appendChild(tp);
         if(!tp){ alert('找不到排班異動紀錄頁面，請重新整理後再試。'); return; }
+
         localStorage.setItem('adminPage',p);
         document.querySelectorAll('#sys-screen .page').forEach(x=>x.classList.remove('active'));
         tp.classList.add('active');
+
+        const title=el('schedule_change_page_title');
+        if(title){
+            title.innerHTML = window.qyjScheduleChangeMode === 'fulltime'
+                ? '<i class="fas fa-user-tie"></i> 正職排班異動紀錄'
+                : '<i class="fas fa-user-clock"></i> 兼職排班異動紀錄';
+        }
+
         document.querySelectorAll('#sys-screen .sidebar-nav a').forEach(a=>a.classList.remove('active'));
-        const link=[...document.querySelectorAll('#sys-screen .sidebar-nav a')].find(a=>String(a.textContent||'').includes('排班異動紀錄'));
-        if(link) link.classList.add('active'); if(typeof expandHrMenuByPage==='function') expandHrMenuByPage('schedule_changes');
+        const label = window.qyjScheduleChangeMode === 'fulltime' ? '正職排班異動' : '兼職排班異動';
+        const link=[...document.querySelectorAll('#sys-screen .sidebar-nav a')].find(a=>String(a.textContent||'').includes(label));
+        if(link) link.classList.add('active');
+
+        if(typeof expandHrMenuByPage==='function') expandHrMenuByPage('schedule_changes');
+        const subgroup=document.querySelector('.hr-subgroup[data-hr-subgroup="schedule_changes"]');
+        if(subgroup) subgroup.classList.add('open');
+
         if(typeof initScheduleChangeFilters==='function') initScheduleChangeFilters();
         if(typeof renderScheduleChangePage==='function') renderScheduleChangePage();
         window.scrollTo({top:0,behavior:'smooth'});
-    }catch(e){console.error(e); alert('排班異動紀錄開啟失敗：'+(e.message||e));}
+    }catch(e){
+        console.error(e);
+        alert('排班異動紀錄開啟失敗：'+(e.message||e));
+    }
 }
 
 
@@ -7272,7 +7474,7 @@ function toggleHrSubGroup(name){
 function expandHrMenuByPage(p){
     const map={
         staff:['people'], sales_staff:['people'], ft_staff:['people','fulltime'], ft_attend:['people','fulltime'], ft_salary:['people','fulltime'],
-        schedule:['schedule'], schedule_changes:['schedule'], clock_overview:['schedule'],
+        schedule:['schedule'], schedule_changes:['schedule','schedule_changes'], clock_overview:['schedule'],
         match:['dispatch'], dispatch:['dispatch','dispatch_cases'], talent:['dispatch'], job_posts:['dispatch']
     };
     const arr=map[p]||[];
@@ -7328,7 +7530,12 @@ function showAdminPage(p) {
         if(p==='supplier') { clearSupplierForm(); renderSupplierTable(); } 
         if(p==='match') { clearMatchForm(); renderMatchTable(); } 
         if(p==='schedule') { clearScheduleForm(); setupScheduleTabs(); renderScheduleTable(); }
-        if(p==='schedule_changes') { if(typeof initScheduleChangeFilters==='function') initScheduleChangeFilters(); if(typeof renderScheduleChangePage==='function') renderScheduleChangePage(); }
+        if(p==='schedule_changes') {
+            window.qyjScheduleChangeMode =
+                localStorage.getItem('qyj_schedule_change_mode') === 'fulltime' ? 'fulltime' : 'parttime';
+            if(typeof initScheduleChangeFilters==='function') initScheduleChangeFilters();
+            if(typeof renderScheduleChangePage==='function') renderScheduleChangePage();
+        }
         if(p==='clock_overview') { initClockOverviewFilters(); renderClockOverview(); } 
         if(p==='req') { clearReqForm(); renderReqTable(); } 
         if(p==='dispatch') { clearDispatchForm(); renderDispatchTable(); }
@@ -30980,6 +31187,57 @@ document.addEventListener('click',function(ev){
 });
 })();
 </script>
+
+
+
+<script id="qyjClockOverviewSplit20261019">
+(function(){
+    const saved=localStorage.getItem('qyj_clock_overview_mode');
+    window.qyjClockOverviewMode = saved==='fulltime' ? 'fulltime' : 'parttime';
+
+    document.addEventListener('DOMContentLoaded',function(){
+        const title=document.getElementById('clock_overview_title');
+        if(title){
+            title.innerHTML = window.qyjClockOverviewMode==='fulltime'
+                ? '<i class="fas fa-user-tie"></i> 正職打卡總覽'
+                : '<i class="fas fa-user-clock"></i> 兼職打卡總覽';
+        }
+    });
+})();
+</script>
+
+
+
+<style id="qyjFtNameFontLarger20261019">
+/* 正職整月排班：左側人員欄放大，方便閱讀 */
+.qyj-ft-table .qyj-ft-name{
+    min-width:135px !important;
+    width:135px !important;
+    font-size:14px !important;
+    font-weight:900 !important;
+    line-height:1.45 !important;
+    padding:12px 10px !important;
+}
+.qyj-ft-table th.qyj-ft-name{
+    font-size:13px !important;
+    letter-spacing:.5px;
+}
+.qyj-ft-table .qyj-ft-day{
+    font-size:12px;
+}
+.qyj-ft-stat{
+    font-size:13px !important;
+}
+</style>
+
+
+
+<style id="qyjScheduleChangeSplit20261019">
+#page-schedule_changes .page-title{
+    font-size:22px;
+    font-weight:900;
+}
+</style>
 
 </body>
 </html>
