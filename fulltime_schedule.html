@@ -86,7 +86,7 @@ table{min-width:0!important;font-size:8px!important}
         <input class="input" id="staffFilter" placeholder="搜尋正職姓名" style="width:150px">
         <button class="green" onclick="openEditor()">＋ 新增排班</button>
         <button class="purple" onclick="openPreview()">整月預覽</button>
-        <button onclick="location.href='index.html'">回主系統</button>
+        <button id="backMainBtn" onclick="location.href='index.html'">回主系統</button>
       </div>
     </div>
     <div class="legend">
@@ -96,7 +96,7 @@ table{min-width:0!important;font-size:8px!important}
       <span class="tag swap">🔁 換班 / 補班</span>
       <span class="tag leave">🌴 特休 / 事假 / 病假…</span>
     </div>
-    <div class="note">這是獨立頁面，不修改原本派遣時段排班畫面。資料使用與主系統相同的瀏覽器 localStorage，所以在同一個網址網域下可共用。</div>
+    <div class="note" id="embedNote">正職排班與主系統使用相同資料，可直接查看公司 / 遠端 / 外出、換班、補班與請假狀態。</div>
   </div>
   <div class="panel">
     <div id="stats" class="stats"></div>
@@ -313,5 +313,19 @@ function previewToday(){const d=new Date();pYear=d.getFullYear();pMonth=d.getMon
   render()
 })();
 </script>
+
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  if(params.get('embed') === '1'){
+    const b = document.getElementById('backMainBtn');
+    if(b) b.style.display = 'none';
+    document.body.style.background = '#ffffff';
+    const p = document.querySelector('.page');
+    if(p){ p.style.padding = '0'; p.style.maxWidth = 'none'; }
+  }
+})();
+</script>
+
 </body>
 </html>

@@ -1303,7 +1303,23 @@
                         <span class="left"><i class="fas fa-calendar-alt"></i> 排班打卡</span><i class="fas fa-chevron-right chev"></i>
                     </button>
                     <ul class="hr-submenu">
-                        <li><a onclick="showAdminPage('schedule')"><i class="fas fa-calendar-alt"></i> 公司排班管理</a></li>
+                        <li class="hr-subgroup" data-hr-subgroup="company_schedule">
+                            <button type="button" class="hr-sub-title" onclick="toggleHrSubGroup('company_schedule')">
+                                <span class="left"><i class="fas fa-calendar-days"></i> 公司排班管理</span><i class="fas fa-chevron-right chev"></i>
+                            </button>
+                            <ul class="hr-submenu-2">
+                                <li>
+                                    <a onclick="showAdminPage('schedule');setTimeout(function(){if(typeof qyjSetScheduleStaffType==='function'){qyjSetScheduleStaffType('派遣');}},0);">
+                                        <i class="fas fa-people-group"></i> 派遣排班
+                                    </a>
+                                </li>
+                                <li>
+                                    <a onclick="showAdminPage('schedule');setTimeout(function(){if(typeof qyjSetScheduleStaffType==='function'){qyjSetScheduleStaffType('正職');}},0);">
+                                        <i class="fas fa-user-tie"></i> 正職排班
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
                         <li><a onclick="openScheduleChangesPage()"><i class="fas fa-clipboard-list"></i> 排班異動紀錄</a></li>
                         <li><a onclick="showAdminPage('clock_overview')"><i class="fas fa-users-viewfinder"></i> 員工打卡總覽</a></li>
                     </ul>
@@ -14169,6 +14185,79 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
         qyjEnsureScheduleDatalist();
         qyjEnsureServiceSelects();
+
+        setTimeout(function(){
+            if(typeof qyjApplyScheduleTypeView === 'function'){
+                qyjApplyScheduleTypeView();
+            }
+        }, 0);
+    }
+
+    function qyjApplyScheduleTypeView(){
+        const shell = document.querySelector('#page-schedule .schedule-page-shell');
+        if(!shell) return;
+
+        let embed = document.getElementById('qyjFulltimeScheduleEmbed');
+        if(!embed){
+            embed = document.createElement('div');
+            embed.id = 'qyjFulltimeScheduleEmbed';
+            embed.style.cssText = 'display:none;margin-top:14px;';
+            embed.innerHTML =
+                '<iframe src="fulltime_schedule.html?embed=1" ' +
+                'style="width:100%;height:900px;border:0;border-radius:16px;background:#eff6ff;" ' +
+                'title="正職整月排班"></iframe>';
+
+            const tabs = document.getElementById('qyjScheduleTypeTabs');
+            if(tabs){
+                tabs.insertAdjacentElement('afterend', embed);
+            }else{
+                shell.prepend(embed);
+            }
+        }
+
+        const legacy = [];
+        [
+            '.schedule-kpi-grid',
+            '.schedule-quick-panel',
+            '.schedule-board-wrap',
+            '.schedule-filled-panel',
+            '#scheduleWarningBox'
+        ].forEach(function(sel){
+            shell.querySelectorAll(sel).forEach(function(node){ legacy.push(node); });
+        });
+
+        const monthTitle = document.getElementById('sch_month_title');
+        if(monthTitle && monthTitle.parentElement && monthTitle.parentElement.parentElement){
+            legacy.push(monthTitle.parentElement.parentElement);
+        }
+
+        const isFt = scheduleStaffType === '正職';
+
+        legacy.forEach(function(node){
+            if(!node) return;
+            if(isFt){
+                if(node.dataset.qyjOldDisplay === undefined){
+                    node.dataset.qyjOldDisplay = node.style.display || '';
+                }
+                node.style.display = 'none';
+            }else{
+                node.style.display = node.dataset.qyjOldDisplay || '';
+            }
+        });
+
+        embed.style.display = isFt ? 'block' : 'none';
+
+        const title = shell.querySelector('.schedule-title-wrap h2');
+        const desc = shell.querySelector('.schedule-title-wrap p');
+
+        if(title){
+            title.textContent = isFt ? '正職整月排班' : '智慧排班';
+        }
+        if(desc){
+            desc.textContent = isFt
+                ? '正職改用「人員 × 日期」整月表，直接查看公司、遠端、外出、換班、補班與請假。'
+                : '依公司篩選後，用「日期 × 時段」方式安排派遣人員。';
+        }
     }
 
     window.qyjSetScheduleStaffType = function(type){
@@ -14182,13 +14271,16 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         if(modalStaff) modalStaff.value = '';
 
         qyjEnsureTypeTabs();
+        qyjApplyScheduleTypeView();
 
-        if(typeof renderScheduleStaffCheckboxes === 'function'){
-            renderScheduleStaffCheckboxes([]);
-        }
+        if(scheduleStaffType === '派遣'){
+            if(typeof renderScheduleStaffCheckboxes === 'function'){
+                renderScheduleStaffCheckboxes([]);
+            }
 
-        if(typeof renderScheduleTable === 'function'){
-            renderScheduleTable();
+            if(typeof renderScheduleTable === 'function'){
+                renderScheduleTable();
+            }
         }
     };
 
