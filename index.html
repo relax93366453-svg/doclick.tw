@@ -30717,5 +30717,136 @@ document.addEventListener('DOMContentLoaded',function(){
 }
 </style>
 
+
+
+<style id="qyjMakeupAccountIntegration20261019">
+.qyj-makeup-account{margin:18px 0 0;background:#fff;border:1px solid #dbe7f5;border-radius:16px;padding:18px;box-shadow:0 4px 14px rgba(15,23,42,.04)}
+.qyj-makeup-account-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.qyj-makeup-account-head h3{margin:0 0 4px;color:#0f172a;font-size:18px;font-weight:900}
+.qyj-makeup-account-head p{margin:0;color:#64748b;font-size:12px;font-weight:700}
+.qyj-makeup-account-summary{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.qyj-makeup-account-kpi{border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:12px}
+.qyj-makeup-account-kpi span{display:block;font-size:11px;color:#64748b;font-weight:900}
+.qyj-makeup-account-kpi b{display:block;margin-top:4px;font-size:22px;color:#0f172a}
+.qyj-makeup-account-table{width:100%;min-width:980px;border-collapse:collapse;font-size:12px}
+.qyj-makeup-account-table th,.qyj-makeup-account-table td{padding:9px;border-bottom:1px solid #e2e8f0;text-align:left;vertical-align:middle}
+.qyj-makeup-account-table th{background:#f8fafc;color:#475569;font-weight:900}
+.qyj-makeup-debt{color:#dc2626;font-weight:900}.qyj-makeup-ok{color:#059669;font-weight:900}.qyj-makeup-next{color:#1d4ed8;font-weight:900}
+.qyj-makeup-account-note{margin-top:10px;padding:10px 12px;border-radius:10px;background:#eff6ff;color:#1e40af;font-size:12px;font-weight:800;line-height:1.7}
+.qyj-admin-makeup-wrap{margin-top:10px;border:1px solid #fde68a;background:#fffbeb;border-radius:10px;padding:10px 12px}
+.qyj-admin-makeup-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.qyj-admin-makeup-row label{margin:0;font-size:12px;font-weight:900;color:#92400e}
+.qyj-admin-makeup-row input[type="number"]{width:120px;padding:8px 10px;border:1px solid #f59e0b;border-radius:8px}
+@media(max-width:900px){.qyj-makeup-account-summary{grid-template-columns:1fr 1fr}}
+</style>
+
+<script id="qyjMakeupAccountIntegrationScript20261019">
+(function(){
+'use strict';
+
+var MAKEUP_KEY='qyj_personal_makeup_records';
+var MIRROR_SOURCE='個人補班追蹤';
+
+function readGroups(){try{var x=JSON.parse(localStorage.getItem(MAKEUP_KEY)||'[]');return Array.isArray(x)?x:[]}catch(e){return []}}
+function writeGroups(data){localStorage.setItem(MAKEUP_KEY,JSON.stringify(data||[]))}
+function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
+function uid(prefix){return prefix+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,8)}
+function timeHours(start,end){if(!start||!end)return 0;function mins(t){var p=String(t).split(':');return Number(p[0]||0)*60+Number(p[1]||0)}var n=mins(end)-mins(start);if(n<0)n+=1440;return Number((n/60).toFixed(2))}
+function groupStats(g){var ss=Array.isArray(g&&g.schedules)?g.schedules:[];var arranged=ss.reduce(function(sum,s){return sum+Number(s.plannedHours||timeHours(s.start,s.end)||0)},0);var completed=ss.filter(function(s){return s.status==='已完成'}).reduce(function(sum,s){return sum+Number(s.actualHours||s.plannedHours||timeHours(s.start,s.end)||0)},0);var required=Number((g&&g.requiredHours)||0);return {required:required,arranged:arranged,completed:completed,remaining:Math.max(0,required-completed)}}
+function findGroupForRecord(rec,groups){if(!rec)return null;var id=rec.makeupGroupId||rec.leaveGroupId||'';if(id){var byId=groups.find(function(g){return g.id===id});if(byId)return byId}return groups.find(function(g){return String(g.staff||'').trim()===String(rec.staff||'').trim()&&String(g.startDate||'')===String(rec.date||'')})||null}
+function ensureGroupForRecord(rec,requiredHours){
+    var groups=readGroups(),g=findGroupForRecord(rec,groups);
+    if(!g){
+        g={id:rec.makeupGroupId||rec.leaveGroupId||uid('makeup_group'),staff:rec.staff||'',startDate:rec.date||'',endDate:rec.date||'',leaveType:rec.leave_type||'請假',reason:rec.reason||'',requiredHours:Number(requiredHours||0),schedules:[],approval:rec.approval||'已核准',source:'內部正職出勤',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+        groups.push(g);
+    }else{
+        g.staff=rec.staff||g.staff;g.startDate=rec.date||g.startDate;g.endDate=rec.date||g.endDate||g.startDate;g.leaveType=rec.leave_type||g.leaveType||'請假';g.reason=rec.reason||g.reason||'';g.requiredHours=Number(requiredHours||g.requiredHours||0);g.updatedAt=new Date().toISOString();
+    }
+    rec.makeupGroupId=g.id;writeGroups(groups);return g;
+}
+function removeGroupForRecord(rec){if(!rec)return;var id=rec.makeupGroupId||rec.leaveGroupId||'';if(!id)return;writeGroups(readGroups().filter(function(g){return g.id!==id}))}
+
+function syncMakeupSchedulesToScheduleData(){
+    if(!Array.isArray(window.scheduleData))return;
+    var groups=readGroups();
+    for(var i=scheduleData.length-1;i>=0;i--){if(scheduleData[i]&&scheduleData[i].source===MIRROR_SOURCE)scheduleData.splice(i,1)}
+    groups.forEach(function(g){
+        (g.schedules||[]).forEach(function(s){
+            if(!s||!s.date)return;
+            scheduleData.push({source:MIRROR_SOURCE,_makeupGroupId:g.id,_makeupScheduleId:s.id,company:'點籽響有限公司',date:s.date,shift:'正職補班',start:s.start||'',end:s.end||'',breakStart:'',breakEnd:'',hours:Number(s.plannedHours||timeHours(s.start,s.end)||0),need:1,staffs:g.staff||'',staffType:'正職',service:'行政',status:'已排滿',scheduleStatus:'已排班',location:'公司',workMode:'公司',isMakeupWorkDay:true,remark:'補班追蹤｜對應請假 '+(g.startDate||'')+(g.leaveType?'｜'+g.leaveType:'')+(s.status?'｜'+s.status:''),updatedAt:new Date().toISOString()});
+        });
+    });
+    try{if(typeof saveLocalData==='function')saveLocalData()}catch(e){}
+}
+
+function ensureAdminFields(){
+    var page=document.getElementById('page-ft_attend');if(!page||document.getElementById('qyjFtaMakeupWrap'))return;
+    var approval=document.getElementById('fta_approval_block'),target=approval&&approval.parentElement?approval.parentElement:null;if(!target)return;
+    var wrap=document.createElement('div');wrap.id='qyjFtaMakeupWrap';wrap.className='qyj-admin-makeup-wrap';wrap.style.display='none';
+    wrap.innerHTML='<div class="qyj-admin-makeup-row"><label style="display:flex;align-items:center;gap:6px;"><input id="qyjFtaNeedMakeup" type="checkbox" style="width:auto;" onchange="qyjToggleAdminMakeupHours()"> 這筆請假需要補班</label><div id="qyjFtaMakeupHoursBox" style="display:none;"><label>應補時數</label> <input id="qyjFtaMakeupHours" type="number" step="0.5" min="0" placeholder="例如 8"></div></div><div style="font-size:11px;color:#92400e;margin-top:6px;font-weight:800;">勾選後會追蹤欠班時數，安排補班後也會同步到正職整月排班</div>';
+    target.insertAdjacentElement('afterend',wrap);
+}
+window.qyjToggleAdminMakeupHours=function(){var need=document.getElementById('qyjFtaNeedMakeup'),box=document.getElementById('qyjFtaMakeupHoursBox');if(box)box.style.display=need&&need.checked?'inline-flex':'none'};
+function updateAdminFieldsVisibility(){ensureAdminFields();var wrap=document.getElementById('qyjFtaMakeupWrap'),type=document.getElementById('fta_record_type');if(wrap)wrap.style.display=type&&type.value==='請假'?'block':'none'}
+function findSavedRecord(staff,date,recordType){var matches=(ftAttendData||[]).filter(function(x){return String(x.staff||'').trim()===String(staff||'').trim()&&String(x.date||'')===String(date||'')&&String(x.record_type||'')===String(recordType||'')});return matches.length?matches[matches.length-1]:null}
+
+function makeupRows(){
+    var groups=readGroups(),rows=[];
+    (ftAttendData||[]).forEach(function(rec){
+        if(!rec||String(rec.record_type||'')!=='請假')return;
+        var g=findGroupForRecord(rec,groups);
+        var marked=rec.needMakeup===true||rec.needMakeup==='true'||Number(rec.makeupRequiredHours||0)>0||!!g;if(!marked)return;
+        var required=Number(rec.makeupRequiredHours||0);if(g&&Number(g.requiredHours||0)>0)required=Number(g.requiredHours||0);
+        var stats=g?groupStats(g):{required:required,arranged:0,completed:0,remaining:required};
+        var schedules=g&&Array.isArray(g.schedules)?g.schedules.slice():[];schedules.sort(function(a,b){return String(a.date||'').localeCompare(String(b.date||''))});
+        var next=schedules.find(function(s){return s.status!=='已完成'})||schedules[schedules.length-1]||null;
+        rows.push({record:rec,group:g,staff:rec.staff||'',leaveDate:rec.date||'',leaveType:rec.leave_type||'請假',reason:rec.reason||'',required:stats.required||required,completed:stats.completed||0,remaining:Math.max(0,(stats.required||required)-(stats.completed||0)),next:next});
+    });
+    rows.sort(function(a,b){if(b.remaining!==a.remaining)return b.remaining-a.remaining;return String(b.leaveDate).localeCompare(String(a.leaveDate))});return rows;
+}
+
+function ensureAccountPanel(){
+    var page=document.getElementById('page-ft_attend');if(!page)return;
+    var panel=document.getElementById('qyjMakeupAccountPanel');
+    if(!panel){panel=document.createElement('section');panel.id='qyjMakeupAccountPanel';panel.className='qyj-makeup-account';var tracking=document.getElementById('qyjMakeupTrackingPanel');if(tracking&&tracking.parentElement)tracking.parentElement.insertBefore(panel,tracking);else page.appendChild(panel)}
+    renderAccountPanel();
+}
+function renderAccountPanel(){
+    var panel=document.getElementById('qyjMakeupAccountPanel');if(!panel)return;
+    var rows=makeupRows();
+    var totalRequired=rows.reduce(function(s,r){return s+Number(r.required||0)},0),totalCompleted=rows.reduce(function(s,r){return s+Number(r.completed||0)},0),totalRemaining=rows.reduce(function(s,r){return s+Number(r.remaining||0)},0),unplanned=rows.filter(function(r){return r.remaining>0&&!r.next}).length;
+    var body=rows.length?rows.map(function(r,idx){
+        var nextText=r.next?esc(r.next.date||'-')+(r.next.start||r.next.end?'<br><span style="font-size:11px;color:#64748b;">'+esc(r.next.start||'-')+'～'+esc(r.next.end||'-')+'｜'+Number(r.next.plannedHours||timeHours(r.next.start,r.next.end)||0).toFixed(1)+'h</span>':''):'<span class="qyj-makeup-debt">尚未安排</span>';
+        var status=r.remaining<=0?'<span class="qyj-makeup-ok">已補完</span>':(r.next?'<span class="qyj-makeup-next">已安排</span>':'<span class="qyj-makeup-debt">欠班中</span>');
+        return '<tr><td><b>'+esc(r.staff)+'</b></td><td>'+esc(r.leaveDate)+'</td><td>'+esc(r.leaveType)+(r.reason?'｜'+esc(r.reason):'')+'</td><td><b>'+Number(r.required||0).toFixed(1)+'h</b></td><td>'+Number(r.completed||0).toFixed(1)+'h</td><td class="'+(r.remaining>0?'qyj-makeup-debt':'qyj-makeup-ok')+'">'+Number(r.remaining||0).toFixed(1)+'h</td><td>'+nextText+'</td><td>'+status+'</td><td><button class="qyj-makeup-btn add qyj-account-action" data-row="'+idx+'">'+(r.group?'安排補班':'建立追蹤')+'</button></td></tr>';
+    }).join(''):'<tr><td colspan="9" style="text-align:center;color:#64748b;padding:22px;">目前沒有設定「需要補班」的請假紀錄</td></tr>';
+
+    panel._qyjRows=rows;
+    panel.innerHTML='<div class="qyj-makeup-account-head"><div><h3><i class="fas fa-wallet"></i> 補班帳戶總覽</h3><p>直接看每個人「哪天欠、欠多少、哪天補、還剩多少」</p></div></div><div class="qyj-makeup-account-summary"><div class="qyj-makeup-account-kpi"><span>應補總時數</span><b>'+totalRequired.toFixed(1)+'h</b></div><div class="qyj-makeup-account-kpi"><span>已完成</span><b>'+totalCompleted.toFixed(1)+'h</b></div><div class="qyj-makeup-account-kpi"><span>剩餘未補</span><b style="color:#dc2626;">'+totalRemaining.toFixed(1)+'h</b></div><div class="qyj-makeup-account-kpi"><span>尚未安排案件</span><b>'+unplanned+'</b></div></div><div class="table-responsive"><table class="qyj-makeup-account-table"><thead><tr><th>人員</th><th>欠班日期</th><th>原因 / 假別</th><th>應補</th><th>已完成</th><th>剩餘</th><th>最近 / 預計補班</th><th>狀態</th><th>操作</th></tr></thead><tbody>'+body+'</tbody></table></div><div class="qyj-makeup-account-note">使用方式：在上方「正職出勤與請假」新增或編輯請假時，勾選「這筆請假需要補班」並填應補時數。之後從這裡安排補班日期，排班會自動出現在「正職整月排班」。</div>';
+}
+document.addEventListener('click',function(ev){
+    var btn=ev.target&&ev.target.closest?ev.target.closest('.qyj-account-action'):null;if(!btn)return;
+    var panel=document.getElementById('qyjMakeupAccountPanel'),rows=panel&&panel._qyjRows?panel._qyjRows:[],row=rows[Number(btn.getAttribute('data-row'))];if(!row)return;
+    var g=row.group||ensureGroupForRecord(row.record,row.required);
+    try{if(typeof saveAll==='function')saveAll()}catch(e){}
+    renderAccountPanel();
+    if(typeof window.openQyjMakeupModal==='function')window.openQyjMakeupModal(g.id,'');
+});
+
+var oldToggle=window.toggleFtaFields;if(typeof oldToggle==='function'){window.toggleFtaFields=function(){var r=oldToggle.apply(this,arguments);setTimeout(updateAdminFieldsVisibility,0);return r}}
+var oldEdit=window.editFtAttend;if(typeof oldEdit==='function'){window.editFtAttend=function(i){var r=oldEdit.apply(this,arguments);setTimeout(function(){ensureAdminFields();var rec=ftAttendData&&ftAttendData[i],need=document.getElementById('qyjFtaNeedMakeup'),hrs=document.getElementById('qyjFtaMakeupHours');if(rec&&need){var g=findGroupForRecord(rec,readGroups());need.checked=rec.needMakeup===true||rec.needMakeup==='true'||Number(rec.makeupRequiredHours||0)>0||!!g;if(hrs)hrs.value=Number(rec.makeupRequiredHours||(g&&g.requiredHours)||0)||'';window.qyjToggleAdminMakeupHours()}updateAdminFieldsVisibility()},0);return r}}
+var oldAdd=window.addFtAttend;if(typeof oldAdd==='function'){window.addFtAttend=function(){ensureAdminFields();var staff=document.getElementById('fta_staff')?.value.trim()||'',date=document.getElementById('fta_date')?.value||'',type=document.getElementById('fta_record_type')?.value||'',need=!!document.getElementById('qyjFtaNeedMakeup')?.checked,required=Number(document.getElementById('qyjFtaMakeupHours')?.value||0);if(type==='請假'&&need&&required<=0){alert('已勾選需要補班，請輸入應補時數。');return}var r=oldAdd.apply(this,arguments);setTimeout(function(){var rec=findSavedRecord(staff,date,type);if(rec&&type==='請假'){rec.needMakeup=need;rec.makeupRequiredHours=need?required:0;if(need)ensureGroupForRecord(rec,required);else{removeGroupForRecord(rec);rec.makeupGroupId=''}try{if(typeof saveAll==='function')saveAll()}catch(e){}}syncMakeupSchedulesToScheduleData();ensureAccountPanel();if(document.getElementById('qyjFtaNeedMakeup'))document.getElementById('qyjFtaNeedMakeup').checked=false;if(document.getElementById('qyjFtaMakeupHours'))document.getElementById('qyjFtaMakeupHours').value='';window.qyjToggleAdminMakeupHours()},20);return r}}
+var oldDel=window.delFtAttend;if(typeof oldDel==='function'){window.delFtAttend=function(i){var rec=ftAttendData&&ftAttendData[i]?Object.assign({},ftAttendData[i]):null,r=oldDel.apply(this,arguments);setTimeout(function(){if(rec)removeGroupForRecord(rec);syncMakeupSchedulesToScheduleData();ensureAccountPanel()},20);return r}}
+
+var oldSaveMakeup=window.saveQyjMakeupSchedule;if(typeof oldSaveMakeup==='function'){window.saveQyjMakeupSchedule=function(){var r=oldSaveMakeup.apply(this,arguments);setTimeout(function(){syncMakeupSchedulesToScheduleData();ensureAccountPanel();try{if(typeof window.qyjFtRender==='function')window.qyjFtRender()}catch(e){}try{if(typeof pushCloudData==='function')pushCloudData(true).catch(function(){})}catch(e){}},30);return r}}
+var oldDeleteMakeup=window.deleteQyjMakeupSchedule;if(typeof oldDeleteMakeup==='function'){window.deleteQyjMakeupSchedule=function(){var r=oldDeleteMakeup.apply(this,arguments);setTimeout(function(){syncMakeupSchedulesToScheduleData();ensureAccountPanel();try{if(typeof window.qyjFtRender==='function')window.qyjFtRender()}catch(e){}},30);return r}}
+var oldDeleteGroup=window.deleteQyjMakeupGroup;if(typeof oldDeleteGroup==='function'){window.deleteQyjMakeupGroup=function(){var r=oldDeleteGroup.apply(this,arguments);setTimeout(function(){syncMakeupSchedulesToScheduleData();ensureAccountPanel();try{if(typeof window.qyjFtRender==='function')window.qyjFtRender()}catch(e){}},30);return r}}
+
+function init(){ensureAdminFields();updateAdminFieldsVisibility();setTimeout(function(){syncMakeupSchedulesToScheduleData();ensureAccountPanel()},500)}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+
+})();
+</script>
+
 </body>
 </html>
