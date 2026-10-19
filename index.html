@@ -1698,6 +1698,9 @@
                                 <p>以「人員 × 日期」查看公司 / 遠端 / 外出、換班、補班與請假狀態。</p>
                             </div>
                             <div class="qyj-ft-actions">
+                                <button class="switch-role-btn qyj-ft-month-nav" type="button" onclick="qyjFtMoveMonth(-1)">上一月</button>
+                                <button class="switch-role-btn qyj-ft-month-nav" type="button" onclick="qyjFtGoThisMonth()">本月</button>
+                                <button class="switch-role-btn qyj-ft-month-nav" type="button" onclick="qyjFtMoveMonth(1)">下一月</button>
                                 <input type="month" id="qyjFtMonthPicker">
                                 <input type="text" id="qyjFtStaffFilter" placeholder="搜尋正職姓名">
                                 <button class="btn btn-success" type="button" onclick="qyjFtOpenEditor()"><i class="fas fa-plus"></i> 單日排班</button>
@@ -30159,7 +30162,10 @@ function renderInto(target,y,m,filter,readonly){
         h+='<tr><td class="qyj-ft-name">'+esc(staff)+'</td>';
         for(var d=1;d<=last;d++){
             var date=dkey(y,m,d),w=new Date(y,m-1,d).getDay(),lines=cellLines(staff,date);
-            h+='<td class="qyj-ft-day '+((w===0||w===6)?'qyj-ft-weekend':'')+'"><div class="qyj-ft-cell '+((w===0||w===6)?'qyj-ft-weekend':'')+'" data-staff="'+esc(staff)+'" data-date="'+date+'" data-readonly="'+(readonly?'1':'0')+'">';
+            var hasLeave=lines.some(function(x){return x.c==='leave'||x.c==='pending';});
+            var hasSwap=lines.some(function(x){return x.c==='swap';});
+            var stateClass=(hasLeave?' qyj-ft-has-leave':'')+(hasSwap?' qyj-ft-has-swap':'');
+            h+='<td class="qyj-ft-day '+((w===0||w===6)?'qyj-ft-weekend':'')+'"><div class="qyj-ft-cell '+((w===0||w===6)?'qyj-ft-weekend':'')+stateClass+'" data-staff="'+esc(staff)+'" data-date="'+date+'" data-readonly="'+(readonly?'1':'0')+'">';
             h+=lines.length?lines.map(function(x){return '<span class="qyj-ft-line '+x.c+'">'+esc(x.t)+'</span>';}).join(''):'<div class="qyj-ft-empty">＋</div>';
             h+='</div></td>';
         }
@@ -30190,6 +30196,25 @@ function renderStats(y,m,filter){
     });
     E('qyjFtStats').innerHTML='<span class="qyj-ft-stat">🏢 公司 '+c.office+' 人次</span><span class="qyj-ft-stat">💻 遠端 '+c.remote+' 人次</span><span class="qyj-ft-stat">🚗 外出 '+c.out+' 人次</span><span class="qyj-ft-stat">🌴 請假 '+c.leave+' 人次</span><span class="qyj-ft-stat">🔁 換班 '+c.swap+' 人次</span>';
 }
+
+
+window.qyjFtMoveMonth=function(delta){
+    var picker=E('qyjFtMonthPicker');
+    if(!picker)return;
+    var v=ym();
+    var d=new Date(v.y,v.m-1,1);
+    d.setMonth(d.getMonth()+delta);
+    picker.value=d.getFullYear()+'-'+pad(d.getMonth()+1);
+    window.qyjFtRender();
+};
+
+window.qyjFtGoThisMonth=function(){
+    var picker=E('qyjFtMonthPicker');
+    if(!picker)return;
+    var d=new Date();
+    picker.value=d.getFullYear()+'-'+pad(d.getMonth()+1);
+    window.qyjFtRender();
+};
 
 window.qyjFtRender=function(){var v=ym(),filter=(E('qyjFtStaffFilter')&&E('qyjFtStaffFilter').value.trim())||'';renderInto(E('qyjFtMonthBoard'),v.y,v.m,filter,false);renderStats(v.y,v.m,filter);};
 
@@ -30667,6 +30692,30 @@ document.addEventListener('DOMContentLoaded',function(){
 
 })();
 </script>
+
+
+
+<style id="qyjFtMonthNav20261019">
+.qyj-ft-month-nav{
+    min-width:64px;
+    height:38px;
+    padding:0 10px;
+}
+.qyj-ft-cell.qyj-ft-has-leave{
+    background:#fff1f7 !important;
+    box-shadow:inset 0 0 0 2px #f9a8d4;
+}
+.qyj-ft-cell.qyj-ft-has-swap{
+    box-shadow:inset 0 0 0 2px #c4b5fd;
+}
+.qyj-ft-cell.qyj-ft-has-leave.qyj-ft-has-swap{
+    background:#fff7ed !important;
+    box-shadow:inset 0 0 0 2px #fb923c;
+}
+.qyj-ft-cell.qyj-ft-has-leave .qyj-ft-line.leave{
+    font-weight:900;
+}
+</style>
 
 </body>
 </html>
