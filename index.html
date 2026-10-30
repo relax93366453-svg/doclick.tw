@@ -6205,6 +6205,14 @@ function loadDataFromCloud(forceRender=false) {
         }
         if(r.custData) custData=r.custData; if(r.contractData) contractData=r.contractData; if(r.staffData) staffData=r.staffData; if(r.attendData){
             const cloudDeleted=Array.isArray(r.attendDeletedIds)?r.attendDeletedIds:[];
+            try{
+                const localSemantic=JSON.parse(localStorage.getItem('qyjAttendDeletedSemanticKeysV4')||'[]');
+                const cloudSemantic=Array.isArray(r.attendDeletedSemanticKeys)?r.attendDeletedSemanticKeys:[];
+                localStorage.setItem(
+                    'qyjAttendDeletedSemanticKeysV4',
+                    JSON.stringify(Array.from(new Set((Array.isArray(localSemantic)?localSemantic:[]).concat(cloudSemantic))))
+                );
+            }catch(e){}
             window.attendDeletedIds=Array.from(new Set((window.attendDeletedIds||[]).concat(cloudDeleted)));
             if(typeof qyjSaveAttendDeletedIds==='function') qyjSaveAttendDeletedIds(window.attendDeletedIds);
             attendData=typeof qyjMergeAttendRecords==='function'
@@ -6231,6 +6239,13 @@ function buildCloudPayload(){
         contractData,
         staffData,
         attendData,
+        attendDeletedSemanticKeys:
+            (function(){
+                try{
+                    const v=JSON.parse(localStorage.getItem('qyjAttendDeletedSemanticKeysV4')||'[]');
+                    return Array.isArray(v)?v:[];
+                }catch(e){return [];}
+            })(),
         attendDeletedIds:
             window.attendDeletedIds ||
             (typeof qyjReadAttendDeletedIds==='function'
@@ -12740,6 +12755,26 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
                 Array.isArray(r.attendDeletedIds)
                     ? r.attendDeletedIds
                     : [];
+            try{
+                const localSemantic=JSON.parse(
+                    localStorage.getItem('qyjAttendDeletedSemanticKeysV4')||'[]'
+                );
+                const cloudSemantic=
+                    Array.isArray(r.attendDeletedSemanticKeys)
+                        ? r.attendDeletedSemanticKeys
+                        : [];
+                localStorage.setItem(
+                    'qyjAttendDeletedSemanticKeysV4',
+                    JSON.stringify(
+                        Array.from(
+                            new Set(
+                                (Array.isArray(localSemantic)?localSemantic:[])
+                                    .concat(cloudSemantic)
+                            )
+                        )
+                    )
+                );
+            }catch(e){}
 
             window.attendDeletedIds=
                 Array.from(
@@ -31238,6 +31273,441 @@ document.addEventListener('click',function(ev){
     font-weight:900;
 }
 </style>
+
+
+
+<style id="QYJ_ATTEND_STABLE_SYNC_STYLE_20261030">
+.qyj-sync-pending{color:#d97706;font-size:11px;font-weight:900}
+.qyj-sync-failed{color:#dc2626;font-size:11px;font-weight:900}
+.qyj-sync-retry{
+    border:0;background:#fee2e2;color:#b91c1c;border-radius:5px;
+    padding:2px 6px;margin-left:5px;font-size:10px;font-weight:900;cursor:pointer
+}
+</style>
+
+<script id="QYJ_ATTEND_STABLE_SYNC_20261030">
+(function(){
+'use strict';
+
+const SEM_DELETED_KEY='qyjAttendDeletedSemanticKeysV4';
+const PENDING_KEY='qyjAttendPendingSemanticV4';
+const PENDING_TIMEOUT=45000;
+
+function readArray(key){
+    try{
+        const v=JSON.parse(localStorage.getItem(key)||'[]');
+        return Array.isArray(v)?v:[];
+    }catch(e){return [];}
+}
+function saveArray(key,val){
+    try{localStorage.setItem(key,JSON.stringify(Array.from(new Set(val||[]))));}catch(e){}
+}
+function norm(v){return String(v==null?'':v).trim();}
+function nnum(v){
+    const n=Number(v);
+    return Number.isFinite(n)?String(Number(n.toFixed(4))):norm(v);
+}
+function sourceKey(item){
+    item=item||{};
+    return [
+        norm(item.company),norm(item.staff),norm(item.date),norm(item.service),
+        norm(item.am_s),norm(item.am_e),norm(item.pm_s),norm(item.pm_e),
+        nnum(item.salary_hours),nnum(item.project_fee)
+    ].join('|');
+}
+function semanticKey(item){
+    item=item||{};
+    return [
+        sourceKey(item),
+        nnum(item.deduct_points),
+        nnum(item.special_hourly),
+        norm(item.remark)
+    ].join('|');
+}
+function legacyNormalized(raw){
+    const p=String(raw||'').split('|');
+    if(p.length>=10){p[8]=nnum(p[8]);p[9]=nnum(p[9]);}
+    return p.join('|');
+}
+function timeValue(item){
+    const t=Date.parse(String(item&&item._updatedAt||item&&item.updatedAt||''));
+    return Number.isFinite(t)?t:0;
+}
+function ensurePendingTimestamp(item){
+    if(!item)return;
+    if(item._syncState==='pending'&&!item._pendingSince){
+        item._pendingSince=Date.now();
+    }
+}
+function registerPending(item){
+    if(!item)return;
+    ensurePendingTimestamp(item);
+    const list=readArray(PENDING_KEY);
+    const key=semanticKey(item);
+    if(key&&!list.includes(key))list.push(key);
+    saveArray(PENDING_KEY,list);
+}
+function unregisterPending(key){
+    if(!key)return;
+    saveArray(PENDING_KEY,readArray(PENDING_KEY).filter(x=>x!==key));
+}
+function markSemanticDeleted(item){
+    if(!item)return;
+    const list=readArray(SEM_DELETED_KEY);
+    const k=legacyNormalized(sourceKey(item));
+    if(k&&!list.includes(k))list.push(k);
+    saveArray(SEM_DELETED_KEY,list);
+}
+window.qyjAttendStableMarkDeleted=markSemanticDeleted;
+window.qyjAttendStableRegisterPending=registerPending;
+
+const originalMarkDeleted =
+    typeof qyjMarkAttendDeleted==='function'
+        ? qyjMarkAttendDeleted
+        : null;
+
+if(originalMarkDeleted){
+    qyjMarkAttendDeleted=function(records){
+        (Array.isArray(records)?records:[]).forEach(markSemanticDeleted);
+        return originalMarkDeleted.apply(this,arguments);
+    };
+    window.qyjMarkAttendDeleted=qyjMarkAttendDeleted;
+}
+
+function stableMerge(localRecords,cloudRecords,deletedIds){
+    localRecords=Array.isArray(localRecords)?localRecords:[];
+    cloudRecords=Array.isArray(cloudRecords)?cloudRecords:[];
+
+    const deletedIdsSet=new Set((deletedIds||[]).filter(Boolean));
+    const semanticDeleted=new Set(readArray(SEM_DELETED_KEY).map(legacyNormalized));
+
+    const cloudSemantic=new Map();
+    const cloudSource=new Set();
+
+    cloudRecords.forEach(function(item){
+        if(!item)return;
+        if(item._syncId&&deletedIdsSet.has(item._syncId))return;
+        const sk=legacyNormalized(sourceKey(item));
+        if(semanticDeleted.has(sk))return;
+        cloudSemantic.set(semanticKey(item),item);
+        cloudSource.add(sk);
+    });
+
+    const result=[];
+    const seenSemantic=new Set();
+
+    // 本機優先：pending 拆分資料絕對不能被舊雲端蓋掉。
+    localRecords.forEach(function(item){
+        if(!item)return;
+        if(item._syncId&&deletedIdsSet.has(item._syncId))return;
+
+        const sk=legacyNormalized(sourceKey(item));
+        const sem=semanticKey(item);
+
+        // semantic tombstone 只刪「舊來源」，拆分子資料的內容不同所以不會命中。
+        if(semanticDeleted.has(sk) && item._syncState!=='pending')return;
+
+        const copy=Object.assign({},item);
+        ensurePendingTimestamp(copy);
+
+        const cloudSame=cloudSemantic.get(sem);
+        if(cloudSame){
+            copy._syncState='synced';
+            delete copy._pendingSince;
+            unregisterPending(sem);
+        }else if(copy._syncState==='pending'){
+            registerPending(copy);
+        }
+
+        if(!seenSemantic.has(sem)){
+            result.push(copy);
+            seenSemantic.add(sem);
+        }
+    });
+
+    // 再吸收雲端資料；被 semantic tombstone 的原始 4h/5h 不准復活。
+    cloudRecords.forEach(function(item){
+        if(!item)return;
+        if(item._syncId&&deletedIdsSet.has(item._syncId))return;
+        const sk=legacyNormalized(sourceKey(item));
+        if(semanticDeleted.has(sk))return;
+
+        const sem=semanticKey(item);
+        if(seenSemantic.has(sem))return;
+
+        result.push(Object.assign({},item,{_syncState:'synced'}));
+        seenSemantic.add(sem);
+    });
+
+    return result;
+}
+
+window.qyjMergeAttendRecords=stableMerge;
+
+/* 將所有本機 pending 登記，方便顯示失敗/重試。 */
+function scanPending(){
+    try{
+        (attendData||[]).forEach(function(item){
+            if(item&&item._syncState==='pending')registerPending(item);
+        });
+        localStorage.setItem('attendData',JSON.stringify(attendData||[]));
+    }catch(e){}
+}
+window.qyjAttendStableScanPending=scanPending;
+
+/* 手動重試：先推，再安全讀回。 */
+window.qyjRetryAttendSync=function(){
+    if(typeof updateSyncStatus==='function'){
+        updateSyncStatus('<i class="fas fa-spinner fa-spin"></i> 重新同步派遣紀錄...');
+    }
+    Promise.resolve(
+        typeof pushCloudData==='function'
+            ? pushCloudData(true)
+            : null
+    ).then(function(){
+        if(typeof qyjScheduleSafeCloudRead==='function'){
+            qyjScheduleSafeCloudRead(700);
+        }else if(typeof loadDataFromCloud==='function'){
+            setTimeout(function(){loadDataFromCloud(false);},700);
+        }
+    }).catch(function(){
+        if(typeof showToast==='function'){
+            showToast('❌ 派遣紀錄同步仍失敗，資料已保留在本機',true);
+        }
+    });
+};
+
+/*
+ * 修復「只剩升級後一筆、而且整段工時都被套新時薪」的壞資料。
+ * 只處理備註明確是自動拆分、同日卻沒有跨階前那筆，且確實跨級距者。
+ */
+function minutes(t){
+    if(!t)return null;
+    const p=String(t).replace(/：/g,':').split(':').map(Number);
+    if(p.length<2||!Number.isFinite(p[0])||!Number.isFinite(p[1]))return null;
+    return p[0]*60+p[1];
+}
+function hm(total){
+    total=Math.round(total);
+    total=((total%1440)+1440)%1440;
+    return String(Math.floor(total/60)).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
+}
+function rowStart(item){
+    const a=minutes(item&&item.am_s),p=minutes(item&&item.pm_s);
+    if(a!==null)return a;
+    if(p!==null)return p;
+    return 999999;
+}
+function itemHours(item){
+    if(typeof getItemSalaryHours==='function')return Number(getItemSalaryHours(item)||0);
+    return Number(item&&item.salary_hours||0);
+}
+function splitClock(item,h1){
+    const out1={am_s:'',am_e:'',pm_s:'',pm_e:''};
+    const out2={am_s:'',am_e:'',pm_s:'',pm_e:''};
+    let remain=Number(h1)||0;
+
+    const segments=[
+        ['am',item.am_s,item.am_e],
+        ['pm',item.pm_s,item.pm_e]
+    ];
+
+    segments.forEach(function(seg){
+        const name=seg[0],s=minutes(seg[1]),e=minutes(seg[2]);
+        if(s===null||e===null)return;
+        let dur=(e-s)/60;if(dur<0)dur+=24;
+
+        if(remain<=0){
+            out2[name+'_s']=seg[1];out2[name+'_e']=seg[2];return;
+        }
+        if(remain>=dur-0.001){
+            out1[name+'_s']=seg[1];out1[name+'_e']=seg[2];remain-=dur;return;
+        }
+
+        const cut=hm(s+remain*60);
+        out1[name+'_s']=seg[1];out1[name+'_e']=cut;
+        out2[name+'_s']=cut;out2[name+'_e']=seg[2];
+        remain=0;
+    });
+
+    return [out1,out2];
+}
+
+window.qyjRepairIncompleteTierSplits=function(){
+    if(!Array.isArray(attendData)||!attendData.length)return 0;
+    let repaired=0;
+    const now=new Date().toISOString();
+
+    const candidates=attendData.slice().filter(function(item){
+        return item &&
+            String(item.remark||'').includes('升級後(自動時間拆分)');
+    });
+
+    candidates.forEach(function(item){
+        const sameFront=attendData.some(function(x){
+            return x && x!==item &&
+                x.staff===item.staff &&
+                x.company===item.company &&
+                x.date===item.date &&
+                String(x.remark||'').includes('跨階前(自動時間拆分)');
+        });
+        if(sameFront)return;
+
+        const si=(staffData||[]).find(x=>x&&x.name===item.staff);
+        if(!si)return;
+
+        const ordered=attendData
+            .map(function(x,idx){return {item:x,idx:idx};})
+            .filter(function(x){return x.item&&x.item.staff===item.staff&&x.item!==item;})
+            .sort(function(a,b){
+                const da=String(a.item.date||''),db=String(b.item.date||'');
+                if(da!==db)return da.localeCompare(db);
+                return rowStart(a.item)-rowStart(b.item)||a.idx-b.idx;
+            });
+
+        let before=0;
+        for(const r of ordered){
+            if(String(r.item.date||'')>String(item.date||''))break;
+            if(String(r.item.date||'')===String(item.date||'')&&rowStart(r.item)>=rowStart(item))break;
+            before+=itemHours(r.item);
+            before=Math.round(before*10)/10;
+        }
+
+        const h=itemHours(item);
+        if(!(h>0))return;
+
+        const rule=si.salary_rule||'114年標準';
+        const calcRule=si.salary_calc_rule ||
+            (typeof deriveSalaryCalcRule==='function'?deriveSalaryCalcRule(si):'新制級距');
+        const agreed=typeof isRaise250Approved==='function'?isRaise250Approved(si):false;
+        const tier=typeof getNextTierInfo==='function'
+            ? getNextTierInfo(rule,before,agreed,si.hourly,calcRule)
+            : null;
+        const th=Number(tier&&tier.nextTier);
+
+        if(!Number.isFinite(th)||th<=before||th>=before+h)return;
+
+        const h1=Math.round((th-before)*10)/10;
+        const h2=Math.round((h-h1)*10)/10;
+        if(!(h1>0&&h2>0))return;
+
+        const rates=[
+            typeof calcWageByDate==='function'
+                ? calcWageByDate(rule,before,agreed,si.hourly,calcRule,item.date)
+                : '',
+            typeof calcWageByDate==='function'
+                ? calcWageByDate(rule,before+h,agreed,si.hourly,calcRule,item.date)
+                : ''
+        ];
+
+        const clocks=splitClock(item,h1);
+        const oldIndex=attendData.indexOf(item);
+        if(oldIndex<0)return;
+
+        // 舊壞資料永久 tombstone，避免同步後復活。
+        try{qyjMarkAttendDeleted([item]);}catch(e){markSemanticDeleted(item);}
+
+        const baseRemark=String(item.remark||'')
+            .replace(/升級後\(自動時間拆分\)/g,'')
+            .replace(/[｜|]+$/g,'')
+            .trim();
+
+        const mkid=function(){
+            return typeof qyjNewAttendId==='function'
+                ? qyjNewAttendId()
+                : 'att_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10);
+        };
+
+        const r1=Object.assign({},item,clocks[0],{
+            salary_hours:h1,
+            deduct_points:
+                typeof getCustBillingMode==='function'&&getCustBillingMode(item.company)==='專案'
+                    ? 0:h1,
+            special_hourly:rates[0],
+            remark:(baseRemark?baseRemark+'｜':'')+'跨階前(自動時間拆分)',
+            _syncId:mkid(),_createdAt:now,_updatedAt:now,
+            _syncState:'pending',_pendingSince:Date.now()
+        });
+        const r2=Object.assign({},item,clocks[1],{
+            salary_hours:h2,
+            deduct_points:
+                typeof getCustBillingMode==='function'&&getCustBillingMode(item.company)==='專案'
+                    ? 0:h2,
+            special_hourly:rates[1],
+            remark:(baseRemark?baseRemark+'｜':'')+'升級後(自動時間拆分)',
+            _syncId:mkid(),_createdAt:now,_updatedAt:now,
+            _syncState:'pending',_pendingSince:Date.now()
+        });
+
+        registerPending(r1);registerPending(r2);
+        attendData.splice(oldIndex,1,r1,r2);
+        repaired++;
+    });
+
+    if(repaired){
+        try{saveLocalData();}catch(e){}
+        try{if(typeof renderAttend==='function')renderAttend();}catch(e){}
+        setTimeout(function(){window.qyjRetryAttendSync();},300);
+    }
+    return repaired;
+};
+
+function boot(){
+    scanPending();
+    const repaired=window.qyjRepairIncompleteTierSplits();
+    if(repaired&&typeof showToast==='function'){
+        showToast('✅ 已自動修復 '+repaired+' 筆不完整的跨階拆分，正在同步雲端');
+    }
+}
+if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,900);});
+}else{
+    setTimeout(boot,900);
+}
+})();
+</script>
+
+<script id="QYJ_ATTEND_STABLE_RENDER_20261030">
+(function(){
+'use strict';
+
+/* 將舊的等待文字升級成：等待 / 失敗可重試 */
+const oldRender=typeof renderAttend==='function'?renderAttend:null;
+if(!oldRender)return;
+
+renderAttend=function(){
+    const r=oldRender.apply(this,arguments);
+    try{
+        const rows=document.querySelectorAll('#attendTable tr');
+        rows.forEach(function(tr){
+            const pending=tr.querySelector('span[style*="d97706"]');
+            if(!pending||!String(pending.textContent||'').includes('等待雲端同步'))return;
+
+            const idx=Array.from(tr.parentNode.children).indexOf(tr);
+            // 不依 DOM idx 找資料，只依畫面文字顯示狀態；真正同步狀態由 merge 修正。
+            const now=Date.now();
+            let failed=false;
+            try{
+                failed=(attendData||[]).some(function(item){
+                    return item&&item._syncState==='pending'&&
+                        item._pendingSince&&now-Number(item._pendingSince)>45000;
+                });
+            }catch(e){}
+
+            if(failed){
+                pending.className='qyj-sync-failed';
+                pending.innerHTML='同步尚未確認 <button class="qyj-sync-retry" type="button" onclick="qyjRetryAttendSync()">重試</button>';
+            }else{
+                pending.className='qyj-sync-pending';
+                pending.textContent='等待雲端確認';
+            }
+        });
+    }catch(e){}
+    return r;
+};
+window.renderAttend=renderAttend;
+})();
+</script>
 
 </body>
 </html>
