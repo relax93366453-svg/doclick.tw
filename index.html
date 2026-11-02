@@ -11372,7 +11372,7 @@ window.msPreviewMyPayslip=function(){
 window.msShowProfile=function(){let s=msGetCurrentStaff(),n=msStaffName(s),code=s.code||s.id||s.staffId||msStaffAccount(s)||'-',phone=s.phone||s.mobile||s.tel||'-',dept=s.dept||s.department||s.type||s.role||s.status||'-';msSetTitle('員工資訊');document.getElementById('msContent').innerHTML=`<div class="ms-card" style="text-align:center"><div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${n.slice(0,1)}</div><div class="ms-row"><span>員工姓名</span><span>${n}</span></div><div class="ms-row"><span>員工編號</span><span>${code}</span></div><div class="ms-row"><span>部門/狀態</span><span>${dept}</span></div><div class="ms-row"><span>手機</span><span>${phone}</span></div></div><div class="ms-card"><div style="font-weight:900;font-size:18px">登入方式</div><div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div><div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>`};
 window.msShowSop=function(){msSetTitle('入職包 SOP');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list"><div><div class="ms-lt">報班前注意事項</div><div class="ms-ls">請詳閱派遣規範</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">工作態度規範</div><div class="ms-ls">服裝、準時、回報、資料保密</div></div><span>›</span></div></div>'};
 window.msShowNotice=function(){msSetTitle('公告欄');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有公告</div></div>'};
-window.msShowMore=function(){msSetTitle('更多功能');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list" onclick="msGo(\'profile\')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'sop\')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">新員工指引</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">LINE 通知管理</div><div class="ms-ls">第二階段開放</div></div><span>›</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>'};
+window.msShowMore=function(){msSetTitle('更多功能');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list" onclick="msGo(\'profile\')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'sop\')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">新員工指引</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'notice\')"><div><div class="ms-lt">公告欄</div><div class="ms-ls">最新公告</div></div><span>›</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>'};
 window.addEventListener('load',function(){let qs=new URLSearchParams(location.search);if(qs.get('staffApp')==='1'||location.hash==='#staff')openMobileStaffApp(qs.get('route')||'home')});
 })();
 </script>
@@ -31826,6 +31826,253 @@ document.addEventListener('keydown',function(e){
         if(typeof handleLogin==='function') handleLogin();
     }
 });
+
+})();
+</script>
+
+
+<script id="qyjStaffAppCanonicalFinal">
+/* ===== 愜易居 Staff App：CANONICAL FINAL（2026-11-02） ===== */
+(function(){
+'use strict';
+
+const STAFF_API_FALLBACK = 'https://script.google.com/macros/s/AKfycbyA8OCqU_cWD0PuoeVFnuF68CviCxReI77WOQrGuwVa9F8qap_wcs7QkUnzTNv_hmfCBQ/exec';
+let staffApiConfigPromise = null;
+
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function val(obj, keys, fallback=''){
+  for(const k of keys){ if(obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k]; }
+  return fallback;
+}
+function currentStaff(){
+  try{ if(typeof window.getCurrentStaffExact === 'function'){ const s=window.getCurrentStaffExact(); if(s) return s; } }catch(e){}
+  try{ if(typeof window.msGetCurrentStaff === 'function'){ const s=window.msGetCurrentStaff(); if(s) return s; } }catch(e){}
+  try{ return JSON.parse(localStorage.getItem('qyj_mobile_staff_login') || localStorage.getItem('qyj_staff_login') || 'null') || {}; }catch(e){ return {}; }
+}
+function staffName(s){
+  try{ if(typeof window.msStaffName === 'function') return window.msStaffName(s) || val(s,['name','staff','realName'],'員工'); }catch(e){}
+  return val(s,['name','staff','realName'],'員工');
+}
+function staffCode(s){
+  try{ if(typeof window.staffCode === 'function') return window.staffCode(s) || '-'; }catch(e){}
+  return val(s,['code','staffId','employeeId','id','account'],'-');
+}
+function setTitle(t){ try{ if(typeof window.msSetTitle === 'function') window.msSetTitle(t); }catch(e){} }
+function contentBox(){ return document.getElementById('msContent'); }
+function row(label, value){
+  if(value === undefined || value === null || String(value).trim()==='' || String(value)==='undefined' || String(value)==='null') return '';
+  return `<div class="ms-row"><span>${esc(label)}</span><span>${esc(value)}</span></div>`;
+}
+async function getStaffApiConfig(){
+  if(staffApiConfigPromise) return staffApiConfigPromise;
+  staffApiConfigPromise = (async()=>{
+    try{
+      const r = await fetch('./config.json?staff=' + Date.now(), {cache:'no-store'});
+      if(r.ok){ const c=await r.json(); return {url:c.apiUrl||c.staffApiUrl||STAFF_API_FALLBACK, token:c.token||c.apiToken||''}; }
+    }catch(e){}
+    return {url:STAFF_API_FALLBACK, token:''};
+  })();
+  return staffApiConfigPromise;
+}
+async function staffApi(action, payload={}){
+  const cfg = await getStaffApiConfig();
+  const s = currentStaff();
+  const body = {
+    action,
+    token: cfg.token || '',
+    name: staffName(s),
+    staff: staffName(s),
+    staffName: staffName(s),
+    code: staffCode(s),
+    staffId: val(s,['staffId','employeeId','code','id'],staffCode(s)),
+    employeeId: val(s,['employeeId','staffId','code','id'],staffCode(s)),
+    account: val(s,['account','phone','mobile','code'],''),
+    phone: val(s,['phone','mobile','tel'],''),
+    ...payload
+  };
+  const r = await fetch(cfg.url, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(body)
+  });
+  const text = await r.text();
+  let data;
+  try{ data=JSON.parse(text); }catch(e){ throw new Error(text || `HTTP ${r.status}`); }
+  if(!r.ok) throw new Error(data.message || data.error || `HTTP ${r.status}`);
+  if(data && (data.status==='error' || data.success===false)) throw new Error(data.message || data.error || 'API 回傳錯誤');
+  return data;
+}
+function unwrapRecord(res){
+  if(!res) return {};
+  if(res.data && !Array.isArray(res.data)) return res.data;
+  return res.personnel || res.record || res.item || res.staff || res.profile || res;
+}
+function unwrapList(res){
+  if(Array.isArray(res)) return res;
+  for(const k of ['data','items','list','records','sop','sops','rows']) if(Array.isArray(res && res[k])) return res[k];
+  return [];
+}
+function parseArray(v){
+  if(!v) return [];
+  if(Array.isArray(v)) return v;
+  if(typeof v === 'string'){
+    const s=v.trim(); if(!s) return [];
+    try{ const j=JSON.parse(s); return Array.isArray(j)?j:[j]; }catch(e){ return s.split(/\r?\n|,/).map(x=>x.trim()).filter(Boolean); }
+  }
+  return [v];
+}
+function linkOf(x){
+  if(!x) return '';
+  if(typeof x==='string') return x;
+  return x.url || x.href || x.fileUrl || x.downloadUrl || x.link || '';
+}
+function nameOf(x, fallback='附件'){
+  if(typeof x==='string') return x.split('/').pop() || fallback;
+  return x.name || x.fileName || x.title || fallback;
+}
+
+window.msShowHome = function(){
+  const s=currentStaff(), name=staffName(s), code=staffCode(s), status=val(s,['status','type','role'],'員工');
+  let today=[];
+  try{ if(typeof window.msFindTodaySchedules==='function') today=window.msFindTodaySchedules(s)||[]; }catch(e){}
+  setTitle('員工服務');
+  const box=contentBox(); if(!box) return;
+  const todayHtml = today.length ? today.map(x=>`<div class="ms-row"><span>${esc(val(x,['company'],'-'))}</span><span>${esc(val(x,['start','startTime'],'-'))}-${esc(val(x,['end','endTime'],'-'))}</span></div>`).join('') : '<div class="ms-empty">今天目前沒有排班</div>';
+  box.innerHTML = `
+    <div class="ms-card ms-profile"><div class="ms-avatar">${esc(name).slice(0,1)}</div><div><div class="ms-name">${esc(name)}</div><div class="ms-sub">員工編號：${esc(code)}<br>狀態：${esc(status)}</div></div></div>
+    <div class="ms-card"><div class="ms-section-title" style="font-weight:900;margin-bottom:12px">今日排班</div>${todayHtml}<div class="ms-punch-big ms-punch"><button class="ms-in" onclick="msGo('punch')">我要打卡</button><button class="ms-out" onclick="msGo('schedule')">我的班表</button></div></div>
+    <div class="ms-grid">
+      <button class="ms-grid-btn" onclick="msGo('punch')"><div class="ms-icon ms-ico">📍</div><div class="ms-grid-title ms-gt">我要打卡</div><div class="ms-grid-sub ms-gs">上下班打卡</div></button>
+      <button class="ms-grid-btn" onclick="msGo('attendance')"><div class="ms-icon ms-ico">📅</div><div class="ms-grid-title ms-gt">出勤紀錄</div><div class="ms-grid-sub ms-gs">查看打卡</div></button>
+      <button class="ms-grid-btn" onclick="msGo('schedule')"><div class="ms-icon ms-ico">📋</div><div class="ms-grid-title ms-gt">我的班表</div><div class="ms-grid-sub ms-gs">查看排班</div></button>
+      <button class="ms-grid-btn" onclick="msGo('leave')"><div class="ms-icon ms-ico">📝</div><div class="ms-grid-title ms-gt">我要請假</div><div class="ms-grid-sub ms-gs">請假申請</div></button>
+      <button class="ms-grid-btn" onclick="msGo('salary')"><div class="ms-icon ms-ico">💰</div><div class="ms-grid-title ms-gt">我的薪資單</div><div class="ms-grid-sub ms-gs">下載薪資</div></button>
+      <button class="ms-grid-btn" onclick="msGo('profile')"><div class="ms-icon ms-ico">👤</div><div class="ms-grid-title ms-gt">員工資訊</div><div class="ms-grid-sub ms-gs">個人資料</div></button>
+      <button class="ms-grid-btn" onclick="msGo('personnel')"><div class="ms-icon ms-ico">🗂️</div><div class="ms-grid-title ms-gt">人事資料表</div><div class="ms-grid-sub ms-gs">更新及填寫</div></button>
+      <button class="ms-grid-btn" onclick="msGo('sop')"><div class="ms-icon ms-ico">📦</div><div class="ms-grid-title ms-gt">入職包 SOP</div><div class="ms-grid-sub ms-gs">新員工指引</div></button>
+      <button class="ms-grid-btn" onclick="msGo('notice')"><div class="ms-icon ms-ico">📢</div><div class="ms-grid-title ms-gt">公告欄</div><div class="ms-grid-sub ms-gs">最新公告</div></button>
+      <button class="ms-grid-btn" onclick="msGo('more')"><div class="ms-icon ms-ico">▦</div><div class="ms-grid-title ms-gt">更多功能</div><div class="ms-grid-sub ms-gs">其他服務</div></button>
+    </div>`;
+};
+
+window.msShowProfile = function(){
+  const s=currentStaff(), name=staffName(s), code=staffCode(s);
+  const phone=val(s,['phone','mobile','tel'],'-');
+  const position=val(s,['position','role','type','jobTitle'],'');
+  const status=val(s,['status'],'');
+  const hire=val(s,['hireDate','startDate','hire_date'],'');
+  const unit=val(s,['unit','dispatch','dispType','department','dept'],'');
+  setTitle('員工資訊');
+  const box=contentBox(); if(!box) return;
+  box.innerHTML=`<div class="ms-card" style="text-align:center"><div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${esc(name).slice(0,1)}</div>${row('員工姓名',name)}${row('員工編號',code)}${row('手機',phone)}${row('職別／身分',position)}${row('在職狀態',status)}${row('到職日',hire)}${row('派遣類型／所屬單位',unit)}<button class="ms-primary" style="margin-top:14px;width:100%" onclick="window.open('https://relax93366453-svg.github.io/doclick.tw/','_blank')">查看完整員工資料</button></div><div class="ms-card"><div style="font-weight:900;font-size:18px">登入方式</div><div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>`;
+};
+
+window.msShowPersonnel = async function(){
+  const s=currentStaff();
+  if(!s || !Object.keys(s).length){ if(typeof window.msShowLogin==='function') return window.msShowLogin('personnel'); }
+  setTitle('人事資料表');
+  const box=contentBox(); if(!box) return;
+  box.innerHTML='<div class="ms-card"><div class="ms-empty">正在讀取最新人事資料…</div></div>';
+  let remote={}, loadError='';
+  try{ remote=unwrapRecord(await staffApi('personnel_get')); }catch(e){ loadError=e.message || String(e); }
+  const d={...s,...remote};
+  const readonly = `${row('員工姓名',staffName(d))}${row('員工編號',staffCode(d))}${row('職別／身分',val(d,['position','role','type','jobTitle'],''))}${row('在職狀態',val(d,['status'],''))}`;
+  box.innerHTML=`
+    <div class="ms-card"><div style="font-size:18px;font-weight:900;margin-bottom:12px">基本資料</div>${readonly}${loadError?`<div style="margin-top:10px;color:#b45309;font-size:13px">雲端資料暫時讀取失敗，先顯示目前登入資料：${esc(loadError)}</div>`:''}</div>
+    <div class="ms-card"><div style="font-size:18px;font-weight:900;margin-bottom:14px">可更新資料</div>
+      <div class="ms-form" style="display:grid;gap:10px">
+        <label>手機<input id="qyjPerPhone" value="${esc(val(d,['phone','mobile','tel'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>Email<input id="qyjPerEmail" type="email" value="${esc(val(d,['email','mail'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>地址<input id="qyjPerAddress" value="${esc(val(d,['address','addr'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>緊急聯絡人<input id="qyjPerEmergency" value="${esc(val(d,['emergencyContact','emergency','emergencyName'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>緊急聯絡電話<input id="qyjPerEmergencyPhone" value="${esc(val(d,['emergencyPhone','emergencyTel'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>銀行<input id="qyjPerBank" value="${esc(val(d,['bank','bankName'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>分行<input id="qyjPerBranch" value="${esc(val(d,['bankBranch','branch'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>銀行帳號<input id="qyjPerBankAccount" value="${esc(val(d,['bankAccount','bankAcc','accountNo'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+      </div>
+      <button id="qyjPersonnelSubmit" class="ms-primary" style="width:100%;margin-top:16px" onclick="qyjSubmitPersonnelUpdate()">送出更新申請</button>
+      <div id="qyjPersonnelMsg" style="display:none;margin-top:12px;padding:11px;border-radius:8px"></div>
+    </div>`;
+};
+
+window.qyjSubmitPersonnelUpdate = async function(){
+  const msg=document.getElementById('qyjPersonnelMsg'), btn=document.getElementById('qyjPersonnelSubmit');
+  const fields={
+    phone:document.getElementById('qyjPerPhone')?.value.trim()||'',
+    email:document.getElementById('qyjPerEmail')?.value.trim()||'',
+    address:document.getElementById('qyjPerAddress')?.value.trim()||'',
+    emergencyContact:document.getElementById('qyjPerEmergency')?.value.trim()||'',
+    emergencyPhone:document.getElementById('qyjPerEmergencyPhone')?.value.trim()||'',
+    bank:document.getElementById('qyjPerBank')?.value.trim()||'',
+    bankBranch:document.getElementById('qyjPerBranch')?.value.trim()||'',
+    bankAccount:document.getElementById('qyjPerBankAccount')?.value.trim()||''
+  };
+  if(btn){ btn.disabled=true; btn.textContent='送出中…'; }
+  try{
+    await staffApi('personnel_update',{...fields, fields, data:fields, reviewStatus:'pending', status:'pending'});
+    if(msg){ msg.style.display='block'; msg.style.background='#ecfdf5'; msg.style.color='#047857'; msg.textContent='已送出，等待管理員審核'; }
+  }catch(e){
+    if(msg){ msg.style.display='block'; msg.style.background='#fef2f2'; msg.style.color='#b91c1c'; msg.textContent='送出失敗：'+(e.message||e); }
+  }finally{ if(btn){ btn.disabled=false; btn.textContent='送出更新申請'; } }
+};
+
+function renderSopItem(item){
+  const title=val(item,['title','name'],'未命名 SOP');
+  const category=val(item,['category','type'],'其他');
+  const date=val(item,['publishDate','publishedAt','date','updatedAt'],'');
+  const important=val(item,['important','importantNote','note','warning'],'');
+  let content=val(item,['content','html','body','description'],'');
+  if(content && !/<[a-z][\s\S]*>/i.test(String(content))) content=`<div style="white-space:pre-wrap">${esc(content)}</div>`;
+  const images=[...parseArray(item.images),...parseArray(item.image),...parseArray(item.img)].filter(Boolean);
+  const files=[...parseArray(item.attachments),...parseArray(item.files),...parseArray(item.pdfs),...parseArray(item.pdf)].filter(Boolean);
+  const imageHtml=images.map(x=>{const u=linkOf(x);return u?`<img src="${esc(u)}" alt="${esc(nameOf(x,'SOP 圖片'))}" style="width:100%;max-height:520px;object-fit:contain;border-radius:10px;margin-top:10px" loading="lazy">`:''}).join('');
+  const fileHtml=files.map((x,i)=>{const u=linkOf(x);return u?`<a href="${esc(u)}" target="_blank" rel="noopener" class="ms-secondary" style="display:block;text-align:center;text-decoration:none;margin-top:8px">📎 ${esc(nameOf(x,'附件 '+(i+1)))}</a>`:''}).join('');
+  const tableHtml=val(item,['tableHtml','table','chartHtml','flowHtml'],'');
+  return `<div class="ms-card"><div style="font-size:12px;color:#64748b;font-weight:800">${esc(category)}${date?' ｜ '+esc(date):''}</div><div style="font-size:19px;font-weight:900;margin:6px 0 12px">${esc(title)}</div>${important?`<div style="background:#fff7ed;border-left:4px solid #f59e0b;padding:10px;border-radius:8px;margin-bottom:12px"><b>重要提醒：</b>${esc(important)}</div>`:''}<div style="line-height:1.8">${content||''}</div>${tableHtml||''}${imageHtml}${fileHtml}</div>`;
+}
+window.msShowSop = async function(){
+  setTitle('入職包 SOP'); const box=contentBox(); if(!box) return;
+  box.innerHTML='<div class="ms-card"><div class="ms-empty">正在讀取最新 SOP…</div></div>';
+  try{
+    const res=await staffApi('sop_get',{publishedOnly:true,publish:true,status:'published'});
+    let list=unwrapList(res).filter(x=>x && x.publish!==false && x.published!==false && String(x.status||'').toLowerCase()!=='draft');
+    if(!list.length){ box.innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有已發布的 SOP</div></div>'; return; }
+    const cats=[...new Set(list.map(x=>val(x,['category','type'],'其他')))];
+    box.innerHTML=`<div class="ms-card"><div style="font-weight:900;margin-bottom:10px">SOP 分類</div><div style="display:flex;gap:8px;flex-wrap:wrap">${cats.map(c=>`<span style="background:#eff6ff;color:#1d4ed8;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800">${esc(c)}</span>`).join('')}</div></div>`+list.map(renderSopItem).join('');
+  }catch(e){ box.innerHTML=`<div class="ms-card"><div class="ms-empty" style="color:#b91c1c">SOP 讀取失敗：${esc(e.message||e)}</div></div>`; }
+};
+
+window.msShowFaq = function(){
+  setTitle('常見問題'); const box=contentBox(); if(!box) return;
+  box.innerHTML=`<div class="ms-card"><div style="font-weight:900;font-size:18px;margin-bottom:12px">常見問題</div><div class="ms-list"><div><div class="ms-lt">打卡沒有定位怎麼辦？</div><div class="ms-ls">請開啟手機瀏覽器定位權限後重新打卡。</div></div></div><div class="ms-list"><div><div class="ms-lt">人事資料修改後會立刻生效嗎？</div><div class="ms-ls">不會，送出後會先進入管理員審核。</div></div></div><div class="ms-list"><div><div class="ms-lt">SOP 看不到內容？</div><div class="ms-ls">員工端只顯示已發布內容；若仍看不到，可稍後重新整理。</div></div></div></div>`;
+};
+
+window.msShowMore = function(){
+  setTitle('更多功能'); const box=contentBox(); if(!box) return;
+  box.innerHTML=`<div class="ms-card">
+    <div class="ms-list" onclick="msGo('profile')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div>
+    <div class="ms-list" onclick="msGo('personnel')"><div><div class="ms-lt">人事資料表</div><div class="ms-ls">更新及填寫</div></div><span>›</span></div>
+    <div class="ms-list" onclick="msGo('sop')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">最新工作規範</div></div><span>›</span></div>
+    <div class="ms-list" onclick="msGo('notice')"><div><div class="ms-lt">公告欄</div><div class="ms-ls">最新公告</div></div><span>›</span></div>
+    <div class="ms-list" onclick="msGo('faq')"><div><div class="ms-lt">常見問題</div><div class="ms-ls">操作與使用說明</div></div><span>›</span></div>
+    <div class="ms-logout" onclick="msLogout()">登出</div>
+  </div>`;
+};
+
+const legacyMsGo = window.msGo;
+window.msGo = function(route){
+  const target=route||'home';
+  try{ localStorage.setItem('qyj_mobile_staff_route',target); }catch(e){}
+  const direct={home:window.msShowHome,profile:window.msShowProfile,personnel:window.msShowPersonnel,sop:window.msShowSop,more:window.msShowMore,faq:window.msShowFaq};
+  if(direct[target]) return direct[target]();
+  if(typeof legacyMsGo==='function') return legacyMsGo.call(this,target);
+  const fallback={punch:window.msShowPunch,attendance:window.msShowAttendance,schedule:window.msShowSchedule,leave:window.msShowLeave,salary:window.msShowSalary,notice:window.msShowNotice};
+  return (fallback[target]||window.msShowHome)?.();
+};
 
 })();
 </script>
