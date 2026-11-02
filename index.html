@@ -11373,93 +11373,13 @@ window.msShowProfile=function(){let s=msGetCurrentStaff(),n=msStaffName(s),code=
 window.msShowSop=function(){msSetTitle('入職包 SOP');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list"><div><div class="ms-lt">報班前注意事項</div><div class="ms-ls">請詳閱派遣規範</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">工作態度規範</div><div class="ms-ls">服裝、準時、回報、資料保密</div></div><span>›</span></div></div>'};
 window.msShowNotice=function(){msSetTitle('公告欄');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有公告</div></div>'};
 window.msShowMore=function(){msSetTitle('更多功能');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list" onclick="msGo(\'profile\')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'sop\')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">新員工指引</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'notice\')"><div><div class="ms-lt">公告欄</div><div class="ms-ls">最新公告</div></div><span>›</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>'};
-window.addEventListener('load',function(){let qs=new URLSearchParams(location.search);if(qs.get('staffApp')==='1'||location.hash==='#staff')openMobileStaffApp(qs.get('route')||'home')});
+/* 舊版 Staff App load 自動開啟已停用 */
 })();
 </script>
 <!-- ===== /員工手機版入口 ===== -->
 
 
-<script>
-/* ===== 員工手機版登入強制修正：第一階段先允許 0000 / 1234 測試登入 ===== */
-(function(){
-    window.msDoLogin = function(route){
-        const accEl = document.getElementById('msLoginAccount');
-        const pwdEl = document.getElementById('msLoginPwd');
-        const acc = accEl ? (accEl.value || '').trim() : '';
-        const pwd = pwdEl ? (pwdEl.value || '').trim() : '';
-
-        if(!acc){
-            alert('請輸入員工姓名或帳號');
-            return;
-        }
-
-        // 第一階段：0000 / 1234 一律可登入，先讓流程跑起來
-        if(pwd !== '0000' && pwd !== '1234'){
-            alert('第一階段測試密碼請輸入 0000 或 1234');
-            return;
-        }
-
-        let s = null;
-        try{
-            const list = typeof msGetStaffList === 'function' ? msGetStaffList() : [];
-            s = list.find(x => {
-                const name = typeof msStaffName === 'function' ? msStaffName(x) : (x.name || x.staff || '');
-                const account = typeof msStaffAccount === 'function' ? msStaffAccount(x) : (x.account || x.phone || x.mobile || '');
-                const keys = [name, account, x.phone, x.mobile, x.tel, x.id, x.code, x.staffId]
-                    .filter(Boolean)
-                    .map(v => String(v).trim());
-                return keys.includes(String(acc));
-            });
-        }catch(e){}
-
-        if(!s){
-            s = {
-                name: acc,
-                account: acc,
-                code: acc,
-                status: '員工',
-                type: '員工',
-                __quickLocalLogin: true
-            };
-        }
-
-        const getName = typeof msStaffName === 'function' ? msStaffName : (x => x.name || x.staff || acc);
-        const getAccount = typeof msStaffAccount === 'function' ? msStaffAccount : (x => x.account || x.phone || x.mobile || acc);
-
-        localStorage.setItem('qyj_mobile_staff_login', JSON.stringify({
-            account: getAccount(s),
-            name: getName(s),
-            code: s.code || s.id || s.staffId || getAccount(s),
-            status: s.status || s.type || s.role || '員工',
-            loginAt: new Date().toISOString(),
-            quickLocalLogin: !!s.__quickLocalLogin
-        }));
-
-        if(typeof msGo === 'function'){
-            msGo(route || 'home');
-        }else{
-            location.reload();
-        }
-    };
-
-    // 若已經記住登入，但舊版抓不到資料，改成直接使用已存資料
-    window.msGetCurrentStaff = function(){
-        try{
-            const saved = JSON.parse(localStorage.getItem('qyj_mobile_staff_login') || 'null');
-            if(!saved) return null;
-            const list = typeof msGetStaffList === 'function' ? msGetStaffList() : [];
-            const found = list.find(s => {
-                const name = typeof msStaffName === 'function' ? msStaffName(s) : (s.name || s.staff || '');
-                const account = typeof msStaffAccount === 'function' ? msStaffAccount(s) : (s.account || s.phone || s.mobile || '');
-                return String(account) === String(saved.account) || String(name) === String(saved.name);
-            });
-            return found || saved;
-        }catch(e){
-            return null;
-        }
-    };
-})();
-</script>
+<!-- 已停用：舊版員工手機登入強制覆寫，避免與正式登入邏輯重複 -->
 
 
 
@@ -12033,205 +11953,12 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             navigator.geolocation.getCurrentPosition(done,()=>done(null),{enableHighAccuracy:true,timeout:8000});
         }else done(null);
     };
-
-    const oldOpen=window.openMobileStaffApp;
-    window.openMobileStaffApp=async function(route){
-        const app=document.getElementById('mobileStaffApp'); if(app)app.style.display='block';
-        localStorage.setItem('qyj_mobile_staff_route',route||'home');
-        const staff=(typeof msGetCurrentStaff==='function')?msGetCurrentStaff():savedStaff();
-        if(!staff||!staff.name){
-            if(typeof msShowLogin==='function')msShowLogin(route||'home');
-            return;
-        }
-        await syncScheduleSilent();
-        if(typeof msGo==='function')msGo(route||'home');
-        else window.msShowHome();
-    };
-
-    const oldLogin=window.msDoLogin;
-    window.msDoLogin=function(route){
-        if(typeof oldLogin==='function'){
-            oldLogin(route||'home');
-            setTimeout(async()=>{
-                await syncScheduleSilent();
-                if(typeof msGo==='function')msGo(route||'home');
-            },500);
-        }
-    };
-
-    window.addEventListener('load',function(){
-        const qs=new URLSearchParams(location.search);
-        if(qs.get('staffApp')==='1'||location.hash==='#staff'){
-            setTimeout(()=>window.openMobileStaffApp(qs.get('route')||'home'),500);
-        }
-    });
+    /* 舊版 openMobileStaffApp / msDoLogin / load 覆寫已停用，避免 LINE 內建瀏覽器重複重畫登入頁 */
 })();
 </script>
 
 
-<script>
-/* ===== 手機登入綁定員工資料修正：手機號碼 → 人員資料 → 姓名 → 班表 ===== */
-(function(){
-    const LOGIN_KEY = 'qyj_mobile_staff_login';
-
-    function norm(v){
-        return String(v || '').replace(/\s+/g,'').trim();
-    }
-
-    function getAllStaffRows(){
-        let rows = [];
-
-        try{ if(Array.isArray(staffData)) rows = rows.concat(staffData); }catch(e){}
-        try{ if(Array.isArray(ftStaffData)) rows = rows.concat(ftStaffData); }catch(e){}
-        try{ if(Array.isArray(window.staffData)) rows = rows.concat(window.staffData); }catch(e){}
-        try{ if(Array.isArray(window.ftStaffData)) rows = rows.concat(window.ftStaffData); }catch(e){}
-
-        ['staffData','ftStaffData'].forEach(key=>{
-            try{
-                const v = JSON.parse(localStorage.getItem(key) || '[]');
-                if(Array.isArray(v)) rows = rows.concat(v);
-            }catch(e){}
-        });
-
-        const seen = new Set();
-        return rows.filter(x=>{
-            if(!x || typeof x !== 'object') return false;
-            const key = JSON.stringify([
-                x.id || x.staffId || x.code || '',
-                x.name || x.staff || x.realName || '',
-                x.phone || x.mobile || x.tel || ''
-            ]);
-            if(seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
-    }
-
-    function rowName(x){
-        return x.name || x.staff || x.realName || x.employeeName || x.fullname || '';
-    }
-
-    function rowPhone(x){
-        return x.phone || x.mobile || x.tel || x.cellphone || x.mobilePhone || '';
-    }
-
-    function rowAccount(x){
-        return x.account || x.username || x.login || x.user || '';
-    }
-
-    function rowCode(x){
-        return x.code || x.staffId || x.id || x.employeeId || rowPhone(x) || rowAccount(x) || rowName(x);
-    }
-
-    function rowStatus(x){
-        return x.status || x.type || x.role || x.department || x.dept || '員工';
-    }
-
-    function findStaffByLogin(input){
-        const key = norm(input);
-        return getAllStaffRows().find(x=>{
-            const values = [
-                rowName(x),
-                rowPhone(x),
-                rowAccount(x),
-                rowCode(x),
-                x.mobile,
-                x.tel,
-                x.phone,
-                x.id,
-                x.staffId,
-                x.code
-            ].filter(Boolean).map(norm);
-            return values.includes(key);
-        }) || null;
-    }
-
-    window.msGetCurrentStaff = function(){
-        try{
-            const saved = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
-            if(!saved) return null;
-
-            // 每次開啟都重新用手機/帳號找一次正式人員資料
-            const found = findStaffByLogin(saved.account || saved.phone || saved.name || saved.code);
-            if(found) return found;
-
-            return saved;
-        }catch(e){
-            return null;
-        }
-    };
-
-    const oldLogin = window.msDoLogin;
-
-    window.msDoLogin = function(route){
-        const accEl = document.getElementById('msLoginAccount');
-        const pwdEl = document.getElementById('msLoginPwd');
-        const acc = accEl ? (accEl.value || '').trim() : '';
-        const pwd = pwdEl ? (pwdEl.value || '').trim() : '';
-
-        if(!acc || !pwd){
-            alert('請輸入帳號與密碼');
-            return;
-        }
-
-        const staff = findStaffByLogin(acc);
-
-        // 第一階段保留 0000 / 1234 測試密碼
-        if(pwd !== '0000' && pwd !== '1234'){
-            if(typeof oldLogin === 'function'){
-                return oldLogin(route || 'home');
-            }
-            alert('密碼錯誤');
-            return;
-        }
-
-        if(!staff){
-            alert('找不到這支手機或帳號對應的員工資料，請先到派遣人員或正職人員資料庫確認手機號碼。');
-            return;
-        }
-
-        const profile = {
-            account: rowAccount(staff) || rowPhone(staff) || rowCode(staff),
-            phone: rowPhone(staff),
-            name: rowName(staff),
-            code: rowCode(staff),
-            status: rowStatus(staff),
-            loginAt: new Date().toISOString()
-        };
-
-        localStorage.setItem(LOGIN_KEY, JSON.stringify(profile));
-
-        if(typeof msGo === 'function'){
-            msGo(route || 'home');
-        }else{
-            location.reload();
-        }
-    };
-
-    // 修正首頁顯示名稱：一定顯示正式員工姓名，不再顯示手機號碼
-    const oldShowHome = window.msShowHome;
-    window.msShowHome = function(){
-        const saved = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
-        const found = saved ? findStaffByLogin(saved.account || saved.phone || saved.code || saved.name) : null;
-
-        if(found && saved){
-            const fixed = {
-                account: rowAccount(found) || rowPhone(found) || rowCode(found),
-                phone: rowPhone(found),
-                name: rowName(found),
-                code: rowCode(found),
-                status: rowStatus(found),
-                loginAt: saved.loginAt || new Date().toISOString()
-            };
-            localStorage.setItem(LOGIN_KEY, JSON.stringify(fixed));
-        }
-
-        if(typeof oldShowHome === 'function'){
-            return oldShowHome();
-        }
-    };
-})();
-</script>
+<!-- 已停用：舊版手機登入綁定覆寫，正式登入由後方 cloud-exact 版本負責 -->
 
 
 <script>
@@ -12488,7 +12215,15 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         const app = document.getElementById('mobileStaffApp');
         if(app) app.style.display = 'block';
 
-        localStorage.setItem('qyj_mobile_staff_route', route || 'home');
+        const requestedRoute = route || localStorage.getItem('qyj_mobile_staff_route') || 'home';
+        localStorage.setItem('qyj_mobile_staff_route', requestedRoute);
+        try{
+            const u = new URL(location.href);
+            if(u.searchParams.get('staffApp')==='1'){
+                u.searchParams.set('route', requestedRoute);
+                history.replaceState(null,'',u.toString());
+            }
+        }catch(e){}
 
         const box = document.getElementById('msContent');
         if(box){
@@ -16285,166 +16020,7 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
      僅追加修正：員工手機入口直接顯示，不先閃出舊版首頁
      原始程式與其他功能全部保留
 ========================================================= -->
-<script>
-(function () {
-    'use strict';
-
-    function isStaffAppMode() {
-        try {
-            return new URLSearchParams(location.search).get('staffApp') === '1';
-        } catch (error) {
-            return false;
-        }
-    }
-
-    function wantedRoute() {
-        try {
-            return (
-                new URLSearchParams(location.search).get('route') ||
-                localStorage.getItem('qyj_mobile_staff_route') ||
-                'home'
-            );
-        } catch (error) {
-            return 'home';
-        }
-    }
-
-    function hideNonMobileScreens() {
-        var ids = [
-            'login-screen',
-            'sys-screen',
-            'staff-screen'
-        ];
-
-        ids.forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el) {
-                el.style.display = 'none';
-                el.style.visibility = 'hidden';
-            }
-        });
-
-        var app = document.getElementById('mobileStaffApp');
-
-        if (app) {
-            app.style.display = 'block';
-            app.style.visibility = 'visible';
-        }
-    }
-
-    async function openStaffDirectly() {
-        if (!isStaffAppMode()) return;
-
-        hideNonMobileScreens();
-
-        var app = document.getElementById('mobileStaffApp');
-        if (!app) return;
-
-        var savedStaff = null;
-
-        try {
-            savedStaff = JSON.parse(
-                localStorage.getItem('qyj_mobile_staff_login') || 'null'
-            );
-        } catch (error) {}
-
-        /*
-         * 已登入：立即用本機資料開頁，不等待雲端。
-         */
-        if (savedStaff) {
-            try {
-                if (typeof window.msGo === 'function') {
-                    window.msGo(wantedRoute());
-                } else if (typeof window.msShowHome === 'function') {
-                    window.msShowHome();
-                }
-            } catch (error) {
-                console.warn('員工手機頁立即開啟失敗：', error);
-            }
-        } else {
-            /*
-             * 尚未登入：直接顯示員工登入，不顯示舊版首頁。
-             */
-            try {
-                if (typeof window.msShowLogin === 'function') {
-                    window.msShowLogin(wantedRoute());
-                }
-            } catch (error) {
-                console.warn('員工登入頁開啟失敗：', error);
-            }
-        }
-
-        /*
-         * 背景讀雲端，不阻塞畫面。
-         */
-        setTimeout(function () {
-            try {
-                if (typeof window.readCloud === 'function') {
-                    Promise.resolve(window.readCloud())
-                        .then(function () {
-                            if (savedStaff && typeof window.msGo === 'function') {
-                                window.msGo(wantedRoute());
-                            }
-                        })
-                        .catch(function (error) {
-                            console.warn('背景雲端同步失敗：', error);
-                        });
-                }
-            } catch (error) {
-                console.warn('背景同步啟動失敗：', error);
-            }
-        }, 0);
-
-        document.documentElement.classList.remove(
-            'qyj-staff-fast-start'
-        );
-
-        var preloadStyle = document.getElementById(
-            'qyjStaffFastStartStyle'
-        );
-
-        if (preloadStyle) {
-            preloadStyle.remove();
-        }
-    }
-
-    /*
-     * DOM 一建立就立刻處理，不等待完整圖片與外部套件載入。
-     */
-    if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            openStaffDirectly,
-            { once: true }
-        );
-    } else {
-        openStaffDirectly();
-    }
-
-    /*
-     * 防止後續舊程式又把管理端畫面顯示回來。
-     */
-    window.addEventListener('load', function () {
-        if (!isStaffAppMode()) return;
-
-        hideNonMobileScreens();
-
-        var savedStaff = null;
-
-        try {
-            savedStaff = JSON.parse(
-                localStorage.getItem('qyj_mobile_staff_login') || 'null'
-            );
-        } catch (error) {}
-
-        if (savedStaff && typeof window.msGo === 'function') {
-            window.msGo(wantedRoute());
-        }
-    });
-
-    console.log('員工手機直達快速入口已載入');
-})();
-</script>
+<!-- 已停用：員工手機直達快速入口舊覆寫；避免與正式 openMobileStaffApp 重複初始化 -->
 
 
 <!-- =========================================================
@@ -20985,26 +20561,9 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
             await readLatestCloudForMobile();
 
-            const route =
-                params.get('route') ||
-                localStorage.getItem(
-                    'qyj_mobile_staff_route'
-                ) ||
-                'home';
-
-            if(
-                route === 'punch' &&
-                typeof window.msShowPunch === 'function'
-            ){
-                window.msShowPunch();
-            }
-
-            if(
-                route === 'notice' &&
-                typeof window.msShowNotice === 'function'
-            ){
-                window.msShowNotice();
-            }
+            // 背景同步只更新資料，不再依網址或舊 localStorage 自動切換頁面。
+            // 否則從 LINE 的 route=punch 入口登入後，使用者即使已切到其他功能，
+            // 背景同步仍可能再次把畫面拉回打卡頁。
         }catch(error){
             console.warn(
                 '員工手機首次雲端更新失敗：',
@@ -32257,12 +31816,31 @@ window.qyjDeleteSop = async function(index){
 const legacyMsGo = window.msGo;
 window.msGo = function(route){
   const target=route||'home';
-  try{ localStorage.setItem('qyj_mobile_staff_route',target); }catch(e){}
+
+  // 記住使用者真正選擇的頁面。
+  try{
+    localStorage.setItem('qyj_mobile_staff_route',target);
+    window.__qyjUserChangingMobileRoute = true;
+
+    // 同步更新網址 route，避免 LINE 初始的 route=punch 在背景同步時又被讀回來。
+    const u = new URL(location.href);
+    if(u.searchParams.get('staffApp')==='1'){
+      u.searchParams.set('route',target);
+      history.replaceState(null,'',u.toString());
+    }
+  }catch(e){}
+
   const direct={home:window.msShowHome,profile:window.msShowProfile,personnel:window.msShowPersonnel,sop:window.msShowSop,sop_manager:window.msShowSopManager,more:window.msShowMore,faq:window.msShowFaq};
-  if(direct[target]) return direct[target]();
-  if(typeof legacyMsGo==='function') return legacyMsGo.call(this,target);
   const fallback={punch:window.msShowPunch,attendance:window.msShowAttendance,schedule:window.msShowSchedule,leave:window.msShowLeave,salary:window.msShowSalary,notice:window.msShowNotice};
-  return (fallback[target]||window.msShowHome)?.();
+
+  try{
+    if(direct[target]) return direct[target]();
+    if(fallback[target]) return fallback[target]();
+    if(typeof legacyMsGo==='function') return legacyMsGo.call(this,target);
+    return window.msShowHome?.();
+  }finally{
+    setTimeout(function(){ window.__qyjUserChangingMobileRoute = false; },120);
+  }
 };
 
 })();
