@@ -6532,6 +6532,246 @@ ${d.contentHtml}
 
 
 
+
+<script>
+/* =========================================================
+   Staff App → LINE 打卡提醒資料鏡像
+   - 排班變更後同步
+   - 打卡後同步
+   - 頁面開啟後同步
+   - 不負責切頁，不影響 Staff App route
+========================================================= */
+(function(){
+  'use strict';
+
+  const REMINDER_API_URL = 'https://script.google.com/macros/s/AKfycbzSZ88aJoNNUIuC8ASHxnknbHexRv1zYtgc4tnrQRmWZvjONvGD37hhO7VyzWBQ5Yx5/exec';
+
+  function safeParse(key){
+    try{
+      const v = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(v) ? v : [];
+    }catch(e){
+      return [];
+    }
+  }
+
+  function arrayFromGlobal(name, fallbackKey){
+    try{
+      if(name === 'staffData' && typeof staffData !== 'undefined' && Array.isArray(staffData)){
+        return staffData;
+      }
+      if(name === 'scheduleData' && typeof scheduleData !== 'undefined' && Array.isArray(scheduleData)){
+        return scheduleData;
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window[name])) return window[name];
+    }catch(e){}
+
+    return safeParse(fallbackKey || name);
+  }
+
+  function dateKey(d){
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function activeScheduleSnapshot(rows){
+    const now = new Date();
+    const min = new Date(now);
+    min.setDate(min.getDate()-1);
+    const max = new Date(now);
+    max.setDate(max.getDate()+21);
+
+    const minKey=dateKey(min);
+    const maxKey=dateKey(max);
+
+    return (Array.isArray(rows)?rows:[]).filter(function(r){
+      if(!r) return false;
+      const d=String(r.date||r.workDate||r.shiftDate||r.scheduleDate||'');
+      if(!d) return false;
+      if(d < minKey || d > maxKey) return false;
+
+      const status=[
+        r.status,
+        r.scheduleStatus,
+        r.changeStatus
+      ].join(' ');
+
+      return !/作廢|取消|取消派遣|已取消/.test(status);
+    });
+  }
+
+  function recentPunchSnapshot(rows){
+    const cutoff = Date.now() - 4*24*60*60*1000;
+
+    return (Array.isArray(rows)?rows:[]).filter(function(r){
+      if(!r) return false;
+
+      if(r.createdAt){
+        const t=Date.parse(r.createdAt);
+        if(Number.isFinite(t)) return t >= cutoff;
+      }
+
+      const d=String(r.date||'');
+      if(!d) return true;
+
+      const t=Date.parse(d+'T00:00:00');
+      return !Number.isFinite(t) || t >= cutoff;
+    });
+  }
+
+  async function postReminder(payload){
+    const res = await fetch(
+      REMINDER_API_URL,
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify(payload)
+      }
+    );
+
+    const text = await res.text();
+
+    try{
+      return JSON.parse(text);
+    }catch(e){
+      throw new Error(text || '提醒 API 回傳格式錯誤');
+    }
+  }
+
+  let syncTimer = null;
+  let syncing = false;
+
+  async function syncReminderSnapshot(){
+    if(syncing) return;
+    syncing = true;
+
+    try{
+      const staffRows = arrayFromGlobal('staffData','staffData');
+      const scheduleRows = activeScheduleSnapshot(
+        arrayFromGlobal('scheduleData','scheduleData')
+      );
+
+      let clockRows = [];
+      try{
+        if(Array.isArray(window.staffClockData)){
+          clockRows = window.staffClockData;
+        }else{
+          clockRows = safeParse('staffClockData');
+        }
+      }catch(e){
+        clockRows = safeParse('staffClockData');
+      }
+
+      const punchRows = recentPunchSnapshot(
+        safeParse('qyj_staff_punch_records')
+      );
+
+      const result = await postReminder({
+        action:'reminder_sync',
+        staffRows:staffRows,
+        scheduleRows:scheduleRows,
+        clockRows:clockRows,
+        punchRows:punchRows
+      });
+
+      if(!result || result.ok === false){
+        console.warn(
+          'LINE 打卡提醒資料同步失敗：',
+          result && result.message
+            ? result.message
+            : result
+        );
+      }
+    }catch(error){
+      console.warn(
+        'LINE 打卡提醒資料同步失敗：',
+        error
+      );
+    }finally{
+      syncing = false;
+    }
+  }
+
+  function queueReminderSync(delay){
+    clearTimeout(syncTimer);
+
+    syncTimer=setTimeout(
+      syncReminderSnapshot,
+      typeof delay==='number' ? delay : 500
+    );
+  }
+
+  // 後台資料儲存後同步班表。
+  if(typeof window.saveAll === 'function'){
+    const originalSaveAll=window.saveAll;
+
+    window.saveAll=function(){
+      const result=originalSaveAll.apply(this,arguments);
+
+      Promise.resolve(result).finally(function(){
+        queueReminderSync(300);
+      });
+
+      return result;
+    };
+  }
+
+  if(typeof window.saveAllSilently === 'function'){
+    const originalSaveAllSilently=window.saveAllSilently;
+
+    window.saveAllSilently=function(){
+      const result=originalSaveAllSilently.apply(this,arguments);
+
+      Promise.resolve(result).finally(function(){
+        queueReminderSync(300);
+      });
+
+      return result;
+    };
+  }
+
+  // 員工打卡後立即同步，避免已打卡仍收到提醒。
+  if(typeof window.msDoPunch === 'function'){
+    const originalMsDoPunchReminder=window.msDoPunch;
+
+    window.msDoPunch=async function(){
+      const result=await originalMsDoPunchReminder.apply(this,arguments);
+
+      queueReminderSync(250);
+
+      return result;
+    };
+  }
+
+  // 初次進入 / 回到頁面時同步一次。
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+      queueReminderSync(1200);
+    },{once:true});
+  }else{
+    queueReminderSync(1200);
+  }
+
+  window.addEventListener('focus',function(){
+    queueReminderSync(500);
+  });
+
+  // 保險：頁面開著時每 5 分鐘同步快照。
+  setInterval(function(){
+    queueReminderSync(0);
+  },5*60*1000);
+
+  window.qyjSyncLineReminderData = syncReminderSnapshot;
+})();
+</script>
+
 </body>
 </html>`);
     w.document.close();
