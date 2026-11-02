@@ -32264,5 +32264,201 @@ window.msGo = function(route){
 })();
 </script>
 
+
+
+<!-- ===== 員工內容管理：SOP 圖片上傳整合最終版 ===== -->
+<style id="qyjContentImageAdminStyles">
+.qyj-content-media-box{grid-column:1/-1;border:1px solid #bfdbfe;background:#eff6ff;border-radius:12px;padding:14px;margin-top:2px}
+.qyj-content-media-box .qyj-media-title{font-size:13px;font-weight:900;color:#1e3a8a;margin-bottom:8px}
+.qyj-content-media-box input[type=file]{width:100%;padding:10px;border:1px dashed #93c5fd;border-radius:9px;background:#fff;margin-bottom:10px}
+.qyj-content-media-box textarea{min-height:82px!important;background:#fff}
+.qyj-content-image-preview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+.qyj-content-image-preview .qyj-preview-item{position:relative;border:1px solid #dbeafe;border-radius:10px;overflow:hidden;background:#fff;min-height:90px}
+.qyj-content-image-preview img{display:block;width:100%;height:140px;object-fit:cover;background:#f8fafc}
+.qyj-content-image-preview button{position:absolute;top:6px;right:6px;width:28px;height:28px;border:0;border-radius:50%;background:rgba(220,38,38,.92);color:#fff;font-weight:900;cursor:pointer}
+.qyj-content-media-help{font-size:11px;color:#64748b;line-height:1.6;margin-top:6px}
+.ms-sop-image-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:14px 0}
+.ms-sop-image-grid img{width:100%;height:auto;display:block;border-radius:12px;border:1px solid #e2e8f0;background:#fff}
+.ms-sop-text{white-space:normal;line-height:1.9;color:#334155;margin-top:10px}
+@media(max-width:700px){.qyj-content-image-preview{grid-template-columns:1fr 1fr}.qyj-content-image-preview img{height:120px}}
+</style>
+<script id="qyjContentImageAdminFinal">
+(function(){
+  'use strict';
+
+  const API_FALLBACK='https://script.google.com/macros/s/AKfycbyA8OCqU_cWD0PuoeVFnuF68CviCxReI77WOQrGuwVa9F8qap_wcs7QkUnzTNv_hmfCBQ/exec';
+
+  function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+  function parseList(v){
+    if(!v) return [];
+    if(Array.isArray(v)) return v.map(x=>typeof x==='string'?x:(x&& (x.url||x.fileUrl||x.downloadUrl||x.link)||'')).filter(Boolean);
+    if(typeof v==='string'){
+      const s=v.trim(); if(!s) return [];
+      try{const j=JSON.parse(s); if(Array.isArray(j)) return parseList(j);}catch(e){}
+      return s.split(/\r?\n|,/).map(x=>x.trim()).filter(Boolean);
+    }
+    return [];
+  }
+  function imageUrl(v){
+    let u=String(v||'').trim();
+    const m=u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if(m) u='https://drive.google.com/uc?export=view&id='+m[1];
+    return u;
+  }
+  function currentMode(){
+    const t=document.getElementById('qyjContentTabAnnouncement');
+    return t&&t.classList.contains('active')?'announcement':'sop';
+  }
+  function selectedIndex(){
+    const items=Array.from(document.querySelectorAll('#qyjContentItems .qyj-content-item'));
+    return items.findIndex(x=>x.classList.contains('active'));
+  }
+  function localConf(){
+    try{return JSON.parse(localStorage.getItem('portalConf')||'{}')||{};}catch(e){return (window.portalConf||{});}
+  }
+  function activeList(){
+    const c=localConf();
+    return currentMode()==='announcement'?(Array.isArray(c.announcementItems)?c.announcementItems:[]):(Array.isArray(c.sopItems)?c.sopItems:[]);
+  }
+  function currentTitle(){return (document.getElementById('qyjContentTitle')?.value||'').trim();}
+  function ensureMediaFields(){
+    const body=document.getElementById('qyjContentBody');
+    if(!body || document.getElementById('qyjContentMediaWrap')) return;
+    const wide=body.closest('.wide')||body.parentElement;
+    const wrap=document.createElement('div');
+    wrap.id='qyjContentMediaWrap';
+    wrap.className='qyj-content-media-box wide';
+    wrap.innerHTML='<div class="qyj-media-title"><i class="fas fa-images"></i> 圖片上傳（可多張）</div>'+
+      '<input id="qyjContentImageFiles" type="file" accept="image/*" multiple>'+
+      '<label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:5px">已上傳圖片／圖片網址</label>'+
+      '<textarea id="qyjContentImageUrls" rows="4" placeholder="上傳後會自動填入；也可以直接貼圖片網址，每行一個"></textarea>'+
+      '<div class="qyj-content-media-help">可同時選多張 JPG／PNG。儲存時會先上傳圖片，再同步 SOP 內容；員工端會在文字下方直接看到圖片。</div>'+
+      '<div id="qyjContentImagePreview" class="qyj-content-image-preview"></div>';
+    wide.insertAdjacentElement('afterend',wrap);
+    document.getElementById('qyjContentImageUrls').addEventListener('input',renderPreview);
+  }
+  function renderPreview(){
+    ensureMediaFields();
+    const box=document.getElementById('qyjContentImagePreview');
+    const ta=document.getElementById('qyjContentImageUrls');
+    if(!box||!ta) return;
+    const urls=parseList(ta.value);
+    box.innerHTML=urls.map((u,i)=>'<div class="qyj-preview-item"><img src="'+esc(imageUrl(u))+'" alt="SOP 圖片" onerror="this.style.opacity=.25"><button type="button" onclick="qyjRemoveContentImage('+i+')">×</button></div>').join('');
+  }
+  window.qyjRemoveContentImage=function(i){
+    const ta=document.getElementById('qyjContentImageUrls'); if(!ta) return;
+    const arr=parseList(ta.value); arr.splice(i,1); ta.value=arr.join('\n'); renderPreview();
+  };
+  function fillImagesFromSelected(){
+    ensureMediaFields();
+    if(currentMode()!=='sop'){
+      const w=document.getElementById('qyjContentMediaWrap'); if(w) w.style.display='none';
+      return;
+    }
+    const w=document.getElementById('qyjContentMediaWrap'); if(w) w.style.display='block';
+    const title=currentTitle();
+    let item=null;
+    try{
+      const c=localConf(); const list=Array.isArray(c.sopItems)?c.sopItems:[];
+      item=list.find(x=>String(x.title||'').trim()===title)||null;
+    }catch(e){}
+    const urls=item?parseList(item.images||item.imageUrls||item.image||[]):[];
+    const ta=document.getElementById('qyjContentImageUrls'); if(ta) ta.value=urls.join('\n');
+    const fi=document.getElementById('qyjContentImageFiles'); if(fi) fi.value='';
+    renderPreview();
+  }
+  async function apiConfig(){
+    try{const r=await fetch('./config.json?media='+Date.now(),{cache:'no-store'});if(r.ok){const c=await r.json();return {url:c.apiUrl||c.staffApiUrl||API_FALLBACK,token:c.token||c.apiToken||''};}}catch(e){}
+    return {url:API_FALLBACK,token:''};
+  }
+  function fileToData(file){return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(String(fr.result||''));fr.onerror=()=>reject(fr.error||new Error('檔案讀取失敗'));fr.readAsDataURL(file);});}
+  async function uploadImage(file){
+    const cfg=await apiConfig();
+    const dataUrl=await fileToData(file); const base64=(dataUrl.split(',')[1]||'');
+    const body={action:'sop_upload',token:cfg.token||'',kind:'image',fileName:file.name,filename:file.name,name:file.name,mimeType:file.type||'image/jpeg',mime:file.type||'image/jpeg',dataUrl,base64,data:base64};
+    const r=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+    const tx=await r.text(); let d={}; try{d=JSON.parse(tx);}catch(e){throw new Error(tx||'圖片上傳失敗');}
+    if(!r.ok || d.success===false || d.status==='error') throw new Error(d.message||d.error||'圖片上傳失敗');
+    const x=(d.data&&typeof d.data==='object')?d.data:d;
+    const url=x.url||x.fileUrl||x.downloadUrl||x.webViewLink||x.link||'';
+    if(!url) throw new Error('圖片已上傳但沒有取得圖片網址');
+    return url;
+  }
+  async function syncPortal(){
+    try{
+      if(typeof window.pushCloudData==='function') return await window.pushCloudData(false);
+      if(typeof pushCloudData==='function') return await pushCloudData(false);
+      if(typeof window.saveAllSilently==='function') return await window.saveAllSilently();
+      if(typeof saveAllSilently==='function') return await saveAllSilently();
+    }catch(e){throw e;}
+  }
+
+  const oldOpen=window.openQyjContentAdmin;
+  window.openQyjContentAdmin=function(mode){const r=typeof oldOpen==='function'?oldOpen.apply(this,arguments):undefined;setTimeout(()=>{ensureMediaFields();fillImagesFromSelected();},0);return r;};
+  const oldSwitch=window.switchQyjContentMode;
+  window.switchQyjContentMode=function(mode){const r=typeof oldSwitch==='function'?oldSwitch.apply(this,arguments):undefined;setTimeout(()=>{ensureMediaFields();fillImagesFromSelected();},0);return r;};
+  const oldNew=window.newQyjContentItem;
+  window.newQyjContentItem=function(){const r=typeof oldNew==='function'?oldNew.apply(this,arguments):undefined;setTimeout(()=>{ensureMediaFields();const ta=document.getElementById('qyjContentImageUrls');if(ta)ta.value='';const f=document.getElementById('qyjContentImageFiles');if(f)f.value='';renderPreview();},0);return r;};
+  const oldEdit=window.editQyjContentItem;
+  window.editQyjContentItem=function(index){const r=typeof oldEdit==='function'?oldEdit.apply(this,arguments):undefined;setTimeout(()=>{ensureMediaFields();fillImagesFromSelected();},0);return r;};
+
+  const oldSave=window.saveQyjContentItem;
+  window.saveQyjContentItem=async function(){
+    ensureMediaFields();
+    if(currentMode()!=='sop') return typeof oldSave==='function'?oldSave.apply(this,arguments):undefined;
+    const title=currentTitle(); if(!title){if(typeof showToast==='function')showToast('請輸入標題',true);return;}
+    const ta=document.getElementById('qyjContentImageUrls');
+    let urls=parseList(ta?.value||'');
+    const files=Array.from(document.getElementById('qyjContentImageFiles')?.files||[]);
+    const btn=document.querySelector('.qyj-content-save'); const oldText=btn?.textContent||'儲存並同步';
+    try{
+      if(btn){btn.disabled=true;btn.textContent=files.length?'上傳圖片中…':'同步中…';}
+      for(const f of files){const u=await uploadImage(f); if(u) urls.push(u);}
+      urls=[...new Set(urls.filter(Boolean))];
+      if(ta){ta.value=urls.join('\n');renderPreview();}
+      if(typeof oldSave==='function') await oldSave.apply(this,arguments);
+      let conf=localConf();
+      if(!Array.isArray(conf.sopItems)) conf.sopItems=[];
+      let idx=conf.sopItems.findIndex(x=>String(x.title||'').trim()===title);
+      if(idx<0){conf.sopItems.push({title});idx=conf.sopItems.length-1;}
+      conf.sopItems[idx].images=urls;
+      conf.sopItems[idx].imageUrls=urls;
+      try{window.portalConf=Object.assign({},window.portalConf||{},conf);}catch(e){}
+      try{portalConf=Object.assign({},portalConf||{},conf);}catch(e){}
+      localStorage.setItem('portalConf',JSON.stringify(conf));
+      await syncPortal();
+      if(typeof showToast==='function') showToast('✅ 文字與圖片已儲存並同步');
+      const fi=document.getElementById('qyjContentImageFiles'); if(fi)fi.value='';
+    }catch(e){console.error('SOP 圖片儲存失敗',e);if(typeof showToast==='function')showToast('❌ 圖片儲存失敗：'+(e.message||e),true);else alert('圖片儲存失敗：'+(e.message||e));}
+    finally{if(btn){btn.disabled=false;btn.textContent=oldText;}}
+  };
+
+  function staffType(){
+    let s={},name='';
+    try{s=typeof window.msGetCurrentStaff==='function'?(window.msGetCurrentStaff()||{}):{};}catch(e){}
+    try{name=typeof window.msStaffName==='function'?(window.msStaffName(s)||''):'';}catch(e){}
+    name=name||s.name||s.staff||s.realName||'';
+    try{return (window.ftStaffData||ftStaffData||[]).some(x=>String(x.name||x.staff||'').trim()===String(name).trim())?'正職':'派遣';}catch(e){return '派遣';}
+  }
+  function allowed(item,type){if(item.active===false)return false;if(item.audience==='fulltime'&&type!=='正職')return false;if(item.audience==='dispatch'&&type!=='派遣')return false;return true;}
+  window.msShowSop=function(){
+    try{if(typeof window.msSetTitle==='function')window.msSetTitle('入職包 SOP');}catch(e){}
+    const box=document.getElementById('msContent'); if(!box)return;
+    const conf=localConf(); const type=staffType();
+    const items=(Array.isArray(conf.sopItems)?conf.sopItems:[]).filter(x=>allowed(x,type)).sort((a,b)=>Number(a.order||0)-Number(b.order||0));
+    if(!items.length){box.innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有 SOP 內容</div></div>';return;}
+    box.innerHTML=items.map((item,i)=>{
+      const imgs=parseList(item.images||item.imageUrls||item.image||[]);
+      const imageHtml=imgs.length?'<div class="ms-sop-image-grid">'+imgs.map(u=>'<img src="'+esc(imageUrl(u))+'" alt="'+esc(item.title||'SOP 圖片')+'" loading="lazy">').join('')+'</div>':'';
+      const textHtml=item.content?'<div class="ms-sop-text">'+esc(item.content).replace(/\n/g,'<br>')+'</div>':'';
+      return '<div class="ms-content-card open" id="qyjMobileContentCard_'+i+'"><button type="button"><div class="ms-content-card-title">'+esc(item.title||'')+'</div><div class="ms-content-card-desc">'+esc(item.summary||'')+'</div></button><div class="ms-content-card-body" style="display:block">'+textHtml+imageHtml+'</div></div>';
+    }).join('');
+  };
+
+  function boot(){ensureMediaFields();if(document.getElementById('qyjContentAdminModal')?.style.display==='block')fillImagesFromSelected();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,300));else setTimeout(boot,300);
+})();
+</script>
+
 </body>
 </html>
