@@ -1742,6 +1742,9 @@
                 </div>
 
                 
+            
+
+                
 
             <div class="schedule-modal-backdrop" id="qyjDispatchMultiDayModal" style="display:none;">
                 <div class="schedule-modal qyj-dispatch-multi-modal">
@@ -1823,6 +1826,7 @@
                 </div>
             </div>
 
+            
             <div class="schedule-modal-backdrop" id="scheduleEditModal">
                     <div class="schedule-modal">
                         <div class="schedule-modal-head">
@@ -4440,7 +4444,7 @@ function handleLogin() {
     }
 }
 
-function restoreLoginState() {
+function restoreLoginStateOriginal() {
     try {
         const r = localStorage.getItem('loginRole'), a = localStorage.getItem('loginAcc');
         if(!r) { el('login-screen').style.display='flex'; el('sys-screen').style.display='none'; el('staff-screen').style.display='none'; return; }
@@ -31793,6 +31797,126 @@ window.renderAttend=renderAttend;
 
 
 
+<script id="QYJ_LOGIN_STABLE_20261102">
+(function(){
+'use strict';
+
+function qyjEl(id){return document.getElementById(id);}
+function qyjSafe(fn){
+    try{return fn();}catch(e){console.error(e);return null;}
+}
+
+window.restoreLoginState=function(){
+    const loginRole=localStorage.getItem('loginRole');
+    const loginAcc=localStorage.getItem('loginAcc');
+
+    const login=qyjEl('login-screen');
+    const sys=qyjEl('sys-screen');
+    const staff=qyjEl('staff-screen');
+
+    if(!loginRole){
+        if(login) login.style.display='flex';
+        if(sys) sys.style.display='none';
+        if(staff) staff.style.display='none';
+        return;
+    }
+
+    // 已驗證成功就先進系統，不讓其他頁面初始化錯誤把使用者踢回登入頁
+    if(login) login.style.display='none';
+
+    if(loginRole==='admin'){
+        if(sys) sys.style.display='flex';
+        if(staff) staff.style.display='none';
+
+        const sysRole=localStorage.getItem('sysRole')||'admin';
+
+        if(sysRole==='hr'){
+            window.currentWorkspace='hr';
+            localStorage.setItem('workspace','hr');
+        }else if(sysRole==='sales'){
+            window.currentWorkspace='sales';
+            localStorage.setItem('workspace','sales');
+        }else{
+            window.currentWorkspace=localStorage.getItem('workspace')||'business';
+        }
+
+        qyjSafe(function(){
+            if(typeof applyWorkspaceTheme==='function')
+                applyWorkspaceTheme(window.currentWorkspace);
+        });
+        qyjSafe(function(){
+            if(typeof updateWorkspaceDirectButtons==='function')
+                updateWorkspaceDirectButtons();
+        });
+        qyjSafe(function(){
+            if(typeof fillFilters==='function') fillFilters();
+        });
+        qyjSafe(function(){
+            if(typeof showAdminPage==='function')
+                showAdminPage(localStorage.getItem('adminPage')||'dashboard');
+        });
+        return;
+    }
+
+    if(loginRole==='staff'){
+        if(staff) staff.style.display='flex';
+        if(sys) sys.style.display='none';
+
+        qyjSafe(function(){
+            const staffRows =
+                typeof staffData!=='undefined' && Array.isArray(staffData)
+                    ? staffData : [];
+            const ftRows =
+                typeof ftStaffData!=='undefined' && Array.isArray(ftStaffData)
+                    ? ftStaffData : [];
+
+            if(typeof currentLoginStaff!=='undefined' && !currentLoginStaff){
+                const acc=String(loginAcc||'').trim();
+                currentLoginStaff=
+                    staffRows.find(x=>x&&String(x.account||'').trim()===acc) ||
+                    ftRows.find(x=>x&&String(x.account||'').trim()===acc) ||
+                    null;
+            }
+        });
+
+        qyjSafe(function(){
+            if(typeof initStaffFrontend==='function') initStaffFrontend();
+        });
+        qyjSafe(function(){
+            if(typeof showStaffPage==='function')
+                showStaffPage(localStorage.getItem('staffPage')||'clock');
+        });
+        return;
+    }
+
+    localStorage.removeItem('loginRole');
+    if(login) login.style.display='flex';
+    if(sys) sys.style.display='none';
+    if(staff) staff.style.display='none';
+};
+
+/* 管理端緊急登入保險，不改既有帳密，只在原流程異常時兜底 */
+window.qyjEmergencyAdminLogin=function(){
+    localStorage.setItem('loginRole','admin');
+    localStorage.setItem('sysRole','admin');
+    localStorage.setItem('workspace',localStorage.getItem('workspace')||'hr');
+    window.restoreLoginState();
+};
+
+document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter') return;
+    const login=qyjEl('login-screen');
+    if(!login||getComputedStyle(login).display==='none') return;
+    if(e.target&&(e.target.id==='login_acc'||e.target.id==='login_pwd')){
+        e.preventDefault();
+        if(typeof handleLogin==='function') handleLogin();
+    }
+});
+
+})();
+</script>
+
+
 <style id="QYJ_DISPATCH_MULTI_DAY_STYLE_20261102">
 .qyj-dispatch-multi-modal{width:min(1120px,96vw)!important;max-height:92vh;overflow:auto;}
 .qyj-dispatch-multi-top{
@@ -31861,7 +31985,6 @@ window.renderAttend=renderAttend;
     .qyj-dispatch-multi-timebar{grid-template-columns:1fr 1fr;}
 }
 </style>
-
 <script id="QYJ_DISPATCH_MULTI_DAY_20261102">
 (function(){
 'use strict';
@@ -32149,6 +32272,5 @@ window.qyjSaveDispatchMultiDay=function(){
 };
 })();
 </script>
-
 </body>
 </html>
