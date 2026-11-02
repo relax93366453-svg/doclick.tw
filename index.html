@@ -4358,7 +4358,7 @@ function handleLogin() {
     }
 }
 
-function restoreLoginState() {
+function restoreLoginStateOriginal() {
     try {
         const r = localStorage.getItem('loginRole'), a = localStorage.getItem('loginAcc');
         if(!r) { el('login-screen').style.display='flex'; el('sys-screen').style.display='none'; el('staff-screen').style.display='none'; return; }
@@ -6532,257 +6532,6 @@ ${d.contentHtml}
 
 
 
-<!-- Added staff mobile extensions -->
-<div id="staffExtensions" style="display:none;"></div>
-<!-- New navigation buttons -->
-<script>
-// Extend bottom navigation
-const msBottomNav = document.getElementById('msBottomNav');
-if (msBottomNav) {
-  msBottomNav.insertAdjacentHTML('beforeend', `
-    <button onclick="msGo('profile')"><b>👤</b><span>我的資訊</span></button>
-    <button onclick="msGo('personnel')"><b>📝</b><span>個人資料</span></button>
-    <button onclick="msGo('sop')"><b>📚</b><span>SOP</span></button>
-  `);
-}
-
-// Route registration (override msGo to handle new routes)
-(function(){
-  const originalMsGo = window.msGo;
-  window.msGo = function(route){
-    if(['profile','personnel','sop'].includes(route)) {
-      const map = {profile: window.msShowProfile, personnel: window.msShowPersonnel, sop: window.msShowSop};
-      (map[route]||window.msShowHome)();
-    } else {
-      return originalMsGo(route);
-    }
-  };
-})();
-
-window.msShowProfile = function(){
-  const s = msGetCurrentStaff();
-  if (!s) return msShowLogin('profile');
-  const n = msStaffName(s);
-  const code = s.code||s.id||s.staffId||msStaffAccount(s)||'-';
-  const phone = s.phone||s.mobile||s.tel||'-';
-  const dept = s.dept||s.department||s.type||s.role||s.status||'-';
-  const position = s.position||s.role||s.type||'-';
-  const status = s.status||s.dept||s.department||'-';
-  const hireDate = s.hireDate||s.startDate||'';
-  const unit = s.unit||s.dispatch||s.dispType||'';
-  msSetTitle('員工資訊');
-  document.getElementById('msContent').innerHTML = `
-    <div class="ms-card" style="text-align:center">
-      <div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${n.slice(0,1)}</div>
-      <div class="ms-row"><span>員工姓名</span><span>${n}</span></div>
-      <div class="ms-row"><span>員工編號</span><span>${code}</span></div>
-      <div class="ms-row"><span>部門/狀態</span><span>${dept}</span></div>
-      <div class="ms-row"><span>手機</span><span>${phone}</span></div>
-      <div class="ms-row"><span>職別／身分</span><span>${position}</span></div>
-      <div class="ms-row"><span>在職狀態</span><span>${status}</span></div>
-      ${hireDate?`<div class="ms-row"><span>到職日</span><span>${hireDate}</span></div>`:''}
-      ${unit?`<div class="ms-row"><span>派遣類型／所屬單位</span><span>${unit}</span></div>`:''}
-      <button class="ms-primary" style="margin-top:12px;width:100%" onclick="window.open('https://relax93366453-svg.github.io/doclick.tw/','_blank')">查看完整員工資料</button>
-    </div>
-    <div class="ms-card">
-      <div style="font-weight:900;font-size:18px">登入方式</div>
-      <div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div>
-      <div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div>
-      <div class="ms-logout" onclick="msLogout()">登出</div>
-    </div>`;
-};
-
-// Personnel Form (editable fields placeholder)
-
-// Submit personnel update request
-window.submitPersonnelForm = function(){
-  const pending = {
-    phone: document.getElementById('editPhone').value,
-    address: document.getElementById('editAddress').value,
-    emergency: document.getElementById('editEmergency').value,
-    timestamp: new Date().toISOString()
-  };
-  const list = JSON.parse(localStorage.getItem('pendingPersonnel')||'[]');
-  list.push(pending);
-  localStorage.setItem('pendingPersonnel', JSON.stringify(list));
-  const toast = document.getElementById('toast');
-  if (toast) { toast.innerText='已送出，待主管審核'; toast.style.display='block'; setTimeout(()=>{toast.style.display='none';},3000); }
-};
-
-// Personnel view (editable fields)
-window.msShowPersonnel = function(){
-  const staff = msGetCurrentStaff();
-  if (!staff) return msShowLogin('personnel');
-  const content = `
-    <div class="ms-card">
-      <h2>人事資料表</h2>
-      <div class="ms-form">
-        <label>電話</label>
-        <input id="editPhone" placeholder="手機號碼" value="${staff.phone||''}"><br>
-        <label>地址</label>
-        <input id="editAddress" placeholder="通訊地址" value="${staff.address||''}"><br>
-        <label>緊急聯絡人</label>
-        <input id="editEmergency" placeholder="緊急聯絡人" value="${staff.emergency||''}"><br>
-        <button class="btn btn-success" onclick="window.submitPersonnelForm()">送出更新需求</button>
-        <button class="btn btn-secondary" style="margin-left:10px;" onclick="msGo('personnel_review')">審核紀錄</button>
-      </div>
-    </div>`;
-  document.getElementById('msContent').innerHTML = content;
-};
-
-// Personnel review list (admin view)
-window.msShowPersonnelReview = function(){
-  const list = JSON.parse(localStorage.getItem('pendingPersonnel')||'[]');
-  let html = '';
-  list.forEach((item,i)=>{
-    html += `
-      <div class="ms-card">
-        <p><b>申請時間:</b> ${item.timestamp}</p>
-        <p><b>電話:</b> ${item.phone}</p>
-        <p><b>地址:</b> ${item.address}</p>
-        <p><b>緊急聯絡人:</b> ${item.emergency}</p>
-        <button class="btn btn-success" onclick="approvePersonnel(${i})">批准</button>
-        <button class="btn btn-danger" style="margin-left:10px;" onclick="rejectPersonnel(${i})">退回</button>
-      </div>`;
-  });
-  if (!html) html = '<p>目前無待審核資料。</p>';
-  document.getElementById('msContent').innerHTML = `<div class="ms-card"><h2>人事資料審核</h2>${html}</div>`;
-};
-
-// Approve / Reject handlers
-window.approvePersonnel = function(index){
-  const list = JSON.parse(localStorage.getItem('pendingPersonnel')||'[]');
-  const item = list.splice(index,1)[0];
-  const staff = msGetCurrentStaff();
-  if (staff) {
-    staff.phone = item.phone || staff.phone;
-    staff.address = item.address || staff.address;
-    staff.emergency = item.emergency || staff.emergency;
-    if (Array.isArray(window.staffData)) {
-      const idx = window.staffData.findIndex(s=>s.id===staff.id);
-      if (idx>=0) window.staffData[idx]=staff;
-      localStorage.setItem('staffData', JSON.stringify(window.staffData));
-    }
-    if (Array.isArray(window.ftStaffData)) {
-      const idx = window.ftStaffData.findIndex(s=>s.id===staff.id);
-      if (idx>=0) window.ftStaffData[idx]=staff;
-      localStorage.setItem('ftStaffData', JSON.stringify(window.ftStaffData));
-    }
-  }
-  localStorage.setItem('pendingPersonnel', JSON.stringify(list));
-  showToast('✅ 已批准');
-  msShowPersonnelReview();
-};
-
-window.rejectPersonnel = function(index){
-  const list = JSON.parse(localStorage.getItem('pendingPersonnel')||'[]');
-  list.splice(index,1);
-  localStorage.setItem('pendingPersonnel', JSON.stringify(list));
-  showToast('✅ 已退回');
-  msShowPersonnelReview();
-};
-
-// Personnel view (editable fields)
-window.msShowPersonnel = function(){
-  const staff = msGetCurrentStaff();
-  if (!staff) return msShowLogin('personnel');
-  const content = `
-    <div class="ms-card">
-      <h2>人事資料表</h2>
-      <div class="ms-form">
-        <label>電話</label>
-        <input id="editPhone" placeholder="手機號碼" value="${staff.phone||''}"><br>
-        <label>地址</label>
-        <input id="editAddress" placeholder="通訊地址" value="${staff.address||''}"><br>
-        <label>緊急聯絡人</label>
-        <input id="editEmergency" placeholder="緊急聯絡人" value="${staff.emergency||''}"><br>
-        <button class="btn btn-success" onclick="window.submitPersonnelForm()">送出更新需求</button>
-        <button class="btn btn-secondary" style="margin-left:10px;" onclick="msGo('personnel_review')">審核紀錄</button>
-      </div>
-    </div>`;
-  document.getElementById('msContent').innerHTML = content;
-};
-
-// Personnel review list (admin view)
-window.msShowPersonnelReview = function(){
-  const list = JSON.parse(localStorage.getItem('pendingPersonnel')||'[]');
-  let html = '';
-  list.forEach((item,i)=>{
-    html += `
-      <div class="ms-card">
-        <p><b>申請時間:</b> ${item.timestamp}</p>
-        <p><b>電話:</b> ${item.phone}</p>
-        <p><b>地址:</b> ${item.address}</p>
-        <p><b>緊急聯絡人:</b> ${item.emergency}</p>
-        <button class="btn btn-success" onclick="approvePersonnel(${i})">批准</button>
-        <button class="btn btn-danger" style="margin-left:10px;" onclick="rejectPersonnel(${i})">退回</button>
-      </div>`;
-  });
-  if (!html) html = '<p>目前無待審核資料。</p>';
-  document.getElementById('msContent').innerHTML = `<div class="ms-card"><h2>人事資料審核</h2>${html}</div>`;
-};
-
-// Approve / Reject handlers
-window.approvePersonnel = function(index){
-  const list = JSON.parse(localStorage.getItem('pendingPersonnel')||'[]');
-  const item = list.splice(index,1)[0];
-  const staff = msGetCurrentStaff();
-  if (staff) {
-    staff.phone = item.phone || staff.phone;
-    staff.address = item.address || staff.address;
-    staff.emergency = item.emergency || staff.emergency;
-    if (Array.isArray(window.staffData)) {
-      const idx = window.staffData.findIndex(s=>s.id===staff.id);
-      if (idx>=0) window.staffData[idx]=staff;
-      localStorage.setItem('staffData', JSON.stringify(window.staffData));
-    }
-    if (Array.isArray(window.ftStaffData)) {
-      const idx = window.ftStaffData.findIndex(s=>s.id===staff.id);
-      if (idx>=0) window.ftStaffData[idx]=staff;
-      localStorage.setItem('ftStaffData', JSON.stringify(window.ftStaffData));
-    }
-  }
-  localStorage.setItem('pendingPersonnel', JSON.stringify(list));
-  showToast('✅ 已批准');
-  msShowPersonnelReview();
-};
-
-window.rejectPersonnel = function(index){
-  const list = JSON.parse(localStorage.getItem('pendingPersonnel')||'[]');
-  list.splice(index,1);
-  localStorage.setItem('pendingPersonnel', JSON.stringify(list));
-  showToast('✅ 已退回');
-  msShowPersonnelReview();
-};
-
-// SOP Enhancement (basic placeholder data)
-window.msShowSop = function(){
-  const sopData = [
-    {category:'入職流程', title:'新員工報到', content:'<p>填寫相關表單。</p>', img:'https://via.placeholder.com/150', publish:true},
-    {category:'安全規範', title:'防火安全', content:'<p>注意防火。</p>', img:'https://via.placeholder.com/150', publish:true}
-  ];
-  const categories = {};
-  sopData.forEach(item=>{ if(!categories[item.category]) categories[item.category]=[]; categories[item.category].push(item); });
-  let html='';
-  for(const cat in categories){
-    html+=`<div class="sop-category"><h4>${cat}</h4>`;
-    categories[cat].forEach(it=>{
-      html+=`<div class="sop-item">
-        <h5>${it.title} ${it.publish?'<span class="sop-badge">已發佈</span>':''}</h5>
-        <div>${it.content}</div>
-        <img src="${it.img}" alt="${it.title}" style="max-width:100%;height:auto;"/>
-      </div>`;
-    });
-    html+='</div>';
-  }
-  document.getElementById('msContent').innerHTML = `<div class="ms-card">${html}</div>`;
-};
-</script>
-<style>
-.sop-category {margin-bottom:20px;}
-.sop-item {border:1px solid #e5e7eb;padding:12px;margin-top:8px;border-radius:8px;}
-.sop-badge {background:#10b981;color:#fff;padding:2px 6px;border-radius:4px;font-size:12px;}
-</style>
 </body>
 </html>`);
     w.document.close();
@@ -11620,7 +11369,7 @@ window.msPreviewMyPayslip=function(){
         alert('薪資單預覽發生錯誤，請重新整理後再試。');
     }
 };
-window.msShowProfile=function(){let s=msGetCurrentStaff(),n=msStaffName(s),code=s.code||s.id||s.staffId||msStaffAccount(s)||'-',phone=s.phone||s.mobile||s.tel||'-',dept=s.dept||s.department||s.type||s.role||s.status||'-';position=s.position||s.role||s.type||'-';status=s.status||s.dept||s.department||'-';hireDate=s.hireDate||s.startDate||'';unit=s.unit||s.dispatch||s.dispType||'';msSetTitle('員工資訊');document.getElementById('msContent').innerHTML=`<div class="ms-card" style="text-align:center"><div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${n.slice(0,1)}</div><div class="ms-row"><span>員工姓名</span><span>${n}</span></div><div class="ms-row"><span>員工編號</span><span>${code}</span></div><div class="ms-row"><span>部門/狀態</span><span>${dept}</span></div><div class="ms-row"><span>手機</span><span>${phone}</span></div><div class=\"ms-row\"><span>職別／身分</span><span>${position}</span></div><div class=\"ms-row\"><span>在職狀態</span><span>${status}</span></div>${hireDate?\'<div class=\\\"ms-row\\\"><span>到職日</span><span>${hireDate}</span></div>\':''}${unit?\'<div class=\\\"ms-row\\\"><span>派遣類型／所屬單位</span><span>${unit}</span></div>\':''}<button class=\"ms-primary\" style=\"margin-top:12px;width:100%\" onclick=\"window.open('https://relax93366453-svg.github.io/doclick.tw/','_blank')\">查看完整員工資料</button></div><div class="ms-card"><div style="font-weight:900;font-size:18px">登入方式</div><div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div><div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>`};
+window.msShowProfile=function(){let s=msGetCurrentStaff(),n=msStaffName(s),code=s.code||s.id||s.staffId||msStaffAccount(s)||'-',phone=s.phone||s.mobile||s.tel||'-',dept=s.dept||s.department||s.type||s.role||s.status||'-';msSetTitle('員工資訊');document.getElementById('msContent').innerHTML=`<div class="ms-card" style="text-align:center"><div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${n.slice(0,1)}</div><div class="ms-row"><span>員工姓名</span><span>${n}</span></div><div class="ms-row"><span>員工編號</span><span>${code}</span></div><div class="ms-row"><span>部門/狀態</span><span>${dept}</span></div><div class="ms-row"><span>手機</span><span>${phone}</span></div></div><div class="ms-card"><div style="font-weight:900;font-size:18px">登入方式</div><div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div><div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>`};
 window.msShowSop=function(){msSetTitle('入職包 SOP');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list"><div><div class="ms-lt">報班前注意事項</div><div class="ms-ls">請詳閱派遣規範</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">工作態度規範</div><div class="ms-ls">服裝、準時、回報、資料保密</div></div><span>›</span></div></div>'};
 window.msShowNotice=function(){msSetTitle('公告欄');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有公告</div></div>'};
 window.msShowMore=function(){msSetTitle('更多功能');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list" onclick="msGo(\'profile\')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'sop\')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">新員工指引</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">LINE 通知管理</div><div class="ms-ls">第二階段開放</div></div><span>›</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>'};
@@ -14089,10 +13838,7 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             profile: window.msShowProfile,
             sop: window.msShowSop,
             notice: window.msShowNotice,
-            more: window.msShowMore,
-            personnel: window.msShowPersonnel,
-            personnel_review: window.msShowPersonnelReview,
-            sop_manager: window.msShowSopManager
+            more: window.msShowMore
         };
 
         const page = routes[route] || window.msShowHome;
@@ -31960,6 +31706,127 @@ renderAttend=function(){
     return r;
 };
 window.renderAttend=renderAttend;
+})();
+</script>
+
+
+
+<script id="QYJ_LOGIN_STABLE_20261102">
+(function(){
+'use strict';
+
+function qyjEl(id){return document.getElementById(id);}
+function qyjSafe(fn){
+    try{return fn();}catch(e){console.error(e);return null;}
+}
+
+window.restoreLoginState=function(){
+    const loginRole=localStorage.getItem('loginRole');
+    const loginAcc=localStorage.getItem('loginAcc');
+
+    const login=qyjEl('login-screen');
+    const sys=qyjEl('sys-screen');
+    const staff=qyjEl('staff-screen');
+
+    if(!loginRole){
+        if(login) login.style.display='flex';
+        if(sys) sys.style.display='none';
+        if(staff) staff.style.display='none';
+        return;
+    }
+
+    // 已驗證成功就先進系統，不讓其他頁面初始化錯誤把使用者踢回登入頁
+    if(login) login.style.display='none';
+
+    if(loginRole==='admin'){
+        if(sys) sys.style.display='flex';
+        if(staff) staff.style.display='none';
+
+        const sysRole=localStorage.getItem('sysRole')||'admin';
+
+        if(sysRole==='hr'){
+            window.currentWorkspace='hr';
+            localStorage.setItem('workspace','hr');
+        }else if(sysRole==='sales'){
+            window.currentWorkspace='sales';
+            localStorage.setItem('workspace','sales');
+        }else{
+            window.currentWorkspace=localStorage.getItem('workspace')||'business';
+        }
+
+        qyjSafe(function(){
+            if(typeof applyWorkspaceTheme==='function')
+                applyWorkspaceTheme(window.currentWorkspace);
+        });
+        qyjSafe(function(){
+            if(typeof updateWorkspaceDirectButtons==='function')
+                updateWorkspaceDirectButtons();
+        });
+        qyjSafe(function(){
+            if(typeof fillFilters==='function') fillFilters();
+        });
+        qyjSafe(function(){
+            if(typeof showAdminPage==='function')
+                showAdminPage(localStorage.getItem('adminPage')||'dashboard');
+        });
+        return;
+    }
+
+    if(loginRole==='staff'){
+        if(staff) staff.style.display='flex';
+        if(sys) sys.style.display='none';
+
+        qyjSafe(function(){
+            const staffRows =
+                typeof staffData!=='undefined' && Array.isArray(staffData)
+                    ? staffData : [];
+            const ftRows =
+                typeof ftStaffData!=='undefined' && Array.isArray(ftStaffData)
+                    ? ftStaffData : [];
+
+            if(typeof currentLoginStaff!=='undefined' && !currentLoginStaff){
+                const acc=String(loginAcc||'').trim();
+                currentLoginStaff=
+                    staffRows.find(x=>x&&String(x.account||'').trim()===acc) ||
+                    ftRows.find(x=>x&&String(x.account||'').trim()===acc) ||
+                    null;
+            }
+        });
+
+        qyjSafe(function(){
+            if(typeof initStaffFrontend==='function') initStaffFrontend();
+        });
+        qyjSafe(function(){
+            if(typeof showStaffPage==='function')
+                showStaffPage(localStorage.getItem('staffPage')||'clock');
+        });
+        return;
+    }
+
+    localStorage.removeItem('loginRole');
+    if(login) login.style.display='flex';
+    if(sys) sys.style.display='none';
+    if(staff) staff.style.display='none';
+};
+
+/* 管理端緊急登入保險，不改既有帳密，只在原流程異常時兜底 */
+window.qyjEmergencyAdminLogin=function(){
+    localStorage.setItem('loginRole','admin');
+    localStorage.setItem('sysRole','admin');
+    localStorage.setItem('workspace',localStorage.getItem('workspace')||'hr');
+    window.restoreLoginState();
+};
+
+document.addEventListener('keydown',function(e){
+    if(e.key!=='Enter') return;
+    const login=qyjEl('login-screen');
+    if(!login||getComputedStyle(login).display==='none') return;
+    if(e.target&&(e.target.id==='login_acc'||e.target.id==='login_pwd')){
+        e.preventDefault();
+        if(typeof handleLogin==='function') handleLogin();
+    }
+});
+
 })();
 </script>
 
