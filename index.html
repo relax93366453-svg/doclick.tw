@@ -32063,11 +32063,198 @@ window.msShowMore = function(){
   </div>`;
 };
 
+
+
+/* ===== 入職包 SOP 後台管理：文字＋圖片＋多圖＋PDF＋附件 ===== */
+let qyjSopAdminItems = [];
+
+function qyjFileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||''));
+    reader.onerror=()=>reject(reader.error||new Error('檔案讀取失敗'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function qyjUploadSopFile(file, kind='attachment'){
+  if(!file) return null;
+  const dataUrl=await qyjFileToDataUrl(file);
+  const base64=(dataUrl.split(',')[1]||'');
+  const res=await staffApi('sop_upload',{
+    kind,
+    fileName:file.name,
+    filename:file.name,
+    name:file.name,
+    mimeType:file.type||'application/octet-stream',
+    mime:file.type||'application/octet-stream',
+    dataUrl,
+    base64,
+    data:base64
+  });
+  const d=unwrapRecord(res);
+  const url=val(d,['url','fileUrl','downloadUrl','webViewLink','link'], val(res,['url','fileUrl','downloadUrl','webViewLink','link'],''));
+  return {name:file.name,url:url||'',mimeType:file.type||'',kind};
+}
+
+function qyjSopAdminField(id){ return document.getElementById(id); }
+function qyjLines(id){
+  return (qyjSopAdminField(id)?.value||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+}
+function qyjSopStatus(item){
+  const s=String(val(item,['status'],'')).toLowerCase();
+  if(item.publish===true || item.published===true || s==='published' || s==='發布') return 'published';
+  return 'draft';
+}
+function qyjSopId(item){ return val(item,['id','sopId','uuid','key','rowId'],''); }
+
+window.msShowSopManager = async function(){
+  setTitle('SOP 後台管理');
+  const box=contentBox(); if(!box) return;
+  box.innerHTML='<div class="ms-card"><div class="ms-empty">正在讀取 SOP 後台資料…</div></div>';
+  try{
+    const res=await staffApi('sop_get',{publishedOnly:false,all:true,admin:true});
+    qyjSopAdminItems=unwrapList(res);
+  }catch(e){ qyjSopAdminItems=[]; }
+  box.innerHTML=`
+    <div class="ms-card">
+      <div style="font-size:20px;font-weight:900;margin-bottom:6px">入職包 SOP 後台</div>
+      <div style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:16px">可新增文字、單張／多張圖片、PDF 與其他附件。草稿不會顯示在員工端，發布後才會出現。</div>
+      <input type="hidden" id="qyjSopEditId">
+      <div style="display:grid;gap:12px">
+        <label>分類<input id="qyjSopCategory" placeholder="例如：入職須知、工作規範、管理規範" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>標題<input id="qyjSopTitle" placeholder="例如：新進報班人員須知" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>摘要<input id="qyjSopSummary" placeholder="列表上顯示的一句說明" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>文字內容<textarea id="qyjSopContent" rows="10" placeholder="可直接貼完整文字內容；換行會保留" style="width:100%;padding:10px;margin-top:5px;resize:vertical"></textarea></label>
+        <label>重要提醒<textarea id="qyjSopImportant" rows="3" placeholder="需要特別醒目顯示的提醒" style="width:100%;padding:10px;margin-top:5px;resize:vertical"></textarea></label>
+        <label>發布日期<input id="qyjSopPublishDate" type="date" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>狀態<select id="qyjSopStatus" style="width:100%;padding:10px;margin-top:5px"><option value="draft">草稿</option><option value="published">已發布</option></select></label>
+
+        <div style="padding:12px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff">
+          <div style="font-weight:900;margin-bottom:8px">圖片</div>
+          <input id="qyjSopImageFiles" type="file" accept="image/*" multiple style="width:100%;margin-bottom:8px">
+          <textarea id="qyjSopImages" rows="4" placeholder="也可貼圖片網址，每行一個" style="width:100%;padding:10px;resize:vertical"></textarea>
+        </div>
+
+        <div style="padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa">
+          <div style="font-weight:900;margin-bottom:8px">PDF</div>
+          <input id="qyjSopPdfFiles" type="file" accept="application/pdf,.pdf" multiple style="width:100%;margin-bottom:8px">
+          <textarea id="qyjSopPdfs" rows="3" placeholder="也可貼 PDF 網址，每行一個" style="width:100%;padding:10px;resize:vertical"></textarea>
+        </div>
+
+        <div style="padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa">
+          <div style="font-weight:900;margin-bottom:8px">其他附件</div>
+          <input id="qyjSopAttachmentFiles" type="file" multiple style="width:100%;margin-bottom:8px">
+          <textarea id="qyjSopAttachments" rows="3" placeholder="也可貼附件網址，每行一個" style="width:100%;padding:10px;resize:vertical"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+        <button id="qyjSopSaveBtn" class="ms-primary" onclick="qyjSaveSop(false)">儲存草稿</button>
+        <button class="ms-primary" style="background:#059669" onclick="qyjSaveSop(true)">儲存並發布</button>
+        <button class="ms-secondary" onclick="qyjClearSopForm()">清空</button>
+      </div>
+      <div id="qyjSopAdminMsg" style="display:none;margin-top:12px;padding:10px;border-radius:8px"></div>
+    </div>
+    <div id="qyjSopAdminList"></div>`;
+  qyjRenderSopAdminList();
+};
+
+window.qyjClearSopForm = function(){
+  ['qyjSopEditId','qyjSopCategory','qyjSopTitle','qyjSopSummary','qyjSopContent','qyjSopImportant','qyjSopImages','qyjSopPdfs','qyjSopAttachments'].forEach(id=>{const el=qyjSopAdminField(id);if(el)el.value='';});
+  const d=qyjSopAdminField('qyjSopPublishDate'); if(d)d.value='';
+  const s=qyjSopAdminField('qyjSopStatus'); if(s)s.value='draft';
+  ['qyjSopImageFiles','qyjSopPdfFiles','qyjSopAttachmentFiles'].forEach(id=>{const el=qyjSopAdminField(id);if(el)el.value='';});
+};
+
+window.qyjRenderSopAdminList = function(){
+  const wrap=document.getElementById('qyjSopAdminList'); if(!wrap) return;
+  if(!qyjSopAdminItems.length){ wrap.innerHTML='<div class="ms-card"><div class="ms-empty">目前尚無 SOP</div></div>'; return; }
+  wrap.innerHTML=qyjSopAdminItems.map((item,i)=>{
+    const status=qyjSopStatus(item), id=qyjSopId(item), title=val(item,['title','name'],'未命名 SOP'), category=val(item,['category','type'],'其他');
+    return `<div class="ms-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-size:12px;color:#64748b;font-weight:800">${esc(category)}</div><div style="font-size:18px;font-weight:900;margin-top:4px">${esc(title)}</div><div style="font-size:12px;margin-top:5px;color:${status==='published'?'#047857':'#b45309'}">${status==='published'?'已發布':'草稿'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="ms-secondary" onclick="qyjEditSop(${i})">編輯</button><button class="ms-secondary" onclick="qyjToggleSopPublish(${i})">${status==='published'?'取消發布':'發布'}</button><button class="ms-secondary" style="color:#b91c1c" onclick="qyjDeleteSop(${i})">刪除</button></div></div></div>`;
+  }).join('');
+};
+
+window.qyjEditSop = function(index){
+  const item=qyjSopAdminItems[index]; if(!item) return;
+  qyjSopAdminField('qyjSopEditId').value=qyjSopId(item);
+  qyjSopAdminField('qyjSopCategory').value=val(item,['category','type'],'');
+  qyjSopAdminField('qyjSopTitle').value=val(item,['title','name'],'');
+  qyjSopAdminField('qyjSopSummary').value=val(item,['summary','excerpt','subtitle'],'');
+  qyjSopAdminField('qyjSopContent').value=String(val(item,['content','body','description'],'')).replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]*>/g,'');
+  qyjSopAdminField('qyjSopImportant').value=val(item,['important','importantNote','note','warning'],'');
+  qyjSopAdminField('qyjSopPublishDate').value=String(val(item,['publishDate','date'],'')).slice(0,10);
+  qyjSopAdminField('qyjSopStatus').value=qyjSopStatus(item);
+  qyjSopAdminField('qyjSopImages').value=parseArray(item.images||item.image||item.img).map(linkOf).filter(Boolean).join('\n');
+  qyjSopAdminField('qyjSopPdfs').value=parseArray(item.pdfs||item.pdf).map(linkOf).filter(Boolean).join('\n');
+  qyjSopAdminField('qyjSopAttachments').value=parseArray(item.attachments||item.files).map(linkOf).filter(Boolean).join('\n');
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+
+async function qyjCollectUploadedFiles(inputId, kind){
+  const input=qyjSopAdminField(inputId); const files=Array.from(input?.files||[]); const out=[];
+  for(const f of files){ const u=await qyjUploadSopFile(f,kind); if(u && u.url) out.push(u); }
+  return out;
+}
+
+window.qyjSaveSop = async function(publishNow){
+  const msg=qyjSopAdminField('qyjSopAdminMsg');
+  const title=qyjSopAdminField('qyjSopTitle')?.value.trim()||'';
+  if(!title){ alert('請先輸入 SOP 標題'); return; }
+  try{
+    if(msg){msg.style.display='block';msg.style.background='#eff6ff';msg.style.color='#1d4ed8';msg.textContent='正在上傳圖片與附件…';}
+    const uploadedImages=await qyjCollectUploadedFiles('qyjSopImageFiles','image');
+    const uploadedPdfs=await qyjCollectUploadedFiles('qyjSopPdfFiles','pdf');
+    const uploadedAttachments=await qyjCollectUploadedFiles('qyjSopAttachmentFiles','attachment');
+    const status=publishNow?'published':(qyjSopAdminField('qyjSopStatus')?.value||'draft');
+    const item={
+      id:qyjSopAdminField('qyjSopEditId')?.value||'',
+      category:qyjSopAdminField('qyjSopCategory')?.value.trim()||'其他',
+      title,
+      summary:qyjSopAdminField('qyjSopSummary')?.value.trim()||'',
+      content:qyjSopAdminField('qyjSopContent')?.value||'',
+      important:qyjSopAdminField('qyjSopImportant')?.value||'',
+      publishDate:qyjSopAdminField('qyjSopPublishDate')?.value||'',
+      status,
+      publish:status==='published',
+      published:status==='published',
+      images:[...qyjLines('qyjSopImages').map(url=>({url,name:'圖片'})),...uploadedImages],
+      pdfs:[...qyjLines('qyjSopPdfs').map(url=>({url,name:'PDF'})),...uploadedPdfs],
+      attachments:[...qyjLines('qyjSopAttachments').map(url=>({url,name:'附件'})),...uploadedAttachments]
+    };
+    const res=await staffApi('sop_save',{...item,item,data:item,record:item});
+    const saved=unwrapRecord(res); const savedId=qyjSopId(saved)||qyjSopId(item);
+    if(status==='published' && savedId){
+      try{ await staffApi('sop_publish',{id:savedId,sopId:savedId,publish:true,published:true,status:'published'}); }catch(e){}
+    }
+    if(msg){msg.style.background='#ecfdf5';msg.style.color='#047857';msg.textContent=status==='published'?'已儲存並發布':'草稿已儲存';}
+    await window.msShowSopManager();
+  }catch(e){
+    if(msg){msg.style.display='block';msg.style.background='#fef2f2';msg.style.color='#b91c1c';msg.textContent='儲存失敗：'+(e.message||e);}
+  }
+};
+
+window.qyjToggleSopPublish = async function(index){
+  const item=qyjSopAdminItems[index]; if(!item) return;
+  const id=qyjSopId(item); if(!id){alert('找不到這筆 SOP 的識別碼');return;}
+  const next=qyjSopStatus(item)!=='published';
+  try{ await staffApi('sop_publish',{id,sopId:id,publish:next,published:next,status:next?'published':'draft'}); await window.msShowSopManager(); }
+  catch(e){ alert('發布狀態更新失敗：'+(e.message||e)); }
+};
+
+window.qyjDeleteSop = async function(index){
+  const item=qyjSopAdminItems[index]; if(!item) return;
+  if(!confirm('確定刪除此 SOP？')) return;
+  const id=qyjSopId(item); if(!id){alert('找不到這筆 SOP 的識別碼');return;}
+  try{ await staffApi('sop_delete',{id,sopId:id}); await window.msShowSopManager(); }
+  catch(e){ alert('刪除失敗：'+(e.message||e)); }
+};
+
 const legacyMsGo = window.msGo;
 window.msGo = function(route){
   const target=route||'home';
   try{ localStorage.setItem('qyj_mobile_staff_route',target); }catch(e){}
-  const direct={home:window.msShowHome,profile:window.msShowProfile,personnel:window.msShowPersonnel,sop:window.msShowSop,more:window.msShowMore,faq:window.msShowFaq};
+  const direct={home:window.msShowHome,profile:window.msShowProfile,personnel:window.msShowPersonnel,sop:window.msShowSop,sop_manager:window.msShowSopManager,more:window.msShowMore,faq:window.msShowFaq};
   if(direct[target]) return direct[target]();
   if(typeof legacyMsGo==='function') return legacyMsGo.call(this,target);
   const fallback={punch:window.msShowPunch,attendance:window.msShowAttendance,schedule:window.msShowSchedule,leave:window.msShowLeave,salary:window.msShowSalary,notice:window.msShowNotice};
