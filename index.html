@@ -32093,7 +32093,11 @@ async function qyjUploadSopFile(file, kind='attachment'){
     data:base64
   });
   const d=unwrapRecord(res);
-  const url=val(d,['url','fileUrl','downloadUrl','webViewLink','link'], val(res,['url','fileUrl','downloadUrl','webViewLink','link'],''));
+  let url=val(d,['url','fileUrl','downloadUrl','webContentLink','webViewLink','directUrl','link','imageUrl','publicUrl','viewUrl'], val(res,['url','fileUrl','downloadUrl','webContentLink','webViewLink','directUrl','link','imageUrl','publicUrl','viewUrl'],''));
+  if(!url){
+    const id=val(d,['fileId','id','driveFileId','file_id'], val(res,['fileId','id','driveFileId','file_id'],''));
+    if(id) url='https://drive.google.com/uc?export=view&id='+encodeURIComponent(id);
+  }
   return {name:file.name,url:url||'',mimeType:file.type||'',kind};
 }
 
@@ -32372,16 +32376,45 @@ window.msGo = function(route){
     return {url:API_FALLBACK,token:''};
   }
   function fileToData(file){return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(String(fr.result||''));fr.onerror=()=>reject(fr.error||new Error('檔案讀取失敗'));fr.readAsDataURL(file);});}
+  function qyjFindUploadValue(obj, keys, depth=0){
+    if(!obj || depth>6) return '';
+    if(typeof obj==='string'){
+      const t=obj.trim();
+      if(/^https?:\/\//i.test(t)) return t;
+      return '';
+    }
+    if(Array.isArray(obj)){
+      for(const v of obj){ const found=qyjFindUploadValue(v,keys,depth+1); if(found) return found; }
+      return '';
+    }
+    if(typeof obj!=='object') return '';
+    for(const k of keys){
+      if(obj[k]!==undefined && obj[k]!==null && String(obj[k]).trim()!=='') return String(obj[k]).trim();
+    }
+    for(const v of Object.values(obj)){
+      const found=qyjFindUploadValue(v,keys,depth+1); if(found) return found;
+    }
+    return '';
+  }
+  function qyjResolveUploadUrl(payload){
+    let url=qyjFindUploadValue(payload,['url','fileUrl','downloadUrl','webContentLink','webViewLink','directUrl','link','imageUrl','publicUrl','viewUrl']);
+    if(url) return url;
+    const id=qyjFindUploadValue(payload,['fileId','id','driveFileId','file_id']);
+    if(id && !/^https?:\/\//i.test(id)) return 'https://drive.google.com/uc?export=view&id='+encodeURIComponent(id);
+    return '';
+  }
   async function uploadImage(file){
     const cfg=await apiConfig();
     const dataUrl=await fileToData(file); const base64=(dataUrl.split(',')[1]||'');
     const body={action:'sop_upload',token:cfg.token||'',kind:'image',fileName:file.name,filename:file.name,name:file.name,mimeType:file.type||'image/jpeg',mime:file.type||'image/jpeg',dataUrl,base64,data:base64};
     const r=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
     const tx=await r.text(); let d={}; try{d=JSON.parse(tx);}catch(e){throw new Error(tx||'圖片上傳失敗');}
-    if(!r.ok || d.success===false || d.status==='error') throw new Error(d.message||d.error||'圖片上傳失敗');
-    const x=(d.data&&typeof d.data==='object')?d.data:d;
-    const url=x.url||x.fileUrl||x.downloadUrl||x.webViewLink||x.link||'';
-    if(!url) throw new Error('圖片已上傳但沒有取得圖片網址');
+    if(!r.ok || d.success===false || d.ok===false || String(d.status||'').toLowerCase()==='error') throw new Error(d.message||d.error||'圖片上傳失敗');
+    const url=qyjResolveUploadUrl(d);
+    if(!url){
+      console.warn('SOP 圖片上傳成功但無法解析網址，後端回傳：',d);
+      throw new Error('圖片已上傳，但後端未回傳可用網址或檔案ID');
+    }
     return url;
   }
   async function syncPortal(){
