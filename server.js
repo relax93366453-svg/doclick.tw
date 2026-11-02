@@ -152,8 +152,11 @@ function serveStatic(req, res) {
 }
 
 const server = http.createServer((req, res) => {
-  if (req.url.startsWith('/job-api')) return handleJobApi(req, res);
-  return serveStatic(req, res);
+  // Proxy all /job-api requests to the Apps Script backend.
+// Supported actions include personnel_get, personnel_update, personnel_review, personnel_history,
+// sop_get, sop_save, sop_delete, sop_publish, sop_folder, sop_upload, plus existing actions.
+
+    if (req.url.startsWith('/job-api')) return handleJobApi(req, res);
 });
 
 server.listen(PORT, HOST, () => {
