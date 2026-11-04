@@ -34805,5 +34805,145 @@ console.log('員工內容管理圖文 SOP / LINE 公告 V3 已載入');
 })();
 </script>
 
+
+
+<style id="QYJ_CONTENT_SCROLL_SAVE_FIX_20261104">
+/* 修正員工內容管理：左右區可獨立滑動，儲存按鈕固定可見 */
+#qyjContentAdminModal.qyj-v3 .qyj-v3-shell{
+    height:min(92vh,900px)!important;
+    max-height:92vh!important;
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-main{
+    flex:1!important;
+    min-height:0!important;
+    overflow:hidden!important;
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-left,
+#qyjContentAdminModal.qyj-v3 .qyj-v3-editor{
+    min-height:0!important;
+    height:100%!important;
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-left{
+    display:flex!important;
+    flex-direction:column!important;
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-list{
+    flex:1!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch;
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-editor{
+    display:flex!important;
+    flex-direction:column!important;
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-editor-body{
+    flex:1!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding-bottom:88px!important;
+    -webkit-overflow-scrolling:touch;
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-actions{
+    position:sticky!important;
+    bottom:0!important;
+    z-index:20!important;
+    margin:0!important;
+    padding:12px 16px!important;
+    background:rgba(255,255,255,.96)!important;
+    backdrop-filter:blur(8px);
+    border-top:1px solid #e2e8f0!important;
+    box-shadow:0 -6px 18px rgba(15,23,42,.06);
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-btn{
+    min-height:42px!important;
+}
+@media(max-width:860px){
+    #qyjContentAdminModal.qyj-v3 .qyj-v3-shell{
+        height:94vh!important;
+        max-height:94vh!important;
+    }
+    #qyjContentAdminModal.qyj-v3 .qyj-v3-main{
+        overflow-y:auto!important;
+        display:block!important;
+    }
+    #qyjContentAdminModal.qyj-v3 .qyj-v3-left{
+        height:300px!important;
+        margin-bottom:12px;
+    }
+    #qyjContentAdminModal.qyj-v3 .qyj-v3-editor{
+        height:auto!important;
+        min-height:520px!important;
+    }
+    #qyjContentAdminModal.qyj-v3 .qyj-v3-editor-body{
+        max-height:none!important;
+        overflow:visible!important;
+        padding-bottom:88px!important;
+    }
+    #qyjContentAdminModal.qyj-v3 .qyj-v3-actions{
+        position:sticky!important;
+        bottom:0!important;
+    }
+}
+</style>
+
+<script id="QYJ_CONTENT_SCROLL_SAVE_FIX_20261104">
+(function(){
+'use strict';
+
+/* 開啟內容管理時把編輯區捲回頂端 */
+const oldOpenQyjContentAdmin = window.openQyjContentAdmin;
+if(typeof oldOpenQyjContentAdmin==='function'){
+    window.openQyjContentAdmin=function(){
+        const r=oldOpenQyjContentAdmin.apply(this,arguments);
+        setTimeout(function(){
+            const body=document.querySelector('#qyjContentAdminModal .qyj-v3-editor-body');
+            if(body) body.scrollTop=0;
+        },50);
+        return r;
+    };
+}
+
+/* 切換項目時，保留可滑動並把右側拉回頂端 */
+const oldEditQyjContentItem = window.editQyjContentItem;
+if(typeof oldEditQyjContentItem==='function'){
+    window.editQyjContentItem=function(){
+        const r=oldEditQyjContentItem.apply(this,arguments);
+        setTimeout(function(){
+            const body=document.querySelector('#qyjContentAdminModal .qyj-v3-editor-body');
+            if(body) body.scrollTop=0;
+        },0);
+        return r;
+    };
+}
+
+/* 儲存後不關閉視窗，固定按鈕保持可見 */
+const oldSaveQyjContentItem = window.saveQyjContentItem;
+if(typeof oldSaveQyjContentItem==='function'){
+    window.saveQyjContentItem=async function(){
+        const btn=document.querySelector('#qyjContentAdminModal .qyj-v3-btn.save');
+        if(btn){
+            btn.disabled=true;
+            btn.dataset.oldText=btn.textContent||'儲存並同步';
+            btn.textContent='儲存中…';
+        }
+        try{
+            return await oldSaveQyjContentItem.apply(this,arguments);
+        }finally{
+            if(btn){
+                btn.disabled=false;
+                btn.textContent=btn.dataset.oldText||'儲存並同步';
+            }
+        }
+    };
+}
+
+console.log('員工內容管理可滑動固定儲存修正已載入');
+})();
+</script>
+
 </body>
 </html>
