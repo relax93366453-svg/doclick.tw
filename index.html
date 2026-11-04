@@ -11186,7 +11186,7 @@ window.msStaffAccount=function(s){return s.account||s.username||s.phone||s.mobil
 window.msStaffPassword=function(s){return s.password||s.pwd||s.pass||'1234'};
 window.msGetCurrentStaff=function(){try{let saved=JSON.parse(localStorage.getItem(MS_LOGIN_KEY)||'null');if(!saved)return null;let list=msGetStaffList();return list.find(s=>String(msStaffAccount(s))===String(saved.account)||String(msStaffName(s))===String(saved.name))||saved}catch(e){return null}};
 window.msSetTitle=function(t){document.getElementById('msTopTitle').innerText=t};
-window.msShowLogin=function(route){msSetTitle('員工登入');document.getElementById('msBottomNav').style.display='none';document.getElementById('msContent').innerHTML=`<div class="ms-card"><div class="ms-logo">愜</div><div style="text-align:center;font-size:22px;font-weight:900">愜易居員工服務</div><div style="text-align:center;color:#64748b;font-size:14px;margin-top:5px">第一次登入後，之後會自動記住帳號</div><div class="ms-label">帳號 / 手機 / 員工姓名</div><input id="msLoginAccount" class="ms-input" placeholder="請輸入帳號"><div class="ms-label">密碼</div><input id="msLoginPwd" class="ms-input" type="password" placeholder="請輸入密碼"><button class="ms-primary" onclick="msDoLogin('${route||'home'}')">登入</button><button class="ms-secondary" onclick="closeMobileStaffApp()">返回</button><div style="font-size:12px;color:#94a3b8;line-height:1.7;margin-top:14px">第一階段測試：帳號輸入員工姓名，密碼輸入 0000 或 1234，即可登入。正式上線後再改成手機 / 個人密碼。</div></div>`};
+window.msShowLogin=function(route){msSetTitle('員工登入');document.getElementById('msBottomNav').style.display='none';document.getElementById('msContent').innerHTML=`<div class="ms-card"><div class="ms-logo">愜</div><div style="text-align:center;font-size:22px;font-weight:900">愜易居員工服務</div><div style="text-align:center;color:#64748b;font-size:14px;margin-top:5px">第一次登入後，之後會自動記住帳號</div><div class="ms-label">帳號 / 手機 / 員工姓名</div><input id="msLoginAccount" class="ms-input" placeholder="請輸入帳號"><div class="ms-label">密碼</div><input id="msLoginPwd" class="ms-input" type="password" placeholder="請輸入密碼"><button class="ms-primary" onclick="msDoLogin('${route||'home'}')">登入</button><button class="ms-secondary" onclick="closeMobileStaffApp()">返回</button><div style="font-size:12px;color:#94a3b8;line-height:1.7;margin-top:14px"></div></div>`};
 window.msDoLogin=function(route){
     let acc=(document.getElementById('msLoginAccount').value||'').trim();
     let pwd=(document.getElementById('msLoginPwd').value||'').trim();
@@ -33114,6 +33114,252 @@ document.addEventListener('keydown',function(e){
         window.handleLogin();
     }
 },true);
+
+})();
+</script>
+
+
+
+<script id="QYJ_LINE_STAFF_LOGIN_LOCK_20261104">
+(function(){
+'use strict';
+
+const LOGIN_KEY='qyj_mobile_staff_login';
+let qyjLoginLocked=false;
+let qyjLoginRoute='home';
+let qyjLoginSubmitting=false;
+
+function norm(v){
+    return String(v==null?'':v).trim();
+}
+
+function allStaff(){
+    let rows=[];
+    try{ if(Array.isArray(window.staffData)) rows=rows.concat(window.staffData); }catch(e){}
+    try{ if(Array.isArray(window.ftStaffData)) rows=rows.concat(window.ftStaffData); }catch(e){}
+    try{
+        const a=JSON.parse(localStorage.getItem('staffData')||'[]');
+        if(Array.isArray(a)) rows=rows.concat(a);
+    }catch(e){}
+    try{
+        const b=JSON.parse(localStorage.getItem('ftStaffData')||'[]');
+        if(Array.isArray(b)) rows=rows.concat(b);
+    }catch(e){}
+    const seen=new Set();
+    return rows.filter(function(x){
+        if(!x||typeof x!=='object') return false;
+        const k=[x.id||x.staffId||x.code||'',x.account||'',x.name||x.staff||'',x.phone||x.mobile||x.tel||''].join('|');
+        if(seen.has(k)) return false;
+        seen.add(k);
+        return true;
+    });
+}
+
+function staffName(x){
+    return norm(x.name||x.staff||x.realName||x.employeeName||x.fullname||'');
+}
+function staffAccount(x){
+    return norm(x.account||x.username||x.loginAccount||x.phone||x.mobile||x.tel||x.id||x.code||x.staffId||'');
+}
+function staffPhone(x){
+    return norm(x.phone||x.mobile||x.tel||x.cellphone||x.mobilePhone||'');
+}
+function staffCode(x){
+    return norm(x.code||x.staffId||x.employeeId||x.id||'');
+}
+function staffPwd(x){
+    return norm(
+        x.pwd ||
+        x.password ||
+        x.pass ||
+        x.loginPassword ||
+        x.staffPassword ||
+        x.employeePassword ||
+        x.staff_pwd ||
+        ''
+    );
+}
+function findStaff(acc){
+    const key=norm(acc);
+    if(!key) return null;
+    return allStaff().find(function(x){
+        return [
+            staffAccount(x),
+            staffName(x),
+            staffPhone(x),
+            staffCode(x),
+            norm(x.id),
+            norm(x.staffId)
+        ].filter(Boolean).includes(key);
+    })||null;
+}
+
+function setLock(route){
+    qyjLoginLocked=true;
+    qyjLoginRoute=route||'home';
+    try{localStorage.setItem('qyj_staff_login_locked','1');}catch(e){}
+}
+function clearLock(){
+    qyjLoginLocked=false;
+    try{localStorage.removeItem('qyj_staff_login_locked');}catch(e){}
+}
+function isLocked(){
+    return qyjLoginLocked || localStorage.getItem('qyj_staff_login_locked')==='1';
+}
+
+/* 登入頁：一顯示就鎖住，避免 LINE 鍵盤 / focus / 雲端同步把畫面切走 */
+const oldShowLogin=window.msShowLogin;
+window.msShowLogin=function(route){
+    setLock(route||'home');
+    if(typeof oldShowLogin==='function'){
+        oldShowLogin.call(this,route||'home');
+    }
+    setTimeout(function(){
+        const acc=document.getElementById('msLoginAccount');
+        const pwd=document.getElementById('msLoginPwd');
+        if(acc){
+            acc.setAttribute('autocomplete','username');
+            acc.addEventListener('focus',function(){setLock(qyjLoginRoute);},{once:false});
+        }
+        if(pwd){
+            pwd.setAttribute('autocomplete','current-password');
+            pwd.addEventListener('focus',function(){setLock(qyjLoginRoute);},{once:false});
+        }
+    },0);
+};
+
+/* 登入期間，任何舊程式想 msGo 都擋住；登入成功時會先 clearLock */
+const oldGo=window.msGo;
+window.msGo=function(route){
+    if(isLocked()){
+        const hasSaved=!!localStorage.getItem(LOGIN_KEY);
+        if(!hasSaved || qyjLoginSubmitting===false){
+            return;
+        }
+    }
+    if(typeof oldGo==='function') return oldGo.apply(this,arguments);
+};
+
+/* 登入期間，背景再次 openMobileStaffApp 不得覆蓋登入表單 */
+const oldOpen=window.openMobileStaffApp;
+window.openMobileStaffApp=async function(route){
+    if(isLocked()){
+        const app=document.getElementById('mobileStaffApp');
+        if(app) app.style.display='block';
+        return;
+    }
+    if(typeof oldOpen==='function') return oldOpen.apply(this,arguments);
+};
+
+/* 正式 Staff App 登入：只認後台人員資料中的 account / pwd（另支援姓名/手機找到人員） */
+window.msDoLogin=async function(route){
+    if(qyjLoginSubmitting) return;
+
+    const accEl=document.getElementById('msLoginAccount');
+    const pwdEl=document.getElementById('msLoginPwd');
+    const acc=norm(accEl&&accEl.value);
+    const pwd=norm(pwdEl&&pwdEl.value);
+
+    if(!acc || !pwd){
+        alert('請輸入帳號與密碼');
+        return;
+    }
+
+    setLock(route||qyjLoginRoute||'home');
+    qyjLoginSubmitting=true;
+
+    const btn=document.querySelector('#msContent .ms-primary');
+    if(btn){
+        btn.disabled=true;
+        btn.textContent='登入中...';
+    }
+
+    try{
+        /* 先嘗試等現有雲端載入完成，但失敗時仍可用本機已同步人員資料登入 */
+        try{
+            if(typeof loadMobileCloudExact==='function'){
+                await Promise.race([
+                    loadMobileCloudExact(),
+                    new Promise(function(resolve){setTimeout(resolve,3500);})
+                ]);
+            }
+        }catch(e){}
+
+        const found=findStaff(acc);
+        if(!found){
+            throw new Error('找不到這個帳號對應的員工資料，請確認後台人員資料已同步');
+        }
+
+        const configuredPwd=staffPwd(found);
+        if(!configuredPwd){
+            throw new Error('這位員工尚未設定登入密碼，請先在後台人員資料設定登入密碼');
+        }
+
+        if(pwd!==configuredPwd){
+            throw new Error('密碼不正確，請使用後台已設定的個人登入密碼');
+        }
+
+        const profile={
+            account:staffAccount(found)||staffPhone(found)||staffCode(found),
+            phone:staffPhone(found),
+            name:staffName(found),
+            code:staffCode(found),
+            status:found.status||found.type||found.role||'員工',
+            loginAt:new Date().toISOString()
+        };
+
+        localStorage.setItem(LOGIN_KEY,JSON.stringify(profile));
+        try{ currentLoginStaff=found; }catch(e){}
+
+        clearLock();
+        const target=route||qyjLoginRoute||'home';
+
+        /* 直接進目標頁，不再讓舊 wrapper 的 500ms / focus / sync 二次導頁干擾 */
+        if(typeof oldGo==='function'){
+            return oldGo.call(window,target);
+        }
+        if(typeof window.msShowHome==='function'){
+            return window.msShowHome();
+        }
+    }catch(err){
+        setLock(route||qyjLoginRoute||'home');
+        alert(err&&err.message?err.message:'登入失敗');
+        if(btn){
+            btn.disabled=false;
+            btn.textContent='登入';
+        }
+    }finally{
+        qyjLoginSubmitting=false;
+    }
+};
+
+/* LINE iOS 鍵盤收合會觸發 focus / visibilitychange；登入鎖定時強制維持登入畫面 */
+function keepLoginVisible(){
+    if(!isLocked()) return;
+    const app=document.getElementById('mobileStaffApp');
+    if(app) app.style.display='block';
+
+    const acc=document.getElementById('msLoginAccount');
+    const pwd=document.getElementById('msLoginPwd');
+    if(!acc || !pwd){
+        if(typeof oldShowLogin==='function'){
+            oldShowLogin.call(window,qyjLoginRoute||'home');
+        }
+    }
+}
+window.addEventListener('focus',function(){setTimeout(keepLoginVisible,50);},true);
+document.addEventListener('visibilitychange',function(){
+    if(!document.hidden) setTimeout(keepLoginVisible,50);
+},true);
+
+/* 每次重新載入：只有真的已有有效登入資料才解除登入鎖 */
+try{
+    if(localStorage.getItem(LOGIN_KEY)){
+        clearLock();
+    }else{
+        localStorage.removeItem('qyj_staff_login_locked');
+    }
+}catch(e){}
 
 })();
 </script>
