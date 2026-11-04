@@ -34200,5 +34200,610 @@ console.log('QYJ_LINE_COMPLETE_UI_20261104 已載入');
 })();
 </script>
 
+
+
+<style id="QYJ_CONTENT_MANAGER_VISUAL_V3_STYLE_20261104">
+/* ===== 全新員工內容管理：圖文 SOP + LINE 公告 ===== */
+#qyjContentAdminModal.qyj-v3{
+    background:rgba(15,23,42,.60)!important;
+    padding:18px!important;
+}
+#qyjContentAdminModal.qyj-v3 .qyj-v3-shell{
+    width:min(1180px,97vw);
+    max-height:92vh;
+    margin:0 auto;
+    background:#f6f7fb;
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:0 30px 90px rgba(15,23,42,.35);
+    display:flex;
+    flex-direction:column;
+}
+.qyj-v3-head{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:18px 22px;background:#fff;border-bottom:1px solid #e5e7eb;
+}
+.qyj-v3-title{font-size:21px;font-weight:900;color:#111827;display:flex;gap:9px;align-items:center}
+.qyj-v3-close{
+    border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:12px;
+    padding:9px 15px;font-weight:900;cursor:pointer;
+}
+.qyj-v3-tabs{
+    display:flex;gap:8px;padding:14px 20px;background:#fff;border-bottom:1px solid #e5e7eb;
+}
+.qyj-v3-tab{
+    border:0;background:#f1f5f9;color:#475569;border-radius:999px;
+    padding:10px 18px;font-weight:900;cursor:pointer;
+}
+.qyj-v3-tab.active{background:#2563eb;color:#fff}
+.qyj-v3-main{
+    display:grid;grid-template-columns:420px 1fr;gap:16px;padding:16px;
+    overflow:auto;min-height:600px;
+}
+.qyj-v3-left,.qyj-v3-editor{
+    background:#fff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;
+}
+.qyj-v3-panel-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:14px 16px;border-bottom:1px solid #e2e8f0;
+}
+.qyj-v3-panel-title{font-size:17px;font-weight:900;color:#111827}
+.qyj-v3-add{
+    border:0;background:#10b981;color:#fff;border-radius:10px;padding:9px 13px;
+    font-weight:900;cursor:pointer;
+}
+.qyj-v3-list{padding:12px;max-height:670px;overflow:auto;background:#f8fafc}
+.qyj-v3-empty{padding:38px 16px;text-align:center;color:#94a3b8;font-weight:800}
+.qyj-v3-sop-card{
+    display:grid;grid-template-columns:82px 1fr;gap:12px;
+    background:#fff;border:1px solid #e2e8f0;border-radius:15px;
+    padding:10px;margin-bottom:10px;cursor:pointer;transition:.15s;
+}
+.qyj-v3-sop-card:hover,.qyj-v3-sop-card.active{
+    border-color:#60a5fa;box-shadow:0 0 0 3px rgba(59,130,246,.10);
+}
+.qyj-v3-thumb{
+    width:82px;height:82px;border-radius:12px;overflow:hidden;
+    background:linear-gradient(135deg,#dbeafe,#eff6ff);
+    display:flex;align-items:center;justify-content:center;font-size:30px;
+}
+.qyj-v3-thumb img{width:100%;height:100%;object-fit:cover}
+.qyj-v3-card-title{font-weight:900;color:#111827;font-size:15px;margin-top:3px}
+.qyj-v3-card-summary{color:#64748b;font-size:12px;line-height:1.5;margin-top:5px}
+.qyj-v3-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.qyj-v3-tag{
+    font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;
+    background:#f1f5f9;color:#475569;
+}
+.qyj-v3-tag.on{background:#dcfce7;color:#166534}
+.qyj-v3-tag.off{background:#fee2e2;color:#991b1b}
+
+/* LINE 公告列表 */
+.qyj-v3-line-switch{
+    display:flex;background:#eef2f7;border-radius:12px;padding:4px;margin:0 12px 10px;
+}
+.qyj-v3-line-switch span{
+    flex:1;text-align:center;padding:7px;font-size:12px;font-weight:900;border-radius:9px;
+}
+.qyj-v3-line-switch .active{background:#fff;color:#06c755;box-shadow:0 1px 4px rgba(15,23,42,.08)}
+.qyj-v3-line-item{
+    display:grid;grid-template-columns:46px 1fr auto;gap:10px;align-items:start;
+    background:#fff;border-bottom:1px solid #eef2f7;padding:12px;cursor:pointer;
+}
+.qyj-v3-line-item.active{background:#f0fdf4}
+.qyj-v3-line-icon{
+    width:46px;height:46px;border-radius:50%;background:#06c755;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:19px;
+}
+.qyj-v3-line-name{font-weight:900;color:#111827;font-size:14px}
+.qyj-v3-line-preview{
+    margin-top:4px;color:#64748b;font-size:12px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;max-width:240px;
+}
+.qyj-v3-line-time{font-size:10px;color:#94a3b8;white-space:nowrap}
+.qyj-v3-unread{
+    display:inline-flex;min-width:18px;height:18px;border-radius:999px;background:#ef4444;color:#fff;
+    align-items:center;justify-content:center;font-size:10px;font-weight:900;margin-top:7px;padding:0 5px;
+}
+
+/* 編輯區 */
+.qyj-v3-editor-body{padding:16px}
+.qyj-v3-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.qyj-v3-form .wide{grid-column:1/-1}
+.qyj-v3-form label{display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:5px}
+.qyj-v3-form input,.qyj-v3-form select,.qyj-v3-form textarea{
+    width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;
+    padding:10px 12px;background:#fff;font-size:13px;color:#111827;
+}
+.qyj-v3-form textarea{min-height:180px;resize:vertical;line-height:1.7}
+.qyj-v3-image-box{
+    border:2px dashed #cbd5e1;border-radius:14px;padding:12px;background:#f8fafc;
+}
+.qyj-v3-image-preview{
+    width:100%;height:180px;border-radius:12px;overflow:hidden;background:#eef2f7;
+    display:flex;align-items:center;justify-content:center;color:#94a3b8;font-weight:900;
+    margin-bottom:10px;
+}
+.qyj-v3-image-preview img{width:100%;height:100%;object-fit:cover}
+.qyj-v3-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
+.qyj-v3-btn{
+    border:0;border-radius:10px;padding:10px 16px;font-weight:900;cursor:pointer;
+}
+.qyj-v3-btn.delete{background:#ef4444;color:#fff}
+.qyj-v3-btn.save{background:#2563eb;color:#fff}
+.qyj-v3-note{
+    grid-column:1/-1;border-radius:10px;padding:10px 12px;
+    background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:800;line-height:1.6;
+}
+
+/* Staff App SOP 圖文 */
+.qyj-mobile-sop-card{
+    background:#fff;border-radius:16px;overflow:hidden;margin-bottom:14px;
+    border:1px solid #e2e8f0;
+}
+.qyj-mobile-sop-card img{width:100%;height:180px;object-fit:cover;display:block}
+.qyj-mobile-sop-inner{padding:15px}
+.qyj-mobile-sop-title{font-size:17px;font-weight:900;color:#111827}
+.qyj-mobile-sop-summary{font-size:12px;color:#64748b;margin-top:4px}
+.qyj-mobile-sop-content{font-size:14px;color:#334155;line-height:1.8;white-space:pre-wrap;margin-top:12px}
+
+/* Staff App LINE 公告 */
+.qyj-mobile-line-tabs{
+    display:flex;background:#e5e7eb;padding:4px;border-radius:12px;margin-bottom:12px;
+}
+.qyj-mobile-line-tab{
+    flex:1;border:0;background:transparent;padding:8px;border-radius:9px;
+    font-weight:900;color:#64748b;cursor:pointer;
+}
+.qyj-mobile-line-tab.active{background:#fff;color:#06c755}
+.qyj-mobile-line-item{
+    display:grid;grid-template-columns:48px 1fr auto;gap:10px;background:#fff;
+    padding:13px;border-bottom:1px solid #eef2f7;cursor:pointer;
+}
+.qyj-mobile-line-icon{
+    width:48px;height:48px;border-radius:50%;background:#06c755;color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;
+}
+.qyj-mobile-line-title{font-weight:900;color:#111827}
+.qyj-mobile-line-preview{font-size:12px;color:#64748b;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qyj-mobile-line-meta{font-size:10px;color:#94a3b8;text-align:right}
+.qyj-mobile-line-dot{width:10px;height:10px;background:#ef4444;border-radius:50%;margin:7px 0 0 auto}
+.qyj-mobile-line-detail{background:#fff;border-radius:16px;padding:18px}
+.qyj-mobile-line-detail-title{font-size:19px;font-weight:900;color:#111827}
+.qyj-mobile-line-detail-date{font-size:12px;color:#94a3b8;margin-top:5px}
+.qyj-mobile-line-detail-body{font-size:14px;color:#334155;line-height:1.9;white-space:pre-wrap;margin-top:15px}
+
+@media(max-width:860px){
+    .qyj-v3-main{grid-template-columns:1fr;min-height:0}
+    .qyj-v3-list{max-height:340px}
+    .qyj-v3-form{grid-template-columns:1fr}
+    .qyj-v3-form .wide{grid-column:auto}
+}
+</style>
+
+<script id="QYJ_CONTENT_MANAGER_VISUAL_V3_20261104">
+(function(){
+'use strict';
+
+let v3Mode='sop';
+let v3Index=-1;
+let mobileNoticeMode='unread';
+
+function esc(v){
+    return String(v==null?'':v)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+        .replace(/'/g,'&#039;');
+}
+function ensureData(){
+    if(!Array.isArray(portalConf.sopItems)) portalConf.sopItems=[];
+    if(!Array.isArray(portalConf.announcementItems)) portalConf.announcementItems=[];
+}
+function list(){
+    ensureData();
+    return v3Mode==='announcement'?portalConf.announcementItems:portalConf.sopItems;
+}
+function audienceText(v){
+    return v==='fulltime'?'僅正職':v==='dispatch'?'僅派遣':'全部員工';
+}
+function current(){
+    return v3Index>=0?list()[v3Index]:null;
+}
+function modal(){
+    return document.getElementById('qyjContentAdminModal');
+}
+function buildModal(){
+    const old=modal();
+    if(old) old.remove();
+
+    const m=document.createElement('div');
+    m.id='qyjContentAdminModal';
+    m.className='qyj-content-modal-backdrop qyj-v3';
+    m.innerHTML=`
+      <div class="qyj-v3-shell">
+        <div class="qyj-v3-head">
+          <div class="qyj-v3-title"><i class="fas fa-bullhorn"></i> 員工內容管理</div>
+          <button class="qyj-v3-close" onclick="closeQyjContentAdmin()">關閉</button>
+        </div>
+        <div class="qyj-v3-tabs">
+          <button id="qyjV3TabSop" class="qyj-v3-tab" onclick="switchQyjContentMode('sop')">📘 入職包 SOP</button>
+          <button id="qyjV3TabAnn" class="qyj-v3-tab" onclick="switchQyjContentMode('announcement')">💬 LINE 公告欄</button>
+        </div>
+        <div class="qyj-v3-main">
+          <section class="qyj-v3-left">
+            <div class="qyj-v3-panel-head">
+              <div id="qyjV3ListTitle" class="qyj-v3-panel-title">內容</div>
+              <button class="qyj-v3-add" onclick="newQyjContentItem()">＋ 新增</button>
+            </div>
+            <div id="qyjV3LineSwitch"></div>
+            <div id="qyjContentItems" class="qyj-v3-list"></div>
+          </section>
+
+          <section class="qyj-v3-editor">
+            <div class="qyj-v3-panel-head">
+              <div id="qyjV3EditorTitle" class="qyj-v3-panel-title">新增內容</div>
+              <span id="qyjV3EditorBadge" class="qyj-v3-tag on">啟用</span>
+            </div>
+            <div class="qyj-v3-editor-body">
+              <div class="qyj-v3-form">
+                <div class="wide">
+                  <label>標題</label>
+                  <input id="qyjContentTitle" type="text" placeholder="輸入標題">
+                </div>
+
+                <div class="wide">
+                  <label>簡短說明</label>
+                  <input id="qyjContentSummary" type="text" placeholder="手機列表會先看到這段">
+                </div>
+
+                <div id="qyjV3ImageWrap" class="wide qyj-v3-image-box">
+                  <label>圖文封面</label>
+                  <div id="qyjV3ImagePreview" class="qyj-v3-image-preview">尚未設定圖片</div>
+                  <input id="qyjContentImage" type="hidden">
+                  <input id="qyjContentImageFile" type="file" accept="image/*" onchange="qyjV3ReadImage(this)">
+                  <div style="font-size:11px;color:#64748b;margin-top:6px">SOP 可直接選圖片，員工手機端會同步顯示</div>
+                </div>
+
+                <div>
+                  <label>顯示對象</label>
+                  <select id="qyjContentAudience">
+                    <option value="all">全部員工</option>
+                    <option value="fulltime">僅正職</option>
+                    <option value="dispatch">僅派遣</option>
+                  </select>
+                </div>
+                <div>
+                  <label>狀態</label>
+                  <select id="qyjContentActive">
+                    <option value="true">啟用</option>
+                    <option value="false">停用</option>
+                  </select>
+                </div>
+
+                <div id="qyjAnnouncementDateWrap">
+                  <label>發布日期</label>
+                  <input id="qyjContentPublishDate" type="date">
+                </div>
+                <div id="qyjAnnouncementExpireWrap">
+                  <label>到期日期</label>
+                  <input id="qyjContentExpireDate" type="date">
+                </div>
+                <div id="qyjAnnouncementPinWrap">
+                  <label>置頂</label>
+                  <select id="qyjContentPinned">
+                    <option value="false">否</option>
+                    <option value="true">是</option>
+                  </select>
+                </div>
+                <div>
+                  <label>顯示順序</label>
+                  <input id="qyjContentOrder" type="number" min="1" value="1">
+                </div>
+
+                <div class="wide">
+                  <label id="qyjV3BodyLabel">完整內容</label>
+                  <textarea id="qyjContentBody" placeholder="輸入完整內容"></textarea>
+                </div>
+
+                <div id="qyjV3ModeNote" class="qyj-v3-note"></div>
+              </div>
+
+              <div class="qyj-v3-actions">
+                <button class="qyj-v3-btn delete" onclick="deleteQyjContentItem()">刪除</button>
+                <button class="qyj-v3-btn save qyj-content-save" onclick="saveQyjContentItem()">儲存並同步</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+}
+function setImagePreview(src){
+    const p=document.getElementById('qyjV3ImagePreview');
+    if(!p) return;
+    p.innerHTML=src?'<img src="'+esc(src)+'" alt="">':'尚未設定圖片';
+}
+window.qyjV3ReadImage=function(input){
+    const f=input&&input.files&&input.files[0];
+    if(!f)return;
+    const reader=new FileReader();
+    reader.onload=function(){
+        const img=new Image();
+        img.onload=function(){
+            const max=1200;
+            let w=img.width,h=img.height;
+            if(w>max){h=Math.round(h*max/w);w=max}
+            const c=document.createElement('canvas');
+            c.width=w;c.height=h;
+            c.getContext('2d').drawImage(img,0,0,w,h);
+            const data=c.toDataURL('image/jpeg',0.78);
+            document.getElementById('qyjContentImage').value=data;
+            setImagePreview(data);
+        };
+        img.src=reader.result;
+    };
+    reader.readAsDataURL(f);
+};
+function fill(item){
+    item=item||{};
+    document.getElementById('qyjContentTitle').value=item.title||'';
+    document.getElementById('qyjContentSummary').value=item.summary||'';
+    document.getElementById('qyjContentAudience').value=item.audience||'all';
+    document.getElementById('qyjContentActive').value=item.active===false?'false':'true';
+    document.getElementById('qyjContentPublishDate').value=item.publishDate||new Date().toISOString().slice(0,10);
+    document.getElementById('qyjContentExpireDate').value=item.expireDate||'';
+    document.getElementById('qyjContentPinned').value=item.pinned?'true':'false';
+    document.getElementById('qyjContentOrder').value=item.order||Math.max(1,list().length+1);
+    document.getElementById('qyjContentBody').value=item.content||'';
+    document.getElementById('qyjContentImage').value=item.image||item.imageUrl||'';
+    setImagePreview(item.image||item.imageUrl||'');
+}
+function render(){
+    ensureData();
+    document.getElementById('qyjV3TabSop').classList.toggle('active',v3Mode==='sop');
+    document.getElementById('qyjV3TabAnn').classList.toggle('active',v3Mode==='announcement');
+    document.getElementById('qyjV3ListTitle').textContent=v3Mode==='sop'?'SOP 圖文項目':'LINE 公告';
+    document.getElementById('qyjV3ImageWrap').style.display=v3Mode==='sop'?'block':'none';
+    ['qyjAnnouncementDateWrap','qyjAnnouncementExpireWrap','qyjAnnouncementPinWrap'].forEach(id=>{
+        document.getElementById(id).style.display=v3Mode==='announcement'?'block':'none';
+    });
+    document.getElementById('qyjV3BodyLabel').textContent=v3Mode==='sop'?'SOP 完整內容':'公告內容';
+    document.getElementById('qyjV3ModeNote').textContent=
+        v3Mode==='sop'
+        ?'儲存後員工端會以「圖片＋標題＋說明＋內容」呈現，不再是純文字清單。'
+        :'儲存後員工端會出現在 LINE 式公告列表，可依未讀／全部查看。';
+
+    const switchBox=document.getElementById('qyjV3LineSwitch');
+    switchBox.innerHTML=v3Mode==='announcement'
+        ?'<div class="qyj-v3-line-switch"><span class="active">未讀</span><span>全部</span></div>'
+        :'';
+
+    const arr=list().map((x,i)=>({...x,_index:i})).sort((a,b)=>{
+        if(v3Mode==='announcement'){
+            return Number(Boolean(b.pinned))-Number(Boolean(a.pinned)) ||
+                   String(b.publishDate||'').localeCompare(String(a.publishDate||''));
+        }
+        return Number(a.order||0)-Number(b.order||0);
+    });
+
+    document.getElementById('qyjContentItems').innerHTML=arr.length?arr.map(item=>{
+        if(v3Mode==='sop'){
+            const img=item.image||item.imageUrl||'';
+            return `<div class="qyj-v3-sop-card ${item._index===v3Index?'active':''}" onclick="editQyjContentItem(${item._index})">
+                <div class="qyj-v3-thumb">${img?`<img src="${esc(img)}">`:'📘'}</div>
+                <div>
+                  <div class="qyj-v3-card-title">${esc(item.title||'未命名')}</div>
+                  <div class="qyj-v3-card-summary">${esc(item.summary||'')}</div>
+                  <div class="qyj-v3-tags">
+                    <span class="qyj-v3-tag">${audienceText(item.audience)}</span>
+                    <span class="qyj-v3-tag ${item.active===false?'off':'on'}">${item.active===false?'停用':'啟用'}</span>
+                  </div>
+                </div>
+            </div>`;
+        }
+        return `<div class="qyj-v3-line-item ${item._index===v3Index?'active':''}" onclick="editQyjContentItem(${item._index})">
+            <div class="qyj-v3-line-icon">愜</div>
+            <div>
+              <div class="qyj-v3-line-name">${esc(item.title||'公告')}</div>
+              <div class="qyj-v3-line-preview">${esc(item.summary||item.content||'')}</div>
+              <div class="qyj-v3-tags">
+                ${item.pinned?'<span class="qyj-v3-tag off">置頂</span>':''}
+                <span class="qyj-v3-tag">${audienceText(item.audience)}</span>
+              </div>
+            </div>
+            <div>
+              <div class="qyj-v3-line-time">${esc(item.publishDate||'')}</div>
+              <div class="qyj-v3-unread">1</div>
+            </div>
+        </div>`;
+    }).join(''):'<div class="qyj-v3-empty">目前還沒有內容</div>';
+
+    const item=current();
+    document.getElementById('qyjV3EditorTitle').textContent=item?'編輯內容':'新增內容';
+    document.getElementById('qyjV3EditorBadge').textContent=(item&&item.active===false)?'停用':'啟用';
+    document.getElementById('qyjV3EditorBadge').className='qyj-v3-tag '+((item&&item.active===false)?'off':'on');
+}
+window.openQyjContentAdmin=function(mode){
+    v3Mode=mode==='announcement'?'announcement':'sop';
+    v3Index=-1;
+    buildModal();
+    fill({});
+    render();
+    modal().style.display='block';
+};
+window.closeQyjContentAdmin=function(){
+    const m=modal();if(m)m.style.display='none';
+};
+window.switchQyjContentMode=function(mode){
+    v3Mode=mode==='announcement'?'announcement':'sop';
+    v3Index=-1;
+    fill({});
+    render();
+};
+window.newQyjContentItem=function(){
+    v3Index=-1;fill({});render();
+};
+window.editQyjContentItem=function(index){
+    v3Index=Number(index);
+    fill(list()[v3Index]||{});
+    render();
+};
+window.deleteQyjContentItem=async function(){
+    if(v3Index<0)return showToast('請先選擇要刪除的內容',true);
+    if(!confirm('確定刪除這筆內容？'))return;
+    list().splice(v3Index,1);
+    v3Index=-1;
+    localStorage.setItem('portalConf',JSON.stringify(portalConf));
+    try{
+        if(typeof forcePushAllToCloud==='function') await forcePushAllToCloud();
+        showToast('✅ 已刪除並同步');
+    }catch(e){
+        showToast('⚠️ 已刪除本機內容，雲端同步尚未完成',true);
+    }
+    fill({});render();
+};
+window.saveQyjContentItem=async function(){
+    const title=document.getElementById('qyjContentTitle').value.trim();
+    if(!title)return showToast('請輸入標題',true);
+
+    const old=current()||{};
+    const item={
+        ...old,
+        title,
+        summary:document.getElementById('qyjContentSummary').value.trim(),
+        audience:document.getElementById('qyjContentAudience').value,
+        active:document.getElementById('qyjContentActive').value==='true',
+        order:Number(document.getElementById('qyjContentOrder').value||1),
+        content:document.getElementById('qyjContentBody').value.trim()
+    };
+    if(v3Mode==='sop'){
+        item.image=document.getElementById('qyjContentImage').value||'';
+    }else{
+        item.publishDate=document.getElementById('qyjContentPublishDate').value||'';
+        item.expireDate=document.getElementById('qyjContentExpireDate').value||'';
+        item.pinned=document.getElementById('qyjContentPinned').value==='true';
+    }
+
+    if(v3Index>=0) list()[v3Index]=item;
+    else{
+        list().push(item);
+        v3Index=list().length-1;
+    }
+    localStorage.setItem('portalConf',JSON.stringify(portalConf));
+
+    const btn=document.querySelector('.qyj-v3-btn.save');
+    const oldText=btn?btn.textContent:'';
+    if(btn){btn.disabled=true;btn.textContent='同步中…'}
+
+    try{
+        if(typeof forcePushAllToCloud==='function') await forcePushAllToCloud();
+        showToast('✅ 已儲存並同步到員工端');
+    }catch(e){
+        console.error(e);
+        showToast('⚠️ 已儲存本機，雲端同步尚未完成',true);
+    }finally{
+        if(btn){btn.disabled=false;btn.textContent=oldText||'儲存並同步'}
+    }
+    render();
+};
+
+/* ===== Staff App：SOP 圖文版 ===== */
+function mobileStaffType(){
+    try{
+        const s=typeof msGetCurrentStaff==='function'?(msGetCurrentStaff()||{}):{};
+        const name=String(s.name||s.staff||s.realName||'').trim();
+        return (ftStaffData||[]).some(x=>String(x.name||x.staff||'').trim()===name)?'正職':'派遣';
+    }catch(e){return '派遣'}
+}
+function audienceOK(aud,type){
+    return !aud||aud==='all'||(aud==='fulltime'&&type==='正職')||(aud==='dispatch'&&type==='派遣');
+}
+window.msShowSop=function(){
+    if(typeof msSetTitle==='function')msSetTitle('入職包 SOP');
+    const box=document.getElementById('msContent');if(!box)return;
+    ensureData();
+    const type=mobileStaffType();
+    const items=portalConf.sopItems
+        .filter(x=>x&&x.active!==false&&audienceOK(x.audience,type))
+        .sort((a,b)=>Number(a.order||0)-Number(b.order||0));
+
+    box.innerHTML=items.length?items.map(x=>{
+        const img=x.image||x.imageUrl||'';
+        return `<div class="qyj-mobile-sop-card">
+          ${img?`<img src="${esc(img)}" alt="">`:''}
+          <div class="qyj-mobile-sop-inner">
+            <div class="qyj-mobile-sop-title">${esc(x.title||'SOP')}</div>
+            ${x.summary?`<div class="qyj-mobile-sop-summary">${esc(x.summary)}</div>`:''}
+            ${x.content?`<div class="qyj-mobile-sop-content">${esc(x.content)}</div>`:''}
+          </div>
+        </div>`;
+    }).join(''):'<div class="ms-card"><div class="ms-empty">目前沒有 SOP 內容</div></div>';
+};
+
+/* ===== Staff App：LINE 未讀 / 全部公告 ===== */
+function noticeKey(x){
+    return 'qyj_notice_read_'+btoa(unescape(encodeURIComponent(String(x.title||'')+'|'+String(x.publishDate||'') ))).replace(/=/g,'');
+}
+function visibleNotices(){
+    ensureData();
+    const type=mobileStaffType();
+    const today=new Date().toISOString().slice(0,10);
+    return portalConf.announcementItems
+      .filter(x=>x&&x.active!==false&&audienceOK(x.audience,type))
+      .filter(x=>(!x.publishDate||x.publishDate<=today)&&(!x.expireDate||x.expireDate>=today))
+      .sort((a,b)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned))||String(b.publishDate||'').localeCompare(String(a.publishDate||'')));
+}
+function isRead(x){return localStorage.getItem(noticeKey(x))==='1'}
+function renderMobileNotices(){
+    const box=document.getElementById('msContent');if(!box)return;
+    const all=visibleNotices();
+    const items=mobileNoticeMode==='unread'?all.filter(x=>!isRead(x)):all;
+    box.innerHTML=`
+      <div class="qyj-mobile-line-tabs">
+        <button class="qyj-mobile-line-tab ${mobileNoticeMode==='unread'?'active':''}" onclick="qyjMobileNoticeTab('unread')">未讀 ${all.filter(x=>!isRead(x)).length}</button>
+        <button class="qyj-mobile-line-tab ${mobileNoticeMode==='all'?'active':''}" onclick="qyjMobileNoticeTab('all')">全部 ${all.length}</button>
+      </div>
+      <div style="border-radius:16px;overflow:hidden;background:#fff">
+        ${items.length?items.map((x,i)=>`
+          <div class="qyj-mobile-line-item" onclick="qyjOpenMobileNotice(${all.indexOf(x)})">
+            <div class="qyj-mobile-line-icon">愜</div>
+            <div>
+              <div class="qyj-mobile-line-title">${x.pinned?'📌 ':''}${esc(x.title||'公告')}</div>
+              <div class="qyj-mobile-line-preview">${esc(x.summary||x.content||'')}</div>
+            </div>
+            <div class="qyj-mobile-line-meta">
+              ${esc(x.publishDate||'')}
+              ${!isRead(x)?'<div class="qyj-mobile-line-dot"></div>':''}
+            </div>
+          </div>`).join(''):'<div class="ms-empty" style="padding:38px 16px">目前沒有'+(mobileNoticeMode==='unread'?'未讀':'')+'公告</div>'}
+      </div>`;
+}
+window.qyjMobileNoticeTab=function(mode){
+    mobileNoticeMode=mode==='all'?'all':'unread';
+    renderMobileNotices();
+};
+window.qyjOpenMobileNotice=function(index){
+    const items=visibleNotices();
+    const x=items[index];if(!x)return;
+    localStorage.setItem(noticeKey(x),'1');
+    const box=document.getElementById('msContent');if(!box)return;
+    box.innerHTML=`<div class="qyj-mobile-line-detail">
+      <button style="border:0;background:none;color:#2563eb;font-weight:900;padding:0 0 12px" onclick="renderMobileNotices()">‹ 返回公告</button>
+      <div class="qyj-mobile-line-detail-title">${x.pinned?'📌 ':''}${esc(x.title||'公告')}</div>
+      <div class="qyj-mobile-line-detail-date">${esc(x.publishDate||'')}</div>
+      <div class="qyj-mobile-line-detail-body">${esc(x.content||x.summary||'')}</div>
+    </div>`;
+};
+window.msShowNotice=function(){
+    if(typeof msSetTitle==='function')msSetTitle('公告欄');
+    mobileNoticeMode='unread';
+    renderMobileNotices();
+};
+window.renderMobileNotices=renderMobileNotices;
+
+console.log('員工內容管理圖文 SOP / LINE 公告 V3 已載入');
+})();
+</script>
+
 </body>
 </html>
