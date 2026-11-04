@@ -1649,7 +1649,6 @@
                             <button class="switch-role-btn" onclick="manualCloudSync()" style="color:#059669;background:#ecfdf5;"><i class="fas fa-cloud-upload-alt"></i> 同步雲端</button>
                             <button class="switch-role-btn" onclick="exportScheduleFilledExcel()"><i class="fas fa-download"></i> 匯出月排班</button>
                             <button class="switch-role-btn" onclick="createAttendFromSchedule()"><i class="fas fa-clock"></i> 轉派遣記錄</button>
-                            <button class="btn" type="button" onclick="qyjOpenDispatchMultiDay()" style="margin:0;background:#0f766e;"><i class="fas fa-calendar-check"></i> 多日排班</button>
                             <button class="btn btn-success" onclick="openScheduleCell('', '')" style="margin:0;"><i class="fas fa-plus"></i> 新增排班</button>
                         </div>
                     </div>
@@ -1742,91 +1741,6 @@
                 </div>
 
                 
-            
-
-                
-
-            <div class="schedule-modal-backdrop" id="qyjDispatchMultiDayModal" style="display:none;">
-                <div class="schedule-modal qyj-dispatch-multi-modal">
-                    <div class="schedule-modal-head">
-                        <div>
-                            <h3><i class="fas fa-calendar-check"></i> 派遣多日排班</h3>
-                            <div class="schedule-modal-sub">一次點選多個日期；相同時間可一次套用，個別日期也能再修改。</div>
-                        </div>
-                        <button class="switch-role-btn" type="button" onclick="qyjCloseDispatchMultiDay()">關閉</button>
-                    </div>
-
-                    <div class="qyj-dispatch-multi-top">
-                        <div>
-                            <label>公司</label>
-                            <input list="list_cust" id="qyjDispatchMultiCompany" placeholder="選擇或輸入公司">
-                        </div>
-                        <div>
-                            <label>人員（可多位）</label>
-                            <input list="list_staff" id="qyjDispatchMultiStaff" placeholder="例：林紀雲、王小明">
-                        </div>
-                        <div>
-                            <label>月份</label>
-                            <input type="month" id="qyjDispatchMultiMonth" onchange="qyjRenderDispatchMultiCalendar()">
-                        </div>
-                        <div>
-                            <label>地點 / 需求</label>
-                            <input id="qyjDispatchMultiLocation" placeholder="可留白">
-                        </div>
-                        <div class="qyj-dispatch-multi-full">
-                            <label>備註</label>
-                            <input id="qyjDispatchMultiRemark" placeholder="現場需求、窗口、注意事項">
-                        </div>
-                    </div>
-
-                    <div class="qyj-dispatch-multi-toolbar">
-                        <button type="button" class="switch-role-btn" onclick="qyjDispatchMultiSelectWeekdays()">選平日</button>
-                        <button type="button" class="switch-role-btn" onclick="qyjDispatchMultiClearDates()">清除日期</button>
-                        <span id="qyjDispatchMultiCount">已選 0 天</span>
-                    </div>
-
-                    <div id="qyjDispatchMultiCalendar" class="qyj-dispatch-multi-calendar"></div>
-
-                    <div class="qyj-dispatch-multi-timebar">
-                        <div><label>共同上班</label><input type="time" id="qyjDispatchMultiStart" step="900" value="08:30"></div>
-                        <div><label>共同下班</label><input type="time" id="qyjDispatchMultiEnd" step="900" value="17:00"></div>
-                        <div><label>休息時數</label><input type="number" id="qyjDispatchMultiBreak" step="0.5" min="0" value="1"></div>
-                        <button type="button" class="btn" style="background:#2563eb;margin:0;" onclick="qyjDispatchMultiApplySameTime()"><i class="fas fa-copy"></i> 套用相同時間到已選日期</button>
-                    </div>
-
-                    <div class="qyj-dispatch-multi-preview-title">
-                        已選日期明細
-                        <span>每一天都可以再單獨修改時間</span>
-                    </div>
-                    <div class="table-responsive qyj-dispatch-multi-table-wrap">
-                        <table class="qyj-dispatch-multi-table">
-                            <thead>
-                                <tr>
-                                    <th>日期</th>
-                                    <th>星期</th>
-                                    <th>上班</th>
-                                    <th>下班</th>
-                                    <th>休息</th>
-                                    <th>實際工時</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="qyjDispatchMultiRows">
-                                <tr><td colspan="7" class="qyj-dispatch-multi-empty">請先在上方日曆點選日期</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="qyj-dispatch-multi-warning" id="qyjDispatchMultiWarning"></div>
-
-                    <div class="schedule-modal-actions">
-                        <button class="btn" type="button" style="background:#64748b;" onclick="qyjCloseDispatchMultiDay()">取消</button>
-                        <button class="btn btn-success" type="button" onclick="qyjSaveDispatchMultiDay()"><i class="fas fa-save"></i> 一次儲存全部日期</button>
-                    </div>
-                </div>
-            </div>
-
-            
             <div class="schedule-modal-backdrop" id="scheduleEditModal">
                     <div class="schedule-modal">
                         <div class="schedule-modal-head">
@@ -4577,7 +4491,6 @@ function getSysConfigPayload() {
         adminPin: getPwd('adminPin','8888'),
         priceTable: localStorage.getItem('priceTable'),
         portalConf: localStorage.getItem('portalConf'),
-        portalConfUpdatedAt: localStorage.getItem('portalConfUpdatedAt')||'0',
         loginLogo: localStorage.getItem('loginLogo')||'',
         pdfLogo: localStorage.getItem('pdfLogo')||'',
         loginBg: localStorage.getItem('loginBg')||'',
@@ -4612,18 +4525,7 @@ function handleLogoUrl(t) {
 }
 
 function renderPortalConfigUI() { if(!el('conf_r1_title')) return; ['sysNoticeTitle','sysNoticeContent','serviceTypes','r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { let i = 'conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase()); if(el(i)) el(i).value = portalConf[k] || ''; }); }
-function savePortalConfig() {
-    ['sysNoticeTitle','sysNoticeContent','serviceTypes','r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => {
-        portalConf[k] = el('conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase())).value;
-    });
-    const now = Date.now();
-    localStorage.setItem('portalConf', JSON.stringify(portalConf));
-    localStorage.setItem('portalConfUpdatedAt', String(now));
-    saveAllSilently();
-    showToast('✅ 員工入口設定已儲存並同步');
-    applyPortalConfigToStaff();
-    renderServiceTypes();
-}
+function savePortalConfig() { ['sysNoticeTitle','sysNoticeContent','serviceTypes','r1Title','r1Content','r2Title','r2Content','l1Title','l1Desc','l1Url','l2Title','l2Desc','l2Url'].forEach(k => { portalConf[k] = el('conf_' + k.replace(/[A-Z]/g, l => '_' + l.toLowerCase())).value; }); localStorage.setItem('portalConf', JSON.stringify(portalConf)); saveAllSilently(); showToast('✅ 同步成功'); applyPortalConfigToStaff(); renderServiceTypes(); }
 function renderServiceTypes() { const s = el('attend_service'); if(!s) return; let hs = '<option value="">請選擇</option>'; (portalConf.serviceTypes || "行政").split(',').forEach(t => { const v = t.trim(); if(v) hs += `<option value="${v}">${v}</option>`; }); const cv = s.value; s.innerHTML = hs; if(cv) s.value = cv; }
 
 function applyPortalConfigToStaff() { 
@@ -6289,41 +6191,7 @@ function loadDataFromCloud(forceRender=false) {
             if(r.sysConfig.salesPwd){localStorage.setItem('salesPwd',r.sysConfig.salesPwd);if(el('setting_sales_pwd'))el('setting_sales_pwd').value=r.sysConfig.salesPwd;}
             if(r.sysConfig.adminPin){localStorage.setItem('adminPin',r.sysConfig.adminPin);if(el('setting_sys_pin'))el('setting_sys_pin').value=r.sysConfig.adminPin;}
             if(r.sysConfig.priceTable){ localStorage.setItem('priceTable',r.sysConfig.priceTable); priceTable=JSON.parse(r.sysConfig.priceTable); if(el('config_price_table')) el('config_price_table').value=r.sysConfig.priceTable; renderPricePlanOptions(); }
-            if(r.sysConfig.portalConf){
-                try{
-                    const localTs=Number(localStorage.getItem('portalConfUpdatedAt')||0);
-                    const cloudTs=Number(r.sysConfig.portalConfUpdatedAt||0);
-                    const hasLocal=!!localStorage.getItem('portalConf');
-
-                    // 本機設定較新時，不允許舊雲端設定洗回去
-                    if(!hasLocal || cloudTs>=localTs){
-                        let c=JSON.parse(r.sysConfig.portalConf);
-                        portalConf={...defaultPortalConf,...c};
-                        if(portalConf.adminNoticeTitle){
-                            portalConf.sysNoticeTitle=portalConf.adminNoticeTitle;
-                            delete portalConf.adminNoticeTitle;
-                        }
-                        if(portalConf.adminNoticeContent){
-                            portalConf.sysNoticeContent=portalConf.adminNoticeContent;
-                            delete portalConf.adminNoticeContent;
-                        }
-                        Object.keys(defaultPortalConf).forEach(k=>{
-                            if(!portalConf[k]||portalConf[k].toString().trim()==='') portalConf[k]=defaultPortalConf[k];
-                        });
-                        localStorage.setItem('portalConf',JSON.stringify(portalConf));
-                        if(cloudTs) localStorage.setItem('portalConfUpdatedAt',String(cloudTs));
-                    }else{
-                        const localConf=JSON.parse(localStorage.getItem('portalConf')||'{}');
-                        portalConf={...defaultPortalConf,...localConf};
-                    }
-
-                    renderPortalConfigUI();
-                    applyPortalConfigToStaff();
-                    renderServiceTypes();
-                }catch(e){
-                    console.error('portalConf 同步保護失敗',e);
-                }
-            }
+            if(r.sysConfig.portalConf){ let c = JSON.parse(r.sysConfig.portalConf); portalConf = {...defaultPortalConf,...c}; if(portalConf.adminNoticeTitle){ portalConf.sysNoticeTitle=portalConf.adminNoticeTitle; delete portalConf.adminNoticeTitle; } if(portalConf.adminNoticeContent){ portalConf.sysNoticeContent=portalConf.adminNoticeContent; delete portalConf.adminNoticeContent; } Object.keys(defaultPortalConf).forEach(k=>{ if(!portalConf[k]||portalConf[k].toString().trim()==='') portalConf[k]=defaultPortalConf[k]; }); localStorage.setItem('portalConf',JSON.stringify(portalConf)); renderPortalConfigUI(); applyPortalConfigToStaff(); renderServiceTypes(); }
             if(r.sysConfig.loginLogo){localStorage.setItem('loginLogo',r.sysConfig.loginLogo);loginLogoBase64=r.sysConfig.loginLogo;}
             if(r.sysConfig.pdfLogo){localStorage.setItem('pdfLogo',r.sysConfig.pdfLogo);pdfLogoBase64=r.sysConfig.pdfLogo;}
             if(r.sysConfig.loginBg){localStorage.setItem('loginBg',r.sysConfig.loginBg);loginBgBase64=r.sysConfig.loginBg;}
@@ -6663,6 +6531,246 @@ ${d.contentHtml}
 <!-- 真正顯示在主系統中的排班異動彈窗 -->
 
 
+
+
+<script>
+/* =========================================================
+   Staff App → LINE 打卡提醒資料鏡像
+   - 排班變更後同步
+   - 打卡後同步
+   - 頁面開啟後同步
+   - 不負責切頁，不影響 Staff App route
+========================================================= */
+(function(){
+  'use strict';
+
+  const REMINDER_API_URL = 'https://script.google.com/macros/s/AKfycbzSZ88aJoNNUIuC8ASHxnknbHexRv1zYtgc4tnrQRmWZvjONvGD37hhO7VyzWBQ5Yx5/exec';
+
+  function safeParse(key){
+    try{
+      const v = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(v) ? v : [];
+    }catch(e){
+      return [];
+    }
+  }
+
+  function arrayFromGlobal(name, fallbackKey){
+    try{
+      if(name === 'staffData' && typeof staffData !== 'undefined' && Array.isArray(staffData)){
+        return staffData;
+      }
+      if(name === 'scheduleData' && typeof scheduleData !== 'undefined' && Array.isArray(scheduleData)){
+        return scheduleData;
+      }
+    }catch(e){}
+
+    try{
+      if(Array.isArray(window[name])) return window[name];
+    }catch(e){}
+
+    return safeParse(fallbackKey || name);
+  }
+
+  function dateKey(d){
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,'0');
+    const day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function activeScheduleSnapshot(rows){
+    const now = new Date();
+    const min = new Date(now);
+    min.setDate(min.getDate()-1);
+    const max = new Date(now);
+    max.setDate(max.getDate()+21);
+
+    const minKey=dateKey(min);
+    const maxKey=dateKey(max);
+
+    return (Array.isArray(rows)?rows:[]).filter(function(r){
+      if(!r) return false;
+      const d=String(r.date||r.workDate||r.shiftDate||r.scheduleDate||'');
+      if(!d) return false;
+      if(d < minKey || d > maxKey) return false;
+
+      const status=[
+        r.status,
+        r.scheduleStatus,
+        r.changeStatus
+      ].join(' ');
+
+      return !/作廢|取消|取消派遣|已取消/.test(status);
+    });
+  }
+
+  function recentPunchSnapshot(rows){
+    const cutoff = Date.now() - 4*24*60*60*1000;
+
+    return (Array.isArray(rows)?rows:[]).filter(function(r){
+      if(!r) return false;
+
+      if(r.createdAt){
+        const t=Date.parse(r.createdAt);
+        if(Number.isFinite(t)) return t >= cutoff;
+      }
+
+      const d=String(r.date||'');
+      if(!d) return true;
+
+      const t=Date.parse(d+'T00:00:00');
+      return !Number.isFinite(t) || t >= cutoff;
+    });
+  }
+
+  async function postReminder(payload){
+    const res = await fetch(
+      REMINDER_API_URL,
+      {
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify(payload)
+      }
+    );
+
+    const text = await res.text();
+
+    try{
+      return JSON.parse(text);
+    }catch(e){
+      throw new Error(text || '提醒 API 回傳格式錯誤');
+    }
+  }
+
+  let syncTimer = null;
+  let syncing = false;
+
+  async function syncReminderSnapshot(){
+    if(syncing) return;
+    syncing = true;
+
+    try{
+      const staffRows = arrayFromGlobal('staffData','staffData');
+      const scheduleRows = activeScheduleSnapshot(
+        arrayFromGlobal('scheduleData','scheduleData')
+      );
+
+      let clockRows = [];
+      try{
+        if(Array.isArray(window.staffClockData)){
+          clockRows = window.staffClockData;
+        }else{
+          clockRows = safeParse('staffClockData');
+        }
+      }catch(e){
+        clockRows = safeParse('staffClockData');
+      }
+
+      const punchRows = recentPunchSnapshot(
+        safeParse('qyj_staff_punch_records')
+      );
+
+      const result = await postReminder({
+        action:'reminder_sync',
+        staffRows:staffRows,
+        scheduleRows:scheduleRows,
+        clockRows:clockRows,
+        punchRows:punchRows
+      });
+
+      if(!result || result.ok === false){
+        console.warn(
+          'LINE 打卡提醒資料同步失敗：',
+          result && result.message
+            ? result.message
+            : result
+        );
+      }
+    }catch(error){
+      console.warn(
+        'LINE 打卡提醒資料同步失敗：',
+        error
+      );
+    }finally{
+      syncing = false;
+    }
+  }
+
+  function queueReminderSync(delay){
+    clearTimeout(syncTimer);
+
+    syncTimer=setTimeout(
+      syncReminderSnapshot,
+      typeof delay==='number' ? delay : 500
+    );
+  }
+
+  // 後台資料儲存後同步班表。
+  if(typeof window.saveAll === 'function'){
+    const originalSaveAll=window.saveAll;
+
+    window.saveAll=function(){
+      const result=originalSaveAll.apply(this,arguments);
+
+      Promise.resolve(result).finally(function(){
+        queueReminderSync(300);
+      });
+
+      return result;
+    };
+  }
+
+  if(typeof window.saveAllSilently === 'function'){
+    const originalSaveAllSilently=window.saveAllSilently;
+
+    window.saveAllSilently=function(){
+      const result=originalSaveAllSilently.apply(this,arguments);
+
+      Promise.resolve(result).finally(function(){
+        queueReminderSync(300);
+      });
+
+      return result;
+    };
+  }
+
+  // 員工打卡後立即同步，避免已打卡仍收到提醒。
+  if(typeof window.msDoPunch === 'function'){
+    const originalMsDoPunchReminder=window.msDoPunch;
+
+    window.msDoPunch=async function(){
+      const result=await originalMsDoPunchReminder.apply(this,arguments);
+
+      queueReminderSync(250);
+
+      return result;
+    };
+  }
+
+  // 初次進入 / 回到頁面時同步一次。
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded',function(){
+      queueReminderSync(1200);
+    },{once:true});
+  }else{
+    queueReminderSync(1200);
+  }
+
+  window.addEventListener('focus',function(){
+    queueReminderSync(500);
+  });
+
+  // 保險：頁面開著時每 5 分鐘同步快照。
+  setInterval(function(){
+    queueReminderSync(0);
+  },5*60*1000);
+
+  window.qyjSyncLineReminderData = syncReminderSnapshot;
+})();
+</script>
 
 </body>
 </html>`);
@@ -10340,22 +10448,13 @@ function renderStaffClockHistory(){
 }
 
 
-function showStaffPage(p, a) {
-    const target = el('staff-page-' + p);
-    if(!target){
-        console.warn('不存在的員工頁面：', p);
-        return;
-    }
-
+function showStaffPage(p, a) { 
     document.querySelectorAll('#staff-screen .page').forEach(x => x.classList.remove('active'));
-    target.classList.add('active');
-
-    document.querySelectorAll('#staff-screen .sidebar-nav a').forEach(x => x.classList.remove('active'));
-    if(a) a.classList.add('active');
-
+    const t = el('staff-page-' + p); 
+    if(t) t.classList.add('active'); 
+    document.querySelectorAll('#staff-screen .sidebar-nav a').forEach(x => x.classList.remove('active')); 
+    if(a) a.classList.add('active'); 
     localStorage.setItem('staffPage', p);
-    localStorage.setItem('staffPageChangedAt', String(Date.now()));
-
     if(p === 'clock') renderStaffClockPage();
 }
 
@@ -11513,94 +11612,14 @@ window.msPreviewMyPayslip=function(){
 window.msShowProfile=function(){let s=msGetCurrentStaff(),n=msStaffName(s),code=s.code||s.id||s.staffId||msStaffAccount(s)||'-',phone=s.phone||s.mobile||s.tel||'-',dept=s.dept||s.department||s.type||s.role||s.status||'-';msSetTitle('員工資訊');document.getElementById('msContent').innerHTML=`<div class="ms-card" style="text-align:center"><div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${n.slice(0,1)}</div><div class="ms-row"><span>員工姓名</span><span>${n}</span></div><div class="ms-row"><span>員工編號</span><span>${code}</span></div><div class="ms-row"><span>部門/狀態</span><span>${dept}</span></div><div class="ms-row"><span>手機</span><span>${phone}</span></div></div><div class="ms-card"><div style="font-weight:900;font-size:18px">登入方式</div><div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div><div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>`};
 window.msShowSop=function(){msSetTitle('入職包 SOP');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list"><div><div class="ms-lt">報班前注意事項</div><div class="ms-ls">請詳閱派遣規範</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">工作態度規範</div><div class="ms-ls">服裝、準時、回報、資料保密</div></div><span>›</span></div></div>'};
 window.msShowNotice=function(){msSetTitle('公告欄');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有公告</div></div>'};
-window.msShowMore=function(){msSetTitle('更多功能');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list" onclick="msGo(\'profile\')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'sop\')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">新員工指引</div></div><span>›</span></div><div class="ms-list"><div><div class="ms-lt">LINE 通知管理</div><div class="ms-ls">第二階段開放</div></div><span>›</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>'};
-window.addEventListener('load',function(){let qs=new URLSearchParams(location.search);if(qs.get('staffApp')==='1'||location.hash==='#staff')openMobileStaffApp(qs.get('route')||'home')});
+window.msShowMore=function(){msSetTitle('更多功能');document.getElementById('msContent').innerHTML='<div class="ms-card"><div class="ms-list" onclick="msGo(\'profile\')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'sop\')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">新員工指引</div></div><span>›</span></div><div class="ms-list" onclick="msGo(\'notice\')"><div><div class="ms-lt">公告欄</div><div class="ms-ls">最新公告</div></div><span>›</span></div><div class="ms-logout" onclick="msLogout()">登出</div></div>'};
+/* 舊版 Staff App load 自動開啟已停用 */
 })();
 </script>
 <!-- ===== /員工手機版入口 ===== -->
 
 
-<script>
-/* ===== 員工手機版登入強制修正：第一階段先允許 0000 / 1234 測試登入 ===== */
-(function(){
-    window.msDoLogin = function(route){
-        const accEl = document.getElementById('msLoginAccount');
-        const pwdEl = document.getElementById('msLoginPwd');
-        const acc = accEl ? (accEl.value || '').trim() : '';
-        const pwd = pwdEl ? (pwdEl.value || '').trim() : '';
-
-        if(!acc){
-            alert('請輸入員工姓名或帳號');
-            return;
-        }
-
-        // 第一階段：0000 / 1234 一律可登入，先讓流程跑起來
-        if(pwd !== '0000' && pwd !== '1234'){
-            alert('第一階段測試密碼請輸入 0000 或 1234');
-            return;
-        }
-
-        let s = null;
-        try{
-            const list = typeof msGetStaffList === 'function' ? msGetStaffList() : [];
-            s = list.find(x => {
-                const name = typeof msStaffName === 'function' ? msStaffName(x) : (x.name || x.staff || '');
-                const account = typeof msStaffAccount === 'function' ? msStaffAccount(x) : (x.account || x.phone || x.mobile || '');
-                const keys = [name, account, x.phone, x.mobile, x.tel, x.id, x.code, x.staffId]
-                    .filter(Boolean)
-                    .map(v => String(v).trim());
-                return keys.includes(String(acc));
-            });
-        }catch(e){}
-
-        if(!s){
-            s = {
-                name: acc,
-                account: acc,
-                code: acc,
-                status: '員工',
-                type: '員工',
-                __quickLocalLogin: true
-            };
-        }
-
-        const getName = typeof msStaffName === 'function' ? msStaffName : (x => x.name || x.staff || acc);
-        const getAccount = typeof msStaffAccount === 'function' ? msStaffAccount : (x => x.account || x.phone || x.mobile || acc);
-
-        localStorage.setItem('qyj_mobile_staff_login', JSON.stringify({
-            account: getAccount(s),
-            name: getName(s),
-            code: s.code || s.id || s.staffId || getAccount(s),
-            status: s.status || s.type || s.role || '員工',
-            loginAt: new Date().toISOString(),
-            quickLocalLogin: !!s.__quickLocalLogin
-        }));
-
-        if(typeof msGo === 'function'){
-            msGo(route || 'home');
-        }else{
-            location.reload();
-        }
-    };
-
-    // 若已經記住登入，但舊版抓不到資料，改成直接使用已存資料
-    window.msGetCurrentStaff = function(){
-        try{
-            const saved = JSON.parse(localStorage.getItem('qyj_mobile_staff_login') || 'null');
-            if(!saved) return null;
-            const list = typeof msGetStaffList === 'function' ? msGetStaffList() : [];
-            const found = list.find(s => {
-                const name = typeof msStaffName === 'function' ? msStaffName(s) : (s.name || s.staff || '');
-                const account = typeof msStaffAccount === 'function' ? msStaffAccount(s) : (s.account || s.phone || s.mobile || '');
-                return String(account) === String(saved.account) || String(name) === String(saved.name);
-            });
-            return found || saved;
-        }catch(e){
-            return null;
-        }
-    };
-})();
-</script>
+<!-- 已停用：舊版員工手機登入強制覆寫，避免與正式登入邏輯重複 -->
 
 
 
@@ -12174,205 +12193,12 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
             navigator.geolocation.getCurrentPosition(done,()=>done(null),{enableHighAccuracy:true,timeout:8000});
         }else done(null);
     };
-
-    const oldOpen=window.openMobileStaffApp;
-    window.openMobileStaffApp=async function(route){
-        const app=document.getElementById('mobileStaffApp'); if(app)app.style.display='block';
-        localStorage.setItem('qyj_mobile_staff_route',route||'home');
-        const staff=(typeof msGetCurrentStaff==='function')?msGetCurrentStaff():savedStaff();
-        if(!staff||!staff.name){
-            if(typeof msShowLogin==='function')msShowLogin(route||'home');
-            return;
-        }
-        await syncScheduleSilent();
-        if(typeof msGo==='function')msGo(route||'home');
-        else window.msShowHome();
-    };
-
-    const oldLogin=window.msDoLogin;
-    window.msDoLogin=function(route){
-        if(typeof oldLogin==='function'){
-            oldLogin(route||'home');
-            setTimeout(async()=>{
-                await syncScheduleSilent();
-                if(typeof msGo==='function')msGo(route||'home');
-            },500);
-        }
-    };
-
-    window.addEventListener('load',function(){
-        const qs=new URLSearchParams(location.search);
-        if(qs.get('staffApp')==='1'||location.hash==='#staff'){
-            setTimeout(()=>window.openMobileStaffApp(qs.get('route')||'home'),500);
-        }
-    });
+    /* 舊版 openMobileStaffApp / msDoLogin / load 覆寫已停用，避免 LINE 內建瀏覽器重複重畫登入頁 */
 })();
 </script>
 
 
-<script>
-/* ===== 手機登入綁定員工資料修正：手機號碼 → 人員資料 → 姓名 → 班表 ===== */
-(function(){
-    const LOGIN_KEY = 'qyj_mobile_staff_login';
-
-    function norm(v){
-        return String(v || '').replace(/\s+/g,'').trim();
-    }
-
-    function getAllStaffRows(){
-        let rows = [];
-
-        try{ if(Array.isArray(staffData)) rows = rows.concat(staffData); }catch(e){}
-        try{ if(Array.isArray(ftStaffData)) rows = rows.concat(ftStaffData); }catch(e){}
-        try{ if(Array.isArray(window.staffData)) rows = rows.concat(window.staffData); }catch(e){}
-        try{ if(Array.isArray(window.ftStaffData)) rows = rows.concat(window.ftStaffData); }catch(e){}
-
-        ['staffData','ftStaffData'].forEach(key=>{
-            try{
-                const v = JSON.parse(localStorage.getItem(key) || '[]');
-                if(Array.isArray(v)) rows = rows.concat(v);
-            }catch(e){}
-        });
-
-        const seen = new Set();
-        return rows.filter(x=>{
-            if(!x || typeof x !== 'object') return false;
-            const key = JSON.stringify([
-                x.id || x.staffId || x.code || '',
-                x.name || x.staff || x.realName || '',
-                x.phone || x.mobile || x.tel || ''
-            ]);
-            if(seen.has(key)) return false;
-            seen.add(key);
-            return true;
-        });
-    }
-
-    function rowName(x){
-        return x.name || x.staff || x.realName || x.employeeName || x.fullname || '';
-    }
-
-    function rowPhone(x){
-        return x.phone || x.mobile || x.tel || x.cellphone || x.mobilePhone || '';
-    }
-
-    function rowAccount(x){
-        return x.account || x.username || x.login || x.user || '';
-    }
-
-    function rowCode(x){
-        return x.code || x.staffId || x.id || x.employeeId || rowPhone(x) || rowAccount(x) || rowName(x);
-    }
-
-    function rowStatus(x){
-        return x.status || x.type || x.role || x.department || x.dept || '員工';
-    }
-
-    function findStaffByLogin(input){
-        const key = norm(input);
-        return getAllStaffRows().find(x=>{
-            const values = [
-                rowName(x),
-                rowPhone(x),
-                rowAccount(x),
-                rowCode(x),
-                x.mobile,
-                x.tel,
-                x.phone,
-                x.id,
-                x.staffId,
-                x.code
-            ].filter(Boolean).map(norm);
-            return values.includes(key);
-        }) || null;
-    }
-
-    window.msGetCurrentStaff = function(){
-        try{
-            const saved = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
-            if(!saved) return null;
-
-            // 每次開啟都重新用手機/帳號找一次正式人員資料
-            const found = findStaffByLogin(saved.account || saved.phone || saved.name || saved.code);
-            if(found) return found;
-
-            return saved;
-        }catch(e){
-            return null;
-        }
-    };
-
-    const oldLogin = window.msDoLogin;
-
-    window.msDoLogin = function(route){
-        const accEl = document.getElementById('msLoginAccount');
-        const pwdEl = document.getElementById('msLoginPwd');
-        const acc = accEl ? (accEl.value || '').trim() : '';
-        const pwd = pwdEl ? (pwdEl.value || '').trim() : '';
-
-        if(!acc || !pwd){
-            alert('請輸入帳號與密碼');
-            return;
-        }
-
-        const staff = findStaffByLogin(acc);
-
-        // 第一階段保留 0000 / 1234 測試密碼
-        if(pwd !== '0000' && pwd !== '1234'){
-            if(typeof oldLogin === 'function'){
-                return oldLogin(route || 'home');
-            }
-            alert('密碼錯誤');
-            return;
-        }
-
-        if(!staff){
-            alert('找不到這支手機或帳號對應的員工資料，請先到派遣人員或正職人員資料庫確認手機號碼。');
-            return;
-        }
-
-        const profile = {
-            account: rowAccount(staff) || rowPhone(staff) || rowCode(staff),
-            phone: rowPhone(staff),
-            name: rowName(staff),
-            code: rowCode(staff),
-            status: rowStatus(staff),
-            loginAt: new Date().toISOString()
-        };
-
-        localStorage.setItem(LOGIN_KEY, JSON.stringify(profile));
-
-        if(typeof msGo === 'function'){
-            msGo(route || 'home');
-        }else{
-            location.reload();
-        }
-    };
-
-    // 修正首頁顯示名稱：一定顯示正式員工姓名，不再顯示手機號碼
-    const oldShowHome = window.msShowHome;
-    window.msShowHome = function(){
-        const saved = JSON.parse(localStorage.getItem(LOGIN_KEY) || 'null');
-        const found = saved ? findStaffByLogin(saved.account || saved.phone || saved.code || saved.name) : null;
-
-        if(found && saved){
-            const fixed = {
-                account: rowAccount(found) || rowPhone(found) || rowCode(found),
-                phone: rowPhone(found),
-                name: rowName(found),
-                code: rowCode(found),
-                status: rowStatus(found),
-                loginAt: saved.loginAt || new Date().toISOString()
-            };
-            localStorage.setItem(LOGIN_KEY, JSON.stringify(fixed));
-        }
-
-        if(typeof oldShowHome === 'function'){
-            return oldShowHome();
-        }
-    };
-})();
-</script>
+<!-- 已停用：舊版手機登入綁定覆寫，正式登入由後方 cloud-exact 版本負責 -->
 
 
 <script>
@@ -12629,7 +12455,15 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
         const app = document.getElementById('mobileStaffApp');
         if(app) app.style.display = 'block';
 
-        localStorage.setItem('qyj_mobile_staff_route', route || 'home');
+        const requestedRoute = route || localStorage.getItem('qyj_mobile_staff_route') || 'home';
+        localStorage.setItem('qyj_mobile_staff_route', requestedRoute);
+        try{
+            const u = new URL(location.href);
+            if(u.searchParams.get('staffApp')==='1'){
+                u.searchParams.set('route', requestedRoute);
+                history.replaceState(null,'',u.toString());
+            }
+        }catch(e){}
 
         const box = document.getElementById('msContent');
         if(box){
@@ -16426,166 +16260,7 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
      僅追加修正：員工手機入口直接顯示，不先閃出舊版首頁
      原始程式與其他功能全部保留
 ========================================================= -->
-<script>
-(function () {
-    'use strict';
-
-    function isStaffAppMode() {
-        try {
-            return new URLSearchParams(location.search).get('staffApp') === '1';
-        } catch (error) {
-            return false;
-        }
-    }
-
-    function wantedRoute() {
-        try {
-            return (
-                new URLSearchParams(location.search).get('route') ||
-                localStorage.getItem('qyj_mobile_staff_route') ||
-                'home'
-            );
-        } catch (error) {
-            return 'home';
-        }
-    }
-
-    function hideNonMobileScreens() {
-        var ids = [
-            'login-screen',
-            'sys-screen',
-            'staff-screen'
-        ];
-
-        ids.forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el) {
-                el.style.display = 'none';
-                el.style.visibility = 'hidden';
-            }
-        });
-
-        var app = document.getElementById('mobileStaffApp');
-
-        if (app) {
-            app.style.display = 'block';
-            app.style.visibility = 'visible';
-        }
-    }
-
-    async function openStaffDirectly() {
-        if (!isStaffAppMode()) return;
-
-        hideNonMobileScreens();
-
-        var app = document.getElementById('mobileStaffApp');
-        if (!app) return;
-
-        var savedStaff = null;
-
-        try {
-            savedStaff = JSON.parse(
-                localStorage.getItem('qyj_mobile_staff_login') || 'null'
-            );
-        } catch (error) {}
-
-        /*
-         * 已登入：立即用本機資料開頁，不等待雲端。
-         */
-        if (savedStaff) {
-            try {
-                if (typeof window.msGo === 'function') {
-                    window.msGo(wantedRoute());
-                } else if (typeof window.msShowHome === 'function') {
-                    window.msShowHome();
-                }
-            } catch (error) {
-                console.warn('員工手機頁立即開啟失敗：', error);
-            }
-        } else {
-            /*
-             * 尚未登入：直接顯示員工登入，不顯示舊版首頁。
-             */
-            try {
-                if (typeof window.msShowLogin === 'function') {
-                    window.msShowLogin(wantedRoute());
-                }
-            } catch (error) {
-                console.warn('員工登入頁開啟失敗：', error);
-            }
-        }
-
-        /*
-         * 背景讀雲端，不阻塞畫面。
-         */
-        setTimeout(function () {
-            try {
-                if (typeof window.readCloud === 'function') {
-                    Promise.resolve(window.readCloud())
-                        .then(function () {
-                            if (savedStaff && typeof window.msGo === 'function') {
-                                window.msGo(wantedRoute());
-                            }
-                        })
-                        .catch(function (error) {
-                            console.warn('背景雲端同步失敗：', error);
-                        });
-                }
-            } catch (error) {
-                console.warn('背景同步啟動失敗：', error);
-            }
-        }, 0);
-
-        document.documentElement.classList.remove(
-            'qyj-staff-fast-start'
-        );
-
-        var preloadStyle = document.getElementById(
-            'qyjStaffFastStartStyle'
-        );
-
-        if (preloadStyle) {
-            preloadStyle.remove();
-        }
-    }
-
-    /*
-     * DOM 一建立就立刻處理，不等待完整圖片與外部套件載入。
-     */
-    if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            openStaffDirectly,
-            { once: true }
-        );
-    } else {
-        openStaffDirectly();
-    }
-
-    /*
-     * 防止後續舊程式又把管理端畫面顯示回來。
-     */
-    window.addEventListener('load', function () {
-        if (!isStaffAppMode()) return;
-
-        hideNonMobileScreens();
-
-        var savedStaff = null;
-
-        try {
-            savedStaff = JSON.parse(
-                localStorage.getItem('qyj_mobile_staff_login') || 'null'
-            );
-        } catch (error) {}
-
-        if (savedStaff && typeof window.msGo === 'function') {
-            window.msGo(wantedRoute());
-        }
-    });
-
-    console.log('員工手機直達快速入口已載入');
-})();
-</script>
+<!-- 已停用：員工手機直達快速入口舊覆寫；避免與正式 openMobileStaffApp 重複初始化 -->
 
 
 <!-- =========================================================
@@ -21126,26 +20801,9 @@ window.addEventListener('load',function(){let qs=new URLSearchParams(location.se
 
             await readLatestCloudForMobile();
 
-            const route =
-                params.get('route') ||
-                localStorage.getItem(
-                    'qyj_mobile_staff_route'
-                ) ||
-                'home';
-
-            if(
-                route === 'punch' &&
-                typeof window.msShowPunch === 'function'
-            ){
-                window.msShowPunch();
-            }
-
-            if(
-                route === 'notice' &&
-                typeof window.msShowNotice === 'function'
-            ){
-                window.msShowNotice();
-            }
+            // 背景同步只更新資料，不再依網址或舊 localStorage 自動切換頁面。
+            // 否則從 LINE 的 route=punch 入口登入後，使用者即使已切到其他功能，
+            // 背景同步仍可能再次把畫面拉回打卡頁。
         }catch(error){
             console.warn(
                 '員工手機首次雲端更新失敗：',
@@ -31938,15 +31596,8 @@ window.restoreLoginState=function(){
             if(typeof initStaffFrontend==='function') initStaffFrontend();
         });
         qyjSafe(function(){
-            if(typeof showStaffPage==='function'){
-                const active=document.querySelector('#staff-screen .page.active');
-                // 已經在員工某一頁時，不因同步/初始化再次跳頁
-                if(!active){
-                    const saved=localStorage.getItem('staffPage');
-                    const target=(saved && document.getElementById('staff-page-'+saved)) ? saved : 'home';
-                    showStaffPage(target);
-                }
-            }
+            if(typeof showStaffPage==='function')
+                showStaffPage(localStorage.getItem('staffPage')||'clock');
         });
         return;
     }
@@ -31979,902 +31630,961 @@ document.addEventListener('keydown',function(e){
 </script>
 
 
-<style id="QYJ_DISPATCH_MULTI_DAY_STYLE_20261102">
-.qyj-dispatch-multi-modal{width:min(1120px,96vw)!important;max-height:92vh;overflow:auto;}
-.qyj-dispatch-multi-top{
-    display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));
-    gap:12px;margin:14px 0;
-}
-.qyj-dispatch-multi-top label,.qyj-dispatch-multi-timebar label{
-    display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:5px;
-}
-.qyj-dispatch-multi-top input,.qyj-dispatch-multi-timebar input{
-    width:100%;box-sizing:border-box;padding:9px 10px;border:1px solid #cbd5e1;border-radius:8px;
-    font-weight:800;background:#fff;
-}
-.qyj-dispatch-multi-full{grid-column:1/-1;}
-.qyj-dispatch-multi-toolbar{
-    display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 10px;
-}
-#qyjDispatchMultiCount{
-    margin-left:auto;font-weight:900;color:#0f766e;background:#ecfdf5;
-    border:1px solid #a7f3d0;border-radius:999px;padding:7px 12px;
-}
-.qyj-dispatch-multi-calendar{
-    display:grid;grid-template-columns:repeat(7,1fr);gap:6px;
-    padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;
-}
-.qyj-dispatch-cal-head{
-    font-size:12px;font-weight:900;text-align:center;color:#64748b;padding:5px 0;
-}
-.qyj-dispatch-cal-day{
-    min-height:50px;border:1px solid #dbe3ee;background:#fff;border-radius:9px;
-    font-weight:900;color:#334155;cursor:pointer;position:relative;
-}
-.qyj-dispatch-cal-day:hover{border-color:#60a5fa;background:#eff6ff;}
-.qyj-dispatch-cal-day.weekend{color:#dc2626;background:#fff7f7;}
-.qyj-dispatch-cal-day.selected{
-    color:#fff;background:#2563eb;border-color:#2563eb;
-    box-shadow:0 0 0 2px rgba(37,99,235,.12);
-}
-.qyj-dispatch-cal-day.selected.weekend{background:#7c3aed;border-color:#7c3aed;}
-.qyj-dispatch-cal-day.blank{visibility:hidden;cursor:default;}
-.qyj-dispatch-multi-timebar{
-    display:grid;grid-template-columns:150px 150px 130px auto;
-    align-items:end;gap:10px;margin:14px 0;
-    padding:12px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;
-}
-.qyj-dispatch-multi-preview-title{
-    display:flex;justify-content:space-between;gap:10px;align-items:center;
-    font-size:15px;font-weight:900;color:#0f172a;margin:12px 0 8px;
-}
-.qyj-dispatch-multi-preview-title span{font-size:11px;color:#64748b;font-weight:700;}
-.qyj-dispatch-multi-table input{
-    min-width:92px;padding:6px;border:1px solid #cbd5e1;border-radius:6px;font-weight:800;
-}
-.qyj-dispatch-multi-table input[type="number"]{min-width:72px;width:72px;}
-.qyj-dispatch-multi-empty{text-align:center!important;color:#94a3b8;padding:22px!important;}
-.qyj-dispatch-multi-remove{
-    border:0;border-radius:6px;background:#fee2e2;color:#b91c1c;
-    padding:6px 8px;font-weight:900;cursor:pointer;
-}
-.qyj-dispatch-multi-warning{
-    display:none;margin-top:10px;padding:10px 12px;border:1px solid #fecaca;
-    border-radius:8px;background:#fff1f2;color:#b91c1c;font-size:12px;font-weight:800;white-space:pre-line;
-}
-@media(max-width:900px){
-    .qyj-dispatch-multi-top{grid-template-columns:1fr 1fr;}
-    .qyj-dispatch-multi-timebar{grid-template-columns:1fr 1fr;}
-}
-</style>
-<script id="QYJ_DISPATCH_MULTI_DAY_20261102">
+<script id="qyjStaffAppCanonicalFinal">
+/* ===== 愜易居 Staff App：CANONICAL FINAL（2026-11-02） ===== */
 (function(){
 'use strict';
 
-window.qyjDispatchMultiState={selected:new Map()};
+const STAFF_API_FALLBACK = 'https://script.google.com/macros/s/AKfycbzSZ88aJoNNUIuC8ASHxnknbHexRv1zYtgc4tnrQRmWZvjONvGD37hhO7VyzWBQ5Yx5/exec';
+let staffApiConfigPromise = null;
 
-function E(id){return document.getElementById(id);}
-function pad(n){return String(n).padStart(2,'0');}
-function ymd(y,m,d){return y+'-'+pad(m)+'-'+pad(d);}
-function weekText(dateStr){
-    const w=['日','一','二','三','四','五','六'];
-    const d=new Date(dateStr+'T00:00:00');
-    return '週'+w[d.getDay()];
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
-function ensureState(){
-    if(!window.qyjDispatchMultiState||!(window.qyjDispatchMultiState.selected instanceof Map)){
-        window.qyjDispatchMultiState={selected:new Map()};
-    }
-    return window.qyjDispatchMultiState;
+function val(obj, keys, fallback=''){
+  for(const k of keys){ if(obj && obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k]; }
+  return fallback;
 }
-function defaultTimes(){
-    return {
-        start:(E('qyjDispatchMultiStart')&&E('qyjDispatchMultiStart').value)||'08:30',
-        end:(E('qyjDispatchMultiEnd')&&E('qyjDispatchMultiEnd').value)||'17:00',
-        breakHours:(E('qyjDispatchMultiBreak')&&E('qyjDispatchMultiBreak').value)||'1'
-    };
-}
-function netHours(start,end,breakHours){
-    if(typeof calcScheduleNetHours==='function'){
-        return Number(calcScheduleNetHours(start,end,'','',breakHours)||0);
-    }
-    const mins=function(v){
-        if(!v)return null;
-        const p=v.split(':').map(Number);
-        return p[0]*60+p[1];
-    };
-    const a=mins(start),b=mins(end);
-    if(a===null||b===null)return 0;
-    let h=(b-a)/60;if(h<0)h+=24;
-    h-=Number(breakHours||0);
-    return Math.max(0,Math.round(h*100)/100);
-}
-function esc(s){
-    return String(s==null?'':s)
-        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-window.qyjOpenDispatchMultiDay=function(){
-    const modal=E('qyjDispatchMultiDayModal');
-    if(!modal)return;
-
-    const company=(typeof getScheduleCompany==='function'?getScheduleCompany():'')||'';
-    if(E('qyjDispatchMultiCompany')) E('qyjDispatchMultiCompany').value=company;
-
-    const y=typeof getScheduleYear==='function'?getScheduleYear():new Date().getFullYear();
-    const m=typeof getScheduleMonth==='function'?getScheduleMonth():new Date().getMonth()+1;
-    if(E('qyjDispatchMultiMonth')) E('qyjDispatchMultiMonth').value=y+'-'+pad(m);
-
-    ensureState().selected.clear();
-    qyjRenderDispatchMultiCalendar();
-    qyjRenderDispatchMultiRows();
-    modal.style.display='flex';
-};
-
-window.qyjCloseDispatchMultiDay=function(){
-    const modal=E('qyjDispatchMultiDayModal');
-    if(modal)modal.style.display='none';
-};
-
-window.qyjRenderDispatchMultiCalendar=function(){
-    const box=E('qyjDispatchMultiCalendar');
-    const month=E('qyjDispatchMultiMonth')&&E('qyjDispatchMultiMonth').value;
-    if(!box||!month)return;
-
-    const [y,m]=month.split('-').map(Number);
-    const days=new Date(y,m,0).getDate();
-    const first=new Date(y,m-1,1).getDay();
-    const selected=ensureState().selected;
-
-    let html=['日','一','二','三','四','五','六']
-        .map(x=>'<div class="qyj-dispatch-cal-head">'+x+'</div>').join('');
-
-    for(let i=0;i<first;i++) html+='<button type="button" class="qyj-dispatch-cal-day blank"></button>';
-
-    for(let d=1;d<=days;d++){
-        const date=ymd(y,m,d);
-        const wd=new Date(y,m-1,d).getDay();
-        const cls=(wd===0||wd===6?' weekend':'')+(selected.has(date)?' selected':'');
-        html+='<button type="button" class="qyj-dispatch-cal-day'+cls+'" data-date="'+date+'" onclick="qyjDispatchMultiToggleDate(\''+date+'\')">'+d+'</button>';
-    }
-
-    box.innerHTML=html;
-    qyjUpdateDispatchMultiCount();
-};
-
-window.qyjDispatchMultiToggleDate=function(date){
-    const st=ensureState();
-    if(st.selected.has(date)){
-        st.selected.delete(date);
-    }else{
-        st.selected.set(date,defaultTimes());
-    }
-    qyjRenderDispatchMultiCalendar();
-    qyjRenderDispatchMultiRows();
-};
-
-window.qyjDispatchMultiSelectWeekdays=function(){
-    const month=E('qyjDispatchMultiMonth')&&E('qyjDispatchMultiMonth').value;
-    if(!month)return;
-    const [y,m]=month.split('-').map(Number);
-    const days=new Date(y,m,0).getDate();
-    const st=ensureState();
-    for(let d=1;d<=days;d++){
-        const wd=new Date(y,m-1,d).getDay();
-        if(wd>=1&&wd<=5){
-            const date=ymd(y,m,d);
-            if(!st.selected.has(date))st.selected.set(date,defaultTimes());
-        }
-    }
-    qyjRenderDispatchMultiCalendar();
-    qyjRenderDispatchMultiRows();
-};
-
-window.qyjDispatchMultiClearDates=function(){
-    ensureState().selected.clear();
-    qyjRenderDispatchMultiCalendar();
-    qyjRenderDispatchMultiRows();
-};
-
-window.qyjDispatchMultiApplySameTime=function(){
-    const t=defaultTimes();
-    const st=ensureState();
-    st.selected.forEach(function(v,k){
-        st.selected.set(k,{start:t.start,end:t.end,breakHours:t.breakHours});
-    });
-    qyjRenderDispatchMultiRows();
-};
-
-window.qyjDispatchMultiUpdateRow=function(date,field,value){
-    const st=ensureState();
-    if(!st.selected.has(date))return;
-    const row=Object.assign({},st.selected.get(date));
-    row[field]=value;
-    st.selected.set(date,row);
-    qyjRenderDispatchMultiRows();
-};
-
-window.qyjDispatchMultiRemoveDate=function(date){
-    ensureState().selected.delete(date);
-    qyjRenderDispatchMultiCalendar();
-    qyjRenderDispatchMultiRows();
-};
-
-window.qyjUpdateDispatchMultiCount=function(){
-    const n=ensureState().selected.size;
-    const el=E('qyjDispatchMultiCount');
-    if(el)el.textContent='已選 '+n+' 天';
-};
-
-window.qyjRenderDispatchMultiRows=function(){
-    const tbody=E('qyjDispatchMultiRows');
-    if(!tbody)return;
-    const entries=Array.from(ensureState().selected.entries()).sort((a,b)=>a[0].localeCompare(b[0]));
-    qyjUpdateDispatchMultiCount();
-
-    if(!entries.length){
-        tbody.innerHTML='<tr><td colspan="7" class="qyj-dispatch-multi-empty">請先在上方日曆點選日期</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML=entries.map(function(pair){
-        const date=pair[0],r=pair[1];
-        const h=netHours(r.start,r.end,r.breakHours);
-        return '<tr>'+
-            '<td><b>'+date+'</b></td>'+
-            '<td>'+weekText(date)+'</td>'+
-            '<td><input type="time" step="900" value="'+esc(r.start)+'" onchange="qyjDispatchMultiUpdateRow(\''+date+'\',\'start\',this.value)"></td>'+
-            '<td><input type="time" step="900" value="'+esc(r.end)+'" onchange="qyjDispatchMultiUpdateRow(\''+date+'\',\'end\',this.value)"></td>'+
-            '<td><input type="number" step="0.5" min="0" value="'+esc(r.breakHours)+'" onchange="qyjDispatchMultiUpdateRow(\''+date+'\',\'breakHours\',this.value)"></td>'+
-            '<td><b>'+h.toFixed(1)+'h</b></td>'+
-            '<td><button type="button" class="qyj-dispatch-multi-remove" onclick="qyjDispatchMultiRemoveDate(\''+date+'\')">移除</button></td>'+
-        '</tr>';
-    }).join('');
-};
-
-window.qyjSaveDispatchMultiDay=function(){
-    const company=(E('qyjDispatchMultiCompany')&&E('qyjDispatchMultiCompany').value||'').trim();
-    const staffRaw=(E('qyjDispatchMultiStaff')&&E('qyjDispatchMultiStaff').value||'').trim();
-    const location=(E('qyjDispatchMultiLocation')&&E('qyjDispatchMultiLocation').value||'').trim();
-    const remark=(E('qyjDispatchMultiRemark')&&E('qyjDispatchMultiRemark').value||'').trim();
-    const staffList=typeof getScheduleStaffList==='function'
-        ? getScheduleStaffList(staffRaw).filter(Boolean)
-        : staffRaw.split(/[、,，;；\n]+/).map(x=>x.trim()).filter(Boolean);
-    const entries=Array.from(ensureState().selected.entries()).sort((a,b)=>a[0].localeCompare(b[0]));
-    const warning=E('qyjDispatchMultiWarning');
-    if(warning){warning.style.display='none';warning.textContent='';}
-
-    if(!company)return showToast('請先選擇公司',true);
-    if(!staffList.length)return showToast('請至少輸入一位派遣人員',true);
-    if(!entries.length)return showToast('請至少選擇一天',true);
-
-    const invalid=[];
-    const conflicts=[];
-    const planned=[];
-
-    entries.forEach(function(pair){
-        const date=pair[0],r=pair[1];
-        const h=netHours(r.start,r.end,r.breakHours);
-        if(!r.start||!r.end||h<=0){
-            invalid.push(date);
-            return;
-        }
-
-        let dayConf=[];
-        if(typeof findScheduleConflicts==='function'){
-            dayConf=findScheduleConflicts(company,date,r.start,r.end,staffList,null)||[];
-        }
-        if(dayConf.length){
-            dayConf.forEach(function(c){
-                conflicts.push(date+'｜'+c.staff+'：'+c.company+' '+c.time);
-            });
-        }
-
-        planned.push({
-            company:company,
-            date:date,
-            shift:'時段排班',
-            start:r.start,
-            end:r.end,
-            breakStart:'',
-            breakEnd:'',
-            breakHours:r.breakHours,
-            hours:h,
-            need:staffList.length,
-            staffs:staffList.join('、'),
-            status:'已排滿',
-            scheduleStatus:'已排班',
-            location:location,
-            remark:remark
-        });
-    });
-
-    if(invalid.length){
-        if(warning){
-            warning.style.display='block';
-            warning.textContent='以下日期工時設定不正確：\n'+invalid.join('、');
-        }
-        return;
-    }
-
-    if(conflicts.length){
-        const msg='以下排班與既有其他公司時段衝突：\n'+conflicts.slice(0,20).join('\n')+
-            (conflicts.length>20?'\n…另外還有 '+(conflicts.length-20)+' 筆':'')+
-            '\n\n仍要一次儲存全部嗎？';
-        if(!confirm(msg))return;
-    }
-
-    const dup=[];
-    planned.forEach(function(obj){
-        const same=(scheduleData||[]).find(function(x){
-            return x &&
-                String(x.company||'')===obj.company &&
-                String(x.date||'')===obj.date &&
-                String(x.start||'')===obj.start &&
-                String(x.end||'')===obj.end &&
-                String(x.staffs||'')===obj.staffs &&
-                !((typeof isVoidedSchedule==='function')&&isVoidedSchedule(x));
-        });
-        if(same){
-            dup.push(obj.date);
-        }else{
-            scheduleData.push(obj);
-        }
-    });
-
-    if(typeof saveAll==='function')saveAll();
-    if(typeof renderScheduleTable==='function')renderScheduleTable();
-    qyjCloseDispatchMultiDay();
-
-    const added=planned.length-dup.length;
-    let msg='✅ 已新增 '+added+' 天派遣排班';
-    if(dup.length)msg+='；'+dup.length+' 天因完全重複已略過';
-    showToast(msg);
-};
-})();
-</script>
-
-
-<script id="QYJ_STAFF_PORTAL_STABLE_20261102">
-(function(){
-'use strict';
-
-function keepActiveStaffPage(){
-    try{
-        if(localStorage.getItem('loginRole')!=='staff' &&
-           document.getElementById('staff-screen')?.style.display!=='flex') return;
-
-        const screen=document.getElementById('staff-screen');
-        if(!screen || getComputedStyle(screen).display==='none') return;
-
-        const active=screen.querySelector('.page.active');
-        if(active) return;
-
-        const saved=localStorage.getItem('staffPage');
-        const target=(saved && document.getElementById('staff-page-'+saved)) ? saved : 'home';
-        if(typeof showStaffPage==='function') showStaffPage(target);
-    }catch(e){console.error(e);}
-}
-
-// 雲端同步/畫面重繪後只在「完全沒有 active 頁」時補回，絕不主動改頁
-window.addEventListener('focus',function(){setTimeout(keepActiveStaffPage,120);});
-document.addEventListener('visibilitychange',function(){
-    if(!document.hidden)setTimeout(keepActiveStaffPage,120);
-});
-
-// 第一次載入舊資料沒有 portalConfUpdatedAt 時，視本機現存設定為較新，避免被洗掉
-try{
-    if(localStorage.getItem('portalConf') && !localStorage.getItem('portalConfUpdatedAt')){
-        localStorage.setItem('portalConfUpdatedAt',String(Date.now()));
-    }
-}catch(e){}
-
-})();
-</script>
-
-
-
-<style id="QYJ_STAFF_APP_API_STYLE_20261102">
-.ms-api-status{
-    padding:11px 13px;border-radius:10px;margin:10px 0;font-size:13px;font-weight:800;line-height:1.6;
-    background:#f8fafc;border:1px solid #e2e8f0;color:#475569;
-}
-.ms-api-status.ok{background:#ecfdf5;border-color:#a7f3d0;color:#047857;}
-.ms-api-status.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412;}
-.ms-api-status.err{background:#fef2f2;border-color:#fecaca;color:#b91c1c;}
-.ms-personnel-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-.ms-personnel-grid .full{grid-column:1/-1;}
-.ms-personnel-grid label{display:block;font-size:12px;font-weight:900;color:#64748b;margin-bottom:5px;}
-.ms-personnel-grid input{
-    width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;
-    font-size:15px;background:#fff;color:#0f172a;
-}
-.ms-personnel-grid input[readonly]{background:#f8fafc;color:#64748b;}
-.ms-api-btn{
-    width:100%;border:0;border-radius:12px;padding:13px 15px;font-size:15px;font-weight:900;
-    cursor:pointer;margin-top:12px;
-}
-.ms-api-btn.primary{background:#16a34a;color:#fff;}
-.ms-api-btn.secondary{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
-.ms-api-btn.danger{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
-.ms-history-item,.ms-sop-item{
-    border:1px solid #e2e8f0;background:#fff;border-radius:13px;padding:14px;margin-bottom:10px;
-}
-.ms-history-item .title,.ms-sop-item .title{font-weight:900;color:#0f172a;margin-bottom:6px;}
-.ms-history-item .sub,.ms-sop-item .sub{font-size:12px;color:#64748b;line-height:1.7;}
-.ms-sop-item .content{white-space:pre-wrap;color:#334155;line-height:1.8;margin-top:10px;font-size:14px;}
-.ms-sop-important{margin-top:10px;padding:10px;border-radius:9px;background:#fff7ed;color:#9a3412;font-weight:800;}
-.ms-sop-files a{display:block;margin-top:8px;color:#2563eb;font-weight:800;text-decoration:none;}
-.ms-more-api-badge{font-size:11px;background:#dcfce7;color:#166534;padding:3px 7px;border-radius:999px;font-weight:900;}
-@media(max-width:560px){
-    .ms-personnel-grid{grid-template-columns:1fr;}
-    .ms-personnel-grid .full{grid-column:auto;}
-}
-</style>
-
-<script id="QYJ_STAFF_APP_API_INTEGRATION_20261102">
-(function(){
-'use strict';
-
-function esc(value){
-    return String(value == null ? '' : value)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#039;');
-}
-
-function getBox(){
-    return document.getElementById('msContent');
-}
-
-function setTitle(t){
-    if(typeof window.msSetTitle==='function') window.msSetTitle(t);
-}
-
 function currentStaff(){
-    try{
-        if(typeof window.msGetCurrentStaff==='function'){
-            const s=window.msGetCurrentStaff();
-            if(s) return s;
-        }
-    }catch(e){}
-    try{
-        const saved=JSON.parse(localStorage.getItem('qyj_mobile_staff_login')||'null');
-        if(saved) return saved;
-    }catch(e){}
-    return null;
+  try{ if(typeof window.getCurrentStaffExact === 'function'){ const s=window.getCurrentStaffExact(); if(s) return s; } }catch(e){}
+  try{ if(typeof window.msGetCurrentStaff === 'function'){ const s=window.msGetCurrentStaff(); if(s) return s; } }catch(e){}
+  try{ return JSON.parse(localStorage.getItem('qyj_mobile_staff_login') || localStorage.getItem('qyj_staff_login') || 'null') || {}; }catch(e){ return {}; }
 }
-
 function staffName(s){
-    s=s||{};
-    return String(s.name||s.staffName||s.staff||s.realName||'').trim();
+  try{ if(typeof window.msStaffName === 'function') return window.msStaffName(s) || val(s,['name','staff','realName'],'員工'); }catch(e){}
+  return val(s,['name','staff','realName'],'員工');
 }
-
-function staffId(s){
-    s=s||currentStaff()||{};
-    return String(
-        s.code || s.id || s.staffId || s.employeeId ||
-        s.staff || s.realName || s.name || s.account || ''
-    ).trim();
+function staffCode(s){
+  try{ if(typeof window.staffCode === 'function') return window.staffCode(s) || '-'; }catch(e){}
+  return val(s,['code','staffId','employeeId','id','account'],'-');
 }
-
-function staffPhone(s){
-    s=s||{};
-    return String(s.phone||s.mobile||s.tel||s.account||'').trim();
+function setTitle(t){ try{ if(typeof window.msSetTitle === 'function') window.msSetTitle(t); }catch(e){} }
+function contentBox(){ return document.getElementById('msContent'); }
+function row(label, value){
+  if(value === undefined || value === null || String(value).trim()==='' || String(value)==='undefined' || String(value)==='null') return '';
+  return `<div class="ms-row"><span>${esc(label)}</span><span>${esc(value)}</span></div>`;
 }
-
-function apiUrl(){
+async function getStaffApiConfig(){
+  if(staffApiConfigPromise) return staffApiConfigPromise;
+  staffApiConfigPromise = (async()=>{
     try{
-        if(typeof SCRIPT_URL!=='undefined' && SCRIPT_URL) return SCRIPT_URL;
+      const r = await fetch('./config.json?staff=' + Date.now(), {cache:'no-store'});
+      if(r.ok){ const c=await r.json(); return {url:c.apiUrl||c.staffApiUrl||STAFF_API_FALLBACK, token:c.token||c.apiToken||''}; }
     }catch(e){}
-    return window.SCRIPT_URL||'';
+    return {url:STAFF_API_FALLBACK, token:''};
+  })();
+  return staffApiConfigPromise;
+}
+async function staffApi(action, payload={}){
+  const cfg = await getStaffApiConfig();
+  const s = currentStaff();
+  const body = {
+    action,
+    token: cfg.token || '',
+    name: staffName(s),
+    staff: staffName(s),
+    staffName: staffName(s),
+    code: staffCode(s),
+    staffId: val(s,['staffId','employeeId','code','id'],staffCode(s)),
+    employeeId: val(s,['employeeId','staffId','code','id'],staffCode(s)),
+    account: val(s,['account','phone','mobile','code'],''),
+    phone: val(s,['phone','mobile','tel'],''),
+    ...payload
+  };
+  const r = await fetch(cfg.url, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(body)
+  });
+  const text = await r.text();
+  let data;
+  try{ data=JSON.parse(text); }catch(e){ throw new Error(text || `HTTP ${r.status}`); }
+  if(!r.ok) throw new Error(data.message || data.error || `HTTP ${r.status}`);
+  if(data && (data.status==='error' || data.success===false)) throw new Error(data.message || data.error || 'API 回傳錯誤');
+  return data;
+}
+function unwrapRecord(res){
+  if(!res) return {};
+  if(res.data && !Array.isArray(res.data)) return res.data;
+  return res.personnel || res.record || res.item || res.staff || res.profile || res;
+}
+function unwrapList(res){
+  if(Array.isArray(res)) return res;
+  for(const k of ['data','items','list','records','sop','sops','rows']) if(Array.isArray(res && res[k])) return res[k];
+  return [];
+}
+function parseArray(v){
+  if(!v) return [];
+  if(Array.isArray(v)) return v;
+  if(typeof v === 'string'){
+    const s=v.trim(); if(!s) return [];
+    try{ const j=JSON.parse(s); return Array.isArray(j)?j:[j]; }catch(e){ return s.split(/\r?\n|,/).map(x=>x.trim()).filter(Boolean); }
+  }
+  return [v];
+}
+function linkOf(x){
+  if(!x) return '';
+  if(typeof x==='string') return x;
+  return x.url || x.href || x.fileUrl || x.downloadUrl || x.link || '';
+}
+function nameOf(x, fallback='附件'){
+  if(typeof x==='string') return x.split('/').pop() || fallback;
+  return x.name || x.fileName || x.title || fallback;
 }
 
-async function api(params){
-    const url=apiUrl();
-    if(!url) throw new Error('尚未設定 Staff App API 網址');
-
-    const resp=await fetch(url,{
-        method:'POST',
-        headers:{'Content-Type':'text/plain;charset=utf-8'},
-        body:JSON.stringify(params||{}),
-        cache:'no-store'
-    });
-
-    const txt=await resp.text();
-    let data;
-    try{data=JSON.parse(txt);}catch(e){
-        throw new Error('API 回傳不是 JSON：'+txt.slice(0,120));
-    }
-    if(!data || data.ok!==true){
-        throw new Error((data&&data.message)||'API 操作失敗');
-    }
-    return data;
-}
-window.qyjStaffAppApi=api;
-
-function pickField(record,candidates,fallback){
-    for(const key of candidates){
-        if(Object.prototype.hasOwnProperty.call(record||{},key)) return key;
-    }
-    return fallback||candidates[0];
-}
-
-function val(record,candidates,fallback){
-    const k=pickField(record,candidates,null);
-    if(k && record && record[k]!=null && String(record[k])!=='') return record[k];
-    return fallback||'';
-}
-
-function statusHtml(msg,type){
-    return '<div class="ms-api-status '+(type||'')+'">'+esc(msg)+'</div>';
-}
-
-window.qyjStaffPersonnelRecord=null;
-
-window.msShowPersonnel=async function(){
-    setTitle('人事資料表');
-    const box=getBox();
-    if(!box) return;
-
-    const s=currentStaff();
-    if(!s){
-        box.innerHTML=statusHtml('找不到登入人員資料，請重新登入','err');
-        return;
-    }
-
-    box.innerHTML=
-        '<div class="ms-card">'+
-            '<div style="font-weight:900;font-size:18px;">人事資料表</div>'+
-            '<div style="color:#64748b;font-size:13px;margin-top:6px;line-height:1.7;">'+
-                '可查看公司 StaffData 人事資料。可修改欄位送出後，會進入人事審核，不會直接改動正式資料。'+
-            '</div>'+
-            statusHtml('正在讀取人事資料…','')+
-        '</div>';
-
-    let record={};
-    try{
-        const r=await api({action:'personnel_get',staffId:staffId(s)});
-        record=r.data||{};
-        window.qyjStaffPersonnelRecord=record;
-    }catch(err){
-        record=s||{};
-        box.innerHTML=
-            '<div class="ms-card">'+
-                '<div style="font-weight:900;font-size:18px;">人事資料表</div>'+
-                statusHtml('目前無法讀取 StaffData：'+err.message+'。先顯示本機員工資料。','warn')+
-            '</div>';
-    }
-
-    const phoneKey=pickField(record,['phone','mobile','tel'],'tel');
-    const addressKey=pickField(record,['address','contactAddress'],'address');
-    const bankKey=pickField(record,['bank','bankName'],'bank');
-    const accountKey=pickField(record,['bankAccount','accountNo'],'bankAccount');
-
-    const html=
-        '<div class="ms-card">'+
-            '<div class="ms-personnel-grid">'+
-                '<div><label>姓名</label><input readonly value="'+esc(val(record,['name','realName','staffName','staff'],staffName(s)))+'"></div>'+
-                '<div><label>員工編號</label><input readonly value="'+esc(staffId(s))+'"></div>'+
-                '<div><label>手機</label><input id="msPerPhone" data-field="'+esc(phoneKey)+'" value="'+esc(val(record,['phone','mobile','tel'],staffPhone(s)))+'"></div>'+
-                '<div><label>Email</label><input id="msPerEmail" data-field="email" value="'+esc(val(record,['email']))+'"></div>'+
-                '<div class="full"><label>聯絡地址</label><input id="msPerAddress" data-field="'+esc(addressKey)+'" value="'+esc(val(record,['address','contactAddress'],s.addr||s.address||''))+'"></div>'+
-                '<div><label>緊急聯絡人</label><input id="msPerEmergencyContact" data-field="emergencyContact" value="'+esc(val(record,['emergencyContact']))+'"></div>'+
-                '<div><label>緊急聯絡電話</label><input id="msPerEmergencyPhone" data-field="emergencyPhone" value="'+esc(val(record,['emergencyPhone']))+'"></div>'+
-                '<div><label>銀行名稱</label><input id="msPerBank" data-field="'+esc(bankKey)+'" value="'+esc(val(record,['bank','bankName'],s.bank||''))+'"></div>'+
-                '<div><label>分行</label><input id="msPerBranch" data-field="bankBranch" value="'+esc(val(record,['bankBranch'],s.bank_branch||''))+'"></div>'+
-                '<div class="full"><label>銀行帳號</label><input id="msPerAccount" data-field="'+esc(accountKey)+'" value="'+esc(val(record,['bankAccount','accountNo'],s.bank_acc||''))+'"></div>'+
-            '</div>'+
-            '<button class="ms-api-btn primary" onclick="qyjSubmitPersonnelUpdate()">送出修改審核</button>'+
-        '</div>'+
-        '<div class="ms-card">'+
-            '<div style="font-weight:900;font-size:18px;margin-bottom:10px;">修改審核紀錄</div>'+
-            '<div id="msPersonnelHistory">'+statusHtml('正在讀取審核紀錄…','')+'</div>'+
-        '</div>';
-
-    box.insertAdjacentHTML('beforeend',html);
-    qyjLoadPersonnelHistory();
+window.msShowHome = function(){
+  const s=currentStaff(), name=staffName(s), code=staffCode(s), status=val(s,['status','type','role'],'員工');
+  let today=[];
+  try{ if(typeof window.msFindTodaySchedules==='function') today=window.msFindTodaySchedules(s)||[]; }catch(e){}
+  setTitle('員工服務');
+  const box=contentBox(); if(!box) return;
+  const todayHtml = today.length ? today.map(x=>`<div class="ms-row"><span>${esc(val(x,['company'],'-'))}</span><span>${esc(val(x,['start','startTime'],'-'))}-${esc(val(x,['end','endTime'],'-'))}</span></div>`).join('') : '<div class="ms-empty">今天目前沒有排班</div>';
+  box.innerHTML = `
+    <div class="ms-card ms-profile"><div class="ms-avatar">${esc(name).slice(0,1)}</div><div><div class="ms-name">${esc(name)}</div><div class="ms-sub">員工編號：${esc(code)}<br>狀態：${esc(status)}</div></div></div>
+    <div class="ms-card"><div class="ms-section-title" style="font-weight:900;margin-bottom:12px">今日排班</div>${todayHtml}<div class="ms-punch-big ms-punch"><button class="ms-in" onclick="msGo('punch')">我要打卡</button><button class="ms-out" onclick="msGo('schedule')">我的班表</button></div></div>
+    <div class="ms-grid">
+      <button class="ms-grid-btn" onclick="msGo('punch')"><div class="ms-icon ms-ico">📍</div><div class="ms-grid-title ms-gt">我要打卡</div><div class="ms-grid-sub ms-gs">上下班打卡</div></button>
+      <button class="ms-grid-btn" onclick="msGo('attendance')"><div class="ms-icon ms-ico">📅</div><div class="ms-grid-title ms-gt">出勤紀錄</div><div class="ms-grid-sub ms-gs">查看打卡</div></button>
+      <button class="ms-grid-btn" onclick="msGo('schedule')"><div class="ms-icon ms-ico">📋</div><div class="ms-grid-title ms-gt">我的班表</div><div class="ms-grid-sub ms-gs">查看排班</div></button>
+      <button class="ms-grid-btn" onclick="msGo('leave')"><div class="ms-icon ms-ico">📝</div><div class="ms-grid-title ms-gt">我要請假</div><div class="ms-grid-sub ms-gs">請假申請</div></button>
+      <button class="ms-grid-btn" onclick="msGo('salary')"><div class="ms-icon ms-ico">💰</div><div class="ms-grid-title ms-gt">我的薪資單</div><div class="ms-grid-sub ms-gs">下載薪資</div></button>
+      <button class="ms-grid-btn" onclick="msGo('profile')"><div class="ms-icon ms-ico">👤</div><div class="ms-grid-title ms-gt">員工資訊</div><div class="ms-grid-sub ms-gs">個人資料</div></button>
+      <button class="ms-grid-btn" onclick="msGo('personnel')"><div class="ms-icon ms-ico">🗂️</div><div class="ms-grid-title ms-gt">人事資料表</div><div class="ms-grid-sub ms-gs">更新及填寫</div></button>
+      <button class="ms-grid-btn" onclick="msGo('sop')"><div class="ms-icon ms-ico">📦</div><div class="ms-grid-title ms-gt">入職包 SOP</div><div class="ms-grid-sub ms-gs">新員工指引</div></button>
+      <button class="ms-grid-btn" onclick="msGo('notice')"><div class="ms-icon ms-ico">📢</div><div class="ms-grid-title ms-gt">公告欄</div><div class="ms-grid-sub ms-gs">最新公告</div></button>
+      <button class="ms-grid-btn" onclick="msGo('more')"><div class="ms-icon ms-ico">▦</div><div class="ms-grid-title ms-gt">更多功能</div><div class="ms-grid-sub ms-gs">其他服務</div></button>
+    </div>`;
 };
 
-window.qyjSubmitPersonnelUpdate=async function(){
-    const s=currentStaff();
-    if(!s) return alert('找不到登入人員資料');
+window.msShowProfile = function(){
+  const s=currentStaff(), name=staffName(s), code=staffCode(s);
+  const phone=val(s,['phone','mobile','tel'],'-');
+  const position=val(s,['position','role','type','jobTitle'],'');
+  const status=val(s,['status'],'');
+  const hire=val(s,['hireDate','startDate','hire_date'],'');
+  const unit=val(s,['unit','dispatch','dispType','department','dept'],'');
+  setTitle('員工資訊');
+  const box=contentBox(); if(!box) return;
 
-    const ids=['msPerPhone','msPerEmail','msPerAddress','msPerEmergencyContact','msPerEmergencyPhone','msPerBank','msPerBranch','msPerAccount'];
-    const payload={
-        action:'personnel_update',
-        staffId:staffId(s),
-        staffName:staffName(s)
+  const optionalRows =
+    (hire ? row('到職日',hire) : '') +
+    (unit ? row('派遣類型／所屬單位',unit) : '');
+
+  box.innerHTML=`
+    <div class="ms-card" style="text-align:center">
+      <div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${esc(name).slice(0,1)}</div>
+      ${row('員工姓名',name)}
+      ${row('員工編號',code)}
+      ${row('手機',phone)}
+      ${row('職別／身分',position || '-')}
+      ${row('在職狀態',status || '-')}
+      ${optionalRows}
+      <button class="ms-primary" style="margin-top:14px;width:100%" onclick="window.open('https://relax93366453-svg.github.io/doclick.tw/','_blank')">查看完整員工資料</button>
+    </div>
+
+    <div class="ms-card">
+      <div style="font-weight:900;font-size:18px">登入方式</div>
+      <div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div>
+      <div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div>
+      <div class="ms-logout" onclick="msLogout()">登出</div>
+    </div>`;
+};
+
+window.msShowPersonnel = async function(){
+  const s=currentStaff();
+  if(!s || !Object.keys(s).length){
+    if(typeof window.msShowLogin==='function') return window.msShowLogin('personnel');
+  }
+
+  setTitle('人事資料表');
+  const box=contentBox(); if(!box) return;
+
+  box.innerHTML=`
+    <div class="ms-card">
+      <div style="font-size:20px;font-weight:900;margin-bottom:14px">人事資料表</div>
+
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-weight:900;font-size:16px;margin-bottom:6px">💻 線上直接填寫</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:10px">請點擊下方按鈕前往線上履歷表</div>
+        <a href="https://doclick-letgo.vercel.app/DOCLICK" target="_blank" rel="noopener" class="ms-primary" style="display:block;text-align:center;text-decoration:none">前往線上履歷表</a>
+      </div>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px">
+        <div style="font-weight:900;font-size:16px;margin-bottom:6px">📥 雲端檔案下載</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:10px">如需下載實體人事資料表留存，請點擊下方按鈕下載</div>
+        <a href="https://drive.google.com/file/d/1Ezge0bpEUV3whaMrNIBEDsnSqGepCQhk/view?usp=sharing" target="_blank" rel="noopener" class="ms-secondary" style="display:block;text-align:center;text-decoration:none">下載人事資料表</a>
+      </div>
+    </div>
+
+    <div class="ms-card"><div class="ms-empty">正在讀取最新人事資料…</div></div>`;
+
+  let remote={}, loadError='';
+  try{
+    remote=unwrapRecord(await staffApi('personnel_get'));
+  }catch(e){
+    loadError=e.message || String(e);
+  }
+
+  const d={...s,...remote};
+  const readonly =
+    `${row('員工姓名',staffName(d))}` +
+    `${row('員工編號',staffCode(d))}` +
+    `${row('職別／身分',val(d,['position','role','type','jobTitle'],''))}` +
+    `${row('在職狀態',val(d,['status'],''))}`;
+
+  box.innerHTML=`
+    <div class="ms-card">
+      <div style="font-size:20px;font-weight:900;margin-bottom:14px">人事資料表</div>
+
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="font-weight:900;font-size:16px;margin-bottom:6px">💻 線上直接填寫</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:10px">請點擊下方按鈕前往線上履歷表</div>
+        <a href="https://doclick-letgo.vercel.app/DOCLICK" target="_blank" rel="noopener" class="ms-primary" style="display:block;text-align:center;text-decoration:none">前往線上履歷表</a>
+      </div>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px">
+        <div style="font-weight:900;font-size:16px;margin-bottom:6px">📥 雲端檔案下載</div>
+        <div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:10px">如需下載實體人事資料表留存，請點擊下方按鈕下載</div>
+        <a href="https://drive.google.com/file/d/1Ezge0bpEUV3whaMrNIBEDsnSqGepCQhk/view?usp=sharing" target="_blank" rel="noopener" class="ms-secondary" style="display:block;text-align:center;text-decoration:none">下載人事資料表</a>
+      </div>
+    </div>
+
+    <div class="ms-card">
+      <div style="font-size:18px;font-weight:900;margin-bottom:12px">基本資料</div>
+      ${readonly}
+      ${loadError?`<div style="margin-top:10px;color:#b45309;font-size:13px">雲端資料暫時讀取失敗，先顯示目前登入資料：${esc(loadError)}</div>`:''}
+    </div>
+
+    <div class="ms-card">
+      <div style="font-size:18px;font-weight:900;margin-bottom:14px">可更新資料</div>
+      <div class="ms-form" style="display:grid;gap:10px">
+        <label>手機<input id="qyjPerPhone" value="${esc(val(d,['phone','mobile','tel'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>Email<input id="qyjPerEmail" type="email" value="${esc(val(d,['email','mail'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>地址<input id="qyjPerAddress" value="${esc(val(d,['address','addr'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>緊急聯絡人<input id="qyjPerEmergency" value="${esc(val(d,['emergencyContact','emergency','emergencyName'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>緊急聯絡電話<input id="qyjPerEmergencyPhone" value="${esc(val(d,['emergencyPhone','emergencyTel'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>銀行<input id="qyjPerBank" value="${esc(val(d,['bank','bankName'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>分行<input id="qyjPerBranch" value="${esc(val(d,['bankBranch','branch'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>銀行帳號<input id="qyjPerBankAccount" value="${esc(val(d,['bankAccount','bankAcc','accountNo'],''))}" style="width:100%;padding:10px;margin-top:5px"></label>
+      </div>
+
+      <button id="qyjPersonnelSubmit" class="ms-primary" style="width:100%;margin-top:16px" onclick="qyjSubmitPersonnelUpdate()">送出更新申請</button>
+      <div id="qyjPersonnelMsg" style="display:none;margin-top:12px;padding:11px;border-radius:8px"></div>
+    </div>`;
+};
+
+window.qyjSubmitPersonnelUpdate = async function(){
+  const msg=document.getElementById('qyjPersonnelMsg'), btn=document.getElementById('qyjPersonnelSubmit');
+  const fields={
+    phone:document.getElementById('qyjPerPhone')?.value.trim()||'',
+    email:document.getElementById('qyjPerEmail')?.value.trim()||'',
+    address:document.getElementById('qyjPerAddress')?.value.trim()||'',
+    emergencyContact:document.getElementById('qyjPerEmergency')?.value.trim()||'',
+    emergencyPhone:document.getElementById('qyjPerEmergencyPhone')?.value.trim()||'',
+    bank:document.getElementById('qyjPerBank')?.value.trim()||'',
+    bankBranch:document.getElementById('qyjPerBranch')?.value.trim()||'',
+    bankAccount:document.getElementById('qyjPerBankAccount')?.value.trim()||''
+  };
+  if(btn){ btn.disabled=true; btn.textContent='送出中…'; }
+  try{
+    await staffApi('personnel_update',{...fields, fields, data:fields, reviewStatus:'pending', status:'pending'});
+    if(msg){ msg.style.display='block'; msg.style.background='#ecfdf5'; msg.style.color='#047857'; msg.textContent='已送出，等待管理員審核'; }
+  }catch(e){
+    if(msg){ msg.style.display='block'; msg.style.background='#fef2f2'; msg.style.color='#b91c1c'; msg.textContent='送出失敗：'+(e.message||e); }
+  }finally{ if(btn){ btn.disabled=false; btn.textContent='送出更新申請'; } }
+};
+
+function renderSopItem(item){
+  const title=val(item,['title','name'],'未命名 SOP');
+  const category=val(item,['category','type'],'其他');
+  const date=val(item,['publishDate','publishedAt','date','updatedAt'],'');
+  const important=val(item,['important','importantNote','note','warning'],'');
+  let content=val(item,['content','html','body','description'],'');
+  if(content && !/<[a-z][\s\S]*>/i.test(String(content))) content=`<div style="white-space:pre-wrap">${esc(content)}</div>`;
+  const images=[...parseArray(item.images),...parseArray(item.image),...parseArray(item.img)].filter(Boolean);
+  const files=[...parseArray(item.attachments),...parseArray(item.files),...parseArray(item.pdfs),...parseArray(item.pdf)].filter(Boolean);
+  const imageHtml=images.map(x=>{const u=linkOf(x);return u?`<img src="${esc(u)}" alt="${esc(nameOf(x,'SOP 圖片'))}" style="width:100%;max-height:520px;object-fit:contain;border-radius:10px;margin-top:10px" loading="lazy">`:''}).join('');
+  const fileHtml=files.map((x,i)=>{const u=linkOf(x);return u?`<a href="${esc(u)}" target="_blank" rel="noopener" class="ms-secondary" style="display:block;text-align:center;text-decoration:none;margin-top:8px">📎 ${esc(nameOf(x,'附件 '+(i+1)))}</a>`:''}).join('');
+  const tableHtml=val(item,['tableHtml','table','chartHtml','flowHtml'],'');
+  return `<div class="ms-card"><div style="font-size:12px;color:#64748b;font-weight:800">${esc(category)}${date?' ｜ '+esc(date):''}</div><div style="font-size:19px;font-weight:900;margin:6px 0 12px">${esc(title)}</div>${important?`<div style="background:#fff7ed;border-left:4px solid #f59e0b;padding:10px;border-radius:8px;margin-bottom:12px"><b>重要提醒：</b>${esc(important)}</div>`:''}<div style="line-height:1.8">${content||''}</div>${tableHtml||''}${imageHtml}${fileHtml}</div>`;
+}
+window.msShowSop = async function(){
+  setTitle('入職包 SOP'); const box=contentBox(); if(!box) return;
+  box.innerHTML='<div class="ms-card"><div class="ms-empty">正在讀取最新 SOP…</div></div>';
+  try{
+    const res=await staffApi('sop_get',{publishedOnly:true,publish:true,status:'published'});
+    let list=unwrapList(res).filter(x=>x && x.publish!==false && x.published!==false && String(x.status||'').toLowerCase()!=='draft');
+    if(!list.length){ box.innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有已發布的 SOP</div></div>'; return; }
+    const cats=[...new Set(list.map(x=>val(x,['category','type'],'其他')))];
+    box.innerHTML=`<div class="ms-card"><div style="font-weight:900;margin-bottom:10px">SOP 分類</div><div style="display:flex;gap:8px;flex-wrap:wrap">${cats.map(c=>`<span style="background:#eff6ff;color:#1d4ed8;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800">${esc(c)}</span>`).join('')}</div></div>`+list.map(renderSopItem).join('');
+  }catch(e){ box.innerHTML=`<div class="ms-card"><div class="ms-empty" style="color:#b91c1c">SOP 讀取失敗：${esc(e.message||e)}</div></div>`; }
+};
+
+window.msShowFaq = function(){
+  setTitle('常見問題'); const box=contentBox(); if(!box) return;
+  box.innerHTML=`<div class="ms-card"><div style="font-weight:900;font-size:18px;margin-bottom:12px">常見問題</div><div class="ms-list"><div><div class="ms-lt">打卡沒有定位怎麼辦？</div><div class="ms-ls">請開啟手機瀏覽器定位權限後重新打卡。</div></div></div><div class="ms-list"><div><div class="ms-lt">人事資料修改後會立刻生效嗎？</div><div class="ms-ls">不會，送出後會先進入管理員審核。</div></div></div><div class="ms-list"><div><div class="ms-lt">SOP 看不到內容？</div><div class="ms-ls">員工端只顯示已發布內容；若仍看不到，可稍後重新整理。</div></div></div></div>`;
+};
+
+window.msShowMore = function(){
+  setTitle('更多功能'); const box=contentBox(); if(!box) return;
+  box.innerHTML=`<div class="ms-card">
+    <div class="ms-list" onclick="msGo('profile')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看個人資料</div></div><span>›</span></div>
+    <div class="ms-list" onclick="msGo('personnel')"><div><div class="ms-lt">人事資料表</div><div class="ms-ls">更新及填寫</div></div><span>›</span></div>
+    <div class="ms-list" onclick="msGo('sop')"><div><div class="ms-lt">入職包 SOP</div><div class="ms-ls">最新工作規範</div></div><span>›</span></div>
+    <div class="ms-list" onclick="msGo('notice')"><div><div class="ms-lt">公告欄</div><div class="ms-ls">最新公告</div></div><span>›</span></div>
+    <div class="ms-list" onclick="msGo('faq')"><div><div class="ms-lt">常見問題</div><div class="ms-ls">操作與使用說明</div></div><span>›</span></div>
+    <div class="ms-logout" onclick="msLogout()">登出</div>
+  </div>`;
+};
+
+
+
+/* ===== 入職包 SOP 後台管理：文字＋圖片＋多圖＋PDF＋附件 ===== */
+let qyjSopAdminItems = [];
+
+function qyjFileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result||''));
+    reader.onerror=()=>reject(reader.error||new Error('檔案讀取失敗'));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function qyjUploadSopFile(file, kind='attachment'){
+  if(!file) return null;
+  const dataUrl=await qyjFileToDataUrl(file);
+  const base64=(dataUrl.split(',')[1]||'');
+  const res=await staffApi('sop_upload',{
+    kind,
+    fileName:file.name,
+    filename:file.name,
+    name:file.name,
+    mimeType:file.type||'application/octet-stream',
+    mime:file.type||'application/octet-stream',
+    dataUrl,
+    base64,
+    data:base64
+  });
+  const d=unwrapRecord(res);
+  let url=val(d,['url','fileUrl','downloadUrl','webContentLink','webViewLink','directUrl','link','imageUrl','publicUrl','viewUrl'], val(res,['url','fileUrl','downloadUrl','webContentLink','webViewLink','directUrl','link','imageUrl','publicUrl','viewUrl'],''));
+  if(!url){
+    const id=val(d,['fileId','id','driveFileId','file_id'], val(res,['fileId','id','driveFileId','file_id'],''));
+    if(id) url='https://drive.google.com/uc?export=view&id='+encodeURIComponent(id);
+  }
+  return {name:file.name,url:url||'',mimeType:file.type||'',kind};
+}
+
+function qyjSopAdminField(id){ return document.getElementById(id); }
+function qyjLines(id){
+  return (qyjSopAdminField(id)?.value||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+}
+function qyjSopStatus(item){
+  const s=String(val(item,['status'],'')).toLowerCase();
+  if(item.publish===true || item.published===true || s==='published' || s==='發布') return 'published';
+  return 'draft';
+}
+function qyjSopId(item){ return val(item,['id','sopId','uuid','key','rowId'],''); }
+
+window.msShowSopManager = async function(){
+  setTitle('SOP 後台管理');
+  const box=contentBox(); if(!box) return;
+  box.innerHTML='<div class="ms-card"><div class="ms-empty">正在讀取 SOP 後台資料…</div></div>';
+  try{
+    const res=await staffApi('sop_get',{publishedOnly:false,all:true,admin:true});
+    qyjSopAdminItems=unwrapList(res);
+  }catch(e){ qyjSopAdminItems=[]; }
+  box.innerHTML=`
+    <div class="ms-card">
+      <div style="font-size:20px;font-weight:900;margin-bottom:6px">入職包 SOP 後台</div>
+      <div style="font-size:13px;color:#64748b;line-height:1.7;margin-bottom:16px">可新增文字、單張／多張圖片、PDF 與其他附件。草稿不會顯示在員工端，發布後才會出現。</div>
+      <input type="hidden" id="qyjSopEditId">
+      <div style="display:grid;gap:12px">
+        <label>分類<input id="qyjSopCategory" placeholder="例如：入職須知、工作規範、管理規範" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>標題<input id="qyjSopTitle" placeholder="例如：新進報班人員須知" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>摘要<input id="qyjSopSummary" placeholder="列表上顯示的一句說明" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>文字內容<textarea id="qyjSopContent" rows="10" placeholder="可直接貼完整文字內容；換行會保留" style="width:100%;padding:10px;margin-top:5px;resize:vertical"></textarea></label>
+        <label>重要提醒<textarea id="qyjSopImportant" rows="3" placeholder="需要特別醒目顯示的提醒" style="width:100%;padding:10px;margin-top:5px;resize:vertical"></textarea></label>
+        <label>發布日期<input id="qyjSopPublishDate" type="date" style="width:100%;padding:10px;margin-top:5px"></label>
+        <label>狀態<select id="qyjSopStatus" style="width:100%;padding:10px;margin-top:5px"><option value="draft">草稿</option><option value="published">已發布</option></select></label>
+
+        <div style="padding:12px;border:1px solid #dbeafe;border-radius:10px;background:#f8fbff">
+          <div style="font-weight:900;margin-bottom:8px">圖片</div>
+          <input id="qyjSopImageFiles" type="file" accept="image/*" multiple style="width:100%;margin-bottom:8px">
+          <textarea id="qyjSopImages" rows="4" placeholder="也可貼圖片網址，每行一個" style="width:100%;padding:10px;resize:vertical"></textarea>
+        </div>
+
+        <div style="padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa">
+          <div style="font-weight:900;margin-bottom:8px">PDF</div>
+          <input id="qyjSopPdfFiles" type="file" accept="application/pdf,.pdf" multiple style="width:100%;margin-bottom:8px">
+          <textarea id="qyjSopPdfs" rows="3" placeholder="也可貼 PDF 網址，每行一個" style="width:100%;padding:10px;resize:vertical"></textarea>
+        </div>
+
+        <div style="padding:12px;border:1px solid #e2e8f0;border-radius:10px;background:#fafafa">
+          <div style="font-weight:900;margin-bottom:8px">其他附件</div>
+          <input id="qyjSopAttachmentFiles" type="file" multiple style="width:100%;margin-bottom:8px">
+          <textarea id="qyjSopAttachments" rows="3" placeholder="也可貼附件網址，每行一個" style="width:100%;padding:10px;resize:vertical"></textarea>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+        <button id="qyjSopSaveBtn" class="ms-primary" onclick="qyjSaveSop(false)">儲存草稿</button>
+        <button class="ms-primary" style="background:#059669" onclick="qyjSaveSop(true)">儲存並發布</button>
+        <button class="ms-secondary" onclick="qyjClearSopForm()">清空</button>
+      </div>
+      <div id="qyjSopAdminMsg" style="display:none;margin-top:12px;padding:10px;border-radius:8px"></div>
+    </div>
+    <div id="qyjSopAdminList"></div>`;
+  qyjRenderSopAdminList();
+};
+
+window.qyjClearSopForm = function(){
+  ['qyjSopEditId','qyjSopCategory','qyjSopTitle','qyjSopSummary','qyjSopContent','qyjSopImportant','qyjSopImages','qyjSopPdfs','qyjSopAttachments'].forEach(id=>{const el=qyjSopAdminField(id);if(el)el.value='';});
+  const d=qyjSopAdminField('qyjSopPublishDate'); if(d)d.value='';
+  const s=qyjSopAdminField('qyjSopStatus'); if(s)s.value='draft';
+  ['qyjSopImageFiles','qyjSopPdfFiles','qyjSopAttachmentFiles'].forEach(id=>{const el=qyjSopAdminField(id);if(el)el.value='';});
+};
+
+window.qyjRenderSopAdminList = function(){
+  const wrap=document.getElementById('qyjSopAdminList'); if(!wrap) return;
+  if(!qyjSopAdminItems.length){ wrap.innerHTML='<div class="ms-card"><div class="ms-empty">目前尚無 SOP</div></div>'; return; }
+  wrap.innerHTML=qyjSopAdminItems.map((item,i)=>{
+    const status=qyjSopStatus(item), id=qyjSopId(item), title=val(item,['title','name'],'未命名 SOP'), category=val(item,['category','type'],'其他');
+    return `<div class="ms-card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div style="font-size:12px;color:#64748b;font-weight:800">${esc(category)}</div><div style="font-size:18px;font-weight:900;margin-top:4px">${esc(title)}</div><div style="font-size:12px;margin-top:5px;color:${status==='published'?'#047857':'#b45309'}">${status==='published'?'已發布':'草稿'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="ms-secondary" onclick="qyjEditSop(${i})">編輯</button><button class="ms-secondary" onclick="qyjToggleSopPublish(${i})">${status==='published'?'取消發布':'發布'}</button><button class="ms-secondary" style="color:#b91c1c" onclick="qyjDeleteSop(${i})">刪除</button></div></div></div>`;
+  }).join('');
+};
+
+window.qyjEditSop = function(index){
+  const item=qyjSopAdminItems[index]; if(!item) return;
+  qyjSopAdminField('qyjSopEditId').value=qyjSopId(item);
+  qyjSopAdminField('qyjSopCategory').value=val(item,['category','type'],'');
+  qyjSopAdminField('qyjSopTitle').value=val(item,['title','name'],'');
+  qyjSopAdminField('qyjSopSummary').value=val(item,['summary','excerpt','subtitle'],'');
+  qyjSopAdminField('qyjSopContent').value=String(val(item,['content','body','description'],'')).replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]*>/g,'');
+  qyjSopAdminField('qyjSopImportant').value=val(item,['important','importantNote','note','warning'],'');
+  qyjSopAdminField('qyjSopPublishDate').value=String(val(item,['publishDate','date'],'')).slice(0,10);
+  qyjSopAdminField('qyjSopStatus').value=qyjSopStatus(item);
+  qyjSopAdminField('qyjSopImages').value=parseArray(item.images||item.image||item.img).map(linkOf).filter(Boolean).join('\n');
+  qyjSopAdminField('qyjSopPdfs').value=parseArray(item.pdfs||item.pdf).map(linkOf).filter(Boolean).join('\n');
+  qyjSopAdminField('qyjSopAttachments').value=parseArray(item.attachments||item.files).map(linkOf).filter(Boolean).join('\n');
+  window.scrollTo({top:0,behavior:'smooth'});
+};
+
+async function qyjCollectUploadedFiles(inputId, kind){
+  const input=qyjSopAdminField(inputId); const files=Array.from(input?.files||[]); const out=[];
+  for(const f of files){ const u=await qyjUploadSopFile(f,kind); if(u && u.url) out.push(u); }
+  return out;
+}
+
+window.qyjSaveSop = async function(publishNow){
+  const msg=qyjSopAdminField('qyjSopAdminMsg');
+  const title=qyjSopAdminField('qyjSopTitle')?.value.trim()||'';
+  if(!title){ alert('請先輸入 SOP 標題'); return; }
+  try{
+    if(msg){msg.style.display='block';msg.style.background='#eff6ff';msg.style.color='#1d4ed8';msg.textContent='正在上傳圖片與附件…';}
+    const uploadedImages=await qyjCollectUploadedFiles('qyjSopImageFiles','image');
+    const uploadedPdfs=await qyjCollectUploadedFiles('qyjSopPdfFiles','pdf');
+    const uploadedAttachments=await qyjCollectUploadedFiles('qyjSopAttachmentFiles','attachment');
+    const status=publishNow?'published':(qyjSopAdminField('qyjSopStatus')?.value||'draft');
+    const item={
+      id:qyjSopAdminField('qyjSopEditId')?.value||'',
+      category:qyjSopAdminField('qyjSopCategory')?.value.trim()||'其他',
+      title,
+      summary:qyjSopAdminField('qyjSopSummary')?.value.trim()||'',
+      content:qyjSopAdminField('qyjSopContent')?.value||'',
+      important:qyjSopAdminField('qyjSopImportant')?.value||'',
+      publishDate:qyjSopAdminField('qyjSopPublishDate')?.value||'',
+      status,
+      publish:status==='published',
+      published:status==='published',
+      images:[...qyjLines('qyjSopImages').map(url=>({url,name:'圖片'})),...uploadedImages],
+      pdfs:[...qyjLines('qyjSopPdfs').map(url=>({url,name:'PDF'})),...uploadedPdfs],
+      attachments:[...qyjLines('qyjSopAttachments').map(url=>({url,name:'附件'})),...uploadedAttachments]
     };
-
-    ids.forEach(function(id){
-        const e=document.getElementById(id);
-        if(e && e.dataset.field) payload[e.dataset.field]=e.value.trim();
-    });
-
-    try{
-        const r=await api(payload);
-        alert(r.message||'已送出，等待管理員審核');
-        qyjLoadPersonnelHistory();
-    }catch(err){
-        alert('送出失敗：'+err.message);
+    const res=await staffApi('sop_save',{...item,item,data:item,record:item});
+    const saved=unwrapRecord(res); const savedId=qyjSopId(saved)||qyjSopId(item);
+    if(status==='published' && savedId){
+      try{ await staffApi('sop_publish',{id:savedId,sopId:savedId,publish:true,published:true,status:'published'}); }catch(e){}
     }
+    if(msg){msg.style.background='#ecfdf5';msg.style.color='#047857';msg.textContent=status==='published'?'已儲存並發布':'草稿已儲存';}
+    await window.msShowSopManager();
+  }catch(e){
+    if(msg){msg.style.display='block';msg.style.background='#fef2f2';msg.style.color='#b91c1c';msg.textContent='儲存失敗：'+(e.message||e);}
+  }
 };
 
-window.qyjLoadPersonnelHistory=async function(){
-    const target=document.getElementById('msPersonnelHistory');
-    if(!target) return;
-    const s=currentStaff();
-    try{
-        const r=await api({action:'personnel_history'});
-        const rows=(Array.isArray(r.data)?r.data:[]).filter(function(x){
-            return String(x.staffId||'')===staffId(s) ||
-                   String(x.staffName||'')===staffName(s);
-        }).sort(function(a,b){
-            return String(b.submittedAt||'').localeCompare(String(a.submittedAt||''));
-        });
+window.qyjToggleSopPublish = async function(index){
+  const item=qyjSopAdminItems[index]; if(!item) return;
+  const id=qyjSopId(item); if(!id){alert('找不到這筆 SOP 的識別碼');return;}
+  const next=qyjSopStatus(item)!=='published';
+  try{ await staffApi('sop_publish',{id,sopId:id,publish:next,published:next,status:next?'published':'draft'}); await window.msShowSopManager(); }
+  catch(e){ alert('發布狀態更新失敗：'+(e.message||e)); }
+};
 
-        if(!rows.length){
-            target.innerHTML='<div class="ms-empty">目前沒有修改審核紀錄</div>';
-            return;
-        }
+window.qyjDeleteSop = async function(index){
+  const item=qyjSopAdminItems[index]; if(!item) return;
+  if(!confirm('確定刪除此 SOP？')) return;
+  const id=qyjSopId(item); if(!id){alert('找不到這筆 SOP 的識別碼');return;}
+  try{ await staffApi('sop_delete',{id,sopId:id}); await window.msShowSopManager(); }
+  catch(e){ alert('刪除失敗：'+(e.message||e)); }
+};
 
-        target.innerHTML=rows.slice(0,30).map(function(x){
-            const status=String(x.reviewStatus||'');
-            const zh=status==='approved'?'已核准':status==='rejected'?'已退回':status==='pending'?'待審核':status;
-            return '<div class="ms-history-item">'+
-                '<div class="title">'+esc(x.field||'資料修改')+'｜'+esc(zh)+'</div>'+
-                '<div class="sub">'+
-                    '原資料：'+esc(x.oldValue||'-')+'<br>'+
-                    '申請修改：'+esc(x.newValue||'-')+'<br>'+
-                    (x.reviewNote?'審核備註：'+esc(x.reviewNote)+'<br>':'')+
-                    '送出時間：'+esc(x.submittedAt||'-')+
-                '</div>'+
-            '</div>';
-        }).join('');
-    }catch(err){
-        target.innerHTML=statusHtml('審核紀錄讀取失敗：'+err.message,'warn');
+const legacyMsGo = window.msGo;
+window.msGo = function(route){
+  const target=route||'home';
+
+  // 記住使用者真正選擇的頁面。
+  try{
+    localStorage.setItem('qyj_mobile_staff_route',target);
+    window.__qyjUserChangingMobileRoute = true;
+
+    // 同步更新網址 route，避免 LINE 初始的 route=punch 在背景同步時又被讀回來。
+    const u = new URL(location.href);
+    if(u.searchParams.get('staffApp')==='1'){
+      u.searchParams.set('route',target);
+      history.replaceState(null,'',u.toString());
     }
+  }catch(e){}
+
+  const direct={home:window.msShowHome,profile:window.msShowProfile,personnel:window.msShowPersonnel,sop:window.msShowSop,sop_manager:window.msShowSopManager,more:window.msShowMore,faq:window.msShowFaq};
+  const fallback={punch:window.msShowPunch,attendance:window.msShowAttendance,schedule:window.msShowSchedule,leave:window.msShowLeave,salary:window.msShowSalary,notice:window.msShowNotice};
+
+  try{
+    if(direct[target]) return direct[target]();
+    if(fallback[target]) return fallback[target]();
+    if(typeof legacyMsGo==='function') return legacyMsGo.call(this,target);
+    return window.msShowHome?.();
+  }finally{
+    setTimeout(function(){ window.__qyjUserChangingMobileRoute = false; },120);
+  }
 };
 
-function parseMaybeJson(v,fallback){
-    if(v==null || v==='') return fallback;
-    if(typeof v==='object') return v;
-    try{return JSON.parse(v);}catch(e){return fallback;}
-}
+})();
+</script>
 
-window.msShowSop=async function(){
-    setTitle('入職包 SOP');
-    const box=getBox();
-    if(!box) return;
 
-    box.innerHTML=
-        '<div class="ms-card">'+
-            '<div style="font-weight:900;font-size:18px;">入職包／SOP</div>'+
-            '<div style="color:#64748b;font-size:13px;margin-top:6px;">讀取公司目前已發佈的 SOP 內容</div>'+
-            statusHtml('正在讀取最新 SOP…','')+
-        '</div>';
 
-    try{
-        const r=await api({action:'sop_get',published:'true'});
-        const rows=Array.isArray(r.data)?r.data:[];
-        if(!rows.length){
-            box.innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有已發佈的 SOP</div></div>';
-            return;
-        }
+<!-- ===== 員工內容管理：SOP 圖片上傳整合最終版 ===== -->
+<style id="qyjContentImageAdminStyles">
+.qyj-content-media-box{grid-column:1/-1;border:1px solid #bfdbfe;background:#eff6ff;border-radius:12px;padding:14px;margin-top:2px}
+.qyj-content-media-box .qyj-media-title{font-size:13px;font-weight:900;color:#1e3a8a;margin-bottom:8px}
+.qyj-content-media-box input[type=file]{width:100%;padding:10px;border:1px dashed #93c5fd;border-radius:9px;background:#fff;margin-bottom:10px}
+.qyj-content-media-box textarea{min-height:82px!important;background:#fff}
+.qyj-content-image-preview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+.qyj-content-image-preview .qyj-preview-item{position:relative;border:1px solid #dbeafe;border-radius:10px;overflow:hidden;background:#fff;min-height:90px}
+.qyj-content-image-preview img{display:block;width:100%;height:140px;object-fit:cover;background:#f8fafc}
+.qyj-content-image-preview button{position:absolute;top:6px;right:6px;width:28px;height:28px;border:0;border-radius:50%;background:rgba(220,38,38,.92);color:#fff;font-weight:900;cursor:pointer}
+.qyj-content-media-help{font-size:11px;color:#64748b;line-height:1.6;margin-top:6px}
+.ms-sop-image-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:14px 0}
+.ms-sop-image-grid img{width:100%;height:auto;display:block;border-radius:12px;border:1px solid #e2e8f0;background:#fff}
+.ms-sop-text{white-space:normal;line-height:1.9;color:#334155;margin-top:10px}
+@media(max-width:700px){.qyj-content-image-preview{grid-template-columns:1fr 1fr}.qyj-content-image-preview img{height:120px}}
+</style>
+<script id="qyjContentImageAdminFinal">
+(function(){
+  'use strict';
 
-        box.innerHTML=rows.map(function(x){
-            const attachments=parseMaybeJson(x.attachments,[]);
-            let files='';
-            if(Array.isArray(attachments)){
-                files=attachments.map(function(f){
-                    const u=f.fileUrl||f.url||f.driveUrl||f.downloadUrl||'';
-                    const n=f.fileName||f.name||'附件';
-                    return u?'<a target="_blank" rel="noopener" href="'+esc(u)+'">📎 '+esc(n)+'</a>':'';
-                }).join('');
-            }
-            return '<div class="ms-sop-item">'+
-                '<div class="title">'+esc(x.title||'SOP')+'</div>'+
-                '<div class="sub">'+esc(x.category||'一般')+'</div>'+
-                (x.content?'<div class="content">'+esc(x.content)+'</div>':'')+
-                (x.importantNote?'<div class="ms-sop-important">'+esc(x.importantNote)+'</div>':'')+
-                (files?'<div class="ms-sop-files">'+files+'</div>':'')+
-            '</div>';
-        }).join('');
-    }catch(err){
-        box.innerHTML=
-            '<div class="ms-card">'+
-                statusHtml('SOP 讀取失敗：'+err.message,'err')+
-                '<button class="ms-api-btn secondary" onclick="msShowSop()">重新讀取</button>'+
-            '</div>';
+  const API_FALLBACK='https://script.google.com/macros/s/AKfycbzSZ88aJoNNUIuC8ASHxnknbHexRv1zYtgc4tnrQRmWZvjONvGD37hhO7VyzWBQ5Yx5/exec';
+
+  function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+  function parseList(v){
+    if(!v) return [];
+    if(Array.isArray(v)) return v.map(x=>typeof x==='string'?x:(x&& (x.url||x.fileUrl||x.downloadUrl||x.link)||'')).filter(Boolean);
+    if(typeof v==='string'){
+      const s=v.trim(); if(!s) return [];
+      try{const j=JSON.parse(s); if(Array.isArray(j)) return parseList(j);}catch(e){}
+      return s.split(/\r?\n|,/).map(x=>x.trim()).filter(Boolean);
     }
-};
-
-function getLineUserId(){
-    const qs=new URLSearchParams(location.search);
-    const fromUrl=qs.get('lineUserId')||qs.get('userId')||qs.get('line_user_id')||'';
-    if(fromUrl){
-        localStorage.setItem('qyj_line_user_id',fromUrl);
-        return fromUrl;
+    return [];
+  }
+  function imageUrl(v){
+    let u=String(v||'').trim();
+    const m=u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if(m) u='https://drive.google.com/uc?export=view&id='+m[1];
+    return u;
+  }
+  function currentMode(){
+    const t=document.getElementById('qyjContentTabAnnouncement');
+    return t&&t.classList.contains('active')?'announcement':'sop';
+  }
+  function selectedIndex(){
+    const items=Array.from(document.querySelectorAll('#qyjContentItems .qyj-content-item'));
+    return items.findIndex(x=>x.classList.contains('active'));
+  }
+  function localConf(){
+    try{return JSON.parse(localStorage.getItem('portalConf')||'{}')||{};}catch(e){return (window.portalConf||{});}
+  }
+  function activeList(){
+    const c=localConf();
+    return currentMode()==='announcement'?(Array.isArray(c.announcementItems)?c.announcementItems:[]):(Array.isArray(c.sopItems)?c.sopItems:[]);
+  }
+  function currentTitle(){return (document.getElementById('qyjContentTitle')?.value||'').trim();}
+  function ensureMediaFields(){
+    const body=document.getElementById('qyjContentBody');
+    if(!body || document.getElementById('qyjContentMediaWrap')) return;
+    const wide=body.closest('.wide')||body.parentElement;
+    const wrap=document.createElement('div');
+    wrap.id='qyjContentMediaWrap';
+    wrap.className='qyj-content-media-box wide';
+    wrap.innerHTML='<div class="qyj-media-title"><i class="fas fa-images"></i> 圖片上傳（可多張）</div>'+
+      '<input id="qyjContentImageFiles" type="file" accept="image/*" multiple>'+
+      '<label style="display:block;font-size:12px;font-weight:900;color:#475569;margin-bottom:5px">已上傳圖片／圖片網址</label>'+
+      '<textarea id="qyjContentImageUrls" rows="4" placeholder="上傳後會自動填入；也可以直接貼圖片網址，每行一個"></textarea>'+
+      '<div class="qyj-content-media-help">可同時選多張 JPG／PNG。儲存時會先上傳圖片，再同步 SOP 內容；員工端會在文字下方直接看到圖片。</div>'+
+      '<div id="qyjContentImagePreview" class="qyj-content-image-preview"></div>';
+    wide.insertAdjacentElement('afterend',wrap);
+    document.getElementById('qyjContentImageUrls').addEventListener('input',renderPreview);
+  }
+  function renderPreview(){
+    ensureMediaFields();
+    const box=document.getElementById('qyjContentImagePreview');
+    const ta=document.getElementById('qyjContentImageUrls');
+    if(!box||!ta) return;
+    const urls=parseList(ta.value);
+    box.innerHTML=urls.map((u,i)=>'<div class="qyj-preview-item"><img src="'+esc(imageUrl(u))+'" alt="SOP 圖片" onerror="this.style.opacity=.25"><button type="button" onclick="qyjRemoveContentImage('+i+')">×</button></div>').join('');
+  }
+  window.qyjRemoveContentImage=function(i){
+    const ta=document.getElementById('qyjContentImageUrls'); if(!ta) return;
+    const arr=parseList(ta.value); arr.splice(i,1); ta.value=arr.join('\n'); renderPreview();
+  };
+  function fillImagesFromSelected(){
+    ensureMediaFields();
+    if(currentMode()!=='sop'){
+      const w=document.getElementById('qyjContentMediaWrap'); if(w) w.style.display='none';
+      return;
     }
-    return localStorage.getItem('qyj_line_user_id')||'';
-}
-
-window.msShowLineBinding=async function(){
-    setTitle('LINE 綁定與提醒');
-    const box=getBox();
-    if(!box) return;
-    const s=currentStaff()||{};
-    const phone=staffPhone(s);
-    const lineUserId=getLineUserId();
-    const localState=localStorage.getItem('qyj_line_binding_status')||'';
-
-    box.innerHTML=
-        '<div class="ms-card">'+
-            '<div style="font-weight:900;font-size:18px;">LINE 綁定與打卡提醒</div>'+
-            '<div style="color:#64748b;font-size:13px;margin-top:6px;line-height:1.7;">'+
-                '使用手機號碼對應員工資料，綁定後可提供班前與打卡提醒。'+
-            '</div>'+
-            '<div class="ms-row"><span>員工</span><span>'+esc(staffName(s)||'-')+'</span></div>'+
-            '<div class="ms-row"><span>手機</span><span>'+esc(phone||'-')+'</span></div>'+
-            '<div class="ms-row"><span>LINE 身分</span><span>'+(lineUserId?'已取得':'尚未取得')+'</span></div>'+
-            '<div class="ms-row"><span>本機狀態</span><span>'+esc(localState||'尚未確認')+'</span></div>'+
-            (!lineUserId
-                ? statusHtml('目前沒有取得 LINE User ID。請從官方 LINE 的「綁定／更多功能」入口開啟此頁，讓 LINE 入口帶入使用者識別。','warn')
-                : '')+
-            '<button class="ms-api-btn primary" onclick="qyjBindLine()" '+(!lineUserId?'disabled style="opacity:.5"':'')+'>綁定目前 LINE</button>'+
-            '<button class="ms-api-btn danger" onclick="qyjUnbindLine()">解除 LINE 綁定</button>'+
-            '<button class="ms-api-btn secondary" onclick="qyjSyncReminderData()">同步最新班表／提醒資料</button>'+
-            '<div id="msLineApiStatus"></div>'+
-        '</div>';
-};
-
-window.qyjBindLine=async function(){
-    const s=currentStaff()||{};
-    const phone=staffPhone(s);
-    const uid=getLineUserId();
-    const target=document.getElementById('msLineApiStatus');
-    if(!phone) return alert('員工資料沒有手機號碼，請先到人事資料表確認');
-    if(!uid) return alert('目前沒有取得 LINE User ID，請從官方 LINE 的綁定入口開啟');
-
+    const w=document.getElementById('qyjContentMediaWrap'); if(w) w.style.display='block';
+    const title=currentTitle();
+    let item=null;
     try{
-        const r=await api({
-            action:'line_bind',
-            phone:phone,
-            staffName:staffName(s),
-            lineUserId:uid
-        });
-        localStorage.setItem('qyj_line_binding_status','已綁定');
-        if(target) target.innerHTML=statusHtml(r.message||'LINE 綁定完成','ok');
-    }catch(err){
-        if(target) target.innerHTML=statusHtml('綁定失敗：'+err.message,'err');
-    }
-};
-
-window.qyjUnbindLine=async function(){
-    const s=currentStaff()||{};
-    const target=document.getElementById('msLineApiStatus');
-    try{
-        const r=await api({
-            action:'line_unbind',
-            phone:staffPhone(s),
-            lineUserId:getLineUserId()
-        });
-        localStorage.setItem('qyj_line_binding_status','已解除');
-        if(target) target.innerHTML=statusHtml(r.message||'LINE 綁定已停用','ok');
-    }catch(err){
-        if(target) target.innerHTML=statusHtml('解除失敗：'+err.message,'err');
-    }
-};
-
-window.qyjSyncReminderData=async function(){
-    const target=document.getElementById('msLineApiStatus');
-    try{
-        const allStaff=[]
-            .concat(Array.isArray(window.staffData)?window.staffData:[])
-            .concat(Array.isArray(window.ftStaffData)?window.ftStaffData:[]);
-        const r=await api({
-            action:'reminder_sync',
-            staffRows:allStaff,
-            scheduleRows:Array.isArray(window.scheduleData)?window.scheduleData:[],
-            clockRows:Array.isArray(window.staffClockData)?window.staffClockData:[],
-            punchRows:Array.isArray(window.attendData)?window.attendData:[]
-        });
-        if(target) target.innerHTML=statusHtml(
-            (r.message||'提醒資料已同步')+
-            (r.data?'｜員工 '+(r.data.staffCount||0)+'｜班表 '+(r.data.scheduleCount||0):''),
-            'ok'
-        );
-    }catch(err){
-        if(target) target.innerHTML=statusHtml('提醒資料同步失敗：'+err.message,'err');
-    }
-};
-
-window.msShowMore=function(){
-    setTitle('更多功能');
-    const box=getBox();
-    if(!box) return;
-    box.innerHTML=
-        '<div class="ms-card">'+
-            '<div class="ms-list" onclick="msGo(\'personnel\')"><div><div class="ms-lt">人事資料表 <span class="ms-more-api-badge">已接 API</span></div><div class="ms-ls">查看資料、修改送審、審核歷程</div></div><span>›</span></div>'+
-            '<div class="ms-list" onclick="msGo(\'sop\')"><div><div class="ms-lt">入職包 SOP <span class="ms-more-api-badge">已接 API</span></div><div class="ms-ls">查看公司已發佈 SOP 與附件</div></div><span>›</span></div>'+
-            '<div class="ms-list" onclick="msGo(\'line\')"><div><div class="ms-lt">LINE 綁定與提醒 <span class="ms-more-api-badge">已接 API</span></div><div class="ms-ls">手機號碼綁定、解除綁定、提醒同步</div></div><span>›</span></div>'+
-            '<div class="ms-list" onclick="msGo(\'profile\')"><div><div class="ms-lt">員工資訊</div><div class="ms-ls">查看登入與基本資料</div></div><span>›</span></div>'+
-            '<div class="ms-list" onclick="msGo(\'notice\')"><div><div class="ms-lt">公告欄</div><div class="ms-ls">公司最新公告</div></div><span>›</span></div>'+
-            '<div class="ms-logout" onclick="msLogout()">登出</div>'+
-        '</div>';
-};
-
-/* 首頁補回「人事資料表」入口，不破壞既有首頁與其他功能 */
-const previousHome=window.msShowHome;
-window.msShowHome=function(){
-    if(typeof previousHome==='function') previousHome.apply(this,arguments);
-    try{
-        const grid=document.querySelector('#msContent .ms-grid');
-        if(grid && !grid.querySelector('[data-qyj-personnel-card]')){
-            const btn=document.createElement('button');
-            btn.className='ms-grid-btn';
-            btn.setAttribute('data-qyj-personnel-card','1');
-            btn.setAttribute('onclick',"msGo('personnel')");
-            btn.innerHTML='<div class="ms-icon">🗂️</div><div class="ms-grid-title">人事資料表</div><div class="ms-grid-sub">資料修改送審</div>';
-            const sopBtn=Array.from(grid.querySelectorAll('button')).find(function(x){
-                return String(x.textContent||'').includes('入職包');
-            });
-            if(sopBtn) grid.insertBefore(btn,sopBtn);
-            else grid.appendChild(btn);
-        }
+      const c=localConf(); const list=Array.isArray(c.sopItems)?c.sopItems:[];
+      item=list.find(x=>String(x.title||'').trim()===title)||null;
     }catch(e){}
-};
-
-/*
- * 最終路由：只攔截新增的 API 頁面。
- * 既有打卡、出勤、班表、請假、薪資、公告等全部走原流程。
- */
-const previousGo=window.msGo;
-window.msGo=function(route){
-    const target=route||'home';
-
+    const urls=item?parseList(item.images||item.imageUrls||item.image||[]):[];
+    const ta=document.getElementById('qyjContentImageUrls'); if(ta) ta.value=urls.join('\n');
+    const fi=document.getElementById('qyjContentImageFiles'); if(fi) fi.value='';
+    renderPreview();
+  }
+  async function apiConfig(){
+    try{const r=await fetch('./config.json?media='+Date.now(),{cache:'no-store'});if(r.ok){const c=await r.json();return {url:c.apiUrl||c.staffApiUrl||API_FALLBACK,token:c.token||c.apiToken||''};}}catch(e){}
+    return {url:API_FALLBACK,token:''};
+  }
+  function fileToData(file){return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(String(fr.result||''));fr.onerror=()=>reject(fr.error||new Error('檔案讀取失敗'));fr.readAsDataURL(file);});}
+  function qyjFindUploadValue(obj, keys, depth=0){
+    if(!obj || depth>6) return '';
+    if(typeof obj==='string'){
+      const t=obj.trim();
+      if(/^https?:\/\//i.test(t)) return t;
+      return '';
+    }
+    if(Array.isArray(obj)){
+      for(const v of obj){ const found=qyjFindUploadValue(v,keys,depth+1); if(found) return found; }
+      return '';
+    }
+    if(typeof obj!=='object') return '';
+    for(const k of keys){
+      if(obj[k]!==undefined && obj[k]!==null && String(obj[k]).trim()!=='') return String(obj[k]).trim();
+    }
+    for(const v of Object.values(obj)){
+      const found=qyjFindUploadValue(v,keys,depth+1); if(found) return found;
+    }
+    return '';
+  }
+  function qyjResolveUploadUrl(payload){
+    let url=qyjFindUploadValue(payload,['url','fileUrl','downloadUrl','webContentLink','webViewLink','directUrl','link','imageUrl','publicUrl','viewUrl']);
+    if(url) return url;
+    const id=qyjFindUploadValue(payload,['fileId','id','driveFileId','file_id']);
+    if(id && !/^https?:\/\//i.test(id)) return 'https://drive.google.com/uc?export=view&id='+encodeURIComponent(id);
+    return '';
+  }
+  async function uploadImage(file){
+    const cfg=await apiConfig();
+    const dataUrl=await fileToData(file); const base64=(dataUrl.split(',')[1]||'');
+    const body={action:'sop_upload',token:cfg.token||'',kind:'image',fileName:file.name,filename:file.name,name:file.name,mimeType:file.type||'image/jpeg',mime:file.type||'image/jpeg',dataUrl,base64,data:base64};
+    const r=await fetch(cfg.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});
+    const tx=await r.text(); let d={}; try{d=JSON.parse(tx);}catch(e){throw new Error(tx||'圖片上傳失敗');}
+    if(!r.ok || d.success===false || d.ok===false || String(d.status||'').toLowerCase()==='error') throw new Error(d.message||d.error||'圖片上傳失敗');
+    const url=qyjResolveUploadUrl(d);
+    if(!url){
+      console.warn('SOP 圖片上傳成功但無法解析網址，後端回傳：',d);
+      throw new Error('圖片已上傳，但後端未回傳可用網址或檔案ID');
+    }
+    return url;
+  }
+  async function syncPortal(){
     try{
-        localStorage.setItem('qyj_mobile_staff_route',target);
+      if(typeof window.pushCloudData==='function') return await window.pushCloudData(false);
+      if(typeof pushCloudData==='function') return await pushCloudData(false);
+      if(typeof window.saveAllSilently==='function') return await window.saveAllSilently();
+      if(typeof saveAllSilently==='function') return await saveAllSilently();
+    }catch(e){throw e;}
+  }
+
+  const oldOpen=window.openQyjContentAdmin;
+  window.openQyjContentAdmin=function(mode){const r=typeof oldOpen==='function'?oldOpen.apply(this,arguments):undefined;setTimeout(()=>{ensureMediaFields();fillImagesFromSelected();},0);return r;};
+  const oldSwitch=window.switchQyjContentMode;
+  window.switchQyjContentMode=function(mode){const r=typeof oldSwitch==='function'?oldSwitch.apply(this,arguments):undefined;setTimeout(()=>{ensureMediaFields();fillImagesFromSelected();},0);return r;};
+  const oldNew=window.newQyjContentItem;
+  window.newQyjContentItem=function(){const r=typeof oldNew==='function'?oldNew.apply(this,arguments):undefined;setTimeout(()=>{ensureMediaFields();const ta=document.getElementById('qyjContentImageUrls');if(ta)ta.value='';const f=document.getElementById('qyjContentImageFiles');if(f)f.value='';renderPreview();},0);return r;};
+  const oldEdit=window.editQyjContentItem;
+  window.editQyjContentItem=function(index){const r=typeof oldEdit==='function'?oldEdit.apply(this,arguments):undefined;setTimeout(()=>{ensureMediaFields();fillImagesFromSelected();},0);return r;};
+
+  const oldSave=window.saveQyjContentItem;
+  window.saveQyjContentItem=async function(){
+    ensureMediaFields();
+    if(currentMode()!=='sop') return typeof oldSave==='function'?oldSave.apply(this,arguments):undefined;
+    const title=currentTitle(); if(!title){if(typeof showToast==='function')showToast('請輸入標題',true);return;}
+    const ta=document.getElementById('qyjContentImageUrls');
+    let urls=parseList(ta?.value||'');
+    const files=Array.from(document.getElementById('qyjContentImageFiles')?.files||[]);
+    const btn=document.querySelector('.qyj-content-save'); const oldText=btn?.textContent||'儲存並同步';
+    try{
+      if(btn){btn.disabled=true;btn.textContent=files.length?'上傳圖片中…':'同步中…';}
+      for(const f of files){const u=await uploadImage(f); if(u) urls.push(u);}
+      urls=[...new Set(urls.filter(Boolean))];
+      if(ta){ta.value=urls.join('\n');renderPreview();}
+      if(typeof oldSave==='function') await oldSave.apply(this,arguments);
+      let conf=localConf();
+      if(!Array.isArray(conf.sopItems)) conf.sopItems=[];
+      let idx=conf.sopItems.findIndex(x=>String(x.title||'').trim()===title);
+      if(idx<0){conf.sopItems.push({title});idx=conf.sopItems.length-1;}
+      conf.sopItems[idx].images=urls;
+      conf.sopItems[idx].imageUrls=urls;
+      try{window.portalConf=Object.assign({},window.portalConf||{},conf);}catch(e){}
+      try{portalConf=Object.assign({},portalConf||{},conf);}catch(e){}
+      localStorage.setItem('portalConf',JSON.stringify(conf));
+      await syncPortal();
+      if(typeof showToast==='function') showToast('✅ 文字與圖片已儲存並同步');
+      const fi=document.getElementById('qyjContentImageFiles'); if(fi)fi.value='';
+    }catch(e){console.error('SOP 圖片儲存失敗',e);if(typeof showToast==='function')showToast('❌ 圖片儲存失敗：'+(e.message||e),true);else alert('圖片儲存失敗：'+(e.message||e));}
+    finally{if(btn){btn.disabled=false;btn.textContent=oldText;}}
+  };
+
+  function staffType(){
+    let s={},name='';
+    try{s=typeof window.msGetCurrentStaff==='function'?(window.msGetCurrentStaff()||{}):{};}catch(e){}
+    try{name=typeof window.msStaffName==='function'?(window.msStaffName(s)||''):'';}catch(e){}
+    name=name||s.name||s.staff||s.realName||'';
+    try{return (window.ftStaffData||ftStaffData||[]).some(x=>String(x.name||x.staff||'').trim()===String(name).trim())?'正職':'派遣';}catch(e){return '派遣';}
+  }
+  function allowed(item,type){if(item.active===false)return false;if(item.audience==='fulltime'&&type!=='正職')return false;if(item.audience==='dispatch'&&type!=='派遣')return false;return true;}
+  window.msShowSop=function(){
+    try{if(typeof window.msSetTitle==='function')window.msSetTitle('入職包 SOP');}catch(e){}
+    const box=document.getElementById('msContent'); if(!box)return;
+    const conf=localConf(); const type=staffType();
+    const items=(Array.isArray(conf.sopItems)?conf.sopItems:[]).filter(x=>allowed(x,type)).sort((a,b)=>Number(a.order||0)-Number(b.order||0));
+    if(!items.length){box.innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有 SOP 內容</div></div>';return;}
+    box.innerHTML=items.map((item,i)=>{
+      const imgs=parseList(item.images||item.imageUrls||item.image||[]);
+      const imageHtml=imgs.length?'<div class="ms-sop-image-grid">'+imgs.map(u=>'<img src="'+esc(imageUrl(u))+'" alt="'+esc(item.title||'SOP 圖片')+'" loading="lazy">').join('')+'</div>':'';
+      const textHtml=item.content?'<div class="ms-sop-text">'+esc(item.content).replace(/\n/g,'<br>')+'</div>':'';
+      return '<div class="ms-content-card open" id="qyjMobileContentCard_'+i+'"><button type="button"><div class="ms-content-card-title">'+esc(item.title||'')+'</div><div class="ms-content-card-desc">'+esc(item.summary||'')+'</div></button><div class="ms-content-card-body" style="display:block">'+textHtml+imageHtml+'</div></div>';
+    }).join('');
+  };
+
+  function boot(){ensureMediaFields();if(document.getElementById('qyjContentAdminModal')?.style.display==='block')fillImagesFromSelected();}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,300));else setTimeout(boot,300);
+})();
+</script>
+
+
+<script id="qyj-final-profile-personnel-override">
+(function(){
+  function qEsc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function qVal(obj, keys, fallback){
+    obj = obj || {};
+    for(const k of keys){
+      if(obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== ''){
+        return obj[k];
+      }
+    }
+    return fallback == null ? '' : fallback;
+  }
+
+  function qStaff(){
+    try{
+      if(typeof currentStaff === 'function'){
+        return currentStaff() || {};
+      }
     }catch(e){}
+    try{
+      const raw =
+        localStorage.getItem('qyj_staff_current') ||
+        localStorage.getItem('qyj_staff_login') ||
+        localStorage.getItem('currentStaff') ||
+        '{}';
+      return JSON.parse(raw) || {};
+    }catch(e){
+      return {};
+    }
+  }
 
-    if(target==='personnel'){
-        if(!currentStaff() && typeof window.msShowLogin==='function'){
-            return window.msShowLogin('personnel');
+  function qName(s){
+    try{
+      if(typeof staffName === 'function') return staffName(s);
+    }catch(e){}
+    return qVal(s,['name','staffName','realName','employeeName'],'');
+  }
+
+  function qCode(s){
+    try{
+      if(typeof staffCode === 'function') return staffCode(s);
+    }catch(e){}
+    return qVal(s,['code','staffId','employeeId','id'],'');
+  }
+
+  function qRow(label,value){
+    return `<div class="ms-row"><span>${qEsc(label)}</span><span>${qEsc(value || '-')}</span></div>`;
+  }
+
+  function qBox(){
+    try{
+      if(typeof contentBox === 'function') return contentBox();
+    }catch(e){}
+    return document.querySelector('#msContent,.ms-content,[data-ms-content]');
+  }
+
+  function qTitle(title){
+    try{
+      if(typeof setTitle === 'function'){
+        setTitle(title);
+        return;
+      }
+    }catch(e){}
+    const el=document.querySelector('#msTitle,.ms-title,[data-ms-title]');
+    if(el) el.textContent=title;
+  }
+
+  // ===== 員工資訊：最終強制覆蓋 =====
+  window.msShowProfile = function(){
+    const s=qStaff();
+    const name=qName(s);
+    const code=qCode(s);
+    const phone=qVal(s,['phone','mobile','tel'],'-');
+    const position=qVal(s,['position','role','type','jobTitle','identity'],'');
+    const status=qVal(s,['status','employmentStatus'],'');
+    const hire=qVal(s,['hireDate','startDate','hire_date','onboardDate'],'');
+    const unit=qVal(s,['unit','dispatch','dispType','department','dept','company'],'');
+    const box=qBox();
+    if(!box) return;
+
+    qTitle('員工資訊');
+
+    box.innerHTML=`
+      <div class="ms-card" style="text-align:center">
+        <div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${qEsc(name).slice(0,1)}</div>
+
+        ${qRow('員工姓名',name)}
+        ${qRow('員工編號',code)}
+        ${qRow('手機',phone)}
+        ${qRow('職別／身分',position || '-')}
+        ${qRow('在職狀態',status || '-')}
+        ${hire ? qRow('到職日',hire) : ''}
+        ${unit ? qRow('派遣類型／所屬單位',unit) : ''}
+
+        <button
+          class="ms-primary"
+          style="width:100%;margin-top:16px"
+          onclick="window.open('https://relax93366453-svg.github.io/doclick.tw/','_blank')"
+        >查看完整員工資料</button>
+      </div>
+
+      <div class="ms-card">
+        <div style="font-weight:900;font-size:18px;margin-bottom:6px">登入方式</div>
+        <div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div>
+        <div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div>
+        <div class="ms-logout" onclick="typeof msLogout==='function' && msLogout()">登出</div>
+      </div>`;
+  };
+
+  // ===== 人事資料表：固定入口一定顯示 =====
+  const oldPersonnel = window.msShowPersonnel;
+
+  window.msShowPersonnel = async function(){
+    const s=qStaff();
+    const name=qName(s);
+    const code=qCode(s);
+    const phone=qVal(s,['phone','mobile','tel'],'');
+    const box=qBox();
+    if(!box) return;
+
+    qTitle('人事資料表');
+
+    box.innerHTML=`
+      <div class="ms-card">
+        <div style="font-size:20px;font-weight:900;margin-bottom:14px">人事資料表</div>
+
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px;margin-bottom:12px">
+          <div style="font-weight:900;font-size:17px;margin-bottom:6px">💻 線上直接填寫</div>
+          <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:10px">請點擊下方連結前往線上履歷表</div>
+          <a href="https://doclick-letgo.vercel.app/DOCLICK"
+             target="_blank"
+             rel="noopener"
+             class="ms-primary"
+             style="display:block;text-align:center;text-decoration:none">
+            前往線上履歷表
+          </a>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:900;font-size:17px;margin-bottom:6px">📥 雲端檔案下載</div>
+          <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:10px">如需下載實體人事資料表留存，請點擊下方連結下載</div>
+          <a href="https://drive.google.com/file/d/1Ezge0bpEUV3whaMrNIBEDsnSqGepCQhk/view?usp=sharing"
+             target="_blank"
+             rel="noopener"
+             class="ms-secondary"
+             style="display:block;text-align:center;text-decoration:none">
+            下載人事資料表
+          </a>
+        </div>
+      </div>
+
+      <div class="ms-card">
+        <div style="font-size:18px;font-weight:900;margin-bottom:12px">目前員工資料</div>
+        ${qRow('姓名',name)}
+        ${qRow('員工編號',code)}
+        ${qRow('手機',phone)}
+        <div id="qyjPersonnelRemoteArea"></div>
+      </div>`;
+
+    // 若原 API 可用，補上既有可編輯資料；失敗也不會把上面兩個入口蓋掉
+    try{
+      if(typeof staffApi === 'function'){
+        const res=await staffApi('personnel_get');
+        let d=res && res.data ? res.data : res;
+        if(d && typeof d === 'object'){
+          const area=document.getElementById('qyjPersonnelRemoteArea');
+          if(area){
+            area.innerHTML=`
+              ${qRow('Email',qVal(d,['email','mail'],''))}
+              ${qRow('聯絡地址',qVal(d,['address','contactAddress'],''))}
+              ${qRow('緊急聯絡人',qVal(d,['emergencyContact','emergencyName'],''))}
+              ${qRow('緊急聯絡電話',qVal(d,['emergencyPhone','emergencyTel'],''))}
+              ${qRow('銀行名稱',qVal(d,['bank','bankName'],''))}
+              ${qRow('分行',qVal(d,['bankBranch','branch'],''))}
+              ${qRow('銀行帳號',qVal(d,['bankAccount','accountNo'],''))}
+            `;
+          }
         }
-        return window.msShowPersonnel();
+      }
+    }catch(e){
+      const area=document.getElementById('qyjPersonnelRemoteArea');
+      if(area){
+        area.innerHTML=`<div style="margin-top:12px;padding:10px;border-radius:10px;background:#fff7ed;color:#b45309;font-size:13px">雲端詳細資料暫時無法讀取，但線上填寫與檔案下載仍可正常使用</div>`;
+      }
     }
+  };
 
-    if(target==='line'){
-        if(!currentStaff() && typeof window.msShowLogin==='function'){
-            return window.msShowLogin('line');
-        }
-        return window.msShowLineBinding();
-    }
-
-    if(target==='sop'){
-        if(!currentStaff() && typeof window.msShowLogin==='function'){
-            return window.msShowLogin('sop');
-        }
-        return window.msShowSop();
-    }
-
-    if(target==='more'){
-        if(!currentStaff() && typeof window.msShowLogin==='function'){
-            return window.msShowLogin('more');
-        }
-        return window.msShowMore();
-    }
-
-    if(typeof previousGo==='function'){
-        return previousGo.apply(this,arguments);
-    }
-};
-
-console.log('Staff App 人事／SOP／LINE API 完整整合版已載入');
+  window.__QYJ_PROFILE_OVERRIDE_VERSION__='2026-11-04-v3';
 })();
 </script>
 
