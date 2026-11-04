@@ -31808,7 +31808,7 @@ window.msShowPersonnel = async function(){
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px;margin-bottom:12px">
         <div style="font-weight:900;font-size:16px;margin-bottom:6px">💻 線上直接填寫</div>
         <div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:10px">請點擊下方按鈕前往線上履歷表</div>
-        <a href="https://doclick-letgo.vercel.app/DOCLICK" target="_blank" rel="noopener" class="ms-primary" style="display:block;text-align:center;text-decoration:none">前往線上履歷表</a>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc1stAINyWDVav4OrfWCoGzRHgL60_4bkOb5-_wJB_4nd0W1A/viewform?usp=header" target="_blank" rel="noopener" class="ms-primary" style="display:block;text-align:center;text-decoration:none">前往線上履歷表</a>
       </div>
 
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px">
@@ -31841,7 +31841,7 @@ window.msShowPersonnel = async function(){
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px;margin-bottom:12px">
         <div style="font-weight:900;font-size:16px;margin-bottom:6px">💻 線上直接填寫</div>
         <div style="font-size:13px;color:#64748b;line-height:1.6;margin-bottom:10px">請點擊下方按鈕前往線上履歷表</div>
-        <a href="https://doclick-letgo.vercel.app/DOCLICK" target="_blank" rel="noopener" class="ms-primary" style="display:block;text-align:center;text-decoration:none">前往線上履歷表</a>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc1stAINyWDVav4OrfWCoGzRHgL60_4bkOb5-_wJB_4nd0W1A/viewform?usp=header" target="_blank" rel="noopener" class="ms-primary" style="display:block;text-align:center;text-decoration:none">前往線上履歷表</a>
       </div>
 
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:14px">
@@ -32526,7 +32526,7 @@ window.msGo = function(route){
         <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px;margin-bottom:12px">
           <div style="font-weight:900;font-size:17px;margin-bottom:6px">💻 線上直接填寫</div>
           <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:10px">請點擊下方連結前往線上履歷表</div>
-          <a href="https://doclick-letgo.vercel.app/DOCLICK"
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSc1stAINyWDVav4OrfWCoGzRHgL60_4bkOb5-_wJB_4nd0W1A/viewform?usp=header"
              target="_blank"
              rel="noopener"
              class="ms-primary"
@@ -32585,6 +32585,1132 @@ window.msGo = function(route){
   };
 
   window.__QYJ_PROFILE_OVERRIDE_VERSION__='2026-11-04-v3';
+})();
+</script>
+
+
+<script id="qyj-final-mobile-fix-v4">
+(function(){
+  'use strict';
+
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function val(obj, keys, fallback){
+    obj=obj||{};
+    for(const k of keys){
+      const v=obj[k];
+      if(v!==undefined && v!==null && String(v).trim()!==''){
+        return v;
+      }
+    }
+    return fallback==null?'':fallback;
+  }
+
+  function hasStaffData(o){
+    if(!o || typeof o!=='object') return false;
+    return !!(
+      val(o,['name','staff','staffName','realName','employeeName'],'') ||
+      val(o,['phone','mobile','tel','account','code','staffId','employeeId'],'')
+    );
+  }
+
+  function parseObj(raw){
+    try{
+      const o=JSON.parse(raw||'null');
+      return o && typeof o==='object' ? o : null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function getStaff(){
+    // 1. 正式登入快取：目前系統實際使用這個
+    const keys=[
+      'qyj_mobile_staff_login',
+      'qyj_staff_login',
+      'qyj_staff_current',
+      'currentStaff'
+    ];
+
+    for(const k of keys){
+      const o=parseObj(localStorage.getItem(k));
+      if(hasStaffData(o)) return o;
+    }
+
+    // 2. 系統函式
+    try{
+      if(typeof window.getCurrentStaffExact==='function'){
+        const o=window.getCurrentStaffExact();
+        if(hasStaffData(o)) return o;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.msGetCurrentStaff==='function'){
+        const o=window.msGetCurrentStaff();
+        if(hasStaffData(o)) return o;
+      }
+    }catch(e){}
+
+    // 3. 目前登入全域物件
+    try{
+      if(typeof window.currentLoginStaff==='object' && hasStaffData(window.currentLoginStaff)){
+        return window.currentLoginStaff;
+      }
+    }catch(e){}
+
+    return {};
+  }
+
+  function nameOf(s){
+    return val(s,['name','staff','staffName','realName','employeeName'],'-');
+  }
+
+  function codeOf(s){
+    return val(s,['code','staffId','employeeId','id'],'-');
+  }
+
+  function row(label,value){
+    return `<div class="ms-row"><span>${esc(label)}</span><span>${esc(value || '-')}</span></div>`;
+  }
+
+  function box(){
+    return document.getElementById('msContent') ||
+      document.querySelector('.ms-content,[data-ms-content]');
+  }
+
+  function title(t){
+    try{
+      if(typeof window.msSetTitle==='function'){
+        window.msSetTitle(t);
+        return;
+      }
+    }catch(e){}
+    const el=document.querySelector('#msTitle,.ms-title,[data-ms-title]');
+    if(el) el.textContent=t;
+  }
+
+  // ===== 員工資訊 =====
+  window.msShowProfile=function(){
+    const s=getStaff();
+    const b=box();
+    if(!b) return;
+
+    title('員工資訊');
+
+    const name=nameOf(s);
+    const code=codeOf(s);
+    const phone=val(s,['phone','mobile','tel','account'],'-');
+    const position=val(s,['position','role','jobTitle','identity','staffType','type'],'-');
+    const status=val(s,['status','employmentStatus'],'-');
+    const hire=val(s,['hireDate','startDate','hire_date','onboardDate'],'');
+    const unit=val(s,['unit','dispatch','dispType','department','dept','company'],'');
+    const avatar=(name && name!=='-') ? String(name).slice(0,1) : '';
+
+    b.innerHTML=`
+      <div class="ms-card" style="text-align:center">
+        <div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${esc(avatar)}</div>
+        ${row('員工姓名',name)}
+        ${row('員工編號',code)}
+        ${row('手機',phone)}
+        ${row('職別／身分',position)}
+        ${row('在職狀態',status)}
+        ${hire ? row('到職日',hire) : ''}
+        ${unit ? row('派遣類型／所屬單位',unit) : ''}
+
+        <a href="https://relax93366453-svg.github.io/doclick.tw/"
+           target="_blank"
+           rel="noopener"
+           style="display:block;width:100%;box-sizing:border-box;margin-top:16px;
+                  padding:14px 16px;border-radius:14px;text-decoration:none;
+                  color:#fff;font-weight:900;font-size:16px;
+                  background:linear-gradient(90deg,#00c853,#2f80ed)">
+          查看完整員工資料
+        </a>
+      </div>
+
+      <div class="ms-card">
+        <div style="font-weight:900;font-size:18px;margin-bottom:6px">登入方式</div>
+        <div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div>
+        <div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div>
+        <div class="ms-logout" onclick="typeof msLogout==='function' && msLogout()">登出</div>
+      </div>`;
+  };
+
+  // ===== 人事資料表 =====
+  window.msShowPersonnel=async function(){
+    const s=getStaff();
+    const b=box();
+    if(!b) return;
+
+    title('人事資料表');
+
+    b.innerHTML=`
+      <div class="ms-card">
+        <div style="font-size:20px;font-weight:900;margin-bottom:16px">人事資料表</div>
+
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:900;font-size:17px;margin-bottom:6px">💻 線上直接填寫</div>
+          <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:12px">請點擊下方連結前往線上履歷表</div>
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSc1stAINyWDVav4OrfWCoGzRHgL60_4bkOb5-_wJB_4nd0W1A/viewform?usp=header"
+             target="_blank" rel="noopener"
+             style="display:block;text-align:center;text-decoration:none;
+                    padding:14px;border-radius:14px;color:#fff;font-weight:900;
+                    background:linear-gradient(90deg,#00c853,#2f80ed)">
+            前往線上履歷表
+          </a>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #dbe4ef;border-radius:14px;padding:14px">
+          <div style="font-weight:900;font-size:17px;margin-bottom:6px">📥 雲端檔案下載</div>
+          <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:12px">如需下載實體人事資料表留存，請點擊下方連結下載</div>
+          <a href="https://drive.google.com/file/d/1Ezge0bpEUV3whaMrNIBEDsnSqGepCQhk/view?usp=sharing"
+             target="_blank" rel="noopener"
+             style="display:block;text-align:center;text-decoration:none;
+                    padding:14px;border-radius:14px;color:#1d4ed8;font-weight:900;
+                    background:#eaf2ff;border:1px solid #bfdbfe">
+            下載人事資料表
+          </a>
+        </div>
+      </div>
+
+      <div class="ms-card">
+        <div style="font-size:18px;font-weight:900;margin-bottom:12px">目前員工資料</div>
+        ${row('姓名',nameOf(s))}
+        ${row('員工編號',codeOf(s))}
+        ${row('手機',val(s,['phone','mobile','tel','account'],'-'))}
+        <div id="qyjPersonnelExtra"></div>
+      </div>`;
+
+    try{
+      if(typeof window.staffApi==='function'){
+        const r=await window.staffApi('personnel_get');
+        const d=(r && r.data && typeof r.data==='object') ? r.data : {};
+        const area=document.getElementById('qyjPersonnelExtra');
+        if(area && Object.keys(d).length){
+          area.innerHTML=
+            row('Email',val(d,['email','mail'],'-'))+
+            row('聯絡地址',val(d,['address','contactAddress'],'-'))+
+            row('緊急聯絡人',val(d,['emergencyContact','emergencyName'],'-'))+
+            row('緊急聯絡電話',val(d,['emergencyPhone','emergencyTel'],'-'))+
+            row('銀行名稱',val(d,['bank','bankName'],'-'))+
+            row('分行',val(d,['bankBranch','branch'],'-'))+
+            row('銀行帳號',val(d,['bankAccount','accountNo'],'-'));
+        }
+      }
+    }catch(e){
+      const area=document.getElementById('qyjPersonnelExtra');
+      if(area){
+        area.innerHTML=`<div style="margin-top:12px;padding:10px;border-radius:10px;background:#fff7ed;color:#b45309;font-size:13px">雲端詳細資料暫時無法讀取，但線上填寫與檔案下載仍可使用</div>`;
+      }
+    }
+  };
+
+  // ===== SOP HTML 解碼 =====
+  function decodeEntities(str){
+    const ta=document.createElement('textarea');
+    ta.innerHTML=String(str==null?'':str);
+    return ta.value;
+  }
+
+  function normalizeSopHtml(raw){
+    let text=decodeEntities(raw);
+
+    // 有些舊資料被重複 encode，再解一次
+    if(/&lt;\/?(?:br|li|ul|ol|p|div|strong|b)\b/i.test(text)){
+      text=decodeEntities(text);
+    }
+
+    // 移除 Markdown code fence / 單獨反引號殘留
+    text=text
+      .replace(/```(?:html)?/gi,'')
+      .replace(/```/g,'')
+      .replace(/(^|\s)`(?=\s|$)/g,'$1');
+
+    // 如果仍是純文字，把換行轉 br
+    if(!/<(?:br|p|div|ul|ol|li|strong|b|h[1-6])\b/i.test(text)){
+      return esc(text).replace(/\n/g,'<br>');
+    }
+
+    return text;
+  }
+
+  function parseList(v){
+    if(Array.isArray(v)) return v;
+    if(!v) return [];
+    if(typeof v==='object') return [v];
+    try{
+      const p=JSON.parse(v);
+      return Array.isArray(p)?p:[p];
+    }catch(e){
+      return String(v).split(/\n|,/).map(x=>x.trim()).filter(Boolean);
+    }
+  }
+
+  function linkOf(x){
+    if(typeof x==='string') return x;
+    return x && (x.url||x.fileUrl||x.imageUrl||x.publicUrl||x.driveUrl||x.href)||'';
+  }
+
+  function fileNameOf(x, fallback){
+    if(typeof x==='string') return fallback;
+    return x && (x.fileName||x.name||x.title)||fallback;
+  }
+
+  function sopPublished(x){
+    if(!x) return false;
+    const status=String(x.status||'').toLowerCase();
+    if(status==='draft') return false;
+    if(status==='published') return true;
+    if(x.published===true || String(x.published).toLowerCase()==='true' || String(x.published)==='1') return true;
+    if(x.publish===true || String(x.publish).toLowerCase()==='true' || String(x.publish)==='1') return true;
+    return false;
+  }
+
+  function renderSop(x){
+    const category=val(x,['category','type'],'其他');
+    const titleText=val(x,['title','name'],'未命名 SOP');
+    const summary=val(x,['summary','excerpt','shortDescription'],'');
+    const important=val(x,['importantNote','important','warning','note'],'');
+    const date=val(x,['publishDate','publishedAt','publishedDate','date','updatedAt'],'');
+    const content=normalizeSopHtml(val(x,['content','html','body','description'],''));
+
+    const images=[
+      ...parseList(x.images),
+      ...parseList(x.image),
+      ...parseList(x.img)
+    ].filter(Boolean);
+
+    const attachments=[
+      ...parseList(x.attachments),
+      ...parseList(x.files),
+      ...parseList(x.pdfs),
+      ...parseList(x.pdf)
+    ].filter(Boolean);
+
+    const imageHtml=images.map((it,i)=>{
+      const u=linkOf(it);
+      return u?`<img src="${esc(u)}" alt="${esc(fileNameOf(it,'SOP 圖片 '+(i+1)))}"
+        style="display:block;width:100%;max-height:560px;object-fit:contain;border-radius:12px;margin-top:12px"
+        loading="lazy">`:'';
+    }).join('');
+
+    const fileHtml=attachments.map((it,i)=>{
+      const u=linkOf(it);
+      if(!u) return '';
+      const nm=fileNameOf(it,'附件 '+(i+1));
+      const isPdf=/\.pdf(?:$|\?)/i.test(u) || /pdf/i.test(nm);
+      return `<a href="${esc(u)}" target="_blank" rel="noopener"
+        style="display:block;text-align:center;text-decoration:none;padding:13px;
+               margin-top:10px;border-radius:12px;background:#eaf2ff;color:#1d4ed8;
+               border:1px solid #bfdbfe;font-weight:800">
+        ${isPdf?'📄':'📎'} ${esc(nm)}
+      </a>`;
+    }).join('');
+
+    return `
+      <div class="ms-card">
+        <div style="font-size:12px;color:#64748b;font-weight:800">${esc(category)}${date?' ｜ '+esc(date):''}</div>
+        <div style="font-size:20px;font-weight:900;margin:6px 0 8px">${esc(titleText)}</div>
+        ${summary?`<div style="color:#64748b;line-height:1.6;margin-bottom:12px">${esc(summary)}</div>`:''}
+        ${important?`<div style="background:#fff7ed;border-left:4px solid #f59e0b;padding:11px;border-radius:8px;margin-bottom:12px"><b>重要提醒：</b>${esc(important)}</div>`:''}
+        <div class="qyj-sop-content" style="line-height:1.85;word-break:break-word">${content}</div>
+        ${imageHtml}
+        ${fileHtml}
+      </div>`;
+  }
+
+  window.msShowSop=async function(){
+    const b=box();
+    if(!b) return;
+
+    title('入職包 SOP');
+    b.innerHTML='<div class="ms-card"><div class="ms-empty">正在讀取最新 SOP…</div></div>';
+
+    try{
+      if(typeof window.staffApi!=='function'){
+        throw new Error('SOP API 尚未載入');
+      }
+
+      const res=await window.staffApi('sop_get',{});
+      let list=[];
+
+      if(Array.isArray(res)) list=res;
+      else if(res && Array.isArray(res.data)) list=res.data;
+      else if(res && res.data && Array.isArray(res.data.items)) list=res.data.items;
+
+      list=list.filter(sopPublished);
+
+      if(!list.length){
+        b.innerHTML='<div class="ms-card"><div class="ms-empty">目前沒有已發布的 SOP</div></div>';
+        return;
+      }
+
+      const cats=[...new Set(list.map(x=>val(x,['category','type'],'其他')))];
+
+      b.innerHTML=`
+        <div class="ms-card">
+          <div style="font-weight:900;margin-bottom:10px">SOP 分類</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${cats.map(c=>`<span style="background:#eff6ff;color:#1d4ed8;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800">${esc(c)}</span>`).join('')}
+          </div>
+        </div>
+        ${list.map(renderSop).join('')}`;
+    }catch(e){
+      b.innerHTML=`<div class="ms-card"><div class="ms-empty" style="color:#b91c1c">SOP 讀取失敗：${esc(e.message||e)}</div></div>`;
+    }
+  };
+
+  window.__QYJ_FINAL_MOBILE_FIX__='2026-11-04-v4';
+})();
+</script>
+
+
+<script id="qyj-final-profile-personnel-fix-v5">
+(function(){
+  'use strict';
+
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function val(obj, keys, fallback){
+    obj=obj||{};
+    for(const k of keys){
+      const v=obj[k];
+      if(v!==undefined && v!==null && String(v).trim()!==''){
+        return v;
+      }
+    }
+    return fallback==null?'':fallback;
+  }
+
+  function parse(raw){
+    try{
+      const o=JSON.parse(raw||'null');
+      return o && typeof o==='object' ? o : null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function unwrap(o){
+    if(!o || typeof o!=='object') return {};
+    const candidates=[
+      o,
+      o.staff,
+      o.data,
+      o.user,
+      o.profile,
+      o.employee,
+      o.currentStaff,
+      o.login
+    ];
+    for(const c of candidates){
+      if(c && typeof c==='object'){
+        const has =
+          val(c,['name','staffName','realName','employeeName','staff'],'') ||
+          val(c,['phone','mobile','tel','account','code','staffId','employeeId'],'');
+        if(has) return c;
+      }
+    }
+    return o;
+  }
+
+  function getStaff(){
+    const keys=[
+      'qyj_mobile_staff_login',
+      'qyj_staff_login',
+      'qyj_staff_current',
+      'currentStaff'
+    ];
+
+    for(const k of keys){
+      const o=unwrap(parse(localStorage.getItem(k)));
+      const has =
+        val(o,['name','staffName','realName','employeeName','staff'],'') ||
+        val(o,['phone','mobile','tel','account','code','staffId','employeeId'],'');
+      if(has) return o;
+    }
+
+    try{
+      if(typeof window.getCurrentStaffExact==='function'){
+        const o=unwrap(window.getCurrentStaffExact());
+        if(Object.keys(o).length) return o;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.msGetCurrentStaff==='function'){
+        const o=unwrap(window.msGetCurrentStaff());
+        if(Object.keys(o).length) return o;
+      }
+    }catch(e){}
+
+    try{
+      if(window.currentLoginStaff && typeof window.currentLoginStaff==='object'){
+        return unwrap(window.currentLoginStaff);
+      }
+    }catch(e){}
+
+    return {};
+  }
+
+  function row(label,value){
+    return `<div class="ms-row"><span>${esc(label)}</span><span>${esc(value || '-')}</span></div>`;
+  }
+
+  function box(){
+    return document.getElementById('msContent') ||
+      document.querySelector('.ms-content,[data-ms-content]');
+  }
+
+  function title(t){
+    try{
+      if(typeof window.msSetTitle==='function'){
+        window.msSetTitle(t);
+        return;
+      }
+    }catch(e){}
+    const el=document.querySelector('#msTitle,.ms-title,[data-ms-title]');
+    if(el) el.textContent=t;
+  }
+
+  window.msShowProfile=function(){
+    const s=getStaff();
+    const b=box();
+    if(!b) return;
+
+    title('員工資訊');
+
+    const name=val(s,['name','staffName','realName','employeeName','staff'],'-');
+    const code=val(s,['code','staffId','employeeId','id'],'-');
+    const phone=val(s,['phone','mobile','tel','account'],'-');
+    const position=val(s,['position','role','jobTitle','identity','staffType','type'],'-');
+    const status=val(s,['status','employmentStatus'],'-');
+    const hire=val(s,['hireDate','startDate','hire_date','onboardDate'],'');
+    const unit=val(s,['unit','dispatch','dispType','department','dept','company'],'');
+    const avatar=name && name!=='-' ? String(name).slice(0,1) : '';
+
+    b.innerHTML=`
+      <div class="ms-card" style="text-align:center">
+        <div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${esc(avatar)}</div>
+        ${row('員工姓名',name)}
+        ${row('員工編號',code)}
+        ${row('手機',phone)}
+        ${row('職別／身分',position)}
+        ${row('在職狀態',status)}
+        ${hire ? row('到職日',hire) : ''}
+        ${unit ? row('派遣類型／所屬單位',unit) : ''}
+
+        <a href="https://relax93366453-svg.github.io/doclick.tw/"
+           target="_blank"
+           rel="noopener"
+           style="display:block;width:100%;box-sizing:border-box;margin-top:16px;
+                  padding:14px 16px;border-radius:14px;text-decoration:none;
+                  color:#fff;font-weight:900;font-size:16px;
+                  background:linear-gradient(90deg,#00c853,#2f80ed)">
+          查看完整員工資料
+        </a>
+      </div>
+
+      <div class="ms-card">
+        <div style="font-weight:900;font-size:18px;margin-bottom:6px">登入方式</div>
+        <div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div>
+        <div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div>
+        <div class="ms-logout" onclick="typeof msLogout==='function' && msLogout()">登出</div>
+      </div>`;
+  };
+
+  window.msShowPersonnel=function(){
+    const b=box();
+    if(!b) return;
+
+    title('人事資料表');
+
+    b.innerHTML=`
+      <div class="ms-card">
+        <div style="font-size:20px;font-weight:900;margin-bottom:16px">人事資料表</div>
+
+        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:14px;margin-bottom:14px">
+          <div style="font-weight:900;font-size:17px;margin-bottom:6px">💻 線上直接填寫</div>
+          <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:12px">請點擊下方連結前往線上履歷表</div>
+          <a href="https://docs.google.com/forms/d/e/1FAIpQLSc1stAINyWDVav4OrfWCoGzRHgL60_4bkOb5-_wJB_4nd0W1A/viewform?usp=header"
+             target="_blank" rel="noopener"
+             style="display:block;text-align:center;text-decoration:none;
+                    padding:14px;border-radius:14px;color:#fff;font-weight:900;
+                    background:linear-gradient(90deg,#00c853,#2f80ed)">
+            前往線上履歷表
+          </a>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #dbe4ef;border-radius:14px;padding:14px">
+          <div style="font-weight:900;font-size:17px;margin-bottom:6px">📥 雲端檔案下載</div>
+          <div style="font-size:14px;color:#64748b;line-height:1.6;margin-bottom:12px">如需下載實體人事資料表留存，請點擊下方連結下載</div>
+          <a href="https://drive.google.com/file/d/1Ezge0bpEUV3whaMrNIBEDsnSqGepCQhk/view?usp=sharing"
+             target="_blank" rel="noopener"
+             style="display:block;text-align:center;text-decoration:none;
+                    padding:14px;border-radius:14px;color:#1d4ed8;font-weight:900;
+                    background:#eaf2ff;border:1px solid #bfdbfe">
+            下載人事資料表
+          </a>
+        </div>
+      </div>`;
+  };
+
+  window.__QYJ_FINAL_PROFILE_PERSONNEL_FIX__='2026-11-04-v5';
+})();
+</script>
+
+
+<script id="qyj-profile-old-style-with-full-link">
+(function(){
+  'use strict';
+
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function val(obj, keys, fallback){
+    obj=obj||{};
+    for(const k of keys){
+      const v=obj[k];
+      if(v!==undefined && v!==null && String(v).trim()!==''){
+        return v;
+      }
+    }
+    return fallback==null?'':fallback;
+  }
+
+  function parse(raw){
+    try{
+      const o=JSON.parse(raw||'null');
+      return o && typeof o==='object' ? o : null;
+    }catch(e){
+      return null;
+    }
+  }
+
+  function unwrap(o){
+    if(!o || typeof o!=='object') return {};
+    for(const c of [o,o.staff,o.data,o.user,o.profile,o.employee,o.currentStaff,o.login]){
+      if(c && typeof c==='object'){
+        const has =
+          val(c,['name','staffName','realName','employeeName','staff'],'') ||
+          val(c,['phone','mobile','tel','account','code','staffId','employeeId'],'');
+        if(has) return c;
+      }
+    }
+    return o;
+  }
+
+  function getStaff(){
+    const keys=['qyj_mobile_staff_login','qyj_staff_login','qyj_staff_current','currentStaff'];
+    for(const k of keys){
+      const o=unwrap(parse(localStorage.getItem(k)));
+      const has =
+        val(o,['name','staffName','realName','employeeName','staff'],'') ||
+        val(o,['phone','mobile','tel','account','code','staffId','employeeId'],'');
+      if(has) return o;
+    }
+
+    try{
+      if(typeof window.getCurrentStaffExact==='function'){
+        const o=unwrap(window.getCurrentStaffExact());
+        if(Object.keys(o).length) return o;
+      }
+    }catch(e){}
+
+    try{
+      if(typeof window.msGetCurrentStaff==='function'){
+        const o=unwrap(window.msGetCurrentStaff());
+        if(Object.keys(o).length) return o;
+      }
+    }catch(e){}
+
+    try{
+      if(window.currentLoginStaff && typeof window.currentLoginStaff==='object'){
+        return unwrap(window.currentLoginStaff);
+      }
+    }catch(e){}
+
+    return {};
+  }
+
+  function row(label,value){
+    return `<div class="ms-row"><span>${esc(label)}</span><span>${esc(value || '-')}</span></div>`;
+  }
+
+  function box(){
+    return document.getElementById('msContent') ||
+      document.querySelector('.ms-content,[data-ms-content]');
+  }
+
+  function title(t){
+    try{
+      if(typeof window.msSetTitle==='function'){
+        window.msSetTitle(t);
+        return;
+      }
+    }catch(e){}
+    const el=document.querySelector('#msTitle,.ms-title,[data-ms-title]');
+    if(el) el.textContent=t;
+  }
+
+  window.msShowProfile=function(){
+    const s=getStaff();
+    const b=box();
+    if(!b) return;
+
+    title('員工資訊');
+
+    const name=val(s,['name','staffName','realName','employeeName','staff'],'-');
+    const code=val(s,['code','staffId','employeeId','id'],'-');
+    const status=val(s,['status','employmentStatus','type'],'-');
+    const phone=val(s,['phone','mobile','tel','account'],'-');
+    const avatar=name && name!=='-' ? String(name).slice(0,1) : '';
+
+    b.innerHTML=`
+      <div class="ms-card" style="text-align:center">
+        <div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">${esc(avatar)}</div>
+
+        ${row('員工姓名',name)}
+        ${row('員工編號',code)}
+        ${row('部門/狀態',status)}
+        ${row('手機',phone)}
+
+        <a href="https://relax93366453-svg.github.io/doclick.tw/"
+           target="_blank"
+           rel="noopener"
+           style="display:block;width:100%;box-sizing:border-box;margin-top:16px;
+                  padding:14px 16px;border-radius:14px;text-decoration:none;
+                  color:#fff;font-weight:900;font-size:16px;
+                  background:linear-gradient(90deg,#00c853,#2f80ed)">
+          查看完整員工資料
+        </a>
+      </div>
+
+      <div class="ms-card">
+        <div style="font-weight:900;font-size:18px;margin-bottom:6px">登入方式</div>
+        <div class="ms-row"><span>本機記住登入</span><span style="color:#059669">已啟用</span></div>
+        <div class="ms-row"><span>LINE 官方帳號</span><span>第二階段綁定</span></div>
+        <div class="ms-logout" onclick="typeof msLogout==='function' && msLogout()">登出</div>
+      </div>`;
+  };
+
+  window.__QYJ_PROFILE_OLD_STYLE_WITH_FULL_LINK__='2026-11-04-v6';
+})();
+</script>
+
+
+<script id="qyj-sop-notice-cloud-final">
+(function(){
+  'use strict';
+
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function val(obj, keys, fallback){
+    obj=obj||{};
+    for(const k of keys){
+      const v=obj[k];
+      if(v!==undefined && v!==null && String(v).trim()!==''){
+        return v;
+      }
+    }
+    return fallback==null?'':fallback;
+  }
+
+  function arr(v){
+    if(Array.isArray(v)) return v;
+    if(!v) return [];
+    if(typeof v==='object') return [v];
+    try{
+      const p=JSON.parse(v);
+      return Array.isArray(p)?p:[p];
+    }catch(e){
+      return String(v)
+        .split(/\n|,/)
+        .map(x=>x.trim())
+        .filter(Boolean);
+    }
+  }
+
+  function linkOf(x){
+    if(typeof x==='string') return x;
+    return x && (
+      x.url ||
+      x.fileUrl ||
+      x.imageUrl ||
+      x.publicUrl ||
+      x.driveUrl ||
+      x.href
+    ) || '';
+  }
+
+  function fileNameOf(x, fallback){
+    if(typeof x==='string') return fallback;
+    return x && (
+      x.fileName ||
+      x.name ||
+      x.title
+    ) || fallback;
+  }
+
+  function published(x){
+    if(!x) return false;
+
+    const status=String(x.status||'').toLowerCase();
+
+    if(status==='draft') return false;
+    if(status==='published') return true;
+
+    if(
+      x.published===true ||
+      String(x.published).toLowerCase()==='true' ||
+      String(x.published)==='1'
+    ) return true;
+
+    if(
+      x.publish===true ||
+      String(x.publish).toLowerCase()==='true' ||
+      String(x.publish)==='1'
+    ) return true;
+
+    return false;
+  }
+
+  function box(){
+    return document.getElementById('msContent') ||
+      document.querySelector('.ms-content,[data-ms-content]');
+  }
+
+  function title(t){
+    try{
+      if(typeof window.msSetTitle==='function'){
+        window.msSetTitle(t);
+        return;
+      }
+    }catch(e){}
+
+    const el=document.querySelector(
+      '#msTitle,.ms-title,[data-ms-title]'
+    );
+
+    if(el) el.textContent=t;
+  }
+
+  function decodeEntities(str){
+    const ta=document.createElement('textarea');
+    ta.innerHTML=String(str==null?'':str);
+    return ta.value;
+  }
+
+  function normalizeHtml(raw){
+    let text=decodeEntities(raw);
+
+    if(/&lt;\/?(?:br|li|ul|ol|p|div|strong|b)\b/i.test(text)){
+      text=decodeEntities(text);
+    }
+
+    text=text
+      .replace(/```(?:html)?/gi,'')
+      .replace(/```/g,'');
+
+    if(!/<(?:br|p|div|ul|ol|li|strong|b|h[1-6])\b/i.test(text)){
+      return esc(text).replace(/\n/g,'<br>');
+    }
+
+    return text;
+  }
+
+  function renderImages(items){
+    const images=[
+      ...arr(items.images),
+      ...arr(items.image),
+      ...arr(items.img)
+    ].filter(Boolean);
+
+    if(!images.length) return '';
+
+    if(images.length===1){
+      const u=linkOf(images[0]);
+      return u ? `
+        <img
+          src="${esc(u)}"
+          alt="${esc(fileNameOf(images[0],'SOP 圖片'))}"
+          style="display:block;width:100%;max-height:640px;
+                 object-fit:contain;border-radius:14px;margin-top:14px"
+          loading="lazy"
+        >` : '';
+    }
+
+    return `
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+                  gap:10px;margin-top:14px">
+        ${images.map((it,i)=>{
+          const u=linkOf(it);
+          return u ? `
+            <img
+              src="${esc(u)}"
+              alt="${esc(fileNameOf(it,'SOP 圖片 '+(i+1)))}"
+              style="display:block;width:100%;aspect-ratio:1/1;
+                     object-fit:cover;border-radius:12px"
+              loading="lazy"
+            >` : '';
+        }).join('')}
+      </div>`;
+  }
+
+  function renderFiles(items){
+    const files=[
+      ...arr(items.attachments),
+      ...arr(items.files),
+      ...arr(items.pdfs),
+      ...arr(items.pdf)
+    ].filter(Boolean);
+
+    return files.map((it,i)=>{
+      const u=linkOf(it);
+      if(!u) return '';
+
+      const name=fileNameOf(it,'附件 '+(i+1));
+      const isPdf=
+        /\.pdf(?:$|\?)/i.test(u) ||
+        /pdf/i.test(name);
+
+      return `
+        <a href="${esc(u)}"
+           target="_blank"
+           rel="noopener"
+           style="display:block;text-align:center;text-decoration:none;
+                  padding:13px;margin-top:10px;border-radius:12px;
+                  background:#eaf2ff;color:#1d4ed8;
+                  border:1px solid #bfdbfe;font-weight:800">
+          ${isPdf?'📄':'📎'} ${esc(name)}
+        </a>`;
+    }).join('');
+  }
+
+  function renderSopCard(x){
+    const category=val(x,['category','type'],'其他');
+    const ttl=val(x,['title','name'],'未命名 SOP');
+    const summary=val(
+      x,
+      ['summary','excerpt','shortDescription','description'],
+      ''
+    );
+    const important=val(
+      x,
+      ['importantNote','important','warning','note'],
+      ''
+    );
+    const date=val(
+      x,
+      ['publishDate','publishedAt','publishedDate','date','updatedAt'],
+      ''
+    );
+    const content=normalizeHtml(
+      val(x,['content','html','body'],'')
+    );
+
+    return `
+      <div class="ms-card">
+        <div style="font-size:12px;color:#64748b;font-weight:800">
+          ${esc(category)}${date?' ｜ '+esc(date):''}
+        </div>
+
+        <div style="font-size:20px;font-weight:900;margin:7px 0 8px">
+          ${esc(ttl)}
+        </div>
+
+        ${summary ? `
+          <div style="color:#64748b;line-height:1.6;margin-bottom:10px">
+            ${esc(summary)}
+          </div>` : ''}
+
+        ${renderImages(x)}
+
+        ${important ? `
+          <div style="background:#fff7ed;border-left:4px solid #f59e0b;
+                      padding:11px;border-radius:8px;margin-top:12px">
+            <b>重要提醒：</b>${esc(important)}
+          </div>` : ''}
+
+        ${content ? `
+          <details style="margin-top:12px">
+            <summary style="cursor:pointer;font-weight:900;color:#1d4ed8">
+              查看完整文字內容
+            </summary>
+            <div style="line-height:1.85;word-break:break-word;margin-top:10px">
+              ${content}
+            </div>
+          </details>` : ''}
+
+        ${renderFiles(x)}
+      </div>`;
+  }
+
+  window.msShowSop=async function(){
+    const b=box();
+    if(!b) return;
+
+    title('入職包 SOP');
+
+    b.innerHTML=
+      '<div class="ms-card"><div class="ms-empty">正在讀取最新 SOP…</div></div>';
+
+    try{
+      if(typeof window.staffApi!=='function'){
+        throw new Error('SOP API 尚未載入');
+      }
+
+      const res=await window.staffApi('sop_get',{});
+      let list=[];
+
+      if(Array.isArray(res)) list=res;
+      else if(res && Array.isArray(res.data)) list=res.data;
+      else if(
+        res &&
+        res.data &&
+        Array.isArray(res.data.items)
+      ) list=res.data.items;
+
+      list=list.filter(published);
+
+      if(!list.length){
+        b.innerHTML=
+          '<div class="ms-card"><div class="ms-empty">目前沒有已發布的 SOP</div></div>';
+        return;
+      }
+
+      b.innerHTML=list.map(renderSopCard).join('');
+    }catch(e){
+      b.innerHTML=`
+        <div class="ms-card">
+          <div class="ms-empty" style="color:#b91c1c">
+            SOP 讀取失敗：${esc(e.message||e)}
+          </div>
+        </div>`;
+    }
+  };
+
+  function renderNoticeCard(x){
+    const ttl=val(x,['title','name'],'未命名公告');
+    const summary=val(x,['summary','excerpt','shortDescription'],'');
+    const important=val(x,['importantNote','important','warning','note'],'');
+    const date=val(
+      x,
+      ['publishDate','publishedAt','publishedDate','date','updatedAt'],
+      ''
+    );
+    const content=normalizeHtml(
+      val(x,['content','html','body','description'],'')
+    );
+
+    return `
+      <div class="ms-card">
+        <div style="font-size:12px;color:#64748b;font-weight:800">
+          ${date ? esc(date) : '最新公告'}
+        </div>
+
+        <div style="font-size:20px;font-weight:900;margin:7px 0 8px">
+          ${esc(ttl)}
+        </div>
+
+        ${summary ? `
+          <div style="color:#64748b;line-height:1.6;margin-bottom:10px">
+            ${esc(summary)}
+          </div>` : ''}
+
+        ${renderImages(x)}
+
+        ${important ? `
+          <div style="background:#fff7ed;border-left:4px solid #f59e0b;
+                      padding:11px;border-radius:8px;margin-top:12px">
+            <b>重要提醒：</b>${esc(important)}
+          </div>` : ''}
+
+        ${content ? `
+          <div style="line-height:1.85;word-break:break-word;margin-top:12px">
+            ${content}
+          </div>` : ''}
+
+        ${renderFiles(x)}
+      </div>`;
+  }
+
+  window.msShowNotice=async function(){
+    const b=box();
+    if(!b) return;
+
+    title('公告欄');
+
+    b.innerHTML=
+      '<div class="ms-card"><div class="ms-empty">正在讀取最新公告…</div></div>';
+
+    try{
+      if(typeof window.staffApi!=='function'){
+        throw new Error('公告 API 尚未載入');
+      }
+
+      const res=await window.staffApi('notice_get',{});
+      let list=[];
+
+      if(Array.isArray(res)) list=res;
+      else if(res && Array.isArray(res.data)) list=res.data;
+      else if(
+        res &&
+        res.data &&
+        Array.isArray(res.data.items)
+      ) list=res.data.items;
+
+      list=list.filter(published);
+
+      if(!list.length){
+        b.innerHTML=
+          '<div class="ms-card"><div class="ms-empty">目前沒有已發布公告</div></div>';
+        return;
+      }
+
+      b.innerHTML=list.map(renderNoticeCard).join('');
+    }catch(e){
+      b.innerHTML=`
+        <div class="ms-card">
+          <div class="ms-empty" style="color:#b91c1c">
+            公告讀取失敗：${esc(e.message||e)}
+          </div>
+        </div>`;
+    }
+  };
+
+  // route 有些版本叫 notice，有些叫 announcement
+  window.msShowAnnouncement=window.msShowNotice;
+
+  window.__QYJ_SOP_NOTICE_CLOUD_FINAL__='2026-11-04-v1';
 })();
 </script>
 
