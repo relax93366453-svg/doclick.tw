@@ -35092,313 +35092,280 @@ console.log('Staff App 人事雙連結 / 內部三項同步最終修正已載入
 
 
 
-<script id="QYJ_PROFILE_MORE_INFO_LINK_20261104">
+<style id="QYJ_DISPATCH_REMOVE_DUPLICATE_ADD_STYLE_20261109">
+/* 派遣模式下只保留多日排班；舊快速手打新增區不再顯示 */
+#page-schedule[data-qyj-dispatch-mode="1"] .schedule-quick-panel,
+#page-schedule[data-qyj-dispatch-mode="1"] #scheduleTabNew,
+#page-schedule[data-qyj-dispatch-mode="1"] #schedule-panel-new,
+#page-schedule[data-qyj-dispatch-mode="1"] .qyj-dispatch-old-add-btn{
+    display:none !important;
+}
+</style>
+
+<script id="QYJ_DISPATCH_REMOVE_DUPLICATE_ADD_20261109">
 (function(){
 'use strict';
 
-const MORE_INFO_URL = 'https://relax93366453-svg.github.io/doclick.tw/';
-
-function qn(v){ return String(v==null?'':v).trim(); }
-function qe(v){
-    return String(v==null?'':v)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-      .replace(/'/g,'&#039;');
-}
-function currentStaffInfo(){
+function qyjGetScheduleType(){
     try{
-        if(typeof window.msGetCurrentStaff==='function'){
-            const s=window.msGetCurrentStaff();
-            if(s) return s;
+        if(typeof scheduleStaffType!=='undefined' && scheduleStaffType){
+            return scheduleStaffType;
         }
     }catch(e){}
-    try{
-        return JSON.parse(localStorage.getItem('qyj_mobile_staff_login')||'null')||{};
-    }catch(e){return {}}
-}
-function allStaffInfo(){
-    let rows=[];
-    try{if(Array.isArray(window.staffData))rows=rows.concat(window.staffData)}catch(e){}
-    try{if(Array.isArray(window.ftStaffData))rows=rows.concat(window.ftStaffData)}catch(e){}
-    return rows.filter(Boolean);
-}
-function nameOf(s){return qn(s&&(s.name||s.staffName||s.realName||s.staff||s.employeeName))}
-function phoneOf(s){return qn(s&&(s.tel||s.phone||s.mobile||s.cellphone||s.mobilePhone||s.account))}
-function statusOf(s){return qn(s&&(s.status||s.employmentStatus||s.activeStatus))||'在職'}
-function fullStaffInfo(){
-    const cur=currentStaffInfo();
-    const name=nameOf(cur),phone=phoneOf(cur);
-    return allStaffInfo().find(x=>
-        (name&&nameOf(x)===name)||(phone&&phoneOf(x)===phone)
-    )||cur||{};
+    return localStorage.getItem('qyjScheduleStaffType') ||
+           localStorage.getItem('scheduleStaffType') ||
+           '派遣';
 }
 
-window.msShowProfile=function(){
-    if(typeof window.msSetTitle==='function') window.msSetTitle('員工資訊');
-    const box=document.getElementById('msContent');
-    if(!box)return;
+function qyjMarkOldAddButton(){
+    const page=document.getElementById('page-schedule');
+    if(!page) return;
 
-    const s=fullStaffInfo();
-    const name=nameOf(s)||'員工';
-    const status=statusOf(s);
-    const phone=phoneOf(s)||'-';
+    const buttons=[...page.querySelectorAll('.schedule-actions button')];
 
-    box.innerHTML=
-      '<div class="ms-card" style="text-align:center">'+
-        '<div class="ms-avatar" style="width:112px;height:112px;font-size:52px;margin:8px auto 20px">'+qe(name.slice(0,1))+'</div>'+
-        '<div class="ms-row"><span>姓名</span><span>'+qe(name)+'</span></div>'+
-        '<div class="ms-row"><span>狀態</span><span>'+qe(status)+'</span></div>'+
-        '<div class="ms-row"><span>手機</span><span>'+qe(phone)+'</span></div>'+
-        '<a class="qyj-staff-link-btn blue" target="_blank" rel="noopener" href="'+MORE_INFO_URL+'">'+
-          '<span>查看更多人員資訊</span><span>↗</span>'+
-        '</a>'+
-        '<a class="qyj-staff-link-btn green" href="#" onclick="msGo(\'line\');return false;">'+
-          '<span>LINE 綁定與提醒</span><span>›</span>'+
-        '</a>'+
-      '</div>';
-};
+    buttons.forEach(function(btn){
+        const txt=String(btn.textContent||'').trim();
 
-console.log('員工資訊查看更多人員資訊連結已修正');
-})();
-</script>
+        /* 多日排班一定保留 */
+        if(txt.includes('多日排班')) return;
 
+        /* 舊的單筆新增排班按鈕標記後，在派遣模式隱藏 */
+        if(txt==='新增排班' || txt.includes('新增排班')){
+            btn.classList.add('qyj-dispatch-old-add-btn');
+        }
+    });
+}
 
+function qyjApplyDispatchAddVisibility(){
+    const page=document.getElementById('page-schedule');
+    if(!page) return;
 
-<script id="QYJ_PERSONNEL_CORRECT_LINKS_20261104">
-(function(){
-'use strict';
+    qyjMarkOldAddButton();
 
-const PERSONNEL_FORM_URL = 'https://forms.gle/zZXogX3ASHWtbr8M9';
-const PERSONNEL_DOWNLOAD_URL = 'https://drive.google.com/file/d/1Ezge0bpEUV3whaMrNIBEDsnSqGepCQhk/view?usp=sharing';
+    const type=qyjGetScheduleType();
+    const isDispatch=(type!=='正職');
 
-window.msShowPersonnel=function(){
-    if(typeof window.msSetTitle==='function') window.msSetTitle('人事資料表');
-    const box=document.getElementById('msContent');
-    if(!box)return;
+    page.setAttribute('data-qyj-dispatch-mode', isDispatch ? '1' : '0');
 
-    box.innerHTML=
-      '<div class="qyj-personnel-link-card">'+
-        '<div class="qyj-personnel-link-title">人事資料表</div>'+
-        '<div class="qyj-personnel-link-desc">請選擇線上填寫或下載實體人事資料表。</div>'+
-        '<a class="qyj-staff-link-btn blue" target="_blank" rel="noopener" href="'+PERSONNEL_FORM_URL+'">'+
-          '<span>📝 線上人事資料表</span><span>↗</span>'+
-        '</a>'+
-        '<a class="qyj-staff-link-btn gray" target="_blank" rel="noopener" href="'+PERSONNEL_DOWNLOAD_URL+'">'+
-          '<span>📥 雲端檔案下載</span><span>↗</span>'+
-        '</a>'+
-        '<div style="margin-top:12px;font-size:12px;line-height:1.7;color:#64748b;">'+
-          '如需下載實體人事資料表留存，請點擊「📥 雲端檔案下載」。'+
-        '</div>'+
-      '</div>';
-};
-
-console.log('人事資料表正確雙連結已載入');
-})();
-</script>
-
-
-
-<script id="QYJ_PORTAL_CONTENT_SINGLE_SOURCE_20261104">
-(function(){
-'use strict';
-
-function qyjSafePortalConf(){
-    try{
-        if(typeof portalConf!=='undefined' && portalConf) return portalConf;
-    }catch(e){}
-    try{
-        return JSON.parse(localStorage.getItem('portalConf')||'{}')||{};
-    }catch(e){
-        return {};
+    /* 如果派遣目前剛好停在「新增排班」分頁，直接切回排班總覽 */
+    if(isDispatch){
+        const newPanel=document.getElementById('schedule-panel-new');
+        if(newPanel && newPanel.classList.contains('active')){
+            try{
+                if(typeof window.showScheduleTab==='function'){
+                    window.showScheduleTab('overview');
+                }
+            }catch(e){}
+        }
     }
 }
-function qyjSavePortalConfLocal(conf){
-    try{
-        localStorage.setItem('portalConf',JSON.stringify(conf||{}));
-        localStorage.setItem('portalConfUpdatedAt',String(Date.now()));
-    }catch(e){}
-}
-function qyjStaffType(){
-    try{
-        const s=typeof msGetCurrentStaff==='function'?(msGetCurrentStaff()||{}):{};
-        const name=String(s.name||s.staff||s.realName||'').trim();
-        const ft=(Array.isArray(window.ftStaffData)?window.ftStaffData:[]);
-        return ft.some(x=>String(x.name||x.staff||'').trim()===name)?'正職':'派遣';
-    }catch(e){return '派遣'}
-}
-function qyjAudienceOk(aud,type){
-    return !aud || aud==='all' ||
-        (aud==='fulltime' && type==='正職') ||
-        (aud==='dispatch' && type==='派遣');
-}
-function qyjEsc(v){
-    return String(v==null?'':v)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
-      .replace(/'/g,'&#039;');
-}
-function qyjCleanLegacyHtml(value){
-    let s=String(value==null?'':value);
-    s=s.replace(/<br\s*\/?>/gi,'\n');
-    s=s.replace(/<\/?ul[^>]*>/gi,'');
-    s=s.replace(/<li[^>]*>/gi,'• ');
-    s=s.replace(/<\/li>/gi,'\n');
-    s=s.replace(/<[^>]+>/g,'');
-    const t=document.createElement('textarea');
-    t.innerHTML=s;
-    return t.value.replace(/\n{3,}/g,'\n\n').trim();
-}
 
-/* ========= 內部內容管理儲存後，強制更新同一份 portalConf ========= */
-const oldSaveContent = window.saveQyjContentItem;
-if(typeof oldSaveContent==='function'){
-    window.saveQyjContentItem=async function(){
-        const r=await oldSaveContent.apply(this,arguments);
-        try{
-            const conf=qyjSafePortalConf();
-            qyjSavePortalConfLocal(conf);
-            if(typeof savePortalConfig==='function'){
-                try{ savePortalConfig(); }catch(e){}
-            }
-        }catch(e){}
-        return r;
-    };
-}
-const oldDeleteContent = window.deleteQyjContentItem;
-if(typeof oldDeleteContent==='function'){
-    window.deleteQyjContentItem=async function(){
-        const r=await oldDeleteContent.apply(this,arguments);
-        try{
-            const conf=qyjSafePortalConf();
-            qyjSavePortalConfLocal(conf);
-            if(typeof savePortalConfig==='function'){
-                try{ savePortalConfig(); }catch(e){}
-            }
-        }catch(e){}
+const oldSetType=window.qyjSetScheduleStaffType;
+if(typeof oldSetType==='function'){
+    window.qyjSetScheduleStaffType=function(){
+        const r=oldSetType.apply(this,arguments);
+        setTimeout(qyjApplyDispatchAddVisibility,0);
         return r;
     };
 }
 
-/* ========= Staff App SOP：只讀內部 portalConf.sopItems ========= */
-window.msShowSop=function(){
-    if(typeof window.msSetTitle==='function') window.msSetTitle('入職包 SOP');
-    const box=document.getElementById('msContent');
-    if(!box)return;
-
-    const conf=qyjSafePortalConf();
-    const type=qyjStaffType();
-    const items=(Array.isArray(conf.sopItems)?conf.sopItems:[])
-      .filter(x=>x && x.active!==false && qyjAudienceOk(x.audience,type))
-      .sort((a,b)=>Number(a.order||0)-Number(b.order||0));
-
-    box.innerHTML=items.length?items.map(x=>{
-        const img=x.image||x.imageUrl||'';
-        const content=qyjCleanLegacyHtml(x.content||x.body||'');
-        return '<div class="qyj-mobile-sop-card">'+
-          (img?'<img src="'+qyjEsc(img)+'" alt="">':'')+
-          '<div class="qyj-mobile-sop-inner">'+
-            '<div class="qyj-mobile-sop-title">'+qyjEsc(x.title||'SOP')+'</div>'+
-            (x.summary?'<div class="qyj-mobile-sop-summary">'+qyjEsc(x.summary)+'</div>':'')+
-            (content?'<div class="qyj-mobile-sop-content">'+qyjEsc(content)+'</div>':'')+
-          '</div>'+
-        '</div>';
-    }).join(''):'<div class="ms-card"><div class="ms-empty">目前沒有 SOP 內容</div></div>';
-};
-
-/* ========= Staff App 公告：只讀內部 portalConf.announcementItems ========= */
-let qyjNoticeMode='unread';
-
-function qyjNoticeKey(x){
-    const raw=String(x.title||'')+'|'+String(x.publishDate||'')+'|'+String(x.content||'').slice(0,20);
-    try{return 'qyj_notice_read_'+btoa(unescape(encodeURIComponent(raw))).replace(/=/g,'')}
-    catch(e){return 'qyj_notice_read_'+raw}
+const oldSetupTabs=window.setupScheduleTabs;
+if(typeof oldSetupTabs==='function'){
+    window.setupScheduleTabs=function(){
+        const r=oldSetupTabs.apply(this,arguments);
+        setTimeout(qyjApplyDispatchAddVisibility,0);
+        return r;
+    };
 }
-function qyjIsRead(x){ return localStorage.getItem(qyjNoticeKey(x))==='1'; }
-function qyjVisibleNotices(){
-    const conf=qyjSafePortalConf();
-    const type=qyjStaffType();
-    const today=new Date().toISOString().slice(0,10);
-    const arr=Array.isArray(conf.announcementItems)?conf.announcementItems:[];
-    return arr
-      .filter(x=>x && x.active!==false && qyjAudienceOk(x.audience,type))
-      .filter(x=>(!x.publishDate||x.publishDate<=today)&&(!x.expireDate||x.expireDate>=today))
-      .sort((a,b)=>Number(Boolean(b.pinned))-Number(Boolean(a.pinned)) ||
-                   String(b.publishDate||'').localeCompare(String(a.publishDate||'')));
+
+const oldShowScheduleTab=window.showScheduleTab;
+if(typeof oldShowScheduleTab==='function'){
+    window.showScheduleTab=function(tab){
+        const type=qyjGetScheduleType();
+
+        /* 派遣不再允許進入舊新增頁，統一用多日排班 */
+        if(type!=='正職' && tab==='new'){
+            tab='overview';
+        }
+
+        const r=oldShowScheduleTab.call(this,tab);
+        setTimeout(qyjApplyDispatchAddVisibility,0);
+        return r;
+    };
 }
-function qyjRenderNotices(){
-    const box=document.getElementById('msContent');
-    if(!box)return;
-    const all=qyjVisibleNotices();
-    const items=qyjNoticeMode==='unread'?all.filter(x=>!qyjIsRead(x)):all;
-    const unreadCount=all.filter(x=>!qyjIsRead(x)).length;
 
-    box.innerHTML=
-      '<div class="qyj-mobile-line-tabs">'+
-        '<button class="qyj-mobile-line-tab '+(qyjNoticeMode==='unread'?'active':'')+'" onclick="qyjStaffNoticeTab(\'unread\')">未讀 '+unreadCount+'</button>'+
-        '<button class="qyj-mobile-line-tab '+(qyjNoticeMode==='all'?'active':'')+'" onclick="qyjStaffNoticeTab(\'all\')">全部 '+all.length+'</button>'+
-      '</div>'+
-      '<div style="border-radius:16px;overflow:hidden;background:#fff">'+
-        (items.length?items.map(x=>{
-            const index=all.indexOf(x);
-            return '<div class="qyj-mobile-line-item" onclick="qyjOpenStaffNotice('+index+')">'+
-              '<div class="qyj-mobile-line-icon">愜</div>'+
-              '<div>'+
-                '<div class="qyj-mobile-line-title">'+(x.pinned?'📌 ':'')+qyjEsc(x.title||'公告')+'</div>'+
-                '<div class="qyj-mobile-line-preview">'+qyjEsc(x.summary||x.content||'')+'</div>'+
-              '</div>'+
-              '<div class="qyj-mobile-line-meta">'+
-                qyjEsc(x.publishDate||'')+
-                (!qyjIsRead(x)?'<div class="qyj-mobile-line-dot"></div>':'')+
-              '</div>'+
-            '</div>';
-        }).join(''):'<div class="ms-empty" style="padding:38px 16px">目前沒有'+(qyjNoticeMode==='unread'?'未讀':'')+'公告</div>')+
-      '</div>';
-}
-window.qyjStaffNoticeTab=function(mode){
-    qyjNoticeMode=mode==='all'?'all':'unread';
-    qyjRenderNotices();
-};
-window.qyjOpenStaffNotice=function(index){
-    const items=qyjVisibleNotices();
-    const x=items[index];
-    if(!x)return;
-    localStorage.setItem(qyjNoticeKey(x),'1');
-    const box=document.getElementById('msContent');
-    if(!box)return;
-    box.innerHTML=
-      '<div class="qyj-mobile-line-detail">'+
-        '<button style="border:0;background:none;color:#2563eb;font-weight:900;padding:0 0 12px" onclick="qyjRenderStaffNotices()">‹ 返回公告</button>'+
-        '<div class="qyj-mobile-line-detail-title">'+(x.pinned?'📌 ':'')+qyjEsc(x.title||'公告')+'</div>'+
-        '<div class="qyj-mobile-line-detail-date">'+qyjEsc(x.publishDate||'')+'</div>'+
-        '<div class="qyj-mobile-line-detail-body">'+qyjEsc(qyjCleanLegacyHtml(x.content||x.summary||''))+'</div>'+
-      '</div>';
-};
-window.qyjRenderStaffNotices=qyjRenderNotices;
+/* 排班頁每次重新顯示／重畫後再套一次 */
+const observer=new MutationObserver(function(){
+    const page=document.getElementById('page-schedule');
+    if(page && page.classList.contains('active')){
+        qyjApplyDispatchAddVisibility();
+    }
+});
 
-window.msShowNotice=function(){
-    if(typeof window.msSetTitle==='function') window.msSetTitle('公告欄');
-    qyjNoticeMode='unread';
-    qyjRenderNotices();
-};
+document.addEventListener('DOMContentLoaded',function(){
+    observer.observe(document.body,{
+        childList:true,
+        subtree:true,
+        attributes:true,
+        attributeFilter:['class','style']
+    });
+    setTimeout(qyjApplyDispatchAddVisibility,300);
+});
 
-/* ========= 每次雲端 portalConf 更新後，若員工正停在 SOP/公告，重新讀同一份資料 ========= */
-function qyjRefreshVisibleContentPage(){
+setTimeout(qyjApplyDispatchAddVisibility,800);
+
+console.log('派遣排班已移除重複的舊新增排班，只保留多日排班');
+})();
+</script>
+
+
+
+<script id="QYJ_COMPANY_DROPDOWN_FROM_CUSTOMERS_ONLY_20261109">
+(function(){
+'use strict';
+
+function qyjCustomerCompanyNames(){
+    let rows=[];
     try{
-        const route=localStorage.getItem('qyj_mobile_staff_route')||'';
-        const app=document.getElementById('mobileStaffApp');
-        if(!app || getComputedStyle(app).display==='none')return;
-        if(route==='sop') window.msShowSop();
-        if(route==='notice') window.msShowNotice();
+        if(Array.isArray(window.custData)) rows=window.custData;
     }catch(e){}
+
+    const seen=new Set();
+    const names=[];
+
+    rows.forEach(function(x){
+        if(!x) return;
+
+        const raw =
+            x.name ??
+            x.company ??
+            x.companyName ??
+            x.customer ??
+            x.customerName ??
+            x.client ??
+            '';
+
+        const name=String(raw||'').trim();
+        if(!name) return;
+
+        /* 以顯示文字去重，忽略前後空白 */
+        const key=name.replace(/\s+/g,'').toLowerCase();
+        if(seen.has(key)) return;
+
+        seen.add(key);
+        names.push(name);
+    });
+
+    return names.sort(function(a,b){
+        return a.localeCompare(b,'zh-Hant');
+    });
 }
-window.addEventListener('storage',function(e){
-    if(e.key==='portalConf') qyjRefreshVisibleContentPage();
-});
-document.addEventListener('visibilitychange',function(){
-    if(!document.hidden) setTimeout(qyjRefreshVisibleContentPage,80);
+
+window.qyjCustomerCompanyNames=qyjCustomerCompanyNames;
+
+function qyjRefillSelect(select){
+    if(!select) return;
+
+    const current=String(select.value||'').trim();
+    const firstOption=select.querySelector('option[value=""]');
+    const placeholder=firstOption ? firstOption.textContent : '請選擇公司';
+
+    const names=qyjCustomerCompanyNames();
+
+    select.innerHTML='';
+
+    const ph=document.createElement('option');
+    ph.value='';
+    ph.textContent=placeholder || '請選擇公司';
+    select.appendChild(ph);
+
+    names.forEach(function(name){
+        const op=document.createElement('option');
+        op.value=name;
+        op.textContent=name;
+        select.appendChild(op);
+    });
+
+    if(current && names.includes(current)){
+        select.value=current;
+    }else{
+        select.value='';
+    }
+}
+
+/* 只處理確定是公司選擇器的欄位，避免誤改其他 select */
+function qyjRefreshAllCompanyDropdowns(){
+    const ids=[
+        'sch_company',
+        'schedule_company',
+        'qyjDispatchMultiCompany',
+        'qyjMultiCompany',
+        'dispatch_company',
+        'att_company',
+        'bill_company',
+        'point_company'
+    ];
+
+    ids.forEach(function(id){
+        const el=document.getElementById(id);
+        if(el && el.tagName==='SELECT'){
+            qyjRefillSelect(el);
+        }
+    });
+
+    /* 再掃描排班頁內名稱明確含 company 的 select */
+    const page=document.getElementById('page-schedule');
+    if(page){
+        page.querySelectorAll('select[id*="company" i],select[name*="company" i]').forEach(qyjRefillSelect);
+    }
+}
+
+/* 包住既有公司/排班相關初始化函式，重畫後重新套用正式客戶名單 */
+[
+    'fillFilters',
+    'renderScheduleTable',
+    'setupScheduleTabs',
+    'openQyjDispatchMultiDayModal',
+    'openScheduleModal'
+].forEach(function(fnName){
+    const old=window[fnName];
+    if(typeof old!=='function') return;
+
+    window[fnName]=function(){
+        const r=old.apply(this,arguments);
+        setTimeout(qyjRefreshAllCompanyDropdowns,0);
+        return r;
+    };
 });
 
-console.log('SOP / 公告已改為內部 portalConf 單一資料來源');
+/* custData 更新後也同步刷新公司下拉 */
+const oldSaveAll=window.saveAll;
+if(typeof oldSaveAll==='function'){
+    window.saveAll=function(){
+        const r=oldSaveAll.apply(this,arguments);
+        setTimeout(qyjRefreshAllCompanyDropdowns,50);
+        return r;
+    };
+}
+
+const observer=new MutationObserver(function(){
+    const page=document.getElementById('page-schedule');
+    if(page && page.classList.contains('active')){
+        qyjRefreshAllCompanyDropdowns();
+    }
+});
+
+document.addEventListener('DOMContentLoaded',function(){
+    observer.observe(document.body,{
+        childList:true,
+        subtree:true
+    });
+    setTimeout(qyjRefreshAllCompanyDropdowns,300);
+});
+
+setTimeout(qyjRefreshAllCompanyDropdowns,800);
+
+console.log('公司下拉選單已改為只顯示正式客戶資料 custData，並自動去重');
 })();
 </script>
 
