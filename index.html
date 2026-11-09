@@ -1654,7 +1654,6 @@ window.SCRIPT_URL = window.SCRIPT_URL || 'https://script.google.com/macros/s/AKf
                             <button class="switch-role-btn" onclick="exportScheduleFilledExcel()"><i class="fas fa-download"></i> 匯出月排班</button>
                             <button class="switch-role-btn" onclick="createAttendFromSchedule()"><i class="fas fa-clock"></i> 轉派遣記錄</button>
                             <button class="btn" type="button" onclick="qyjOpenDispatchMultiDay()" style="margin:0;background:#0f766e;"><i class="fas fa-calendar-check"></i> 多日排班</button>
-                            <button class="btn btn-success" onclick="openScheduleCell('', '')" style="margin:0;"><i class="fas fa-plus"></i> 新增排班</button>
                         </div>
                     </div>
 
@@ -1664,24 +1663,7 @@ window.SCRIPT_URL = window.SCRIPT_URL || 'https://script.google.com/macros/s/AKf
                         <div class="schedule-kpi"><div class="mini-icon"><i class="fas fa-bed"></i></div><div class="kpi-label">已排時段</div><div class="kpi-value" id="sch_kpi_rest">0 格</div></div>
                         <div class="schedule-kpi red"><div class="mini-icon"><i class="fas fa-calendar-times"></i></div><div class="kpi-label">提醒</div><div class="kpi-value" id="sch_kpi_warn">0 筆</div></div>
                     </div>
-
-                    <div class="schedule-quick-panel">
-                        <div class="schedule-quick-title"><i class="fas fa-keyboard"></i> 快速手打排班</div>
-                        <div class="schedule-quick-form">
-                            <div><label>公司</label><input list="list_cust" id="sch_quick_company" placeholder="預設使用上方選擇公司"></div>
-                            <div><label>人員</label><input list="list_staff" id="sch_quick_staff" placeholder="例：徐繼崑；多人用、隔開"></div>
-                            <div><label>日期</label><input type="text" id="sch_quick_date" placeholder="2026/05/18" onblur="normalizeQuickScheduleDate()"></div>
-                            <div><label>上班</label><input type="time" id="sch_quick_start" step="900" placeholder="08:00" oninput="updateQuickScheduleHours()"></div>
-                            <div><label>下班</label><input type="time" id="sch_quick_end" step="900" placeholder="12:30" oninput="updateQuickScheduleHours()"></div>
-                            <div><label>休息時數</label><input type="number" id="sch_quick_break_hours" step="0.5" min="0" placeholder="例：1 或 1.5" oninput="updateQuickScheduleHours()"></div>
-                            <div><label>實際工時</label><input id="sch_quick_hours" readonly placeholder="自動"></div>
-                            <button class="btn btn-success" onclick="addQuickSchedule()" style="margin:0;height:40px;"><i class="fas fa-plus"></i> 加入</button>
-                            <div class="quick-full" style="grid-column:1/-1;"><label>備註</label><input id="sch_quick_remark" placeholder="可填需求、地點、窗口"></div>
-                        </div>
-                        <div class="schedule-quick-hint">例如：徐繼崑 / 2026/05/18 / 08:00～12:30；若有休息可直接填休息時數，例如 1 或 1.5。下方格子會以人員卡片顯示完整時間、休息與實際工時。</div>
-                    </div>
-
-                    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 10px;">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 10px;">
                         <div>
                             <h3 id="sch_month_title" style="font-size:18px;font-weight:900;color:#0f172a;margin:0;">月時段排班表</h3>
                             <div style="font-size:12px;color:#64748b;font-weight:700;">上方顯示月份日期，左側顯示 07:00～23:00；點擊格子即可設定該公司該時段的人員。</div>
@@ -4035,7 +4017,6 @@ function setupScheduleTabs(){
     const shell = page.querySelector('.schedule-page-shell');
     if(!shell) return;
 
-    const quickPanel = shell.querySelector('.schedule-quick-panel');
     const boardWrap = shell.querySelector('.schedule-board-wrap');
     const filledPanel = shell.querySelector('.schedule-filled-panel');
     const warningBox = shell.querySelector('#scheduleWarningBox');
@@ -4043,20 +4024,14 @@ function setupScheduleTabs(){
     const boardTitleBlock = monthTitle ? monthTitle.closest('div[style*="display:flex"]') : null;
     const kpiGrid = shell.querySelector('.schedule-kpi-grid');
 
-    if(!quickPanel || !boardWrap || !filledPanel || !kpiGrid) return;
+    if(!boardWrap || !filledPanel || !kpiGrid) return;
 
     const tabs = document.createElement('div');
     tabs.className = 'schedule-tabs';
     tabs.innerHTML = `
-        <button type="button" id="scheduleTabNew" class="schedule-tab-btn" onclick="showScheduleTab('new')"><i class="fas fa-plus"></i> 新增排班</button>
         <button type="button" id="scheduleTabEdit" class="schedule-tab-btn" onclick="showScheduleTab('edit')"><i class="fas fa-pen-to-square"></i> 修改排班</button>
         <button type="button" id="scheduleTabOverview" class="schedule-tab-btn active" onclick="showScheduleTab('overview')"><i class="fas fa-calendar-alt"></i> 排班總覽</button>
     `;
-
-    const panelNew = document.createElement('div');
-    panelNew.id = 'schedule-panel-new';
-    panelNew.className = 'schedule-tab-panel';
-    panelNew.innerHTML = `<div class="schedule-tab-note"><b>新增排班：</b>保留原本「快速手打排班」功能，可直接輸入公司、人員、日期、上下班、休息時數與備註。</div>`;
 
     const panelEdit = document.createElement('div');
     panelEdit.id = 'schedule-panel-edit';
@@ -4071,9 +4046,7 @@ function setupScheduleTabs(){
     kpiGrid.insertAdjacentElement('afterend', tabs);
     tabs.insertAdjacentElement('afterend', panelOverview);
     panelOverview.insertAdjacentElement('afterend', panelEdit);
-    panelEdit.insertAdjacentElement('afterend', panelNew);
 
-    panelNew.appendChild(quickPanel);
     panelEdit.appendChild(filledPanel);
     if(boardTitleBlock) panelOverview.appendChild(boardTitleBlock);
     panelOverview.appendChild(boardWrap);
@@ -4083,6 +4056,7 @@ function setupScheduleTabs(){
 }
 function showScheduleTab(tab){
     setupScheduleTabs();
+    if(tab==='new') tab='overview';
     const panels = {
         new: document.getElementById('schedule-panel-new'),
         edit: document.getElementById('schedule-panel-edit'),
@@ -6668,6 +6642,14 @@ ${d.contentHtml}
 
 
 
+
+<!-- QYJ_DISPATCH_CORE_REAL_FIX_20261109
+派遣排班真正本體修正：
+- 移除上方單筆新增排班按鈕
+- 移除快速手打排班整區
+- 排班分頁只保留修改排班 / 排班總覽
+- 公司來源只讀 custData，並去重
+-->
 </body>
 </html>`);
     w.document.close();
@@ -6745,7 +6727,17 @@ const scheduleShiftPresets={
 function pad2(n){return String(n).padStart(2,'0');}
 function dateYMD(y,m,d){return `${y}-${pad2(m)}-${pad2(d)}`;}
 function getAllScheduleCompanyNames(){
-    return [...new Set([...(custData||[]).map(x=>x.name),...(dispatchData||[]).map(x=>x.company),...(scheduleData||[]).map(x=>x.company)].filter(Boolean))].sort();
+    const seen=new Set();
+    const names=[];
+    (custData||[]).forEach(x=>{
+        const name=String((x&&x.name)||'').trim();
+        if(!name) return;
+        const key=name.replace(/\s+/g,'').toLowerCase();
+        if(seen.has(key)) return;
+        seen.add(key);
+        names.push(name);
+    });
+    return names.sort((a,b)=>a.localeCompare(b,'zh-Hant'));
 }
 function getScheduleCompany(){
     const search = el('sch_company_search') ? el('sch_company_search').value.trim() : '';
@@ -7734,7 +7726,17 @@ function fillFilters() {
     const rf = (s,h) => { document.querySelectorAll(s).forEach(e=>{const v=e.value; e.innerHTML=h; if(v)e.value=v;}); }; 
     const y=new Date().getFullYear(); let yr='<option value="all">全部</option>'; for(let i=2024; i<=y; i++) yr += `<option value="${i}">${i}</option>`; rf('#filter_year,#bill_filter_year,#sal_filter_year,#boss_year,#sl_year,#settlement_year', yr); 
     let mh='<option value="all">全部</option>'; for(let i=1;i<=12;i++) mh += `<option value="${i}">${i}月</option>`; rf('#filter_month,#bill_filter_month,#sal_filter_month,#boss_month,#sl_month,#settlement_month', mh); 
-    let custH = '<option value="全部">'; custData.forEach(c => custH += `<option value="${c.name}">`); if(el('list_cust')) el('list_cust').innerHTML = custH; 
+    const qyjCustSeen=new Set();
+    let custH = '<option value="全部">';
+    (custData||[]).forEach(c=>{
+        const name=String((c&&c.name)||'').trim();
+        if(!name) return;
+        const key=name.replace(/\s+/g,'').toLowerCase();
+        if(qyjCustSeen.has(key)) return;
+        qyjCustSeen.add(key);
+        custH += `<option value="${name}">`;
+    });
+    if(el('list_cust')) el('list_cust').innerHTML = custH; 
     let staffH = '<option value="全部人員">'; staffData.filter(s => s.status==='在職').forEach(s => staffH += `<option value="${s.name}">`); if(el('list_staff')) el('list_staff').innerHTML = staffH; 
     let ftStaffH = '<option value="全部員工">'; ftStaffData.filter(s => s.status==='在職').forEach(s => ftStaffH += `<option value="${s.name}">`); if(el('list_ft_staff')) el('list_ft_staff').innerHTML = ftStaffH; 
     let supH = '<option value="全部">'; supplierData.forEach(s => supH += `<option value="${s.name}">`); if(el('list_supplier')) el('list_supplier').innerHTML = supH; 
@@ -35091,283 +35093,6 @@ console.log('Staff App 人事雙連結 / 內部三項同步最終修正已載入
 </script>
 
 
-
-<style id="QYJ_DISPATCH_REMOVE_DUPLICATE_ADD_STYLE_20261109">
-/* 派遣模式下只保留多日排班；舊快速手打新增區不再顯示 */
-#page-schedule[data-qyj-dispatch-mode="1"] .schedule-quick-panel,
-#page-schedule[data-qyj-dispatch-mode="1"] #scheduleTabNew,
-#page-schedule[data-qyj-dispatch-mode="1"] #schedule-panel-new,
-#page-schedule[data-qyj-dispatch-mode="1"] .qyj-dispatch-old-add-btn{
-    display:none !important;
-}
-</style>
-
-<script id="QYJ_DISPATCH_REMOVE_DUPLICATE_ADD_20261109">
-(function(){
-'use strict';
-
-function qyjGetScheduleType(){
-    try{
-        if(typeof scheduleStaffType!=='undefined' && scheduleStaffType){
-            return scheduleStaffType;
-        }
-    }catch(e){}
-    return localStorage.getItem('qyjScheduleStaffType') ||
-           localStorage.getItem('scheduleStaffType') ||
-           '派遣';
-}
-
-function qyjMarkOldAddButton(){
-    const page=document.getElementById('page-schedule');
-    if(!page) return;
-
-    const buttons=[...page.querySelectorAll('.schedule-actions button')];
-
-    buttons.forEach(function(btn){
-        const txt=String(btn.textContent||'').trim();
-
-        /* 多日排班一定保留 */
-        if(txt.includes('多日排班')) return;
-
-        /* 舊的單筆新增排班按鈕標記後，在派遣模式隱藏 */
-        if(txt==='新增排班' || txt.includes('新增排班')){
-            btn.classList.add('qyj-dispatch-old-add-btn');
-        }
-    });
-}
-
-function qyjApplyDispatchAddVisibility(){
-    const page=document.getElementById('page-schedule');
-    if(!page) return;
-
-    qyjMarkOldAddButton();
-
-    const type=qyjGetScheduleType();
-    const isDispatch=(type!=='正職');
-
-    page.setAttribute('data-qyj-dispatch-mode', isDispatch ? '1' : '0');
-
-    /* 如果派遣目前剛好停在「新增排班」分頁，直接切回排班總覽 */
-    if(isDispatch){
-        const newPanel=document.getElementById('schedule-panel-new');
-        if(newPanel && newPanel.classList.contains('active')){
-            try{
-                if(typeof window.showScheduleTab==='function'){
-                    window.showScheduleTab('overview');
-                }
-            }catch(e){}
-        }
-    }
-}
-
-const oldSetType=window.qyjSetScheduleStaffType;
-if(typeof oldSetType==='function'){
-    window.qyjSetScheduleStaffType=function(){
-        const r=oldSetType.apply(this,arguments);
-        setTimeout(qyjApplyDispatchAddVisibility,0);
-        return r;
-    };
-}
-
-const oldSetupTabs=window.setupScheduleTabs;
-if(typeof oldSetupTabs==='function'){
-    window.setupScheduleTabs=function(){
-        const r=oldSetupTabs.apply(this,arguments);
-        setTimeout(qyjApplyDispatchAddVisibility,0);
-        return r;
-    };
-}
-
-const oldShowScheduleTab=window.showScheduleTab;
-if(typeof oldShowScheduleTab==='function'){
-    window.showScheduleTab=function(tab){
-        const type=qyjGetScheduleType();
-
-        /* 派遣不再允許進入舊新增頁，統一用多日排班 */
-        if(type!=='正職' && tab==='new'){
-            tab='overview';
-        }
-
-        const r=oldShowScheduleTab.call(this,tab);
-        setTimeout(qyjApplyDispatchAddVisibility,0);
-        return r;
-    };
-}
-
-/* 排班頁每次重新顯示／重畫後再套一次 */
-const observer=new MutationObserver(function(){
-    const page=document.getElementById('page-schedule');
-    if(page && page.classList.contains('active')){
-        qyjApplyDispatchAddVisibility();
-    }
-});
-
-document.addEventListener('DOMContentLoaded',function(){
-    observer.observe(document.body,{
-        childList:true,
-        subtree:true,
-        attributes:true,
-        attributeFilter:['class','style']
-    });
-    setTimeout(qyjApplyDispatchAddVisibility,300);
-});
-
-setTimeout(qyjApplyDispatchAddVisibility,800);
-
-console.log('派遣排班已移除重複的舊新增排班，只保留多日排班');
-})();
-</script>
-
-
-
-<script id="QYJ_COMPANY_DROPDOWN_FROM_CUSTOMERS_ONLY_20261109">
-(function(){
-'use strict';
-
-function qyjCustomerCompanyNames(){
-    let rows=[];
-    try{
-        if(Array.isArray(window.custData)) rows=window.custData;
-    }catch(e){}
-
-    const seen=new Set();
-    const names=[];
-
-    rows.forEach(function(x){
-        if(!x) return;
-
-        const raw =
-            x.name ??
-            x.company ??
-            x.companyName ??
-            x.customer ??
-            x.customerName ??
-            x.client ??
-            '';
-
-        const name=String(raw||'').trim();
-        if(!name) return;
-
-        /* 以顯示文字去重，忽略前後空白 */
-        const key=name.replace(/\s+/g,'').toLowerCase();
-        if(seen.has(key)) return;
-
-        seen.add(key);
-        names.push(name);
-    });
-
-    return names.sort(function(a,b){
-        return a.localeCompare(b,'zh-Hant');
-    });
-}
-
-window.qyjCustomerCompanyNames=qyjCustomerCompanyNames;
-
-function qyjRefillSelect(select){
-    if(!select) return;
-
-    const current=String(select.value||'').trim();
-    const firstOption=select.querySelector('option[value=""]');
-    const placeholder=firstOption ? firstOption.textContent : '請選擇公司';
-
-    const names=qyjCustomerCompanyNames();
-
-    select.innerHTML='';
-
-    const ph=document.createElement('option');
-    ph.value='';
-    ph.textContent=placeholder || '請選擇公司';
-    select.appendChild(ph);
-
-    names.forEach(function(name){
-        const op=document.createElement('option');
-        op.value=name;
-        op.textContent=name;
-        select.appendChild(op);
-    });
-
-    if(current && names.includes(current)){
-        select.value=current;
-    }else{
-        select.value='';
-    }
-}
-
-/* 只處理確定是公司選擇器的欄位，避免誤改其他 select */
-function qyjRefreshAllCompanyDropdowns(){
-    const ids=[
-        'sch_company',
-        'schedule_company',
-        'qyjDispatchMultiCompany',
-        'qyjMultiCompany',
-        'dispatch_company',
-        'att_company',
-        'bill_company',
-        'point_company'
-    ];
-
-    ids.forEach(function(id){
-        const el=document.getElementById(id);
-        if(el && el.tagName==='SELECT'){
-            qyjRefillSelect(el);
-        }
-    });
-
-    /* 再掃描排班頁內名稱明確含 company 的 select */
-    const page=document.getElementById('page-schedule');
-    if(page){
-        page.querySelectorAll('select[id*="company" i],select[name*="company" i]').forEach(qyjRefillSelect);
-    }
-}
-
-/* 包住既有公司/排班相關初始化函式，重畫後重新套用正式客戶名單 */
-[
-    'fillFilters',
-    'renderScheduleTable',
-    'setupScheduleTabs',
-    'openQyjDispatchMultiDayModal',
-    'openScheduleModal'
-].forEach(function(fnName){
-    const old=window[fnName];
-    if(typeof old!=='function') return;
-
-    window[fnName]=function(){
-        const r=old.apply(this,arguments);
-        setTimeout(qyjRefreshAllCompanyDropdowns,0);
-        return r;
-    };
-});
-
-/* custData 更新後也同步刷新公司下拉 */
-const oldSaveAll=window.saveAll;
-if(typeof oldSaveAll==='function'){
-    window.saveAll=function(){
-        const r=oldSaveAll.apply(this,arguments);
-        setTimeout(qyjRefreshAllCompanyDropdowns,50);
-        return r;
-    };
-}
-
-const observer=new MutationObserver(function(){
-    const page=document.getElementById('page-schedule');
-    if(page && page.classList.contains('active')){
-        qyjRefreshAllCompanyDropdowns();
-    }
-});
-
-document.addEventListener('DOMContentLoaded',function(){
-    observer.observe(document.body,{
-        childList:true,
-        subtree:true
-    });
-    setTimeout(qyjRefreshAllCompanyDropdowns,300);
-});
-
-setTimeout(qyjRefreshAllCompanyDropdowns,800);
-
-console.log('公司下拉選單已改為只顯示正式客戶資料 custData，並自動去重');
-})();
-</script>
 
 </body>
 </html>
