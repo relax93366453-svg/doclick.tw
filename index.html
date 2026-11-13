@@ -34397,6 +34397,97 @@ function esc(v){
         .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
         .replace(/'/g,'&#039;');
 }
+// 員工內容使用既有主雲端；不更改主 API、資料 key 或導覽。
+const CONTENT_PENDING_KEY='qyj_employee_content_pending_v1';
+let contentReadFlight=null;
+function contentSnapshot(conf){
+    return {sopItems:Array.isArray(conf.sopItems)?conf.sopItems:[],
+        announcementItems:Array.isArray(conf.announcementItems)?conf.announcementItems:[]};
+}
+function contentCanonical(value){
+    if(Array.isArray(value))return value.map(contentCanonical);
+    if(value&&typeof value==='object')return Object.keys(value).sort().reduce(function(o,k){o[k]=contentCanonical(value[k]);return o;},{});
+    return value;
+}
+function contentEqual(a,b){return JSON.stringify(contentCanonical(a))===JSON.stringify(contentCanonical(b));}
+function parseEmployeeContent(result){
+    let root=result;
+    if(root&&(root.ok===false||root.status==='error'))throw new Error(root.message||'雲端讀取失敗');
+    for(let i=0;i<3&&root&&root.data&&typeof root.data==='object';i++){
+        if(root.sysConfig||Array.isArray(root.sopItems)||Array.isArray(root.announcementItems))break;
+        root=root.data;
+    }
+    if(!root||typeof root!=='object')throw new Error('雲端內容格式錯誤');
+    let conf=root.sysConfig&&root.sysConfig.portalConf;
+    if(typeof conf==='string')conf=JSON.parse(conf);
+    if(!conf||typeof conf!=='object')conf={};
+    const out={};
+    ['sopItems','announcementItems'].forEach(function(key){
+        const nested=conf[key], top=root[key];
+        if(Array.isArray(nested)&&Array.isArray(top)&&!contentEqual(nested,top)){
+            throw new Error('雲端 '+key+' 的兩份內容不一致，已保留本機資料，請核對主雲端後端');
+        }
+        if(Array.isArray(nested))out[key]=nested;
+        else if(Array.isArray(top))out[key]=top;
+        else throw new Error('雲端缺少 '+key+'，已保留本機資料');
+    });
+    out.contentUpdatedAt=conf.contentUpdatedAt||'';
+    return out;
+}
+async function readEmployeeContent(){
+    if(typeof window.qyjJsonpRead!=='function')throw new Error('主雲端讀取功能未載入');
+    return parseEmployeeContent(await window.qyjJsonpRead(20000));
+}
+async function refreshEmployeeContent(){
+    if(localStorage.getItem(CONTENT_PENDING_KEY))throw new Error('此裝置有尚未同步的員工內容，已保留本機修改');
+    if(contentReadFlight)return contentReadFlight;
+    contentReadFlight=readEmployeeContent().then(function(conf){
+        // 網路請求途中若管理員儲存，不可用舊讀取結果覆寫。
+        if(localStorage.getItem(CONTENT_PENDING_KEY))throw new Error('員工內容正在儲存，已保留本機修改');
+        const localTime=Date.parse(portalConf.contentUpdatedAt||'')||0;
+        const cloudTime=Date.parse(conf.contentUpdatedAt||'')||0;
+        if(localTime>cloudTime&&!contentEqual(contentSnapshot(portalConf),contentSnapshot(conf))){
+            throw new Error('本機員工內容較新，已保留，請先完成管理端同步');
+        }
+        portalConf=Object.assign({},portalConf,conf);
+        localStorage.setItem('portalConf',JSON.stringify(portalConf));
+        return conf;
+    }).finally(function(){contentReadFlight=null;});
+    return contentReadFlight;
+}
+window.qyjRefreshEmployeeContent=refreshEmployeeContent;
+function contentSyncNote(error){
+    const root=document.getElementById('msContent');if(!root)return;
+    const old=root.querySelector('[data-content-sync-note]');if(old)old.remove();
+    const note=document.createElement('div');note.setAttribute('data-content-sync-note','1');
+    note.className='ms-card';note.style.cssText='font-size:12px;color:#64748b;padding:12px;margin-bottom:12px';
+    note.textContent=error?'內容更新未完成，顯示本機資料：'+error.message:'已確認主雲端最新內容';
+    root.prepend(note);
+}
+async function saveEmployeeContentCloud(){
+    const desired=JSON.parse(JSON.stringify(contentSnapshot(portalConf)));
+    const stamp=new Date().toISOString();
+    portalConf.contentUpdatedAt=stamp;
+    localStorage.setItem(CONTENT_PENDING_KEY,JSON.stringify({savedAt:stamp,content:desired}));
+    localStorage.setItem('portalConf',JSON.stringify(portalConf));
+    try{
+        if(typeof window.pushCloudData!=='function')throw new Error('主雲端儲存功能未載入');
+        // 沿用原本版本衝突 / tombstone 機制，不另送整包覆蓋。
+        const receipt=await window.pushCloudData(true);
+        if(!receipt||!['success','nochange'].includes(receipt.status))throw new Error('主雲端尚未確認儲存結果');
+        const confirmed=await readEmployeeContent();
+        if(!contentEqual(desired,contentSnapshot(confirmed)))throw new Error('雲端回讀內容與本次儲存不同');
+        localStorage.removeItem(CONTENT_PENDING_KEY);
+        portalConf=Object.assign({},portalConf,confirmed);
+        localStorage.setItem('portalConf',JSON.stringify(portalConf));
+    }catch(error){
+        // 網路或版本衝突時保留原輸入，避免讀回流程洗掉修改。
+        portalConf=Object.assign({},portalConf,desired,{contentUpdatedAt:stamp});
+        localStorage.setItem('portalConf',JSON.stringify(portalConf));
+        throw error;
+    }
+}
+
 function ensureData(){
     if(!Array.isArray(portalConf.sopItems)) portalConf.sopItems=[];
     if(!Array.isArray(portalConf.announcementItems)) portalConf.announcementItems=[];
@@ -34657,7 +34748,7 @@ window.deleteQyjContentItem=async function(){
     v3Index=-1;
     localStorage.setItem('portalConf',JSON.stringify(portalConf));
     try{
-        if(typeof forcePushAllToCloud==='function') await forcePushAllToCloud();
+        await saveEmployeeContentCloud();
         showToast('✅ 已刪除並同步');
     }catch(e){
         showToast('⚠️ 已刪除本機內容，雲端同步尚未完成',true);
@@ -34698,7 +34789,7 @@ window.saveQyjContentItem=async function(){
     if(btn){btn.disabled=true;btn.textContent='同步中…'}
 
     try{
-        if(typeof forcePushAllToCloud==='function') await forcePushAllToCloud();
+        await saveEmployeeContentCloud();
         showToast('✅ 已儲存並同步到員工端');
     }catch(e){
         console.error(e);
@@ -34796,10 +34887,20 @@ window.qyjOpenMobileNotice=function(index){
       <div class="qyj-mobile-line-detail-body">${esc(x.content||x.summary||'')}</div>
     </div>`;
 };
-window.msShowNotice=function(){
+let noticeRequest=0;
+window.msShowNotice=async function(){
+    const request=++noticeRequest;
     if(typeof msSetTitle==='function')msSetTitle('公告欄');
     mobileNoticeMode='unread';
     renderMobileNotices();
+    const route=localStorage.getItem('qyj_mobile_staff_route');
+    const root=document.getElementById('msContent');
+    const first=root&&root.firstElementChild;
+    const stillHere=()=>request===noticeRequest&&route===localStorage.getItem('qyj_mobile_staff_route')&&root&&root.contains(first);
+    try{
+        await refreshEmployeeContent();
+        if(stillHere()){renderMobileNotices();contentSyncNote();}
+    }catch(error){if(stillHere())contentSyncNote(error);}
 };
 window.renderMobileNotices=renderMobileNotices;
 
@@ -35039,6 +35140,7 @@ window.msShowProfile=function(){
         '<div class="ms-row"><span>狀態</span><span>'+qe(status)+'</span></div>'+
         '<div class="ms-row"><span>手機</span><span>'+qe(phone)+'</span></div>'+
         '<a class="qyj-staff-link-btn blue" href="#" onclick="msGo(\'personnel\');return false;"><span>人事資料表</span><span>›</span></a>'+
+        '<a class="qyj-staff-link-btn gray" href="https://relax93366453-svg.github.io/doclick.tw/" target="_blank" rel="noopener"><span>開啟愜易居主系統</span><span>↗</span></a>'+
         '<a class="qyj-staff-link-btn green" href="#" onclick="msGo(\'line\');return false;"><span>LINE 綁定與提醒</span><span>›</span></a>'+
       '</div>';
 };
@@ -35077,15 +35179,31 @@ function qyjCleanLegacySopHtml(value){
 window.qyjCleanLegacySopHtml=qyjCleanLegacySopHtml;
 
 const oldMsShowSopFinal=window.msShowSop;
-window.msShowSop=function(){
-    if(typeof oldMsShowSopFinal==='function') oldMsShowSopFinal.apply(this,arguments);
-    setTimeout(function(){
+let sopRequest=0;
+window.msShowSop=async function(){
+    const request=++sopRequest;
+    const renderSop=function(){
+        if(typeof oldMsShowSopFinal==='function')oldMsShowSopFinal();
         const root=document.getElementById('msContent');
-        if(!root)return;
-        root.querySelectorAll('.qyj-mobile-sop-content').forEach(function(el){
+        if(root)root.querySelectorAll('.qyj-mobile-sop-content').forEach(function(el){
             el.textContent=qyjCleanLegacySopHtml(el.textContent||'');
         });
-    },0);
+    };
+    renderSop();
+    const route=localStorage.getItem('qyj_mobile_staff_route');
+    const root=document.getElementById('msContent');
+    const first=root&&root.firstElementChild;
+    const stillHere=()=>request===sopRequest&&route===localStorage.getItem('qyj_mobile_staff_route')&&root&&root.contains(first);
+    try{
+        await window.qyjRefreshEmployeeContent();
+        if(stillHere())renderSop();
+    }catch(error){
+        if(stillHere()){
+            const note=document.createElement('div');note.className='ms-card';
+            note.textContent='SOP 更新未完成，顯示本機資料：'+error.message;
+            root.prepend(note);
+        }
+    }
 };
 
 console.log('Staff App 人事雙連結 / 內部三項同步最終修正已載入');
