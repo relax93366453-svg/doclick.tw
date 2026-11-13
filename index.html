@@ -34327,6 +34327,9 @@ console.log('QYJ_LINE_COMPLETE_UI_20261104 已載入');
     margin-bottom:10px;
 }
 .qyj-v3-image-preview img{width:100%;height:100%;object-fit:cover}
+.qyj-v3-line-switch button{flex:1;border:0;border-radius:10px;padding:10px;background:transparent;color:#334155;font:inherit;cursor:pointer}
+.qyj-v3-line-switch button.active{background:#fff;color:#059669;font-weight:800}
+.qyj-v3-image-box.qyj-image-dragover{border-color:#2563eb!important;background:#eff6ff!important;box-shadow:0 0 0 3px #bfdbfe}
 .qyj-v3-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:14px}
 .qyj-v3-btn{
     border:0;border-radius:10px;padding:10px 16px;font-weight:900;cursor:pointer;
@@ -34339,6 +34342,14 @@ console.log('QYJ_LINE_COMPLETE_UI_20261104 已載入');
 }
 
 /* Staff App SOP 圖文 */
+.qyj-sop-title-link{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;box-sizing:border-box;border:1px solid #e2e8f0;background:#fff;border-radius:16px;padding:23px 20px;margin-bottom:12px;text-align:left;color:#0f172a;cursor:pointer;font-family:inherit;min-height:80px}
+.qyj-sop-title-link:hover{border-color:#93c5fd;background:#f8fbff}
+.qyj-sop-title-link:focus-visible,.qyj-sop-back:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.qyj-sop-title-text{font-size:21px;font-weight:800;line-height:1.5;overflow-wrap:anywhere}
+.qyj-sop-title-arrow{font-size:30px;color:#2563eb;flex-shrink:0}
+.qyj-sop-back{border:0;background:transparent;padding:10px 0 18px;font:inherit;font-weight:700;color:#2563eb;cursor:pointer;min-height:44px}
+.qyj-sop-detail-title{font-size:24px;font-weight:800;line-height:1.5;margin:0;overflow-wrap:anywhere}
+
 .qyj-mobile-sop-card{
     background:#fff;border-radius:16px;overflow:hidden;margin-bottom:14px;
     border:1px solid #e2e8f0;
@@ -34398,6 +34409,10 @@ function esc(v){
         .replace(/'/g,'&#039;');
 }
 // 員工內容使用既有主雲端；不更改主 API、資料 key 或導覽。
+let adminAnnouncementFilter='all';
+let employeeContentBusy=false;
+let employeeImageBusy=false;
+let employeeImageSequence=0;
 const CONTENT_PENDING_KEY='qyj_employee_content_pending_v1';
 let contentReadFlight=null;
 function contentSnapshot(conf){
@@ -34528,6 +34543,7 @@ function buildModal(){
               <div id="qyjV3ListTitle" class="qyj-v3-panel-title">內容</div>
               <button class="qyj-v3-add" onclick="newQyjContentItem()">＋ 新增</button>
             </div>
+            <div id="qyjContentSyncStatus" role="status" aria-live="polite" style="padding:10px 14px;font-size:13px;line-height:1.6"></div>
             <div id="qyjV3LineSwitch"></div>
             <div id="qyjContentItems" class="qyj-v3-list"></div>
           </section>
@@ -34549,12 +34565,12 @@ function buildModal(){
                   <input id="qyjContentSummary" type="text" placeholder="手機列表會先看到這段">
                 </div>
 
-                <div id="qyjV3ImageWrap" class="wide qyj-v3-image-box">
+                <div id="qyjV3ImageWrap" class="wide qyj-v3-image-box" ondragover="qyjV3ImageDrag(event)" ondragleave="qyjV3ImageLeave(event)" ondrop="qyjV3ImageDrop(event)">
                   <label>圖文封面</label>
                   <div id="qyjV3ImagePreview" class="qyj-v3-image-preview">尚未設定圖片</div>
                   <input id="qyjContentImage" type="hidden">
                   <input id="qyjContentImageFile" type="file" accept="image/*" onchange="qyjV3ReadImage(this)">
-                  <div style="font-size:11px;color:#64748b;margin-top:6px">SOP 可直接選圖片，員工手機端會同步顯示</div>
+                  <div style="font-size:11px;color:#64748b;margin-top:6px">將一張圖片拖曳到此框，或按「選擇檔案」。選好後請按「儲存並同步」。</div>
                 </div>
 
                 <div>
@@ -34616,28 +34632,68 @@ function setImagePreview(src){
     if(!p) return;
     p.innerHTML=src?'<img src="'+esc(src)+'" alt="">':'尚未設定圖片';
 }
+function imageFileAllowed(file){
+    if(!file)return false;
+    return /^image\/(jpeg|png|webp|gif|bmp|avif|x-ms-bmp)$/i.test(file.type||'') ||
+        (!file.type&&/\.(jpe?g|png|webp|gif|bmp|avif)$/i.test(file.name||''));
+}
+window.qyjV3ImageDrag=function(event){
+    event.preventDefault();event.stopPropagation();
+    if(employeeContentBusy)return;
+    if(event.dataTransfer)event.dataTransfer.dropEffect='copy';
+    event.currentTarget.classList.add('qyj-image-dragover');
+};
+window.qyjV3ImageLeave=function(event){
+    if(!event.currentTarget.contains(event.relatedTarget))event.currentTarget.classList.remove('qyj-image-dragover');
+};
+window.qyjV3ImageDrop=function(event){
+    event.preventDefault();event.stopPropagation();
+    event.currentTarget.classList.remove('qyj-image-dragover');
+    if(employeeContentBusy)return;
+    const files=event.dataTransfer&&event.dataTransfer.files;
+    if(!files||files.length!==1)return showToast('請一次拖入一張圖片',true);
+    window.qyjV3ReadImage({files:files});
+};
 window.qyjV3ReadImage=function(input){
+    if(employeeContentBusy)return;
     const f=input&&input.files&&input.files[0];
     if(!f)return;
+    if(!imageFileAllowed(f))return showToast('請選擇 JPG、PNG、WebP、GIF、BMP 或 AVIF 圖片',true);
+    if(f.size>20*1024*1024)return showToast('圖片超過 20 MB，請縮小後再上傳',true);
+    const field=document.getElementById('qyjContentImage');
+    const preview=document.getElementById('qyjV3ImagePreview');
+    if(!field||!preview)return;
+    const sequence=++employeeImageSequence;
+    employeeImageBusy=true;
+    const current=()=>sequence===employeeImageSequence&&document.getElementById('qyjContentImage')===field;
+    const fail=()=>{if(current()){employeeImageBusy=false;showToast('圖片讀取失敗，請重新選擇圖片',true);}};
     const reader=new FileReader();
+    reader.onerror=fail;
     reader.onload=function(){
+        if(!current())return;
         const img=new Image();
+        img.onerror=fail;
         img.onload=function(){
-            const max=1200;
-            let w=img.width,h=img.height;
-            if(w>max){h=Math.round(h*max/w);w=max}
-            const c=document.createElement('canvas');
-            c.width=w;c.height=h;
-            c.getContext('2d').drawImage(img,0,0,w,h);
-            const data=c.toDataURL('image/jpeg',0.78);
-            document.getElementById('qyjContentImage').value=data;
-            setImagePreview(data);
+            if(!current())return;
+            try{
+                const max=1200;
+                let w=img.width,h=img.height;
+                if(!w||!h)throw new Error('無效的圖片');
+                if(w>max){h=Math.round(h*max/w);w=max}
+                const c=document.createElement('canvas');c.width=w;c.height=h;
+                c.getContext('2d').drawImage(img,0,0,w,h);
+                const data=c.toDataURL('image/jpeg',0.78);
+                field.value=data;setImagePreview(data);
+                employeeImageBusy=false;
+                showToast('圖片已加入，請按「儲存並同步」');
+            }catch(error){fail();}
         };
         img.src=reader.result;
     };
     reader.readAsDataURL(f);
 };
 function fill(item){
+    employeeImageSequence++;employeeImageBusy=false;
     item=item||{};
     document.getElementById('qyjContentTitle').value=item.title||'';
     document.getElementById('qyjContentSummary').value=item.summary||'';
@@ -34663,15 +34719,15 @@ function render(){
     document.getElementById('qyjV3BodyLabel').textContent=v3Mode==='sop'?'SOP 完整內容':'公告內容';
     document.getElementById('qyjV3ModeNote').textContent=
         v3Mode==='sop'
-        ?'儲存後員工端會以「圖片＋標題＋說明＋內容」呈現，不再是純文字清單。'
+        ?'員工端先顯示大標題清單，點入後可閱讀完整圖片及文字。'
         :'儲存後員工端會出現在 LINE 式公告列表，可依未讀／全部查看。';
 
     const switchBox=document.getElementById('qyjV3LineSwitch');
     switchBox.innerHTML=v3Mode==='announcement'
-        ?'<div class="qyj-v3-line-switch"><span class="active">未讀</span><span>全部</span></div>'
+        ?'<div class="qyj-v3-line-switch"><button type="button" onclick="qyjAdminNoticeFilter(\'unread\')" class="'+(adminAnnouncementFilter==='unread'?'active':'')+'">此裝置未讀</button><button type="button" onclick="qyjAdminNoticeFilter(\'all\')" class="'+(adminAnnouncementFilter==='all'?'active':'')+'">全部</button></div>'
         :'';
 
-    const arr=list().map((x,i)=>({...x,_index:i})).sort((a,b)=>{
+    const arr=list().map((x,i)=>({...x,_index:i})).filter(x=>v3Mode!=='announcement'||adminAnnouncementFilter==='all'||!isRead(x)).sort((a,b)=>{
         if(v3Mode==='announcement'){
             return Number(Boolean(b.pinned))-Number(Boolean(a.pinned)) ||
                    String(b.publishDate||'').localeCompare(String(a.publishDate||''));
@@ -34706,7 +34762,7 @@ function render(){
             </div>
             <div>
               <div class="qyj-v3-line-time">${esc(item.publishDate||'')}</div>
-              <div class="qyj-v3-unread">1</div>
+              <div class="qyj-v3-unread">${isRead(item)?'已讀':'未讀'}</div>
             </div>
         </div>`;
     }).join(''):'<div class="qyj-v3-empty">目前還沒有內容</div>';
@@ -34717,6 +34773,8 @@ function render(){
     document.getElementById('qyjV3EditorBadge').className='qyj-v3-tag '+((item&&item.active===false)?'off':'on');
 }
 window.openQyjContentAdmin=function(mode){
+    if(employeeContentBusy)return;
+    adminAnnouncementFilter='all';
     v3Mode=mode==='announcement'?'announcement':'sop';
     v3Index=-1;
     buildModal();
@@ -34728,34 +34786,70 @@ window.closeQyjContentAdmin=function(){
     const m=modal();if(m)m.style.display='none';
 };
 window.switchQyjContentMode=function(mode){
+    if(employeeContentBusy)return;
     v3Mode=mode==='announcement'?'announcement':'sop';
     v3Index=-1;
     fill({});
     render();
 };
 window.newQyjContentItem=function(){
+    if(employeeContentBusy)return;
     v3Index=-1;fill({});render();
 };
 window.editQyjContentItem=function(index){
+    if(employeeContentBusy)return;
     v3Index=Number(index);
     fill(list()[v3Index]||{});
     render();
 };
+function adminSyncStatus(message,failed){
+    const box=document.getElementById('qyjContentSyncStatus');if(!box)return;
+    box.textContent=message;box.style.color=failed?'#b45309':'#166534';
+    if(failed){
+        const retry=document.createElement('button');retry.type='button';
+        retry.className='qyj-v3-add';retry.style.marginTop='8px';
+        retry.textContent='重試同步（不新增重複資料）';
+        retry.onclick=function(){return runEmployeeContentSync('儲存');};box.appendChild(retry);
+    }
+}
+async function runEmployeeContentSync(verb){
+    if(employeeContentBusy)return;
+    employeeContentBusy=true;
+    const m=modal();
+    const controls=m?Array.from(m.querySelectorAll('button,input,select,textarea')):[];
+    const states=controls.map(x=>x.disabled);
+    controls.forEach(x=>{x.disabled=true;});
+    adminSyncStatus('已'+verb+'至本機，正在確認雲端…',false);
+    try{
+        await saveEmployeeContentCloud();
+        adminSyncStatus('已'+verb+'並確認雲端內容一致。',false);
+        showToast('✅ 已'+verb+'並同步');
+    }catch(error){
+        adminSyncStatus('已'+verb+'至本機；雲端同步未完成：'+error.message,true);
+        showToast('⚠️ 雲端同步未完成：'+error.message,true);
+    }finally{
+        controls.forEach((x,i)=>{x.disabled=states[i];});
+        employeeContentBusy=false;
+        if(modal())render();
+    }
+}
+window.qyjAdminNoticeFilter=function(mode){
+    if(employeeContentBusy)return;
+    adminAnnouncementFilter=mode==='unread'?'unread':'all';render();
+};
 window.deleteQyjContentItem=async function(){
+    if(employeeContentBusy)return;
     if(v3Index<0)return showToast('請先選擇要刪除的內容',true);
     if(!confirm('確定刪除這筆內容？'))return;
     list().splice(v3Index,1);
     v3Index=-1;
     localStorage.setItem('portalConf',JSON.stringify(portalConf));
-    try{
-        await saveEmployeeContentCloud();
-        showToast('✅ 已刪除並同步');
-    }catch(e){
-        showToast('⚠️ 已刪除本機內容，雲端同步尚未完成',true);
-    }
     fill({});render();
+    await runEmployeeContentSync('刪除');
 };
 window.saveQyjContentItem=async function(){
+    if(employeeContentBusy)return;
+    if(employeeImageBusy)return showToast('圖片處理中，請稍候再儲存',true);
     const title=document.getElementById('qyjContentTitle').value.trim();
     if(!title)return showToast('請輸入標題',true);
 
@@ -34784,53 +34878,53 @@ window.saveQyjContentItem=async function(){
     }
     localStorage.setItem('portalConf',JSON.stringify(portalConf));
 
-    const btn=document.querySelector('.qyj-v3-btn.save');
-    const oldText=btn?btn.textContent:'';
-    if(btn){btn.disabled=true;btn.textContent='同步中…'}
-
-    try{
-        await saveEmployeeContentCloud();
-        showToast('✅ 已儲存並同步到員工端');
-    }catch(e){
-        console.error(e);
-        showToast('⚠️ 已儲存本機，雲端同步尚未完成',true);
-    }finally{
-        if(btn){btn.disabled=false;btn.textContent=oldText||'儲存並同步'}
-    }
-    render();
+    adminAnnouncementFilter='all';
+    render(); // 本機新增／修改立即顯示，不等待網路逾時。
+    await runEmployeeContentSync('儲存');
 };
 
-/* ===== Staff App：SOP 圖文版 ===== */
-function mobileStaffType(){
-    try{
-        const s=typeof msGetCurrentStaff==='function'?(msGetCurrentStaff()||{}):{};
-        const name=String(s.name||s.staff||s.realName||'').trim();
-        return (ftStaffData||[]).some(x=>String(x.name||x.staff||'').trim()===name)?'正職':'派遣';
-    }catch(e){return '派遣'}
-}
-function audienceOK(aud,type){
-    return !aud||aud==='all'||(aud==='fulltime'&&type==='正職')||(aud==='dispatch'&&type==='派遣');
+let mobileSopItems=[];
+function sopPlain(value){
+    return typeof window.qyjCleanLegacySopHtml==='function'
+        ?window.qyjCleanLegacySopHtml(value):String(value||'');
 }
 window.msShowSop=function(){
     if(typeof msSetTitle==='function')msSetTitle('入職包 SOP');
     const box=document.getElementById('msContent');if(!box)return;
     ensureData();
     const type=mobileStaffType();
-    const items=portalConf.sopItems
+    mobileSopItems=portalConf.sopItems
         .filter(x=>x&&x.active!==false&&audienceOK(x.audience,type))
-        .sort((a,b)=>Number(a.order||0)-Number(b.order||0));
-
-    box.innerHTML=items.length?items.map(x=>{
-        const img=x.image||x.imageUrl||'';
-        return `<div class="qyj-mobile-sop-card">
-          ${img?`<img src="${esc(img)}" alt="">`:''}
-          <div class="qyj-mobile-sop-inner">
-            <div class="qyj-mobile-sop-title">${esc(x.title||'SOP')}</div>
-            ${x.summary?`<div class="qyj-mobile-sop-summary">${esc(x.summary)}</div>`:''}
-            ${x.content?`<div class="qyj-mobile-sop-content">${esc(x.content)}</div>`:''}
-          </div>
-        </div>`;
-    }).join(''):'<div class="ms-card"><div class="ms-empty">目前沒有 SOP 內容</div></div>';
+        .sort((a,b)=>Number(a.order||0)-Number(b.order||0))
+        .map(x=>Object.assign({},x));
+    box.innerHTML=mobileSopItems.length?mobileSopItems.map((x,i)=>`
+      <button type="button" class="qyj-sop-title-link" onclick="qyjOpenMobileSop(${i})">
+        <span class="qyj-sop-title-text">${esc(sopPlain(x.title||'SOP'))}</span>
+        <span class="qyj-sop-title-arrow" aria-hidden="true">›</span>
+      </button>`).join(''):'<div class="ms-card"><div class="ms-empty">目前沒有 SOP 內容</div></div>';
+};
+window.qyjOpenMobileSop=function(index){
+    const item=mobileSopItems[Number(index)];
+    const box=document.getElementById('msContent');if(!item||!box)return;
+    // 詳情使用點擊當下的資料快照；清單背景讀取不可把詳情切回清單。
+    const note=box.querySelector('[data-sop-sync-note]');
+    const warning=note?note.textContent:'';
+    const img=item.image||item.imageUrl||'';
+    if(typeof msSetTitle==='function')msSetTitle('入職包 SOP');
+    box.innerHTML=`
+      <button type="button" class="qyj-sop-back" onclick="msShowSop()">‹ 返回入職包清單</button>
+      <article class="qyj-mobile-sop-card">
+        <div class="qyj-mobile-sop-inner">
+          <h2 class="qyj-sop-detail-title">${esc(sopPlain(item.title||'SOP'))}</h2>
+          ${item.summary?`<div class="qyj-mobile-sop-summary">${esc(sopPlain(item.summary))}</div>`:''}
+        </div>
+        ${img?`<img src="${esc(img)}" alt="${esc(sopPlain(item.title||'SOP'))}">`:''}
+        ${item.content?`<div class="qyj-mobile-sop-inner qyj-mobile-sop-content">${esc(sopPlain(item.content))}</div>`:''}
+      </article>`;
+    if(warning){
+        const banner=document.createElement('div');banner.className='ms-card';
+        banner.setAttribute('data-sop-sync-note','1');banner.textContent=warning;box.prepend(banner);
+    }
 };
 
 /* ===== Staff App：LINE 未讀 / 全部公告 ===== */
@@ -35199,7 +35293,7 @@ window.msShowSop=async function(){
         if(stillHere())renderSop();
     }catch(error){
         if(stillHere()){
-            const note=document.createElement('div');note.className='ms-card';
+            const note=document.createElement('div');note.className='ms-card';note.setAttribute('data-sop-sync-note','1');
             note.textContent='SOP 更新未完成，顯示本機資料：'+error.message;
             root.prepend(note);
         }
